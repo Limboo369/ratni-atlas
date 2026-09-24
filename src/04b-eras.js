@@ -26,6 +26,7 @@ RA.ERAS = [
   {
     id: 'rim', name: 'Antički Rim', sub: '100. godina', short: 'Rim',
     blurb: 'Rimsko carstvo protiv germanskih, sarmatskih i keltskih plemena. Legije, konjica, strijelci i opsadne sprave — bez baruta, aviona i bombi.',
+    blurbW: 'Svijet oko 100. godine: Rim, Partija, kineska dinastija Han, Kušani i plemena oko njih. Legije, konjica, strijelci i opsadne sprave — bez baruta, aviona i bombi.',
     strikeTab: 'Opsada', strikeIcon: 'siege', road: true, para: false,
     units: {
       inf: { name: 'Legija', desc: 'Čvrsta odbrana granice u krugu od 6 polja.' },
@@ -47,6 +48,7 @@ RA.ERAS = [
   {
     id: 'srednji', name: 'Srednji vijek', sub: '1400. godina', short: 'Srednji vijek',
     blurb: 'Kraljevina Bosna, Srpska despotovina, Ugarska, Venecija, Osmanlije, Sveto Rimsko Carstvo… Vitezovi, strijelci, trebušei i prve bombarde.',
+    blurbW: 'Svijet oko 1400: Timuridi, Ming Kina, Mameluci, Osmanlije, evropska kraljevstva, Asteci i Inke. Vitezovi, strijelci, trebušei i prve bombarde.',
     strikeTab: 'Opsada', strikeIcon: 'siege', road: true, para: false,
     units: {
       inf: { name: 'Pješaci', pl: true, desc: 'Kopljanici čvrsto drže granicu u krugu od 6 polja.' },
@@ -69,6 +71,7 @@ RA.ERAS = [
   {
     id: 'napoleon', name: 'Napoleonovo doba', sub: '1815. godina', short: 'Napoleon',
     blurb: 'Carstva i kraljevine poslije Napoleona, desetine njemačkih i italijanskih država. Mušketari, konjica, topovi i Kongreveove rakete.',
+    blurbW: 'Svijet poslije Napoleona: Britanija, Rusija, Osmanlije, Kina dinastije Ćing, mlade američke republike. Mušketari, konjica, topovi i Kongreveove rakete.',
     strikeTab: 'Rakete', strikeIcon: 'rocket', road: true, para: false,
     units: {
       inf: { name: 'Pješadija', desc: 'Mušketari čvrsto drže granicu u krugu od 6 polja.' },
@@ -89,6 +92,7 @@ RA.ERAS = [
   {
     id: 'ww1', name: 'Prvi svjetski rat', sub: '1914. godina', short: '1914.',
     blurb: 'Antanta protiv Centralnih sila: Austro-Ugarska, Njemačko i Rusko carstvo, Srbija, Osmanlije… Rovovi, teška artiljerija, prvi tenkovi i cepelini.',
+    blurbW: 'Svijet 1914: kolonijalna carstva Britanije, Francuske i Njemačke, Rusko i Osmansko carstvo, SAD, Japan, Kina… Rovovi, teška artiljerija, prvi tenkovi i cepelini.',
     strikeTab: 'Udari', strikeIcon: 'zeppelin', road: false, para: false,
     units: {
       tank: { name: 'Tenkovi', desc: 'Prvi tenkovi (od 1916.): tvoji napadi pored njih su jeftiniji i brži. Traže fabriku.' },
@@ -109,6 +113,7 @@ RA.ERAS = [
   {
     id: 'ww2', name: 'Drugi svjetski rat', sub: '1938. godina', short: '1938.',
     blurb: 'Evropa uoči rata: Njemačka, SSSR, Italija, Kraljevina Jugoslavija… Tenkovi, avioni i padobranci, V-2 rakete — a atomska bomba stiže tek od 10. minute.',
+    blurbW: 'Svijet uoči rata: Njemačka, SSSR, Japan, SAD, Britansko i Francusko carstvo… Tenkovi, avioni i padobranci, V-2 rakete — a atomska bomba stiže tek od 10. minute.',
     strikeTab: 'Rakete', strikeIcon: 'rocket', road: false, para: true,
     units: {},
     structs: {
@@ -124,6 +129,7 @@ RA.ERAS = [
   {
     id: 'hladni', name: 'Hladni rat', sub: '1960. godina', short: 'Hladni rat',
     blurb: 'NATO i Varšavski pakt: dvije Njemačke, SSSR, Jugoslavija između blokova. Tenkovi, padobranci, balističke rakete i hidrogenske bombe.',
+    blurbW: 'SAD i SSSR dijele svijet: NATO, Varšavski pakt, Kina, nesvrstani i kolonije pred nezavisnošću. Tenkovi, padobranci, balističke rakete i hidrogenske bombe.',
     strikeTab: 'Rakete', strikeIcon: 'rocket', road: false, para: true,
     units: {},
     structs: {},
@@ -132,11 +138,14 @@ RA.ERAS = [
   {
     id: 'danas', name: 'Danas', sub: 'današnje granice', short: 'Danas',
     blurb: 'Današnja Evropa. Sve jedinice i oružje: rakete, EMP, atomske i hidrogenske bombe, MIRV.',
+    blurbW: 'Današnji svijet. Sve jedinice i oružje: rakete, EMP, atomske i hidrogenske bombe, MIRV.',
     strikeTab: 'Rakete', strikeIcon: 'rocket', road: false, para: true,
     units: {}, structs: {}, missiles: {},
   },
 ];
 RA.eraById = (id) => RA.ERAS.find((e) => e.id === id) || RA.ERAS[RA.ERAS.length - 1];
+/* the era's short description on a map: blurb is written for Europe, blurbW for the world */
+RA.eraBlurb = (E, mapId) => (mapId === 'svijet' && E.blurbW) || E.blurb;
 
 RA.applyEra = function (id) {
   const E = RA.eraById(id);

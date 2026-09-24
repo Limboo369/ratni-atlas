@@ -98,6 +98,13 @@ async def main():
         check([r.split(':')[0] for r in st['regs']] == ['svijet', 'bliski', 'afrika', 'azija', 'sam', 'jam', 'okeanija'], 'world regions listed')
         check(st['aria'] == 'Karta svijeta' and 'svijet' in st['tag'], 'map texts follow the map')
         await A.screenshot(path=OUT + 'world_1_start.png')
+        # a historical era on the world (build/svijet/era_ww1.json): downloaded on choice, world blurb, countries counted
+        await A.click('#eraSeg button[data-v="ww1"]')
+        await A.wait_for_function('!!window.__ra.maps.svijet.eras.ww1', timeout=30000)
+        await A.wait_for_timeout(300)
+        st = await A.evaluate('() => [document.getElementById("eraNote").textContent, document.querySelector("#regSeg button[data-v=svijet] small").textContent]')
+        check(st[0].startswith('Svijet 1914') and st[1].split()[0].isdigit() and int(st[1].split()[0]) > 0, f'1914 on the world: {st}')
+        await A.click('#eraSeg button[data-v="danas"]')
 
         # 2. a game on the whole world (borders start)
         await A.click('#startSeg button[data-v="granice"]')

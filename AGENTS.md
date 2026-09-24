@@ -60,7 +60,8 @@ for 10 min). Spectators replay the server's log. Presence from other players is 
 | `build/make.py` | Builds `dist/ratni-atlas.html` (artifact body) and `dist/test.html` (standalone page; published as `index.html`). |
 | `build/prep.py`, `build/world.py` | Map data from Natural Earth → `build/mapdata_core.json`, `build/mapdata.js` (grid 480×632, lon −11…41, lat 33…71.3). |
 | `build/eras.py` | Historical borders per era → `build/eradata.js` (polities, capitals, city renames, owner raster). |
-| `build/svijet/` | World map (`prep.py svijet`, `world.py svijet`, `eras.py --map svijet`; Bosnian names in `build/names_bs.py`): `map.json` + `era_<id>.json`, served from `/data/svijet/` and loaded only when the player picks Svijet. |
+| `build/svijet/` | World map (`prep.py svijet`, `world.py svijet`, `eras.py --map svijet --era <id>` or `--era all`; Bosnian names in `build/names_bs.py`): `map.json` + `era_<id>.json`, served from `/data/svijet/` and loaded only when the player picks Svijet. |
+| `build/eras_world/` | One table per world era (`<id>.py`: polities, capitals, paints, renames); format and workflow in its `README.md`. |
 | `scripts/fetch_data.sh` | Downloads the raw GeoJSON sources into `data/` (not in git). |
 | `build/test_*.py`, `build/sim_eras.py` | Playwright tests and AI balance runs (Leaflet served from `package/dist/leaflet.js`). |
 | `build/sim_node.js` | Fast AI-only balance runs in node: `node build/sim_node.js era:start:gm:region:maxMin:seed:diff[:pick]`. |
@@ -98,4 +99,4 @@ python3 build/sim_eras.py rim:granice:klasik:evropa:DAC:30:11:srednje   # AI bal
 
 - Online test of eras + battle royale (`test_mp.py` with era settings).
 - World: Russia is inflated by the Mercator grid (29% of land cells) and wins most world games; world games can stall at ~33% (many players).
-- World: only 'danas' exists; historical world eras (era_<id>.json) come next.
+- World: 'danas' and 'ww1' exist; the other historical world eras need their table in `build/eras_world/` (see its README).

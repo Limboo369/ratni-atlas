@@ -4647,6 +4647,7 @@ RA.ERAS = [
   {
     id: 'rim', name: 'Antički Rim', sub: '100. godina', short: 'Rim',
     blurb: 'Rimsko carstvo protiv germanskih, sarmatskih i keltskih plemena. Legije, konjica, strijelci i opsadne sprave — bez baruta, aviona i bombi.',
+    blurbW: 'Svijet oko 100. godine: Rim, Partija, kineska dinastija Han, Kušani i plemena oko njih. Legije, konjica, strijelci i opsadne sprave — bez baruta, aviona i bombi.',
     strikeTab: 'Opsada', strikeIcon: 'siege', road: true, para: false,
     units: {
       inf: { name: 'Legija', desc: 'Čvrsta odbrana granice u krugu od 6 polja.' },
@@ -4668,6 +4669,7 @@ RA.ERAS = [
   {
     id: 'srednji', name: 'Srednji vijek', sub: '1400. godina', short: 'Srednji vijek',
     blurb: 'Kraljevina Bosna, Srpska despotovina, Ugarska, Venecija, Osmanlije, Sveto Rimsko Carstvo… Vitezovi, strijelci, trebušei i prve bombarde.',
+    blurbW: 'Svijet oko 1400: Timuridi, Ming Kina, Mameluci, Osmanlije, evropska kraljevstva, Asteci i Inke. Vitezovi, strijelci, trebušei i prve bombarde.',
     strikeTab: 'Opsada', strikeIcon: 'siege', road: true, para: false,
     units: {
       inf: { name: 'Pješaci', pl: true, desc: 'Kopljanici čvrsto drže granicu u krugu od 6 polja.' },
@@ -4690,6 +4692,7 @@ RA.ERAS = [
   {
     id: 'napoleon', name: 'Napoleonovo doba', sub: '1815. godina', short: 'Napoleon',
     blurb: 'Carstva i kraljevine poslije Napoleona, desetine njemačkih i italijanskih država. Mušketari, konjica, topovi i Kongreveove rakete.',
+    blurbW: 'Svijet poslije Napoleona: Britanija, Rusija, Osmanlije, Kina dinastije Ćing, mlade američke republike. Mušketari, konjica, topovi i Kongreveove rakete.',
     strikeTab: 'Rakete', strikeIcon: 'rocket', road: true, para: false,
     units: {
       inf: { name: 'Pješadija', desc: 'Mušketari čvrsto drže granicu u krugu od 6 polja.' },
@@ -4710,6 +4713,7 @@ RA.ERAS = [
   {
     id: 'ww1', name: 'Prvi svjetski rat', sub: '1914. godina', short: '1914.',
     blurb: 'Antanta protiv Centralnih sila: Austro-Ugarska, Njemačko i Rusko carstvo, Srbija, Osmanlije… Rovovi, teška artiljerija, prvi tenkovi i cepelini.',
+    blurbW: 'Svijet 1914: kolonijalna carstva Britanije, Francuske i Njemačke, Rusko i Osmansko carstvo, SAD, Japan, Kina… Rovovi, teška artiljerija, prvi tenkovi i cepelini.',
     strikeTab: 'Udari', strikeIcon: 'zeppelin', road: false, para: false,
     units: {
       tank: { name: 'Tenkovi', desc: 'Prvi tenkovi (od 1916.): tvoji napadi pored njih su jeftiniji i brži. Traže fabriku.' },
@@ -4730,6 +4734,7 @@ RA.ERAS = [
   {
     id: 'ww2', name: 'Drugi svjetski rat', sub: '1938. godina', short: '1938.',
     blurb: 'Evropa uoči rata: Njemačka, SSSR, Italija, Kraljevina Jugoslavija… Tenkovi, avioni i padobranci, V-2 rakete — a atomska bomba stiže tek od 10. minute.',
+    blurbW: 'Svijet uoči rata: Njemačka, SSSR, Japan, SAD, Britansko i Francusko carstvo… Tenkovi, avioni i padobranci, V-2 rakete — a atomska bomba stiže tek od 10. minute.',
     strikeTab: 'Rakete', strikeIcon: 'rocket', road: false, para: true,
     units: {},
     structs: {
@@ -4745,6 +4750,7 @@ RA.ERAS = [
   {
     id: 'hladni', name: 'Hladni rat', sub: '1960. godina', short: 'Hladni rat',
     blurb: 'NATO i Varšavski pakt: dvije Njemačke, SSSR, Jugoslavija između blokova. Tenkovi, padobranci, balističke rakete i hidrogenske bombe.',
+    blurbW: 'SAD i SSSR dijele svijet: NATO, Varšavski pakt, Kina, nesvrstani i kolonije pred nezavisnošću. Tenkovi, padobranci, balističke rakete i hidrogenske bombe.',
     strikeTab: 'Rakete', strikeIcon: 'rocket', road: false, para: true,
     units: {},
     structs: {},
@@ -4753,11 +4759,14 @@ RA.ERAS = [
   {
     id: 'danas', name: 'Danas', sub: 'današnje granice', short: 'Danas',
     blurb: 'Današnja Evropa. Sve jedinice i oružje: rakete, EMP, atomske i hidrogenske bombe, MIRV.',
+    blurbW: 'Današnji svijet. Sve jedinice i oružje: rakete, EMP, atomske i hidrogenske bombe, MIRV.',
     strikeTab: 'Rakete', strikeIcon: 'rocket', road: false, para: true,
     units: {}, structs: {}, missiles: {},
   },
 ];
 RA.eraById = (id) => RA.ERAS.find((e) => e.id === id) || RA.ERAS[RA.ERAS.length - 1];
+/* the era's short description on a map: blurb is written for Europe, blurbW for the world */
+RA.eraBlurb = (E, mapId) => (mapId === 'svijet' && E.blurbW) || E.blurb;
 
 RA.applyEra = function (id) {
   const E = RA.eraById(id);
@@ -6783,7 +6792,7 @@ RA.UI = class {
       const n = ready ? this.regionCount(m, r.id, s.era, s.start) : null;
       return `<button data-v="${r.id}" aria-pressed="${r.id === s.region}"${n === 0 ? ' disabled' : ''}>${RA.esc(r.name)}<small>${n == null ? '…' : n} država</small></button>`;
     }).join('');
-    $('eraNote').textContent = E.blurb;
+    $('eraNote').textContent = RA.eraBlurb(E, s.map);
     $('csField').hidden = s.start === 'granice';
     $('modeNote').textContent = (s.start === 'granice'
       ? 'Stvarne granice: svaka država kreće sa svojom teritorijom iz tog doba — izabereš jednu i vodiš je. '
@@ -8163,7 +8172,7 @@ Object.assign(RA.UI.prototype, {
   howTo() {
     const C = RA.CFG, M = this.app.map, I = RA.mapInfo(M.id);
     const win = Math.round((M.meta.winShare > 0 ? M.meta.winShare : C.WIN_SHARE) * 100), ot = M.meta.overtimeMin > 0 ? M.meta.overtimeMin : C.OVERTIME_MIN;
-    const eras = RA.ERAS.map((e) => `<li><b>${RA.esc(e.name)}</b> (${RA.esc(e.sub)}) — ${RA.esc(e.blurb)}</li>`).join('');
+    const eras = RA.ERAS.map((e) => `<li><b>${RA.esc(e.name)}</b> (${RA.esc(e.sub)}) — ${RA.esc(RA.eraBlurb(e, M.id))}</li>`).join('');
     const h = this.head('Kako se igra', 'Overtake — pravila ukratko') + `<div class="howto">
       <h4>Cilj</h4><p>Zauzmi ${win}% kopna odabranog dijela karte ili ostani posljednja država. Poslije ${ot}. minute prag pada 2% po minuti do 50%, pa 1% po minuti do 40%. Ko drži više od 35% karte, plaća svako novo osvajanje skuplje.</p>
       <h4>Doba</h4><p>Na početnom ekranu biraš period u kojem se boriš. Svako doba ima svoje granice, gradove, jedinice, zgrade i oružje:</p><ul>${eras}</ul>
@@ -9771,7 +9780,7 @@ RA.wsRoom = function (url, creds, onCreds, onBack) {
   };
 };
 
-RA.BUILD = 'd291eab3';
+RA.BUILD = '4d8a70f5';
 new RA.App().boot();
 }
 function __raFallback(){
