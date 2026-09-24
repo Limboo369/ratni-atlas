@@ -40,6 +40,11 @@ Object.assign(RA.UI.prototype, {
       $('startScreen').hidden = false;
     };
     $('startScreen').addEventListener('click', (e) => {
+      const w = e.target.closest('[data-watch]');
+      if (w)
+        this.app.net.watch(w.dataset.watch).then((ok) => {
+          if (!ok) this.toast('info', 'Ta igra se više ne može gledati.');
+        });
       const b = e.target.closest('[data-on]');
       if (!b) return;
       const net = this.app.net;
@@ -93,12 +98,16 @@ Object.assign(RA.UI.prototype, {
       for (const p of lobbies) h += `<button class="btn good" data-on="${RA.esc(p.peer)}">${RA.icon('ally')}<span><span class="t">Pridruži se: ${RA.esc(p.presence.n || 'igrač')}</span><br><span class="d">Soba je otvorena — uđi i izaberi državu</span></span></button>`;
       // a friend who just opened the link sees the invitation at the top of the screen
       const banner = lobbies.map((p) => `<button class="btn primary" data-on="${RA.esc(p.peer)}">${RA.icon('ally')}<span><span class="t">${RA.esc(p.presence.n || 'Prijatelj')} te čeka u online sobi</span><br><span class="d">Dodirni da se pridružiš</span></span></button>`).join('');
-      if ($('joinBanner').innerHTML !== banner) $('joinBanner').innerHTML = banner;
+      // compare with what we rendered last (innerHTML never reads back identical), so buttons are not replaced under a finger
+      if (this._bannerH !== banner) $('joinBanner').innerHTML = this._bannerH = banner;
       $('joinBanner').hidden = !lobbies.length;
+      // games in progress (same build): watch them live
+      for (const p of others.filter((q) => q.presence && q.presence.r === 'h' && q.presence.ph === 'play' && q.presence.v === RA.BUILD))
+        h += `<button class="btn" data-watch="${RA.esc(p.peer)}">${RA.icon('flag')}<span><span class="t">Gledaj: ${RA.esc(p.presence.n || 'igra')}</span><br><span class="d">Igra je u toku — gledaš uživo</span></span></button>`;
       h += `<button class="btn" data-on="host">${RA.icon('flag')}<span><span class="t">Napravi sobu</span><br><span class="d">Ti si domaćin: biraš kartu i način igre</span></span></button>`;
     }
     note.innerHTML = txt;
-    if (btns.innerHTML !== h) btns.innerHTML = h;
+    if (this._onlineH !== h) btns.innerHTML = this._onlineH = h;
     if (net.role === 'guest') net.pollStart();
     if (net.phase === 'lobby' && !$('lobbyScreen').hidden) this.renderLobby();
   },

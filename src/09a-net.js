@@ -22,7 +22,8 @@ RA.Net = class {
     this.reset();
   }
   reset() {
-    this.role = null; // 'host' | 'guest'
+    this.role = null; // 'host' | 'guest' | 'spec' (watching someone else's game)
+    this.logReq = false;
     this.gid = null;
     this.phase = 'idle'; // idle | lobby | play
     this.inGame = false;
@@ -212,6 +213,38 @@ RA.Net = class {
     this.changed();
     return true;
   }
+  /* watch a running game: the server has the host's whole command log, so the game replays from tick 0 */
+  async watch(hostPeer) {
+    const h = this.peerBy(hostPeer);
+    if (!h || !h.presence || h.presence.ph !== 'play' || !this.room || !this.room.log) return false;
+    const r = await this.room.log(h.presence.g, hostPeer, 0);
+    if (!r || !r.st) return false;
+    this.reset();
+    this.role = 'spec';
+    this.hostPeer = hostPeer;
+    this.gid = h.presence.g;
+    this.st = r.st;
+    this.log = r.log;
+    this.phase = 'play';
+    this.mySlot = -1;
+    this.inGame = true;
+    this.publish({ r: 's', n: this.myName(), g: this.gid });
+    this.app.startOnline(r.st, -1);
+    this.app.ui.watching = true;
+    this.changed();
+    return true;
+  }
+  /* guest or spectator: the host's presence only carries the recent log; fetch a gap from the server */
+  fillGap() {
+    if (this.logReq || !this.room || !this.room.log) return;
+    this.logReq = true;
+    const from = this.log.length, gid = this.gid;
+    this.room.log(gid, this.hostPeer, from).then((r) => {
+      this.logReq = false;
+      if (!r || this.gid !== gid) return;
+      for (const e of r.log) if (Array.isArray(e) && e[0] === this.log.length) this.log.push(e);
+    });
+  }
   /* guest: has the host started a game that includes me? */
   pollStart() {
     if (this.role !== 'guest' || this.phase !== 'lobby') return;
@@ -235,7 +268,7 @@ RA.Net = class {
   /* a command from this device */
   issue(kind, args) {
     const G = this.app.G;
-    if (!this.inGame || !G) return;
+    if (!this.inGame || !G || this.role === 'spec') return;
     if (this.role === 'host') this.schedule(this.mySlot, kind, args, 0);
     else {
       this.seq++;
@@ -272,7 +305,7 @@ RA.Net = class {
       if (this.role === 'host') {
         this.myHashes.set(G.tick, h);
         if (this.myHashes.size > 40) this.myHashes.delete(this.myHashes.keys().next().value);
-      } else this.publish({ hs: [G.tick, h], t: G.tick });
+      } else if (this.role === 'guest') this.publish({ hs: [G.tick, h], t: G.tick });
     }
   }
   /* host: read guests' commands and progress */
@@ -354,6 +387,7 @@ RA.Net = class {
     }
     this.hostGoneAt = 0;
     if (Array.isArray(hp.c)) {
+      if (hp.c.length && Array.isArray(hp.c[0]) && hp.c[0][0] > this.log.length) this.fillGap();
       for (const e of hp.c) {
         if (!Array.isArray(e) || e[0] !== this.log.length) continue;
         if (!Number.isInteger(e[1]) || !Number.isInteger(e[2]) || !RA.CMD_KINDS.includes(e[3])) continue;
@@ -381,6 +415,7 @@ RA.Net = class {
     }
   }
   guestPublish() {
+    if (this.role === 'spec') return;
     const G = this.app.G;
     const key = G.tick + ':' + this.log.length;
     if (key === this.lastPub) return;
@@ -402,7 +437,7 @@ RA.Net = class {
    does not care which one it talks to. Reconnects by itself and keeps its peer id (id + key from the server). */
 RA.wsRoom = function (url) {
   let me = '', key = '', ws = null, up = false, peers = [];
-  const mine = {}, pres = new Map(), PL = new Set(), CL = new Set();
+  const mine = {}, pres = new Map(), PL = new Set(), CL = new Set(), logWait = [];
   const emit = () => {
     peers = [...pres].map(([peer, presence]) => ({ peer, presence, isMe: peer === me, sameTab: peer === me, kind: 'viewer' }));
     for (const f of PL) f({ peers });
@@ -436,6 +471,11 @@ RA.wsRoom = function (url) {
         }
         pres.set(m.id, p);
       } else if (m.t === 'x') pres.delete(m.id);
+      else if (m.t === 'log') {
+        const i = logWait.findIndex((w) => w.g === m.g);
+        if (i >= 0) logWait.splice(i, 1)[0].res(m);
+        return;
+      }
       emit();
     };
     ws.onclose = () => {
@@ -453,6 +493,14 @@ RA.wsRoom = function (url) {
       }
       if (up && ws.readyState === 1) ws.send(JSON.stringify({ p: patch }));
       return Promise.resolve();
+    },
+    log(g, host, from) {
+      if (!up || ws.readyState !== 1) return Promise.resolve(null);
+      return new Promise((res) => {
+        logWait.push({ g, res });
+        ws.send(JSON.stringify({ log: g, host, from }));
+        setTimeout(() => res(null), 8000);
+      });
     },
     onPeers(f) {
       PL.add(f);

@@ -241,7 +241,7 @@ RA.App = class {
   /* in an online game only the host controls time */
   guestLocked() {
     const net = this.net;
-    if (this.G && this.G.online && net && net.inGame && net.role === 'guest') {
+    if (this.G && this.G.online && net && net.inGame && net.role !== 'host') {
       this.ui.toast('info', 'Brzinu i pauzu kontroliše domaćin igre.');
       return true;
     }

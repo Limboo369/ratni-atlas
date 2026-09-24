@@ -45,7 +45,7 @@ async def main():
         pages = {}
         ctxs = {}
         errs = []
-        for name in ('Darko', 'Marko'):
+        for name in ('Darko', 'Marko', 'Ana'):
             ctx = await b.new_context(viewport={'width': 393, 'height': 852}, device_scale_factor=2, is_mobile=True, has_touch=True)
             await ctx.add_init_script(f"window.RA_WS = 'ws://127.0.0.1:{PORT}/ws'")
             page = await ctx.new_page()
@@ -64,10 +64,10 @@ async def main():
             await page.route('**/*', route)
             pages[name] = page
             ctxs[name] = ctx
-        A, B = pages['Darko'], pages['Marko']
-        for pg in (A, B):
+        A, B, C = pages['Darko'], pages['Marko'], pages['Ana']
+        for pg in (A, B, C):
             await pg.goto('file://' + R + 'dist/test.html')
-        for pg in (A, B):
+        for pg in (A, B, C):
             await pg.wait_for_function('document.getElementById("loading").hidden', timeout=60000)
         await A.fill('#nameIn', 'Darko')
         await B.fill('#nameIn', 'Marko')
@@ -138,6 +138,20 @@ async def main():
                     if (best >= 0) window.__ra.ui.act('atk', [best, 0.4]); }''')
             await asyncio.sleep(1.5)
         await sync_check('after expansion')
+
+        # a third player watches the running game (before the test hands out gold outside the command log): replays the server's log from tick 0 and stays in sync
+        await C.wait_for_selector('[data-watch]', timeout=10000)
+        await C.click('[data-watch]', timeout=15000)
+        await A.evaluate('() => { window.__ra.paused = true; }')
+        for _ in range(240):
+            if await C.evaluate('() => !!(window.__ra.G && window.__ra.G.online) && window.__ra.G.tick') == await A.evaluate('() => window.__ra.G.tick'):
+                break
+            await asyncio.sleep(0.25)
+        ha = await A.evaluate('() => [window.__ra.G.tick, window.__ra.G.hash()]')
+        hc = await C.evaluate('() => [window.__ra.G.tick, window.__ra.G.hash(), window.__ra.net.role, !!window.__ra.G.me]')
+        check(hc[:2] == ha and hc[2] == 'spec' and not hc[3], f'spectator replays the game in sync {ha} vs {hc}')
+        await C.screenshot(path=OUT + 'mp_5_spectator.png')
+        await A.evaluate('() => { window.__ra.paused = false; }')
         await A.screenshot(path=OUT + 'mp_4_host_play.png')
         await B.screenshot(path=OUT + 'mp_4_guest_play.png')
 
@@ -183,6 +197,7 @@ async def main():
                 for (const [id] of nb) { const o = G.P[id]; if (o && !o.human && !G.isFriendly(me, o)) { window.__ra.ui.act('atk', [o.cells[0], 0.3]); break; } } }''')
         await asyncio.sleep(3)
         await sync_check('after attacks')
+
         d = [await pg.evaluate('() => window.__ra.net.desync') for pg in (A, B)]
         check(d == [-1, -1], f'no desync reported {d}')
 
