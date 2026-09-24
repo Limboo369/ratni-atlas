@@ -79,6 +79,8 @@ Rebuild era data: `scripts/fetch_data.sh && python3 build/eras.py`.
 - **Eras** (`src/04b-eras.js`): `RA.applyEra(id)` swaps `RA.UNIT` / `RA.STRUCT` / `RA.MISSILE`. Unavailable entries are
   flagged **`na: true`** — never `off` (`off` is the units' offense multiplier).
 - Battle royale ring: `src/02e-zone.js` (`G.zone`, `G.zoneOut(c)`).
+- Land shares (win, leader, army cap) use real area: `p.area` / `G.landTotal()`, cell weights `map.aw` (1 in Europe; on the
+  Mercator world `meta.areaWeight` ∝ cos² lat). Win/leader thresholds scale with `meta.winShare` (`G.shareK()`); regions use the defaults.
 - Borders start: `RA.eraMap` + `RA.regionMap` + `RA.newGame(..., {start: 'granice'})`; the human takes a whole country
   with `RA.takeBorders`.
 - Internal names stay as they are (`RA` namespace, storage keys, room ids, file names) — renaming them breaks saves and online play.
@@ -97,5 +99,4 @@ python3 build/sim_eras.py rim:granice:klasik:evropa:DAC:30:11:srednje   # AI bal
 ## Open work (v0.5)
 
 - Online test of eras + battle royale (`test_mp.py` with era settings).
-- World: Russia is inflated by the Mercator grid (29% of land cells) and wins most world games; world games can stall at ~33% (many players).
 - World: only 'danas' exists; historical world eras (era_<id>.json) come next.

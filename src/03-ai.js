@@ -194,7 +194,7 @@ RA.AI = {
 
   /* borders game: small states get 3 minutes after the peace before the AI picks on them (unless they hit first) */
   spare(G, p, o) {
-    return G.borders && o.type === 'nation' && o.peak < G.map.landCount * 0.005 && G.tick < G.peaceUntil + 1800 && p.lastAttackedBy !== o.id;
+    return G.borders && o.type === 'nation' && o.peak < G.map.landArea * 0.005 && G.tick < G.peaceUntil + 1800 && p.lastAttackedBy !== o.id;
   },
   pickTarget(G, p, info) {
     if (G.tick < G.peaceUntil) return null;

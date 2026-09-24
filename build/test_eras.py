@@ -60,7 +60,7 @@ async ([era, start, gm, region, pick, ticks]) => {
     for (let c = 0; c < G.map.N; c++) if (G.owner[c] && G.zoneOut(c)) bad++;
     out.ownedOutside = bad;
   }
-  out.lead = G.alivePlayers().sort((x, y) => y.tiles - x.tiles).slice(0, 4).map(p => `${p.name} ${(p.tiles / G.landTotal() * 100).toFixed(1)}%`);
+  out.lead = G.alivePlayers().sort((x, y) => y.area - x.area).slice(0, 4).map(p => `${p.name} ${(p.area / G.landTotal() * 100).toFixed(1)}%`);
   out.dock = document.getElementById('aStrike').textContent;
   return out;
 }

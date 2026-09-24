@@ -125,13 +125,14 @@ RA.dcos = (a) => RA.dsin(a + 1.5707963267948966);
         }
       }
     }
-    let inside = 0;
-    const L = this.zoneLand;
+    let inside = 0, all = 0; // area (map.aw), like landTotal()
+    const L = this.zoneLand, aw = this.map.aw;
     for (let i = 0; i < L.length; i++) {
       const c = L[i];
       const dx = (c % W) + 0.5 - cx, dy = ((c / W) | 0) + 0.5 - cy;
-      if (dx * dx + dy * dy <= r2) inside++;
+      all += aw[c];
+      if (dx * dx + dy * dy <= r2) inside += aw[c];
     }
-    Z.deadLand = L.length - inside;
+    Z.deadLand = all - inside;
   };
 })(RA.Game.prototype);

@@ -69,8 +69,18 @@ RA.loadMap = async function (D = window.MAPDATA) {
     block: new Uint8Array(N), // 1 = outside the playable region (regional maps)
     region: null,
     landCount: 0,
+    // real area of each cell (win share, army cap): 1 everywhere, or on a Web Mercator world (meta.areaWeight)
+    // proportional to cos²(latitude) of its row, 64 on the equator and never below 1, so Russia is not 30% of the world.
+    // Plain arithmetic (RA.dexp; cos(lat) = 2 / (e^y + e^-y) in Mercator), so every device gets the same integers.
+    aw: new Uint8Array(N).fill(1),
+    landArea: 0,
     meta: M,
   };
+  if (M.areaWeight)
+    for (let y = 0; y < H; y++) {
+      const e = RA.dexp(Math.PI * (1 - 2 * (M.Y0 + (y + 0.5) * M.CELL)));
+      map.aw.fill(Math.max(1, Math.round(256 / ((e + 1 / e) * (e + 1 / e)))), y * W, y * W + W);
+    }
   for (let i = 0; i < N; i++) {
     const v = raw[i];
     map.terr[i] = v & 3;
@@ -78,6 +88,7 @@ RA.loadMap = async function (D = window.MAPDATA) {
     if (v & 3) {
       map.land[i] = 1;
       map.landCount++;
+      map.landArea += map.aw[i];
     }
   }
 

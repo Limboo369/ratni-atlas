@@ -46,8 +46,8 @@ new Function(files.map((f) => fs.readFileSync(R + 'src/' + f + '.js', 'utf8').re
       G.step();
       if (G.tick === 2400) at4 = G.alivePlayers().length;
       if (G.tick % 1800 === 0) {
-        const al = G.alivePlayers().sort((x, y) => y.tiles - x.tiles);
-        lead.push(`${G.tick / 600}m:${al[0].iso || al[0].name.slice(0, 8)} ${((al[0].tiles / G.landTotal()) * 100).toFixed(0)}%/${al.length}`);
+        const al = G.alivePlayers().sort((x, y) => y.area - x.area);
+        lead.push(`${G.tick / 600}m:${al[0].iso || al[0].name.slice(0, 8)} ${((al[0].area / G.landTotal()) * 100).toFixed(0)}%/${al.length}`);
       }
     }
     const w = G.winner ? G.winner.iso || G.winner.name : '-';

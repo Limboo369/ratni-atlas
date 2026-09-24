@@ -897,8 +897,18 @@ RA.loadMap = async function (D = window.MAPDATA) {
     block: new Uint8Array(N), // 1 = outside the playable region (regional maps)
     region: null,
     landCount: 0,
+    // real area of each cell (win share, army cap): 1 everywhere, or on a Web Mercator world (meta.areaWeight)
+    // proportional to cos²(latitude) of its row, 64 on the equator and never below 1, so Russia is not 30% of the world.
+    // Plain arithmetic (RA.dexp; cos(lat) = 2 / (e^y + e^-y) in Mercator), so every device gets the same integers.
+    aw: new Uint8Array(N).fill(1),
+    landArea: 0,
     meta: M,
   };
+  if (M.areaWeight)
+    for (let y = 0; y < H; y++) {
+      const e = RA.dexp(Math.PI * (1 - 2 * (M.Y0 + (y + 0.5) * M.CELL)));
+      map.aw.fill(Math.max(1, Math.round(256 / ((e + 1 / e) * (e + 1 / e)))), y * W, y * W + W);
+    }
   for (let i = 0; i < N; i++) {
     const v = raw[i];
     map.terr[i] = v & 3;
@@ -906,6 +916,7 @@ RA.loadMap = async function (D = window.MAPDATA) {
     if (v & 3) {
       map.land[i] = 1;
       map.landCount++;
+      map.landArea += map.aw[i];
     }
   }
 
@@ -1184,7 +1195,7 @@ RA.Game = class Game {
     if (id > 250) return null;
     const p = {
       id, name: o.name, type: o.type, human: o.type === 'human', team: 0, nick: '', hex: o.color, rgb: RA.hexToRgb(o.color), iso: o.iso || null,
-      alive: true, spawned: false, troops: 0, gold: 0, tiles: 0, cells: new Int32Array(256), maxT: 1,
+      alive: true, spawned: false, troops: 0, gold: 0, tiles: 0, area: 0, cells: new Int32Array(256), maxT: 1,
       cityT: 0, cityG: 0, nCity: [0, 0, 0, 0],
       n: { barracks: 0, fort: 0, port: 0, silo: 0, sam: 0, airport: 0, city: 0, factory: 0 },
       built: { barracks: 0, fort: 0, port: 0, silo: 0, sam: 0, airport: 0, city: 0, factory: 0 },
@@ -1227,6 +1238,7 @@ RA.Game = class Game {
     }
     this.cellPos[c] = p.tiles;
     p.cells[p.tiles++] = c;
+    p.area += this.map.aw[c];
   }
   _removeCell(p, c) {
     const i = this.cellPos[c];
@@ -1234,6 +1246,7 @@ RA.Game = class Game {
     p.cells[i] = last;
     this.cellPos[last] = i;
     this.cellPos[c] = -1;
+    p.area -= this.map.aw[c];
   }
   setOwner(c, pid) {
     const old = this.owner[c];
@@ -1247,7 +1260,7 @@ RA.Game = class Game {
     if (pid) {
       const np = P[pid];
       this._addCell(np, c);
-      if (np.tiles > np.peak) np.peak = np.tiles;
+      if (np.area > np.peak) np.peak = np.area;
     }
     this.capTick[c] = this.tick & 255;
     if (!this.dirtyFlag[c]) {
@@ -1318,8 +1331,18 @@ RA.Game = class Game {
   }
 
   /* ---------------- economy ---------------- */
+  /* a player's land in average cells: its real area (map.aw) scaled so the whole map keeps its cell count */
+  landCells(p) {
+    return (p.area * this.map.landCount) / this.map.landArea;
+  }
+  /* shares of the map are measured against the win target: on a map won with less land (meta.winShare) a share
+     counts for more, so the rules against a giant (start army, attack cost from 35%, AI coalitions) start earlier */
+  shareK() {
+    const M = this.map.region ? {} : this.map.meta || {};
+    return M.winShare > 0 ? RA.CFG.WIN_SHARE / M.winShare : 1;
+  }
   computeMax(p) {
-    const land = 2 * (RA.dpow(p.tiles * 3, 0.56) * 1100 + 50000);
+    const land = 2 * (RA.dpow(this.landCells(p) * 3, 0.56) * 1100 + 50000);
     // cities add at most half of the land-based army, so a city-rich empire cannot snowball
     const base = land + Math.min(p.cityT, land * 0.5) + p.n.barracks * RA.CFG.BARRACKS_T + p.n.city * RA.CFG.CITY_BUILT_T;
     if (p.type === 'bot') return base / 3;
@@ -1870,7 +1893,7 @@ RA.Game = class Game {
       const v = f[c] - 5;
       if (v <= 0) {
         f[c] = 0;
-        this.falloutCount--;
+        this.falloutCount -= this.map.aw[c];
       } else {
         f[c] = v;
         L.a[w++] = c;
@@ -2127,24 +2150,26 @@ RA.Game = class Game {
 
   _updateLeader() {
     let best = null;
-    for (const p of this.P) if (p && p.alive && p.spawned && (!best || p.tiles > best.tiles)) best = p;
-    this.leader = best ? { id: best.id, share: best.tiles / this.landTotal() } : null;
+    for (const p of this.P) if (p && p.alive && p.spawned && (!best || p.area > best.area)) best = p;
+    this.leader = best ? { id: best.id, share: (best.area / this.landTotal()) * this.shareK() } : null;
   }
+  /* land still in play, as area (map.aw); shares are p.area / landTotal() */
   landTotal() {
-    return this.map.landCount - this.falloutCount - (this.zone ? this.zone.deadLand : 0);
+    return this.map.landArea - this.falloutCount - (this.zone ? this.zone.deadLand : 0);
   }
-  /* share of the land needed to win: per map (meta.winShare / meta.overtimeMin), Europe uses the defaults */
+  /* share of the land needed to win: per map (meta.winShare / meta.overtimeMin, every share scaled by shareK());
+     Europe and regions use the defaults */
   winShare() {
-    const m = this.tick / 600, M = this.map.meta || {};
-    const base = M.winShare > 0 ? M.winShare : RA.CFG.WIN_SHARE, ot = M.overtimeMin > 0 ? M.overtimeMin : RA.CFG.OVERTIME_MIN;
+    const m = this.tick / 600, M = this.map.region ? {} : this.map.meta || {};
+    const base = RA.CFG.WIN_SHARE, ot = M.overtimeMin > 0 ? M.overtimeMin : RA.CFG.OVERTIME_MIN;
     const over = Math.max(0, Math.floor(m - ot));
     // -2%/min down to 50%, then -1%/min down to 40%: a long stalemate still ends
     const fast = Math.round(Math.max(0, base - 0.5) * 50);
-    return over <= fast ? Math.max(0.5, base - over * 0.02) : Math.max(0.4, Math.min(0.5, base) - (over - fast) * 0.01);
+    return (over <= fast ? Math.max(0.5, base - over * 0.02) : Math.max(0.4, Math.min(0.5, base) - (over - fast) * 0.01)) / this.shareK();
   }
   _history() {
     const snap = { t: this.tick, v: {} };
-    for (const p of this.P) if (p && p.spawned && (p.alive || p.deathTick > this.tick - 60)) snap.v[p.id] = p.tiles;
+    for (const p of this.P) if (p && p.spawned && (p.alive || p.deathTick > this.tick - 60)) snap.v[p.id] = p.area;
     this.hist.push(snap);
   }
   _checkWin() {
@@ -2156,18 +2181,18 @@ RA.Game = class Game {
       if (!p || !p.alive || !p.spawned) continue;
       const k = p.team ? -p.team : p.id;
       let sd = sides.get(k);
-      if (!sd) sides.set(k, (sd = { tiles: 0, best: null, real: false }));
-      sd.tiles += p.tiles;
-      if (!sd.best || p.tiles > sd.best.tiles) sd.best = p;
+      if (!sd) sides.set(k, (sd = { area: 0, best: null, real: false }));
+      sd.area += p.area;
+      if (!sd.best || p.area > sd.best.area) sd.best = p;
       if (p.type !== 'bot') sd.real = true;
     }
     let best = null, realSides = 0;
     for (const sd of sides.values()) {
       if (sd.real) realSides++;
-      if (!best || sd.tiles > best.tiles) best = sd;
+      if (!best || sd.area > best.area) best = sd;
     }
     if (!best) return;
-    if (best.tiles / tot >= this.winShare() || (realSides === 1 && best.real)) {
+    if (best.area / tot >= this.winShare() || (realSides === 1 && best.real)) {
       this.winner = best.best;
       this.state = 'over';
       this._history();
@@ -2802,7 +2827,7 @@ RA.NUKE = RA.MISSILE;
         const f = Math.round(255 * (d <= nk.r1 ? 1 : 0.75));
         if (!this.fallout[c]) {
           this.falloutList.push(c);
-          this.falloutCount++;
+          this.falloutCount += map.aw[c]; // area, like landTotal()
         }
         this.fallout[c] = Math.max(this.fallout[c], f);
         this.falloutDirty = true;
@@ -3544,14 +3569,15 @@ RA.dcos = (a) => RA.dsin(a + 1.5707963267948966);
         }
       }
     }
-    let inside = 0;
-    const L = this.zoneLand;
+    let inside = 0, all = 0; // area (map.aw), like landTotal()
+    const L = this.zoneLand, aw = this.map.aw;
     for (let i = 0; i < L.length; i++) {
       const c = L[i];
       const dx = (c % W) + 0.5 - cx, dy = ((c / W) | 0) + 0.5 - cy;
-      if (dx * dx + dy * dy <= r2) inside++;
+      all += aw[c];
+      if (dx * dx + dy * dy <= r2) inside += aw[c];
     }
-    Z.deadLand = L.length - inside;
+    Z.deadLand = all - inside;
   };
 })(RA.Game.prototype);
 
@@ -3751,7 +3777,7 @@ RA.AI = {
 
   /* borders game: small states get 3 minutes after the peace before the AI picks on them (unless they hit first) */
   spare(G, p, o) {
-    return G.borders && o.type === 'nation' && o.peak < G.map.landCount * 0.005 && G.tick < G.peaceUntil + 1800 && p.lastAttackedBy !== o.id;
+    return G.borders && o.type === 'nation' && o.peak < G.map.landArea * 0.005 && G.tick < G.peaceUntil + 1800 && p.lastAttackedBy !== o.id;
   },
   pickTarget(G, p, info) {
     if (G.tick < G.peaceUntil) return null;
@@ -4355,17 +4381,20 @@ RA.regionMask = function (base, R) {
   const x0 = Math.max(0, Math.floor(gx(R.box[0])) - 2), x1 = Math.min(W - 1, Math.ceil(gx(R.box[2])) + 2);
   const y0 = Math.max(0, Math.floor(gy(R.box[3])) - 2), y1 = Math.min(H - 1, Math.ceil(gy(R.box[1])) + 2);
   const block = new Uint8Array(N).fill(1);
-  let cnt = 0;
+  let cnt = 0, area = 0;
   for (let y = y0; y <= y1; y++) {
     const cy = base.Y0 + (y + 0.5) * base.CELL;
     for (let x = x0; x <= x1; x++) {
       if (!RA.pointInPoly(base.X0 + (x + 0.5) * base.CELL, cy, mp)) continue;
       const c = y * W + x;
       block[c] = 0;
-      if (base.land[c]) cnt++;
+      if (base.land[c]) {
+        cnt++;
+        area += base.aw[c];
+      }
     }
   }
-  const K = { land: base.land, block, cnt, mp, c0: Math.max(0, y0) * W, c1: Math.min(N, (y1 + 1) * W) };
+  const K = { land: base.land, block, cnt, area, mp, c0: Math.max(0, y0) * W, c1: Math.min(N, (y1 + 1) * W) };
   RA._regMasks.set(key, K);
   return K;
 };
@@ -4413,6 +4442,7 @@ RA.regionMap = function (base, id) {
   }
   const cnt = K.cnt;
   m.landCount = cnt;
+  m.landArea = K.area;
   // smaller maps: wars between states move slower so a regional game still lasts ~10+ minutes
   m.pace = RA.clamp(RA.dpow(base.landCount / Math.max(1, cnt), 0.3), 1, 2.5);
   const inside = (c) => !m.block[c] && m.land[c];
@@ -4472,7 +4502,7 @@ RA.newGame = function (map, opts) {
       p.capCity = ci;
       p.maxT = G.computeMax(p);
       // a giant (Rome, Russia) starts with a smaller share of its huge army, so it cannot overrun everyone in minutes
-      p.troops = p.maxT * 0.4 * RA.clamp(0.12 / Math.max(0.001, p.tiles / map.landCount), 0.45, 1);
+      p.troops = p.maxT * 0.4 * RA.clamp(0.12 / Math.max(0.001, (p.area / map.landArea) * G.shareK()), 0.45, 1);
       p.gold = 100000;
     }
     G.replaced = [];
@@ -6954,7 +6984,7 @@ RA.UI = class {
     this.$('startBtn').disabled = false;
     const near = this.nearestCityName(me.capital);
     this.$('natSel').value = res.took ? String(res.took.id) : '';
-    const pct = ((me.tiles / this.G.landTotal()) * 100).toFixed(1).replace('.', ',');
+    const pct = ((me.area / this.G.landTotal()) * 100).toFixed(1).replace('.', ',');
     this.$('spawnText').innerHTML = this.G.borders && res.took
       ? `Igraš kao <span class="pick">${RA.esc(res.took.name)}</span> (${RA.esc(res.took.nation.capital)}) — ${pct}% kopna, ${RA.fmt(me.troops)} vojske. Možeš izabrati drugu državu ili krenuti.`
       : res.took
@@ -7052,7 +7082,7 @@ RA.UI = class {
     $('hTroopsSub').textContent = `/ ${RA.fmt(me.maxT)}  ${me.growRate >= 0 ? '+' : '−'}${RA.fmt(Math.abs(me.growRate || 0))}/s`;
     $('hGold').textContent = RA.fmt(me.gold);
     $('hGoldSub').textContent = `+${RA.fmt(me.goldRate || 0)}/s`;
-    const land = (me.tiles / G.landTotal()) * 100;
+    const land = (me.area / G.landTotal()) * 100;
     $('hLand').textContent = (land < 10 ? land.toFixed(1) : land.toFixed(0)).replace('.', ',') + '%';
     $('clock').textContent = RA.fmtTime(G.tick / 10);
     this.updateRatio();
@@ -7067,7 +7097,7 @@ RA.UI = class {
   updateBoard() {
     const G = this.G;
     const tot = G.landTotal();
-    const alive = G.P.filter((p) => p && p.alive && p.spawned).sort((a, b) => b.tiles - a.tiles);
+    const alive = G.P.filter((p) => p && p.alive && p.spawned).sort((a, b) => b.area - a.area);
     const me = G.me;
     const rank = alive.indexOf(me) + 1;
     this.$('hRank').textContent = me && me.alive ? `cilj ${Math.round(G.winShare() * 100)}% · #${rank}/${alive.length}` : 'poražen';
@@ -7077,7 +7107,7 @@ RA.UI = class {
     this.$('boardList').innerHTML = rows
       .map((p) => {
         const i = alive.indexOf(p) + 1;
-        const pc = (p.tiles / tot) * 100;
+        const pc = (p.area / tot) * 100;
         const mk = me && p !== me ? (me.allies.has(p.id) ? ' ⛨' : '') + (me.trade.has(p.id) ? ' ⇄' : '') : '';
         const nm = G.online && p.human ? `${p.nick} · ${p.name}` : p.name;
         return `<li data-id="${p.id}" class="${p === me ? 'me' : ''}"><span class="rk">${i}</span><span class="sw" style="background:${p.hex}"></span><span class="nm">${RA.esc(nm)}${mk}</span><span class="pc">${pc.toFixed(1).replace('.', ',')}%</span></li>`;
@@ -8016,7 +8046,7 @@ Object.assign(RA.UI.prototype, {
     const cityLine = city ? `${city.tier === 3 ? 'Prijestolnica' : city.tier === 2 ? 'Metropola' : 'Grad'} ${RA.esc(city.name)} · ` : '';
     const oid = G.owner[c];
     const O = oid ? G.P[oid] : null;
-    const pct = (p) => ((p.tiles / G.landTotal()) * 100).toFixed(1).replace('.', ',') + '%';
+    const pct = (p) => ((p.area / G.landTotal()) * 100).toFixed(1).replace('.', ',') + '%';
     const unitsNear = G.units.filter((u) => !u.dead && Math.hypot(u.x - cx - 0.5, u.y - cy - 0.5) <= 4);
     const unitLine = unitsNear.length ? `<p class="explain">Jedinice ovdje: ${unitsNear.map((u) => `${RA.UNIT[u.type].name} (${RA.esc(G.P[u.owner].name)}, ${Math.round((u.hp / RA.UNIT[u.type].hp) * 100)}%)`).join(', ')}</p>` : '';
     let h = '';
@@ -8162,10 +8192,13 @@ Object.assign(RA.UI.prototype, {
 
   howTo() {
     const C = RA.CFG, M = this.app.map, I = RA.mapInfo(M.id);
-    const win = Math.round((M.meta.winShare > 0 ? M.meta.winShare : C.WIN_SHARE) * 100), ot = M.meta.overtimeMin > 0 ? M.meta.overtimeMin : C.OVERTIME_MIN;
+    // the same rules as G.winShare() / G.shareK(): a region of the map plays by the default rules
+    const mm = (RA.regionOf(M, this.settings.region) || {}).poly ? {} : M.meta, ot = mm.overtimeMin > 0 ? mm.overtimeMin : C.OVERTIME_MIN;
+    const k = mm.winShare > 0 ? C.WIN_SHARE / mm.winShare : 1, pc = (v) => Math.round(v / k), rate = (v) => String(+(v / k).toFixed(1)).replace('.', ',');
+    const win = pc(C.WIN_SHARE * 100);
     const eras = RA.ERAS.map((e) => `<li><b>${RA.esc(e.name)}</b> (${RA.esc(e.sub)}) — ${RA.esc(e.blurb)}</li>`).join('');
     const h = this.head('Kako se igra', 'Overtake — pravila ukratko') + `<div class="howto">
-      <h4>Cilj</h4><p>Zauzmi ${win}% kopna odabranog dijela karte ili ostani posljednja država. Poslije ${ot}. minute prag pada 2% po minuti do 50%, pa 1% po minuti do 40%. Ko drži više od 35% karte, plaća svako novo osvajanje skuplje.</p>
+      <h4>Cilj</h4><p>Zauzmi ${win}% kopna odabranog dijela karte ili ostani posljednja država. Poslije ${ot}. minute prag pada ${rate(2)}% po minuti do ${pc(50)}%, pa ${rate(1)}% po minuti do ${pc(40)}%. Ko drži više od ${pc(35)}% karte, plaća svako novo osvajanje skuplje.</p>
       <h4>Doba</h4><p>Na početnom ekranu biraš period u kojem se boriš. Svako doba ima svoje granice, gradove, jedinice, zgrade i oružje:</p><ul>${eras}</ul>
       <h4>Početak</h4><ul>
         <li><b>Stvarne granice</b>: sve države kreću sa svojom teritorijom iz tog doba. Dodirni državu ili je izaberi sa spiska — dobijaš njenu zemlju, vojsku i zlato.</li>
@@ -8215,7 +8248,7 @@ Object.assign(RA.UI.prototype, {
       : kind === 'lost'
       ? `Tvoja država je pala poslije ${RA.fmtTime(G.tick / 10)}.`
       : `Pobjednik je ${G.winner ? G.winner.name : 'neko drugi'} (${where}).`;
-    const peak = me ? ((me.peak / G.map.landCount) * 100).toFixed(1).replace('.', ',') : '0';
+    const peak = me ? ((me.peak / G.map.landArea) * 100).toFixed(1).replace('.', ',') : '0';
     $('endStats').innerHTML = `<div><div class="k">Vrhunac</div><div class="v">${peak}%</div></div><div><div class="k">Gradova osvojeno</div><div class="v">${me ? me.stats.citiesTaken : 0}</div></div><div><div class="k">Uništeno država</div><div class="v">${me ? me.stats.kills : 0}</div></div>`;
     $('endTime').textContent = RA.fmtTime(G.tick / 10);
     $('watchBtn').hidden = !!(G.state === 'over');
@@ -8232,7 +8265,7 @@ Object.assign(RA.UI.prototype, {
     ctx.scale(dpr, dpr);
     const H = G.hist;
     if (H.length < 2) return;
-    const tot = G.map.landCount;
+    const tot = G.map.landArea;
     const ids = G.P.filter((p) => p && p.spawned && p.type !== 'bot').sort((a, b) => b.peak - a.peak).slice(0, 6).map((p) => p.id);
     if (G.me && !ids.includes(G.me.id)) ids.push(G.me.id);
     let maxV = 4;
@@ -9771,7 +9804,7 @@ RA.wsRoom = function (url, creds, onCreds, onBack) {
   };
 };
 
-RA.BUILD = 'd291eab3';
+RA.BUILD = '0c140ce1';
 new RA.App().boot();
 }
 function __raFallback(){

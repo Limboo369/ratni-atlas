@@ -112,7 +112,7 @@ RA.Game = class Game {
     if (id > 250) return null;
     const p = {
       id, name: o.name, type: o.type, human: o.type === 'human', team: 0, nick: '', hex: o.color, rgb: RA.hexToRgb(o.color), iso: o.iso || null,
-      alive: true, spawned: false, troops: 0, gold: 0, tiles: 0, cells: new Int32Array(256), maxT: 1,
+      alive: true, spawned: false, troops: 0, gold: 0, tiles: 0, area: 0, cells: new Int32Array(256), maxT: 1,
       cityT: 0, cityG: 0, nCity: [0, 0, 0, 0],
       n: { barracks: 0, fort: 0, port: 0, silo: 0, sam: 0, airport: 0, city: 0, factory: 0 },
       built: { barracks: 0, fort: 0, port: 0, silo: 0, sam: 0, airport: 0, city: 0, factory: 0 },
@@ -155,6 +155,7 @@ RA.Game = class Game {
     }
     this.cellPos[c] = p.tiles;
     p.cells[p.tiles++] = c;
+    p.area += this.map.aw[c];
   }
   _removeCell(p, c) {
     const i = this.cellPos[c];
@@ -162,6 +163,7 @@ RA.Game = class Game {
     p.cells[i] = last;
     this.cellPos[last] = i;
     this.cellPos[c] = -1;
+    p.area -= this.map.aw[c];
   }
   setOwner(c, pid) {
     const old = this.owner[c];
@@ -175,7 +177,7 @@ RA.Game = class Game {
     if (pid) {
       const np = P[pid];
       this._addCell(np, c);
-      if (np.tiles > np.peak) np.peak = np.tiles;
+      if (np.area > np.peak) np.peak = np.area;
     }
     this.capTick[c] = this.tick & 255;
     if (!this.dirtyFlag[c]) {
@@ -246,8 +248,18 @@ RA.Game = class Game {
   }
 
   /* ---------------- economy ---------------- */
+  /* a player's land in average cells: its real area (map.aw) scaled so the whole map keeps its cell count */
+  landCells(p) {
+    return (p.area * this.map.landCount) / this.map.landArea;
+  }
+  /* shares of the map are measured against the win target: on a map won with less land (meta.winShare) a share
+     counts for more, so the rules against a giant (start army, attack cost from 35%, AI coalitions) start earlier */
+  shareK() {
+    const M = this.map.region ? {} : this.map.meta || {};
+    return M.winShare > 0 ? RA.CFG.WIN_SHARE / M.winShare : 1;
+  }
   computeMax(p) {
-    const land = 2 * (RA.dpow(p.tiles * 3, 0.56) * 1100 + 50000);
+    const land = 2 * (RA.dpow(this.landCells(p) * 3, 0.56) * 1100 + 50000);
     // cities add at most half of the land-based army, so a city-rich empire cannot snowball
     const base = land + Math.min(p.cityT, land * 0.5) + p.n.barracks * RA.CFG.BARRACKS_T + p.n.city * RA.CFG.CITY_BUILT_T;
     if (p.type === 'bot') return base / 3;
@@ -798,7 +810,7 @@ RA.Game = class Game {
       const v = f[c] - 5;
       if (v <= 0) {
         f[c] = 0;
-        this.falloutCount--;
+        this.falloutCount -= this.map.aw[c];
       } else {
         f[c] = v;
         L.a[w++] = c;
@@ -1055,24 +1067,26 @@ RA.Game = class Game {
 
   _updateLeader() {
     let best = null;
-    for (const p of this.P) if (p && p.alive && p.spawned && (!best || p.tiles > best.tiles)) best = p;
-    this.leader = best ? { id: best.id, share: best.tiles / this.landTotal() } : null;
+    for (const p of this.P) if (p && p.alive && p.spawned && (!best || p.area > best.area)) best = p;
+    this.leader = best ? { id: best.id, share: (best.area / this.landTotal()) * this.shareK() } : null;
   }
+  /* land still in play, as area (map.aw); shares are p.area / landTotal() */
   landTotal() {
-    return this.map.landCount - this.falloutCount - (this.zone ? this.zone.deadLand : 0);
+    return this.map.landArea - this.falloutCount - (this.zone ? this.zone.deadLand : 0);
   }
-  /* share of the land needed to win: per map (meta.winShare / meta.overtimeMin), Europe uses the defaults */
+  /* share of the land needed to win: per map (meta.winShare / meta.overtimeMin, every share scaled by shareK());
+     Europe and regions use the defaults */
   winShare() {
-    const m = this.tick / 600, M = this.map.meta || {};
-    const base = M.winShare > 0 ? M.winShare : RA.CFG.WIN_SHARE, ot = M.overtimeMin > 0 ? M.overtimeMin : RA.CFG.OVERTIME_MIN;
+    const m = this.tick / 600, M = this.map.region ? {} : this.map.meta || {};
+    const base = RA.CFG.WIN_SHARE, ot = M.overtimeMin > 0 ? M.overtimeMin : RA.CFG.OVERTIME_MIN;
     const over = Math.max(0, Math.floor(m - ot));
     // -2%/min down to 50%, then -1%/min down to 40%: a long stalemate still ends
     const fast = Math.round(Math.max(0, base - 0.5) * 50);
-    return over <= fast ? Math.max(0.5, base - over * 0.02) : Math.max(0.4, Math.min(0.5, base) - (over - fast) * 0.01);
+    return (over <= fast ? Math.max(0.5, base - over * 0.02) : Math.max(0.4, Math.min(0.5, base) - (over - fast) * 0.01)) / this.shareK();
   }
   _history() {
     const snap = { t: this.tick, v: {} };
-    for (const p of this.P) if (p && p.spawned && (p.alive || p.deathTick > this.tick - 60)) snap.v[p.id] = p.tiles;
+    for (const p of this.P) if (p && p.spawned && (p.alive || p.deathTick > this.tick - 60)) snap.v[p.id] = p.area;
     this.hist.push(snap);
   }
   _checkWin() {
@@ -1084,18 +1098,18 @@ RA.Game = class Game {
       if (!p || !p.alive || !p.spawned) continue;
       const k = p.team ? -p.team : p.id;
       let sd = sides.get(k);
-      if (!sd) sides.set(k, (sd = { tiles: 0, best: null, real: false }));
-      sd.tiles += p.tiles;
-      if (!sd.best || p.tiles > sd.best.tiles) sd.best = p;
+      if (!sd) sides.set(k, (sd = { area: 0, best: null, real: false }));
+      sd.area += p.area;
+      if (!sd.best || p.area > sd.best.area) sd.best = p;
       if (p.type !== 'bot') sd.real = true;
     }
     let best = null, realSides = 0;
     for (const sd of sides.values()) {
       if (sd.real) realSides++;
-      if (!best || sd.tiles > best.tiles) best = sd;
+      if (!best || sd.area > best.area) best = sd;
     }
     if (!best) return;
-    if (best.tiles / tot >= this.winShare() || (realSides === 1 && best.real)) {
+    if (best.area / tot >= this.winShare() || (realSides === 1 && best.real)) {
       this.winner = best.best;
       this.state = 'over';
       this._history();

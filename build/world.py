@@ -306,7 +306,8 @@ if WORLD:
     cities, nations, seas, adj = build_world()
     assign_colors(nations, 0, 0, adj=adj)
     cs = city_states(cities, nations, 13, 15)
-    M = dict(M, id='svijet', name='Cijeli svijet', lods=['z1', 'z3', 'z5'], minZoom=0.5, maxZoom=8, winShare=0.55, overtimeMin=20)
+    M = dict(M, id='svijet', name='Cijeli svijet', lods=['z1', 'z3', 'z5'], minZoom=0.5, maxZoom=8, winShare=0.55, overtimeMin=20,
+             areaWeight=True)  # Mercator: cells near the poles count less (src/01-data.js map.aw)
     out = dict(meta=M, grid=core['grid'], vec=core['vec'], relief=core['relief'], cities=cities, nations=nations, cs=cs, seas=seas)
     js = json.dumps(out, ensure_ascii=False, separators=(',', ':'))
     with open(SRC + 'map.json', 'w', encoding='utf-8', newline='\n') as f:

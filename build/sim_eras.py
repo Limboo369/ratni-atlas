@@ -24,8 +24,8 @@ async ([era, start, gm, region, pick, maxMin, seed, diff]) => {
     G.step();
     if (G.me && !G.me.alive && meDied === null) meDied = +(G.tick / 600).toFixed(1);
     if (G.tick % 1200 === 0) {
-      const al = G.alivePlayers().sort((x, y) => y.tiles - x.tiles);
-      mins.push(`${G.tick / 600}m: ${al.length} alive, lead ${al[0].name.slice(0, 14)} ${(al[0].tiles / G.landTotal() * 100).toFixed(0)}%, me ${(G.me.tiles / G.landTotal() * 100).toFixed(1)}%` + (G.zone ? ` zone ${G.zone.state}/${G.zone.phase} r${G.zone.r.toFixed(0)}` : ''));
+      const al = G.alivePlayers().sort((x, y) => y.area - x.area);
+      mins.push(`${G.tick / 600}m: ${al.length} alive, lead ${al[0].name.slice(0, 14)} ${(al[0].area / G.landTotal() * 100).toFixed(0)}%, me ${(G.me.area / G.landTotal() * 100).toFixed(1)}%` + (G.zone ? ` zone ${G.zone.state}/${G.zone.phase} r${G.zone.r.toFixed(0)}` : ''));
       await new Promise(r => setTimeout(r, 0));
     }
   }
