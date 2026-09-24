@@ -29,7 +29,8 @@ say so first: asset delivery (build + deploy + tests) is not wired up yet.
 
 `deovilab.com` itself is used elsewhere — only subdomains point to this server.
 - Host nginx terminates HTTPS (Let's Encrypt, auto-renew) per subdomain and proxies to `127.0.0.1:<port>`.
-- Every app is a Docker Compose project in `/srv/apps/<app>`; Docker publishes ports only on 127.0.0.1 (daemon.json `ip`).
+- Every app is a Docker Compose project in `/srv/apps/<app>`; its ports must be published on 127.0.0.1 only (enforced by
+  `deovilab-deploy`).
 - `server/setup.sh` (base: SSH key-only, ufw 22/80/443, fail2ban, auto updates, Docker, nginx defaults) runs from
   `.github/workflows/setup.yml` on every push to `server/**`; it is idempotent.
 - `server/deploy.sh` is installed as `deovilab-deploy <app> <domain> <port>`: `docker compose up`, certificate, nginx site.
@@ -42,8 +43,7 @@ say so first: asset delivery (build + deploy + tests) is not wired up yet.
 | war | war.deovilab.com | 8101 | this repo, `deploy/compose.yml` |
 
 New app (any repo): a `compose.yml` publishing only `127.0.0.1:<free port>` (deovilab-deploy refuses anything else,
-because Docker bypasses ufw), the two secrets above, a deploy workflow that
-rsyncs to `/srv/apps/<app>/` and runs `deovilab-deploy`, and a DNS A record `<sub>.deovilab.com → server IP` (Darko, Porkbun).
+because Docker bypasses ufw), the three secrets above, a deploy workflow that rsyncs to `/srv/apps/<app>/` and runs `deovilab-deploy`, and a DNS A record `<sub>.deovilab.com → server IP` (Darko, Porkbun).
 Add the row to the table.
 
 Online play (`src/09a-net.js`) still uses the claude.ai room, so it does not work on the domain until our own game server
