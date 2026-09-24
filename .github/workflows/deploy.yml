@@ -40,7 +40,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: python3 build/make.py && mkdir -p deploy/public && cp dist/test.html deploy/public/index.html
+      - run: python3 build/make.py && mkdir -p deploy/public && cp dist/test.html deploy/public/index.html && cp -r dist/data deploy/public/
       - name: Slanje na server
         env:
           IP: ${{ secrets.SERVER_IP }}

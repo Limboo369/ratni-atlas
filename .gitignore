@@ -4,3 +4,11 @@ build/shots/
 .claude/worktrees/
 .venv/
 deploy/game/node_modules/
+data/*.geojson
+data/hist/
+dist/data/
+build/grid_preview.png
+build/relief_preview.jpg
+build/svijet/core.json
+build/svijet/cities_raw.json
+__pycache__/

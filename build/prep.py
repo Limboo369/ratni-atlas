@@ -1,14 +1,18 @@
 """Build map data for Ratni Atlas from Natural Earth (public domain) + NASA-derived elevation.
 
-Outputs build/mapdata.js  (window.MAPDATA = {...})
+Usage: prep.py [evropa|svijet]   (a number instead of the profile = Europe with that grid width)
+Outputs: evropa -> build/mapdata_core.json + build/cities_raw.json
+         svijet -> build/svijet/core.json + build/svijet/cities_raw.json (build-only, not shipped)
+build/world.py then writes the map the game loads (build/mapdata.js, build/svijet/map.json).
 """
 import json, math, base64, zlib, io, sys
 import numpy as np
 from PIL import Image, ImageDraw, ImageFilter
 from shapely.geometry import shape, box, mapping, Polygon, MultiPolygon, LineString, MultiLineString, GeometryCollection
-from shapely.ops import transform, unary_union
+from shapely.ops import transform, unary_union, linemerge
 from shapely import simplify
 from shapely.geometry.polygon import orient
+from scipy import ndimage
 import os
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + '/'  # repository root
 
@@ -16,12 +20,25 @@ D = ROOT + 'data/'
 OUT = ROOT + 'build/'
 
 # ---------------- extents ----------------
-LON0, LON1 = -11.0, 41.0          # game grid
-LAT0, LAT1 = 33.0, 71.3
-RLON0, RLON1 = -20.0, 50.0        # render extent (vector data kept for panning margins)
-RLAT0, RLAT1 = 28.0, 74.0
-W = int(sys.argv[1]) if len(sys.argv) > 1 else 520
+# lon/lat: game grid; rlon/rlat: render extent (vector data kept for panning margins); lods: (vec key suffix, zoom)
+PROFILES = {
+    'evropa': dict(W=480, lon=(-11.0, 41.0), lat=(33.0, 71.3), rlon=(-20.0, 50.0), rlat=(28.0, 74.0), RS=2, relief=(8, 3, 0.7),
+                   lods=[('z3', 3.5), ('z5', 5.5), ('z7', 7.5)], out=OUT, previews=OUT),
+    # whole world: seam on the antimeridian (no x-wrap), Antarctica and the high Arctic cut
+    'svijet': dict(W=1600, lon=(-180.0, 180.0), lat=(-56.0, 72.0), rlon=(-180.0, 180.0), rlat=(-60.0, 78.0), RS=1, relief=(3, 1, 0.3),
+                   lods=[('z1', 1.5), ('z3', 3.5), ('z5', 5.5)], out=OUT + 'svijet/', previews=OUT + 'shots/world_'),
+}
+arg = sys.argv[1] if len(sys.argv) > 1 else 'evropa'
+PROF = dict(PROFILES['evropa'], W=int(arg)) if arg.isdigit() else PROFILES[arg]
+EUROPE = PROF['out'] == OUT      # Europe keeps its exact historic output (layers, file names)
+LON0, LON1 = PROF['lon']
+LAT0, LAT1 = PROF['lat']
+RLON0, RLON1 = PROF['rlon']
+RLAT0, RLAT1 = PROF['rlat']
+W = PROF['W']
 SS = 4                            # supersampling for land coverage
+os.makedirs(PROF['out'], exist_ok=True)
+os.makedirs(os.path.dirname(PROF['previews']), exist_ok=True)
 
 
 def nx(lon):
@@ -144,31 +161,10 @@ cov = np.asarray(hi, dtype=np.float32).reshape(H, SS, W, SS).mean(axis=(1, 3)) /
 land = cov >= 0.5
 print('land cells', int(land.sum()), 'of', W * H, f'{land.mean()*100:.1f}%')
 
-# remove tiny land specks (< 3 cells) and tiny water holes (< 3 cells) for cleaner play
+# remove tiny land specks (< 4 cells) and tiny water holes (< 4 cells) for cleaner play
 def components(mask):
-    h, w = mask.shape
-    lab = np.zeros((h, w), np.int32)
-    cur = 0
-    sizes = [0]
-    m = mask.copy()
-    for y0 in range(h):
-        row = m[y0]
-        for x0 in np.nonzero(row & (lab[y0] == 0))[0]:
-            if lab[y0, x0]:
-                continue
-            cur += 1
-            stack = [(y0, x0)]
-            lab[y0, x0] = cur
-            n = 0
-            while stack:
-                y, x = stack.pop()
-                n += 1
-                for yy, xx in ((y - 1, x), (y + 1, x), (y, x - 1), (y, x + 1)):
-                    if 0 <= yy < h and 0 <= xx < w and m[yy, xx] and not lab[yy, xx]:
-                        lab[yy, xx] = cur
-                        stack.append((yy, xx))
-            sizes.append(n)
-    return lab, np.array(sizes)
+    lab, n = ndimage.label(mask)  # 4-connected
+    return lab, np.bincount(lab.ravel(), minlength=n + 1)
 
 lab, sizes = components(land)
 small = sizes < 4
@@ -221,7 +217,7 @@ for t, n in ((1, 'plain'), (2, 'hill'), (3, 'mount')):
 
 # ---------------- rivers ----------------
 river_lines = []  # (geom_normalized, scalerank, name)
-for src in ('ne_10m_rivers_lake_centerlines', 'ne_10m_rivers_europe'):
+for src in ('ne_10m_rivers_lake_centerlines', 'ne_10m_rivers_europe') if EUROPE else ('ne_10m_rivers_lake_centerlines',):
     for f in load(src):
         pr = f['properties']
         if pr.get('featurecla', '') not in ('River', 'River (Intermittent)', 'Lake Centerline', 'Canal'):
@@ -247,6 +243,8 @@ for f in load('ne_10m_admin_0_boundary_lines_land'):
     g = clipgeom(shape(f['geometry']))
     for l in lines_of(g):
         border_lines.append(transform(proj, l))
+if not EUROPE:  # fewer, longer lines: much smaller vectors
+    border_lines = lines_of(linemerge(border_lines))
 print('border lines', len(border_lines))
 
 # ---------------- cities ----------------
@@ -261,7 +259,7 @@ for f in load('ne_10m_populated_places_simple'):
     cities.append(dict(name=p.get('name'), ascii=p.get('nameascii'), country=p.get('adm0name'), iso=p.get('adm0_a3') or p.get('sov_a3'),
                        lon=lon, lat=lat, pop=pop, cap=bool(cap), rank=int(p.get('scalerank', 10)), fc=p.get('featurecla')))
 print('cities in bbox', len(cities))
-with open(OUT + 'cities_raw.json', 'w') as f:
+with open(PROF['out'] + 'cities_raw.json', 'w') as f:
     json.dump(cities, f, ensure_ascii=False)
 
 # ---------------- encoding helpers ----------------
@@ -322,7 +320,7 @@ def poly_rings(p, tol):
 def tol_at(z):
     return 0.6 / (256 * 2 ** z)
 
-LODS = [('z3', tol_at(3.5)), ('z5', tol_at(5.5)), ('z7', tol_at(7.5))]
+LODS = [(k, tol_at(z)) for k, z in PROF['lods']]
 
 vec = {}
 for name, tol in LODS:
@@ -351,16 +349,23 @@ def line_list(lines, tol):
 
 riv_major = [l for l, sr, nm, src in river_lines if src == 'ne_10m_rivers_lake_centerlines' and sr <= 6]
 riv_minor = [l for l, sr, nm, src in river_lines if not (src == 'ne_10m_rivers_lake_centerlines' and sr <= 6) and sr <= 11]
-vec['riv1_z3'] = enc_rings(line_list(riv_major, tol_at(3.5)))
-vec['riv1_z7'] = enc_rings(line_list(riv_major, tol_at(7)))
-vec['riv2_z7'] = enc_rings(line_list(riv_minor, tol_at(7)))
-vec['bord_z3'] = enc_rings(line_list(border_lines, tol_at(3.5)))
-vec['bord_z7'] = enc_rings(line_list(border_lines, tol_at(7)))
+if not EUROPE:
+    riv_major = lines_of(linemerge(riv_major))
+if EUROPE:
+    vec['riv1_z3'] = enc_rings(line_list(riv_major, tol_at(3.5)))
+    vec['riv1_z7'] = enc_rings(line_list(riv_major, tol_at(7)))
+    vec['riv2_z7'] = enc_rings(line_list(riv_minor, tol_at(7)))
+    vec['bord_z3'] = enc_rings(line_list(border_lines, tol_at(3.5)))
+    vec['bord_z7'] = enc_rings(line_list(border_lines, tol_at(7)))
+else:  # every layer at every LOD, no minor rivers
+    for name, tol in LODS:
+        vec['riv1_' + name] = enc_rings(line_list(riv_major, tol))
+        vec['bord_' + name] = enc_rings(line_list(border_lines, tol))
 for k, v in vec.items():
     print(k, len(v))
 
 # ---------------- relief image (mercator, grid-aligned, 2x) ----------------
-RS = 2
+RS = PROF['RS']
 riy, rix = np.mgrid[0:H * RS, 0:W * RS]
 rgx = X0 + (rix + 0.5) * CELL / RS
 rgy = Y0 + (riy + 0.5) * CELL / RS
@@ -373,12 +378,13 @@ def blur(a, n=1):
         a = (np.roll(a, 1, 1) + np.roll(a, -1, 1) + 2 * a) / 4
     return a
 relev_raw = relev.astype(np.float32)
-relev = blur(relev_raw, 8)
+RB, CB, ZF = PROF['relief']  # blur passes for shade and tint, shade strength (per relief pixel size)
+relev = blur(relev_raw, RB)
 # hillshade (computed on a heavily smoothed surface; JPEG/8-bit terracing in the source would otherwise dominate)
 dzdx = np.gradient(relev, axis=1)
 dzdy = np.gradient(relev, axis=0)
 az = math.radians(315); alt = math.radians(42)
-zf = 0.7
+zf = ZF
 slope = np.arctan(zf * np.hypot(dzdx, dzdy))
 aspect = np.arctan2(-dzdx, dzdy)
 shade = np.sin(alt) * np.cos(slope) + np.cos(alt) * np.sin(slope) * np.cos(az - aspect - math.pi / 2)
@@ -393,7 +399,7 @@ def ramp(v):
     for c in range(3):
         out[..., c] = np.interp(v, xs, [s[1][c] for s in stops])
     return out
-col = ramp(blur(relev_raw, 3))
+col = ramp(blur(relev_raw, CB))
 strength = np.clip((relev - 30) / 25.0, 0, 1) ** 1.2
 k = (shade - flat) * 1.1 * strength
 col = np.where(k[..., None] < 0, col * (1 + k[..., None] * 0.6), col + (255 - col) * k[..., None] * 0.45)
@@ -401,7 +407,7 @@ col = np.clip(col, 0, 255).astype(np.uint8)
 rel = Image.fromarray(col, 'RGB')
 buf = io.BytesIO(); rel.save(buf, 'JPEG', quality=82, optimize=True, progressive=True)
 relief_b64 = base64.b64encode(buf.getvalue()).decode()
-rel.save(OUT + 'relief_preview.jpg', quality=85)
+rel.save(PROF['previews'] + 'relief_preview.jpg', quality=85)
 print('relief jpg bytes', len(buf.getvalue()))
 
 # ---------------- grid encoding ----------------
@@ -418,10 +424,10 @@ pv[terrain == 1] = (190, 205, 160)
 pv[terrain == 2] = (170, 150, 110)
 pv[terrain == 3] = (120, 110, 100)
 pv[river] = (40, 90, 200)
-Image.fromarray(pv).resize((W * 2, H * 2), Image.NEAREST).save(OUT + 'grid_preview.png')
+Image.fromarray(pv).resize((W * 2, H * 2), Image.NEAREST).save(PROF['previews'] + 'grid_preview.png')
 
 meta = dict(W=W, H=H, X0=X0, Y0=Y0, CELL=CELL, QX0=QX0, QX1=QX1, QY0=QY0, QY1=QY1,
             LON0=LON0, LON1=LON1, LAT0=LAT0, LAT1=LAT1, RLON0=RLON0, RLON1=RLON1, RLAT0=RLAT0, RLAT1=RLAT1, RS=RS)
-with open(OUT + 'mapdata_core.json', 'w') as f:
+with open(OUT + 'mapdata_core.json' if EUROPE else PROF['out'] + 'core.json', 'w') as f:
     json.dump(dict(meta=meta, grid=grid_b64, vec=vec, relief=relief_b64), f)
 print('done')
