@@ -382,3 +382,9 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* online: game code input and the game's link in the lobby */
+.code-row { display: flex; gap: 8px; margin-top: 8px; }
+.code-row input { flex: 1; min-width: 0; }
+.link-row { display: flex; gap: 8px; align-items: center; margin: 4px 0 12px; }
+.link-row code { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; padding: 8px 10px; border-radius: 10px; background: var(--ink-3); }

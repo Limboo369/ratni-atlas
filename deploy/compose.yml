@@ -8,6 +8,10 @@ services:
   game:
     build: ./game
     restart: unless-stopped
+    init: true
+    mem_limit: 384m
+    environment:
+      ORIGINS: https://war.deovilab.com
     env_file:
       - path: ./secret.env
-        required: false
+        required: true

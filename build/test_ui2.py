@@ -176,11 +176,17 @@ async def main():
         await page.wait_for_timeout(900)
         await page.screenshot(path=OUT + f'{MODE}_v3_9_diplo.png')
         await page.click(f'[data-do="accT:{offer["t"]}"]')
-        await page.wait_for_timeout(300)
+        try:
+            await page.wait_for_function(f'window.__ra.G.me.trade.has({offer["t"]})', timeout=5000)
+        except Exception:
+            pass
         check(await ev(f'() => window.__ra.G.me.trade.has({offer["t"]})'), 'trade offer accepted from the sheet')
         check(not await ev(f'() => window.__ra.G.me.allies.has({offer["t"]}) && {offer["t"]} !== {offer["a"]}'), 'trade does not create a military alliance')
         await page.click(f'[data-do="accA:{offer["a"]}"]')
-        await page.wait_for_timeout(300)
+        try:
+            await page.wait_for_function(f'window.__ra.G.me.allies.has({offer["a"]})', timeout=5000)
+        except Exception:
+            pass
         check(await ev(f'() => window.__ra.G.me.allies.has({offer["a"]})'), 'military alliance accepted')
         await page.screenshot(path=OUT + f'{MODE}_v3_10_diplo2.png')
         await ev('window.__ra.ui.closeSheet()')

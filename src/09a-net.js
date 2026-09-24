@@ -10,7 +10,14 @@
    healed by the next one.
 
    Host presence:  { v, r:'h', n, g, ph:'lobby'|'play', set, pk, sl:[peer], st, T, c:[[i,e,slot,kind,seq,...args]], sp, pz, ds }
-   Guest presence: { v, r:'g', n, g, pk, q:[[seq,kind,...args]], ak, t, hs:[tick,hash] } */
+   Guest presence: { v, r:'g', n, g, pk, q:[[seq,kind,...args]], ak, t, hs:[tick,hash] }
+   Spectator:      { v, r:'s', n, g }
+
+   On our own server (war.deovilab.com) every game is a private room with its own link /game-<code>: the host
+   shares it, friends join through it, and anyone who closes the page comes back through it to the same seat.
+   Presence written by other people is untrusted: read names with RA.Net.str(). */
+
+const PEER_STR = (v, d) => (typeof v === 'string' ? v.slice(0, 18) : d);
 
 RA.Net = class {
   constructor(app) {
@@ -19,7 +26,12 @@ RA.Net = class {
     this.status = 'off'; // off | connecting | ready | unavailable
     this.pres = {};
     this.listeners = new Set();
+    this.code = null; // our own server: the current game's room code
+    this.wsUrl = '';
     this.reset();
+  }
+  static str(v, d) {
+    return PEER_STR(v, d);
   }
   reset() {
     this.role = null; // 'host' | 'guest' | 'spec' (watching someone else's game)
@@ -44,6 +56,7 @@ RA.Net = class {
     this.hostGoneAt = 0;
     this.hostGone = false;
     this.lastPub = '';
+    this.catchUp = 0; // host who came back: replay the log up to this tick before running the clock again
   }
 
   /* ---------- connection ---------- */
@@ -53,20 +66,148 @@ RA.Net = class {
       const claudeRoom = window.claude && typeof window.claude.use === 'function';
       if (!claudeRoom && !url) return this.setStatus('unavailable');
       this.setStatus('connecting');
-      const room = claudeRoom ? await window.claude.use('room') : RA.wsRoom(url);
+      if (!claudeRoom) {
+        this.wsUrl = url;
+        this.setStatus('ready');
+        const m = /^\/game-([a-z0-9]{6})\/?$/.exec(location.pathname);
+        if (m) this.enterRoom(m[1], true);
+        return;
+      }
+      const room = await window.claude.use('room');
       if (!room) return this.setStatus('unavailable');
       this.room = room;
       room.onPeers(() => this.changed(), () => this.setStatus('unavailable'));
       room.onConnection((c) => {
         this.connected = c;
-        if (!claudeRoom) this.setStatus(c ? 'ready' : 'connecting');
         this.changed();
       });
-      if (claudeRoom) this.setStatus('ready');
+      this.setStatus('ready');
       this.publish({ v: RA.BUILD, n: this.myName() });
     } catch (e) {
       this.setStatus('unavailable');
     }
+  }
+  /* ---------- game rooms on our own server ---------- */
+  get own() {
+    return !!this.wsUrl;
+  }
+  newCode() {
+    const a = 'abcdefghjkmnpqrstuvwxyz23456789';
+    let c = '';
+    for (let i = 0; i < 6; i++) c += a[(Math.random() * a.length) | 0];
+    return c;
+  }
+  link() {
+    return this.code ? location.origin + '/game-' + this.code : '';
+  }
+  /* connect to one game's room; arriving = opened through the game's link (join, come back or watch) */
+  enterRoom(code, arriving) {
+    if (!this.own) return;
+    if (this.room && this.room.close) this.room.close();
+    this.code = code;
+    this.arriving = !!arriving;
+    this.arrivedAt = performance.now();
+    this.pres = {};
+    let creds = null;
+    try {
+      creds = JSON.parse(localStorage.getItem('ra_game_' + code) || 'null');
+    } catch (e) {}
+    const room = RA.wsRoom(
+      this.wsUrl + '?room=' + code,
+      creds,
+      (id, key) => {
+        try {
+          localStorage.setItem('ra_game_' + code, JSON.stringify({ id, key }));
+        } catch (e) {}
+      },
+      (prev) => this.comeBack(prev)
+    );
+    this.room = room;
+    room.onPeers(() => this.changed());
+    room.onConnection((c) => {
+      this.connected = c;
+      this.setStatus(c ? 'ready' : 'connecting');
+    });
+    this.setStatus('connecting');
+    if (/^https?:$/.test(location.protocol) && location.pathname !== '/game-' + code) history.replaceState(null, '', '/game-' + code);
+    this.publish({ v: RA.BUILD, n: this.myName() });
+  }
+  closeRoom() {
+    if (!this.own) return;
+    if (this.room && this.room.close) this.room.close();
+    this.room = null;
+    this.code = null;
+    this.arriving = false;
+    this.setStatus('ready');
+    if (/^https?:$/.test(location.protocol) && location.pathname !== '/') history.replaceState(null, '', '/');
+  }
+  /* a reloaded page (or a player coming back later) gets what it had published: continue from there */
+  async comeBack(prev) {
+    this.pres = Object.assign({}, prev, this.pres);
+    const me = this.myPeer();
+    if (prev.r === 'h' && prev.ph === 'lobby' && typeof prev.g === 'string') {
+      this.role = 'host';
+      this.gid = prev.g;
+      this.phase = 'lobby';
+      this.slots = Array.isArray(prev.sl) ? prev.sl : [me];
+      this.app.ui.showLobby(prev.set);
+    } else if (prev.r === 'h' && prev.ph === 'play' && prev.st && typeof prev.g === 'string') {
+      const r = await this.room.log(prev.g, me, 0);
+      if (!r || !r.st) return this.leave();
+      this.reset();
+      this.role = 'host';
+      this.gid = prev.g;
+      this.st = r.st;
+      this.slots = r.st.slots.map((s) => s.peer);
+      this.log = r.log;
+      this.phase = 'play';
+      this.mySlot = 0;
+      this.lastSeq = this.slots.map((x, s) => this.maxSeq(s));
+      this.guestInfo = this.slots.map(() => ({ t: 0, ak: 0, goneAt: 0, stallAt: 0, ai: false }));
+      this.catchUp = Number.isInteger(prev.T) ? prev.T : 0;
+      this.inGame = true;
+      this.app.startOnline(r.st, 0);
+      this.app.ui.toast('good', 'Vratio si se u svoju igru.');
+    } else if (prev.r === 'g' && typeof prev.g === 'string') {
+      const host = this.others().find((p) => p.presence && p.presence.r === 'h' && p.presence.g === prev.g);
+      if (!host) return this.leave();
+      if (host.presence.ph === 'lobby') {
+        this.role = 'guest';
+        this.gid = prev.g;
+        this.hostPeer = host.peer;
+        this.phase = 'lobby';
+        this.app.ui.showLobby();
+        return;
+      }
+      const st = host.presence.st;
+      const slot = st && Array.isArray(st.slots) ? st.slots.findIndex((s) => s.peer === me) : -1;
+      if (slot < 0) return this.leave();
+      const r = await this.room.log(prev.g, host.peer, 0);
+      if (!r || !r.st) return this.leave();
+      this.reset();
+      this.role = 'guest';
+      this.gid = prev.g;
+      this.hostPeer = host.peer;
+      this.st = r.st;
+      this.log = r.log;
+      this.phase = 'play';
+      this.mySlot = slot;
+      this.seq = Math.max(this.maxSeq(slot), ...(Array.isArray(prev.q) ? prev.q.map((c) => (Array.isArray(c) && Number.isInteger(c[0]) ? c[0] : 0)) : [0]));
+      this.inGame = true;
+      this.publish({ r: 'g', g: this.gid, q: [], ak: this.log.length, t: 0, hs: null });
+      this.app.startOnline(r.st, slot);
+      this.app.ui.toast('good', 'Vratio si se u igru — sustižem ostale…');
+    } else if (prev.r === 's' && typeof prev.g === 'string') {
+      const host = this.others().find((p) => p.presence && p.presence.r === 'h' && p.presence.g === prev.g);
+      if (host) this.watch(host.peer);
+    }
+    this.changed();
+  }
+  /* highest command number of a slot in the log (so commands after a come-back are not taken as old) */
+  maxSeq(slot) {
+    let m = 0;
+    for (const e of this.log) if (e[2] === slot && e[4] > m) m = e[4];
+    return m;
   }
   setStatus(s) {
     this.status = s;
@@ -85,7 +226,7 @@ RA.Net = class {
   }
   myName() {
     const s = this.app.ui && this.app.ui.settings;
-    return ((s && s.name) || 'Igrač').slice(0, 18);
+    return PEER_STR(s && s.name, '') || 'Igrač';
   }
   peers() {
     return this.room ? this.room.peers() : [];
@@ -114,6 +255,7 @@ RA.Net = class {
 
   /* ---------- lobby ---------- */
   host(set) {
+    if (this.own) this.enterRoom(this.newCode());
     if (!this.room) return;
     this.reset();
     this.role = 'host';
@@ -137,6 +279,7 @@ RA.Net = class {
   leave() {
     this.reset();
     this.publish({ r: null, g: null, ph: null, set: null, sl: null, st: null, T: null, c: null, sp: null, pz: null, ds: null, q: null, ak: null, t: null, hs: null, pk: null });
+    this.closeRoom();
     this.changed();
   }
   setPick(iso) {
@@ -175,7 +318,7 @@ RA.Net = class {
       const p = this.peerBy(peer);
       const isMe = !!(p && p.isMe && p.sameTab);
       const pr = isMe ? this.pres : (p && p.presence) || {};
-      return { peer, name: (pr.n || 'Igrač').slice(0, 18), pick: pr.pk || '', isMe, here: !!p };
+      return { peer, name: PEER_STR(pr.n, '') || 'Igrač', pick: PEER_STR(pr.pk, ''), isMe, here: !!p };
     });
   }
   /* host: start the game for everyone in the lobby */
@@ -185,7 +328,7 @@ RA.Net = class {
     // unique countries: first come keeps its pick, others get a free random one
     const used = new Set();
     const free = nations.map((n) => n.iso);
-    const slots = mem.map((m) => ({ peer: m.peer, name: m.name, iso: '' }));
+    const slots = mem.map((m) => ({ peer: String(m.peer), name: m.name, iso: '' }));
     slots.forEach((s, i) => {
       const want = mem[i].pick;
       if (want && free.includes(want) && !used.has(want)) {
@@ -205,7 +348,7 @@ RA.Net = class {
     this.log = [];
     this.ptr = 0;
     this.lastSeq = slots.map(() => 0);
-    this.guestInfo = slots.map(() => ({ t: 0, ak: 0, goneAt: 0, ai: false }));
+    this.guestInfo = slots.map(() => ({ t: 0, ak: 0, goneAt: 0, stallAt: 0, ai: false }));
     this.publish({ ph: 'play', st, T: 0, c: [], sp: 1, pz: false, ds: null });
     this.mySlot = 0;
     this.inGame = true;
@@ -249,9 +392,9 @@ RA.Net = class {
   pollStart() {
     if (this.role !== 'guest' || this.phase !== 'lobby') return;
     const hp = this.hostPresence();
-    if (!hp || hp.g !== this.gid || hp.ph !== 'play' || !hp.st) return;
+    if (!hp || hp.g !== this.gid || hp.ph !== 'play' || !hp.st || !Array.isArray(hp.st.slots)) return;
     const me = this.myPeer();
-    const slot = hp.st.slots.findIndex((s) => s.peer === me);
+    const slot = hp.st.slots.findIndex((s) => s && s.peer === me);
     if (slot < 0) return;
     this.st = hp.st;
     this.phase = 'play';
@@ -314,8 +457,19 @@ RA.Net = class {
     const st = this.st;
     for (let s = 1; s < st.slots.length; s++) {
       const gi = this.guestInfo[s];
-      if (gi.ai) continue;
       const peer = this.peerBy(st.slots[s].peer);
+      if (gi.ai) {
+        // came back through the game's link: give them their country back
+        const pr = peer && peer.presence;
+        if (pr && pr.r === 'g' && pr.g === this.gid && Number.isInteger(pr.t)) {
+          gi.ai = false;
+          gi.goneAt = gi.stallAt = 0;
+          gi.t = pr.t;
+          this.schedule(s, 'back', [], 0);
+          this.app.ui.toast('good', `${RA.esc(st.slots[s].name)} se vratio u igru.`);
+        }
+        continue;
+      }
       // closed the page, or left the game through the menu (still on the page, but no longer in this game)
       if (!peer || !peer.presence || peer.presence.g !== this.gid) {
         if (!gi.goneAt) gi.goneAt = performance.now();
@@ -336,7 +490,10 @@ RA.Net = class {
           this.schedule(s, c[1], c.slice(2, 8), c[0]);
         }
       }
-      if (Number.isInteger(pr.t)) gi.t = pr.t;
+      if (Number.isInteger(pr.t)) {
+        if (pr.t !== gi.t) gi.stallAt = 0;
+        gi.t = pr.t;
+      }
       if (Number.isInteger(pr.ak)) gi.ak = pr.ak;
       if (Array.isArray(pr.hs) && this.myHashes.has(pr.hs[0]) && this.myHashes.get(pr.hs[0]) !== pr.hs[1] && this.desync < 0) {
         this.desync = pr.hs[0];
@@ -353,6 +510,14 @@ RA.Net = class {
       const gi = this.guestInfo[s];
       if (gi.ai || gi.goneAt) continue;
       if (t - gi.t > 30) {
+        // still connected but not moving (phone in the pocket, frozen tab): after 30 s the computer plays for them
+        if (!gi.stallAt) gi.stallAt = performance.now();
+        else if (performance.now() - gi.stallAt > 30000) {
+          gi.ai = true;
+          this.schedule(s, 'ai', [], 0);
+          this.app.ui.toast('bad', `${RA.esc(st.slots[s].name)} ne odgovara — kompjuter igra umjesto njega dok se ne vrati.`);
+          continue;
+        }
         this.waiting = true;
         return false;
       }
@@ -386,6 +551,10 @@ RA.Net = class {
       return;
     }
     this.hostGoneAt = 0;
+    if (this.hostGone) {
+      this.hostGone = false;
+      this.app.ui.toast('good', 'Domaćin se vratio — igra se nastavlja.');
+    }
     if (Array.isArray(hp.c)) {
       if (hp.c.length && Array.isArray(hp.c[0]) && hp.c[0][0] > this.log.length) this.fillGap();
       for (const e of hp.c) {
@@ -423,21 +592,27 @@ RA.Net = class {
     this.publish({ t: G.tick, ak: this.log.length });
   }
   endGame() {
-    // back to the start screen: the room stays, the game is over
+    // back to the start screen: the game is over (on our own server its room closes too)
     this.inGame = false;
     this.phase = 'idle';
     const keep = this.role;
     this.role = null;
     if (keep) this.publish({ r: null, g: null, ph: null, set: null, sl: null, st: null, T: null, c: null, sp: null, pz: null, ds: null, q: null, ak: null, t: null, hs: null });
+    this.closeRoom();
     this.changed();
   }
 };
 
 /* Our own relay (deploy/game/server.js) behind the same four methods as the claude.ai room, so RA.Net above
-   does not care which one it talks to. Reconnects by itself and keeps its peer id (id + key from the server). */
-RA.wsRoom = function (url) {
-  let me = '', key = '', ws = null, up = false, peers = [];
-  const mine = {}, pres = new Map(), PL = new Set(), CL = new Set(), logWait = [];
+   does not care which one it talks to. One room = one game code. Reconnects by itself and keeps its peer id
+   (id + key from the server, also saved per game so a reloaded page gets its seat back).
+   creds: {id, key} from an earlier visit · onCreds(id, key) · onBack(presence I had when I left) */
+RA.wsRoom = function (url, creds, onCreds, onBack) {
+  let me = '', key = '', ws = null, up = false, peers = [], closed = false, first = true;
+  if (creds && typeof creds.id === 'string' && typeof creds.key === 'string') (me = creds.id), (key = creds.key);
+  let mine = {};
+  const pres = new Map(), PL = new Set(), CL = new Set(), logWait = [];
+  const obj = (v) => (v && typeof v === 'object' && !Array.isArray(v) ? v : {});
   const emit = () => {
     peers = [...pres].map(([peer, presence]) => ({ peer, presence, isMe: peer === me, sameTab: peer === me, kind: 'viewer' }));
     for (const f of PL) f({ peers });
@@ -447,7 +622,9 @@ RA.wsRoom = function (url) {
     for (const f of CL) f(c);
   };
   const open = () => {
-    ws = new WebSocket(url + (url.includes('?') ? '&' : '?') + `id=${me}&key=${key}`);
+    if (closed) return;
+    ws = new WebSocket(url);
+    ws.onopen = () => ws.send(JSON.stringify({ hello: { id: me, key } }));
     ws.onmessage = (e) => {
       let m;
       try {
@@ -455,32 +632,42 @@ RA.wsRoom = function (url) {
       } catch (err) {
         return;
       }
+      if (!m || typeof m !== 'object') return;
       if (m.t === 'all') {
-        me = m.me;
-        key = m.key;
+        me = String(m.me);
+        key = String(m.key);
+        if (onCreds) onCreds(me, key);
         pres.clear();
-        for (const k in m.peers) pres.set(k, m.peers[k]);
+        for (const k in obj(m.peers)) pres.set(k, obj(m.peers[k]));
+        // a fresh page coming back to its seat: take over what it had published before
+        const you = obj(m.you);
+        if (first && Object.keys(you).length) mine = Object.assign({}, you, mine);
         pres.set(me, mine);
         ws.send(JSON.stringify({ p: mine, full: 1 }));
+        emit(); // the peer list must be current before anyone reads it (come-back looks for the host)
         conn(true);
+        const back = first && Object.keys(you).length && onBack;
+        first = false;
+        if (back) onBack(you);
+        return;
       } else if (m.t === 'p') {
         const p = m.full ? {} : Object.assign({}, pres.get(m.id));
-        for (const k in m.p) {
+        for (const k in obj(m.p)) {
           if (m.p[k] === null) delete p[k];
           else p[k] = m.p[k];
         }
-        pres.set(m.id, p);
+        pres.set(String(m.id), p);
       } else if (m.t === 'x') pres.delete(m.id);
       else if (m.t === 'log') {
         const i = logWait.findIndex((w) => w.g === m.g);
-        if (i >= 0) logWait.splice(i, 1)[0].res(m);
+        if (i >= 0) logWait.splice(i, 1)[0].res({ st: m.st, log: Array.isArray(m.log) ? m.log : [] });
         return;
-      }
+      } else return;
       emit();
     };
     ws.onclose = () => {
       if (up) conn(false);
-      setTimeout(open, 1500);
+      if (!closed) setTimeout(open, 1500);
     };
   };
   open();
@@ -509,6 +696,10 @@ RA.wsRoom = function (url) {
     onConnection(f) {
       CL.add(f);
       return () => CL.delete(f);
+    },
+    close() {
+      closed = true;
+      if (ws) ws.close();
     },
     kick: () => ws.close(), // test hook: simulates a dropped connection
   };

@@ -270,6 +270,14 @@ RA.App = class {
   }
 
   frame(now) {
+    requestAnimationFrame(this.frame);
+    try {
+      this.frameBody(now);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+  frameBody(now) {
     const dt = Math.min(250, now - (this.last || now));
     this.last = now;
     const G = this.G;
@@ -277,7 +285,17 @@ RA.App = class {
     if (G && G.online && net && net.inGame) {
       // online: lockstep — the host is the clock, guests replay up to the host's tick
       const t0 = performance.now();
-      if (net.role === 'host') {
+      if (net.role === 'host' && net.catchUp > G.tick) {
+        let n = 0;
+        while (G.state === 'play' && G.tick < net.catchUp && n < 60) {
+          net.applyTick(G.tick + 1);
+          G.step();
+          net.afterStep();
+          n++;
+          if (performance.now() - t0 > 40) break;
+        }
+        if (G.state !== 'play') net.catchUp = 0;
+      } else if (net.role === 'host') {
         if (G.state === 'play') {
           net.hostPoll();
           if (!this.paused) {
@@ -360,6 +378,5 @@ RA.App = class {
       }
       ui.frame(now);
     }
-    requestAnimationFrame(this.frame);
   }
 };

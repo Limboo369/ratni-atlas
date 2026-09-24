@@ -122,7 +122,8 @@ RA.shade = function (rgb, k) {
   return rgb.map((v) => (k < 0 ? v * (1 + k) : v + (255 - v) * k));
 };
 RA.esc = function (s) {
-  return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  // only text and numbers: anything else (e.g. an object from another device) must not throw here
+  return String(typeof s === 'string' || typeof s === 'number' ? s : '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 };
 
 /* normalized web-mercator helpers */

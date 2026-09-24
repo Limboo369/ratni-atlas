@@ -54,3 +54,7 @@ jobs:
           rsync -rlptz --delete --exclude secret.env --exclude node_modules deploy/ root@"$IP":/srv/apps/$APP/
           ssh root@"$IP" deovilab-deploy $APP $DOMAIN $PORT
       - run: curl -fsS https://$DOMAIN/ | grep -o '<title>[^<]*'
+      - name: Online server odgovara (WebSocket)
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 --http1.1 -H 'Connection: Upgrade' -H 'Upgrade: websocket' -H 'Sec-WebSocket-Version: 13' -H 'Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==' -H "Origin: https://$DOMAIN" "https://$DOMAIN/ws?room=check1" || true)
+          echo "ws: $code"; [ "$code" = "101" ]

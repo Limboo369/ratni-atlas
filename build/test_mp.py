@@ -21,7 +21,11 @@ def check(cond, msg):
         fails.append(msg)
 
 
-PORT = 8799
+import socket as _socket
+_s = _socket.socket()
+_s.bind(('127.0.0.1', 0))
+PORT = _s.getsockname()[1]  # a free port: a relay left over from another run must not answer instead
+_s.close()
 
 
 def start_relay():
@@ -73,15 +77,22 @@ async def main():
         await B.fill('#nameIn', 'Marko')
         await asyncio.sleep(1.2)
         st = await A.evaluate('() => window.__ra.net.status')
-        check(st == 'ready', f'room connected ({st})')
+        check(st == 'ready', f'online ready ({st})')
         await A.screenshot(path=OUT + 'mp_1_start.png')
 
         # host opens a room, guest joins
         await A.click('[data-on="host"]')
         await asyncio.sleep(0.8)
-        await B.wait_for_selector('#joinBanner [data-on]', timeout=5000)
-        await B.screenshot(path=OUT + 'mp_2_joinbtn.png')
-        await B.click('#joinBanner [data-on]')
+        code = await A.evaluate('() => window.__ra.net.code')
+        check(bool(code) and len(code) == 6, f'game has its own code ({code})')
+
+        async def enter(pg, text):
+            await pg.fill('#codeIn', text)
+            await pg.click('[data-on="code"]')
+
+        await enter(B, 'https://war.deovilab.com/game-' + code)  # a pasted link works like the code
+        await B.wait_for_selector('#lobbyScreen:not([hidden])', timeout=10000)
+        await B.screenshot(path=OUT + 'mp_2_joined.png')
         await asyncio.sleep(1.0)
         # settings + picks
         await A.click(f'#lRegSeg button[data-v="{REGION}"]')
@@ -140,6 +151,7 @@ async def main():
         await sync_check('after expansion')
 
         # a third player watches the running game (before the test hands out gold outside the command log): replays the server's log from tick 0 and stays in sync
+        await enter(C, code)
         await C.wait_for_selector('[data-watch]', timeout=10000)
         await C.click('[data-watch]', timeout=15000)
         await A.evaluate('() => { window.__ra.paused = true; }')
@@ -154,6 +166,36 @@ async def main():
         await A.evaluate('() => { window.__ra.paused = false; }')
         await A.screenshot(path=OUT + 'mp_4_host_play.png')
         await B.screenshot(path=OUT + 'mp_4_guest_play.png')
+
+        # the guest reloads the page and comes back through the game's code: same seat, catches up, stays in sync
+        await B.reload()
+        await B.wait_for_function('document.getElementById("loading").hidden', timeout=60000)
+        await enter(B, code)
+        for _ in range(120):
+            if await B.evaluate('() => !!(window.__ra.G && window.__ra.G.online && window.__ra.G.me) && window.__ra.net.role'):
+                break
+            await asyncio.sleep(0.25)
+        me = await B.evaluate('() => window.__ra.G && window.__ra.G.me && window.__ra.G.me.name')
+        check(me == 'Srbija', f'guest came back to the same country ({me})')
+        await sync_check('after guest came back')
+
+        # the host reloads too: replays the log to where the game was and runs the clock again
+        await A.reload()
+        await A.wait_for_function('document.getElementById("loading").hidden', timeout=60000)
+        await enter(A, code)
+        for _ in range(160):
+            if await A.evaluate('() => window.__ra.net.role === "host" && window.__ra.net.catchUp === 0 || (window.__ra.G && window.__ra.G.tick >= window.__ra.net.catchUp && window.__ra.net.role === "host")'):
+                break
+            await asyncio.sleep(0.25)
+        await asyncio.sleep(1.5)
+        me = await A.evaluate('() => window.__ra.G && window.__ra.G.me && window.__ra.G.me.name')
+        check(me == 'Bosna i Hercegovina', f'host came back to the same country ({me})')
+        t1 = await B.evaluate('() => window.__ra.G.tick')
+        await asyncio.sleep(2)
+        t2 = await B.evaluate('() => window.__ra.G.tick')
+        check(t2 > t1, f'game runs again after the host came back ({t1} -> {t2})')
+        await sync_check('after host came back')
+
 
         # economy & military commands from both players. Test gold is given to every human on both devices
         # at the same tick (host paused, guest caught up), so the two games stay identical.

@@ -1,73 +1,116 @@
 'use strict';
 /* Overtake online relay. Same shape as the claude.ai "room" the game was built on: everyone in a room has a
    presence object; a client sends shallow patches (null deletes a key) and every other client gets them.
-   The lockstep protocol itself lives in the game (src/09a-net.js); this server only relays presence.
+   The lockstep protocol itself lives in the game (src/09a-net.js); this server only relays presence and keeps a
+   copy of each running game's command log (for spectators and for guests who fell behind).
 
-   client → server  {p: patch, full?: 1} · {log: gameId, host: hostPeerId, from}
-   server → client  {t:'all', me, key, peers:{id: presence}} on (re)connect · {t:'p', id, p, full?} · {t:'x', id} · {t:'err', e}
-                    · {t:'log', g, st, log} (the host's whole command log from 'from': spectators, guests who fell behind)
-   Ids are assigned here; a reconnect with ?id=&key= (HMAC of the id) keeps the id, so a phone that switches
-   networks keeps its seat. A peer is announced gone only after GRACE ms without a socket. */
+   Rooms are private: the room name is the code the host shares (/ws?room=<code>).
+   client → server  {hello: {id, key}} first (resume my seat, or empty) · {p: patch, full?: 1} · {log: gameId, host, from}
+   server → client  {t:'all', me, key, peers:{id: presence}, you: my last presence} after hello · {t:'p', id, p, full?} · {t:'x', id}
+                    · {t:'log', g, st, log} · {t:'err', e}
+   A reconnect with the id + key (HMAC of the id) from 'all' keeps the id and gets its last presence back (for
+   KEEP ms after leaving), so a player can reload the page or come back later to the same seat in the same game.
+   A peer is announced gone only after GRACE ms without a socket. */
 const { WebSocketServer } = require('ws');
 const crypto = require('crypto');
 
 const PORT = +process.env.PORT || 8080;
 const SECRET = process.env.WS_SECRET || crypto.randomBytes(16).toString('hex');
+const ORIGINS = (process.env.ORIGINS || '').split(',').filter(Boolean); // empty: any origin (local tests)
 const MAX_PRES = 4096; // bytes of JSON per presence, as on claude.ai
 const GRACE = 5000; // must stay below the game's 8 s takeover
-const RATE = 80; // messages per second per socket
+const RATE = 80; // presence messages per second per socket
+const PER_IP = 12, MAX_SOCKETS = 3000, MAX_ROOM = 12;
+const MAX_LOG_BYTES = 1.5e6, MAX_GAMES = 400;
+const KEEP = 10 * 60 * 1000; // how long a departed player's presence and a host's game log are kept for a return
+const SLOW = 512 * 1024; // a peer this far behind on reading is dropped instead of buffered
 
 const sign = (id) => crypto.createHmac('sha256', SECRET).update(id).digest('base64url').slice(0, 16);
 const validKey = (id, key) => {
-  const a = Buffer.from(sign(id)), b = Buffer.from(String(key || ''));
+  const a = Buffer.from(sign(id)), b = Buffer.from(typeof key === 'string' ? key : '');
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 };
-const rooms = new Map(); // name → Map(id → {ws, pres, bye})
-const games = new Map(); // 'hostId:gameId' → {host, g, st, log}: copied from the host's presence (st at start, then c entries in order)
-const MAX_LOG = 100000;
+const BAD_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+const rooms = new Map(); // code → Map(id → {ws, pres, bye})
+const games = new Map(); // 'hostId:gameId' → {host, g, st, log, bytes}
+const perIp = new Map();
+const left = new Map(); // 'room:id' → {pres, t}: players who left recently
 
-// keep a copy of every running game's command log, so anyone can replay it from tick 0
+function send(ws, s) {
+  if (ws.readyState !== 1) return;
+  if (ws.bufferedAmount > SLOW) return ws.terminate();
+  ws.send(s);
+}
+// ponytail: broadcast to the whole room is O(peers²); rooms are private and capped at MAX_ROOM
+function cast(room, from, msg) {
+  const s = typeof msg === 'string' ? msg : JSON.stringify(msg);
+  for (const [id, p] of room) if (id !== from && p.ws) send(p.ws, s);
+}
+
+// keep a copy of every running game's command log, so anyone in the room can replay it from tick 0
 function record(id, pres) {
   for (const [k, gm] of games) if (gm.host === id && (gm.g !== pres.g || pres.ph !== 'play')) games.delete(k);
   if (pres.r !== 'h' || pres.ph !== 'play' || typeof pres.g !== 'string' || !pres.st) return;
-  const key = id + ':' + pres.g; // keyed by host too: nobody else can claim a game id they saw in a lobby
+  const key = id + ':' + pres.g; // keyed by host too: nobody else can claim a game id they saw in the room
   let gm = games.get(key);
-  if (!gm) games.set(key, (gm = { host: id, g: pres.g, st: pres.st, log: [] }));
+  if (!gm) {
+    if (games.size >= MAX_GAMES) return;
+    games.set(key, (gm = { host: id, g: pres.g, st: pres.st, log: [], bytes: 0 }));
+  }
+  gm.leftAt = 0;
   if (!Array.isArray(pres.c)) return;
-  for (const e of pres.c) if (Array.isArray(e) && e[0] === gm.log.length && gm.log.length < MAX_LOG) gm.log.push(e);
+  for (const e of pres.c) {
+    if (!Array.isArray(e) || e[0] !== gm.log.length) continue;
+    const b = JSON.stringify(e).length;
+    if (gm.bytes + b > MAX_LOG_BYTES) break;
+    gm.bytes += b;
+    gm.log.push(e);
+  }
 }
 
-// ponytail: broadcast to the whole room is O(peers²); filter by game id once the hall gets busy
-function cast(room, from, msg) {
-  const s = JSON.stringify(msg);
-  for (const [id, p] of room) if (id !== from && p.ws && p.ws.readyState === 1) p.ws.send(s);
-}
-
-const wss = new WebSocketServer({ port: PORT, path: '/ws', maxPayload: 8192 });
+const wss = new WebSocketServer({
+  port: PORT,
+  path: '/ws',
+  maxPayload: 8192,
+  verifyClient: ({ origin }) => !ORIGINS.length || ORIGINS.includes(origin),
+});
 wss.on('connection', (ws, req) => {
+  const ip = String(req.headers['x-real-ip'] || req.socket.remoteAddress || '');
+  if (wss.clients.size > MAX_SOCKETS || (perIp.get(ip) || 0) >= PER_IP) return ws.close(1013, 'busy');
+  perIp.set(ip, (perIp.get(ip) || 0) + 1);
   const q = new URL(req.url, 'http://x').searchParams;
-  const name = /^[a-z0-9]{1,16}$/.test(q.get('room') || '') ? q.get('room') : 'hall';
-  if (!rooms.has(name)) rooms.set(name, new Map());
-  const room = rooms.get(name);
-  let id = q.get('id') || '';
-  if (!/^[0-9a-f]{10}$/.test(id) || !validKey(id, q.get('key'))) id = crypto.randomBytes(5).toString('hex');
-  let me = room.get(id);
-  if (me) {
-    clearTimeout(me.bye);
-    if (me.ws && me.ws !== ws) {
-      me.ws.removeAllListeners('close');
-      me.ws.terminate();
-    }
-    me.ws = ws;
-  } else room.set(id, (me = { ws, pres: {}, bye: null }));
+  const name = /^[a-z0-9]{4,16}$/.test(q.get('room') || '') ? q.get('room') : '';
+  let id = '', me = null, room = null;
+  const helloTimer = setTimeout(() => ws.terminate(), 5000);
 
-  const peers = {};
-  for (const [k, p] of room) if (k !== id) peers[k] = p.pres;
-  ws.send(JSON.stringify({ t: 'all', me: id, key: sign(id), peers }));
+  function hello(h) {
+    clearTimeout(helloTimer);
+    if (!rooms.has(name)) rooms.set(name, new Map());
+    room = rooms.get(name);
+    id = h && typeof h.id === 'string' && /^[0-9a-f]{10}$/.test(h.id) && validKey(h.id, h.key) ? h.id : '';
+    if (!id && room.size >= MAX_ROOM) return ws.close(1013, 'full');
+    if (!id) id = crypto.randomBytes(5).toString('hex');
+    me = room.get(id);
+    if (me) {
+      clearTimeout(me.bye);
+      if (me.ws && me.ws !== ws) {
+        me.ws.removeAllListeners('close');
+        me.ws.terminate();
+      }
+      me.ws = ws;
+    } else {
+      const back = left.get(name + ':' + id);
+      left.delete(name + ':' + id);
+      room.set(id, (me = { ws, pres: back ? back.pres : Object.create(null), bye: null }));
+    }
+    const peers = {};
+    for (const [k, p] of room) if (k !== id) peers[k] = p.pres;
+    send(ws, JSON.stringify({ t: 'all', me: id, key: sign(id), peers, you: me.pres }));
+  }
 
   ws.alive = true;
   ws.on('pong', () => (ws.alive = true));
-  let n = 0, t0 = Date.now();
+  let n = 0, t0 = Date.now(), lastLog = 0;
   ws.on('message', (buf) => {
     if (Date.now() - t0 > 1000) (t0 = Date.now()), (n = 0);
     if (++n > RATE) return ws.terminate();
@@ -77,39 +120,55 @@ wss.on('connection', (ws, req) => {
     } catch {
       return;
     }
-    if (m && typeof m.log === 'string') {
+    if (!m || typeof m !== 'object') return;
+    if (!me) return name && m.hello !== undefined ? hello(m.hello) : undefined;
+    if (typeof m.log === 'string') {
+      if (Date.now() - lastLog < 2000) return;
+      lastLog = Date.now();
       const gm = games.get(String(m.host) + ':' + m.log), from = Number.isInteger(m.from) && m.from > 0 ? m.from : 0;
-      return ws.send(JSON.stringify(gm ? { t: 'log', g: m.log, st: gm.st, log: gm.log.slice(from) } : { t: 'log', g: m.log, st: null, log: [] }));
+      return send(ws, JSON.stringify(gm ? { t: 'log', g: m.log, st: gm.st, log: gm.log.slice(from) } : { t: 'log', g: m.log, st: null, log: [] }));
     }
-    const patch = m && m.p;
+    const patch = m.p;
     if (!patch || typeof patch !== 'object' || Array.isArray(patch)) return;
-    const next = m.full ? {} : Object.assign({}, me.pres);
-    for (const k of Object.keys(patch)) {
+    const keys = Object.keys(patch);
+    if (keys.some((k) => BAD_KEYS.has(k))) return;
+    const next = m.full ? Object.create(null) : Object.assign(Object.create(null), me.pres);
+    for (const k of keys) {
       if (patch[k] === null) delete next[k];
       else next[k] = patch[k];
     }
-    if (Buffer.byteLength(JSON.stringify(next)) > MAX_PRES) {
+    const out = JSON.stringify(m.full ? { t: 'p', id, p: next, full: 1 } : { t: 'p', id, p: patch });
+    if (Buffer.byteLength(JSON.stringify(next)) > MAX_PRES || out.length > MAX_PRES + 200) {
       console.warn('presence too big', id);
-      return ws.send('{"t":"err","e":"big"}');
+      return send(ws, '{"t":"err","e":"big"}');
     }
     me.pres = next;
     record(id, next);
-    cast(room, id, m.full ? { t: 'p', id, p: next, full: 1 } : { t: 'p', id, p: patch });
+    cast(room, id, out);
   });
   ws.on('close', () => {
-    if (me.ws !== ws) return;
+    clearTimeout(helloTimer);
+    const c = (perIp.get(ip) || 1) - 1;
+    if (c > 0) perIp.set(ip, c);
+    else perIp.delete(ip);
+    if (!me || me.ws !== ws) return;
     me.ws = null;
     me.bye = setTimeout(() => {
       room.delete(id);
-      record(id, {});
+      if (left.size < 20000) left.set(name + ':' + id, { pres: me.pres, t: Date.now() });
+      for (const gm of games.values()) if (gm.host === id) gm.leftAt = Date.now();
       cast(room, id, { t: 'x', id });
       if (!room.size) rooms.delete(name);
     }, GRACE);
   });
   ws.on('error', () => {});
+  if (!name) ws.close(1008, 'room');
 });
 
 setInterval(() => {
+  const old = Date.now() - KEEP;
+  for (const [k, v] of left) if (v.t < old) left.delete(k);
+  for (const [k, gm] of games) if (gm.leftAt && gm.leftAt < old) games.delete(k);
   for (const ws of wss.clients) {
     if (!ws.alive) ws.terminate();
     else {
@@ -119,4 +178,5 @@ setInterval(() => {
   }
 }, 5000);
 
+process.on('SIGTERM', () => wss.close(() => process.exit(0)));
 console.log(`relay on :${PORT}/ws`);

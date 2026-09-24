@@ -3,7 +3,7 @@
    can replay exactly the same inputs on every device (lockstep). Args come from other players' devices:
    they are validated here and never trusted. */
 
-RA.CMD_KINDS = ['atk', 'boat', 'para', 'build', 'rec', 'mv', 'dis', 'mis', 'mob', 'ret', 'aReq', 'aRes', 'tReq', 'tRes', 'ext', 'brk', 'tEnd', 'give', 'help', 'ai'];
+RA.CMD_KINDS = ['atk', 'boat', 'para', 'build', 'rec', 'mv', 'dis', 'mis', 'mob', 'ret', 'aReq', 'aRes', 'tReq', 'tRes', 'ext', 'brk', 'tEnd', 'give', 'help', 'ai', 'back'];
 
 (function (P) {
   P.exec = function (pid, kind, a) {
@@ -25,10 +25,11 @@ RA.CMD_KINDS = ['atk', 'boat', 'para', 'build', 'rec', 'mv', 'dis', 'mis', 'mob'
       case 'para':
         return this.launchPara(pid, cell(a[0]), p.troops * ratio(a[1]));
       case 'build':
-        if (!RA.STRUCT[a[0]]) return 'Nepoznata zgrada.';
+        // own keys only: 'toString', '__proto__' … from another device must not reach the build code
+        if (typeof a[0] !== 'string' || !Object.prototype.hasOwnProperty.call(RA.STRUCT, a[0])) return 'Nepoznata zgrada.';
         return this.build(pid, a[0], cell(a[1]));
       case 'rec':
-        if (!RA.UNIT[a[0]]) return 'Nepoznata jedinica.';
+        if (typeof a[0] !== 'string' || !Object.prototype.hasOwnProperty.call(RA.UNIT, a[0])) return 'Nepoznata jedinica.';
         return this.recruitUnit(pid, a[0], cell(a[1]));
       case 'mv':
         return this.moveUnit(pid, id(a[0]), cell(a[1]));
@@ -80,6 +81,10 @@ RA.CMD_KINDS = ['atk', 'boat', 'para', 'build', 'rec', 'mv', 'dis', 'mis', 'mob'
           this.allyReqs = this.allyReqs.filter((r) => r.to !== pid);
           this.tradeReqs = this.tradeReqs.filter((r) => r.to !== pid);
         }
+        return true;
+      case 'back':
+        // that player came back to the online game: their country is theirs again
+        if (p.human) p.ai = null;
         return true;
     }
     return 'Nepoznata naredba.';

@@ -206,11 +206,11 @@ Svijet dolazi prije ekonomije, vojske i kampanje: resursi, moreuzi, mornarica i 
 | Faza | Šta | Stanje |
 | --- | --- | --- |
 | 1 | Server i domen, Docker, HTTPS, automatska objava s testovima | gotovo |
-| 2 | Balans v0.5: Rim, male države u stvarnim granicama, dužina partije 1914. | |
-| 3 | Vlastiti online server (Node + WebSocket u Dockeru): online na war.deovilab.com, gledaoci | |
+| 2 | Balans v0.5: Rim, male države u stvarnim granicama, dužina partije 1914. | gotovo (Rim se još dotjeruje) |
+| 3 | Vlastiti online server (Node + WebSocket u Dockeru): online na war.deovilab.com, gledaoci; svaka igra ima svoj link (war.deovilab.com/game-k3x9pq) za poziv prijatelja i povratak u igru nakon zatvaranja stranice ili pada veze | u toku |
 | 4 | Cijeli svijet: karta, doba, dijelovi svijeta, učitavanje sa servera | |
 | 5 | Brze stvari: usmjereni napad, vrati granice, pravo prolaza, ping i brze poruke, zvuk i muzika, sitnice, tutorijal | |
-| 6 | Nalozi i baza (PostgreSQL): prijava, statistike i ljestvica, dostignuća, snimi i nastavi | |
+| 6 | Nalozi i baza (PostgreSQL): prijava preko Google-a (rezerva: e-mail), tvoje igre vezane za nalog (nastavi igru s bilo kojeg uređaja), statistike i ljestvica, dostignuća, snimi i nastavi | |
 | 7 | Ekonomija i diplomatija: resursi i trgovina (opcija), porez i kamata, zajmovi sa zalogom, agresivna ekspanzija, vazali, moreuzi i kanali | |
 | 8 | Vojska: mornarica, avijacija, dronovi, jače nuklearke, gvozdena kupola | |
 | 9 | Vladari s komentarima (portreti: Codex) | |
@@ -224,7 +224,7 @@ Dok ne kažeš drugačije, radim po pretpostavci u zagradi.
 - [x] Domen: war.deovilab.com (Porkbun); server Ubuntu 24.04.
 - [x] GitHub repozitorij i automatska objava.
 - [x] Nove karte: prvo cijeli svijet.
-- [ ] Prijava na nalog (pretpostavka: e-mail i lozinka; Google prijava kasnije ako želiš).
+- [x] Prijava: Google (odlučeno 24. 9.); rezerva e-mail. Za Google treba Client ID iz Google Cloud konzole — koraci kad dođemo do faze 6.
 - [ ] Gvozdena kupola (pretpostavka: automatski uzvraća, a nuklearke u letu obara PVO).
 - [ ] Kampanja (pretpostavka: jedna država i dinastija kroz sva doba, kako piše gore).
 - [ ] Portreti (pretpostavka: izmišljeni vladari).
