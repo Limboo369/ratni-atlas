@@ -30,6 +30,7 @@ jobs:
       - run: python3 build/make.py
       - run: python3 build/test_ui2.py phone balkan || python3 build/test_ui2.py phone balkan  # 1 ponovni pokušaj (spori CI)
       - run: python3 build/test_mp.py
+      - run: python3 build/test_world.py
       - if: failure()
         uses: actions/upload-artifact@v4
         with: { name: shots, path: build/shots/ }

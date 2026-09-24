@@ -17,10 +17,22 @@ const files = ['00-util', '01-data', '02-sim', '02b-military', '02c-diplomacy', 
 new Function(files.map((f) => fs.readFileSync(R + 'src/' + f + '.js', 'utf8').replace("'use strict';", '')).join('\n'))();
 
 (async () => {
-  const map = await RA.loadMap();
-  map.eras = await RA.loadEras(window.ERADATA, map.N);
+  const europe = await RA.loadMap();
+  europe.eras = await RA.loadEras(window.ERADATA, europe.N);
+  // the world (build/svijet/): used when the region is a world region (svijet, afrika, azija, …)
+  let world = null;
+  const worldMap = async () => {
+    if (world) return world;
+    world = await RA.loadMap(JSON.parse(fs.readFileSync(R + 'build/svijet/map.json', 'utf8')));
+    const E = {};
+    for (const f of fs.readdirSync(R + 'build/svijet')) if (/^era_\w+\.json$/.test(f)) E[f.slice(4, -5)] = JSON.parse(fs.readFileSync(R + 'build/svijet/' + f, 'utf8'));
+    world.eras = await RA.loadEras(E, world.N);
+    return world;
+  };
   for (const r of process.argv.slice(2)) {
     const [era, start, gm, region, maxMin, seed, diff, pick] = r.split(':');
+    const reg = RA.REGIONS.find((x) => x.id === region);
+    const map = reg && reg.map === 'svijet' ? await worldMap() : europe;
     const G = RA.newGame(RA.regionMap(RA.eraMap(map, era, start), region), { seed: +seed, difficulty: diff || 'srednje', cityStates: 50, peace: 60, era, start, gm });
     const n = G.P.find((p) => p && p.type === 'nation' && p.iso === pick) || G.P.find((p) => p && p.type === 'nation');
     RA.placeHuman(G, n.nation.c, 'Test');
