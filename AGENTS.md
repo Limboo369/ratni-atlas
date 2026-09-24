@@ -46,8 +46,10 @@ New app (any repo): a `compose.yml` publishing only `127.0.0.1:<free port>` (deo
 because Docker bypasses ufw), the three secrets above, a deploy workflow that rsyncs to `/srv/apps/<app>/` and runs `deovilab-deploy`, and a DNS A record `<sub>.deovilab.com → server IP` (Darko, Porkbun).
 Add the row to the table.
 
-Online play (`src/09a-net.js`) still uses the claude.ai room, so it does not work on the domain until our own game server
-(Node + WebSocket in the `war` compose project) exists — next step.
+Online play: `deploy/game/server.js` (Node + `ws`, service `game` in the `war` compose project, behind `/ws`) relays
+presence per private room; `src/09a-net.js` keeps the lockstep protocol. Every game has its own link `/game-<code>`
+(invite + come back to the same seat after a reload; the server keeps a player's presence and the game's command log
+for 10 min). Spectators replay the server's log. Presence from other players is untrusted (`RA.Net.str`, `G.exec`).
 
 ## Layout
 
@@ -60,6 +62,7 @@ Online play (`src/09a-net.js`) still uses the claude.ai room, so it does not wor
 | `build/eras.py` | Historical borders per era → `build/eradata.js` (polities, capitals, city renames, owner raster). |
 | `scripts/fetch_data.sh` | Downloads the raw GeoJSON sources into `data/` (not in git). |
 | `build/test_*.py`, `build/sim_eras.py` | Playwright tests and AI balance runs (Leaflet served from `package/dist/leaflet.js`). |
+| `build/sim_node.js` | Fast AI-only balance runs in node: `node build/sim_node.js era:start:gm:region:maxMin:seed:diff[:pick]`. |
 | `deploy/` | Docker Compose project of the game on the server (`public/` is filled by the deploy workflow). |
 | `server/` | Server setup and the `deovilab-deploy` helper. |
 
@@ -84,13 +87,12 @@ Rebuild era data: `scripts/fetch_data.sh && python3 build/eras.py`.
 ```
 python3 build/make.py
 python3 build/test_ui2.py phone balkan     # single player, end to end
-python3 build/test_mp.py                   # two browsers, online lockstep (mock room)
+python3 build/test_mp.py                   # three browsers + the real relay: lockstep, spectator, come-back
 python3 build/test_eras.py 1200            # every era + battle royale
 python3 build/sim_eras.py rim:granice:klasik:evropa:DAC:30:11:srednje   # AI balance run
 ```
 
 ## Open work (v0.5)
 
-- Balance: Rome (AI) wins in ~5 min; small states die in the first minutes of a borders game; 1914 games last ~10 min.
 - Online test of eras + battle royale (`test_mp.py` with era settings).
-- Own game server for online play on war.deovilab.com.
+- Rome era: Rome (AI) still wins most games in 6-10 min.
