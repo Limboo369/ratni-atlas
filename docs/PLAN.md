@@ -1,10 +1,10 @@
-# Ratni Atlas — plan razvoja
+# Overtake — plan razvoja
 
-Snimak živog dokumenta od 24. 9. 2026. Aktuelna verzija: https://claude.ai/code/artifact/165734ed-94a2-469d-9c8f-fcf9cc122ce7
+Ovaj fajl je od 24. 9. 2026. glavni plan (stari živi dokument na claude.ai se više ne ažurira). Igra: https://war.deovilab.com
 
 ## Gdje smo sada
 
-Na claude.ai linku je v0.4 (Evropa, AI, online s prijateljem). Verzija 0.5 s dobima i battle royale modom je napravljena i testirana, ali još nije objavljena — ostaje balans.
+v0.5 (doba, battle royale) je objavljena na https://war.deovilab.com pod imenom Overtake. Server, domen, Docker i automatska objava su gotovi. Online igra na domenu čeka vlastiti game server; ostaje i balans.
 
 | Dio v0.5 | Šta radi |
 | --- | --- |
@@ -79,6 +79,25 @@ Kampanja (~100 sati) — prijedlog:
 - Razvoj: iskustvo i zlato ulažeš u tehnološko stablo (vojska, ekonomija, diplomatija, nauka); otključavaš jedinice, zgrade i oružje doba te trajna poboljšanja koja prelaze u sljedeće doba.
 - Misije: odbrani prijestolnicu, osvoji region, preživi koaliciju, ekonomski cilj; težina raste.
 - Snimi i nastavi (lokalno i na nalogu). Prvo pravim punu verziju, pa korigujemo.
+
+## Cijeli svijet (novo)
+
+Pored Evrope, cijela karta svijeta. Sve što se tiče teritorija radi i na Evropi i na svijetu.
+
+| Dio | Evropa (sada) | Svijet (dodaje se) |
+| --- | --- | --- |
+| Karta | mreža 480×632, lon −11…41, lat 33…71 | svjetska mreža bez Antarktika; izbor karte Evropa / Svijet |
+| Dijelovi karte | Balkan, Zapadna, Srednja, Sjever i Baltik… | + Bliski istok i Mediteran, Afrika, Azija, Sjeverna Amerika, Južna Amerika, Okeanija (to su i „nove karte“ iz tačke 19) |
+| Učitavanje | sve u jednoj datoteci | karta svijeta se učitava sa servera tek kad je izabereš, da telefon ne skida sve odjednom |
+| Doba | 7 doba s evropskim granicama | istih 7 doba s granicama cijelog svijeta (Han Kina i Partija uz Rim; Ming, Mali i Asteci 1400.; kolonije 1914. …) |
+| Države | 46 | oko 200 danas; mikrodržave spojene ili slobodna zemlja, da AI i telefon izdrže |
+| More | kratki desanti | okeani: brodovi putuju duže, luke i mornarica važnije |
+| Moreuzi i kanali | Bosfor, Gibraltar, danski, Otranto, Mesina, Kerč | + Suecki i Panamski kanal (od kad postoje), Malaka, Hormuz, Bab el-Mandeb |
+| Resursi | nalazišta u Evropi | nalazišta na cijelom svijetu, isto pravilo: svako ima bar jedan, niko sve |
+| Sporne teritorije | Kosovo, Krim, Sjeverni Kipar | + Tajvan, Zapadna Sahara, Kašmir… (slobodna zemlja na startu) |
+| Battle royale | zona preko Evrope | zona preko izabranog dijela svijeta |
+| Vladari | evropske titule | + šah, kan, šogun, maharadža… (izmišljena imena) |
+| Kampanja | Evropa kroz doba | poglavlja po cijelom svijetu |
 
 ## Vojska i borba
 
@@ -182,27 +201,30 @@ Zamijenjeno nečim drugim: 32 tehnologije kao in-game vještine (umjesto toga ot
 
 ## Redoslijed rada
 
-Prvo server, pa sve ostalo po fazama; redoslijed faza 3–8 možeš mijenjati.
+Svijet dolazi prije ekonomije, vojske i kampanje: resursi, moreuzi, mornarica i kampanja zavise od geografije, pa se tako rade jednom za obje karte. Nove ikonice i portrete radi Codex (vizuali); logiku, server i sve ostalo Claude.
 
-| Faza | Šta | Zavisi od |
+| Faza | Šta | Stanje |
 | --- | --- | --- |
-| 0 | Ovaj dokument | — |
-| 1 | Server i domen: pristup, zaštita, HTTPS, git, objava igre (v0.5 poslije popravke i balansa) | GitHub repozitorij, tajne, DNS zapis |
-| 2 | Backend: nalozi, baza, vlastiti online server, gledaoci, statistike, dostignuća, snimi i nastavi | Faza 1, izbor prijave |
-| 3 | Brze stvari: nove ikonice, zvukovi, ping, usmjereni napad, vrati granice, pravo prolaza, sitnice, tutorijal | — |
-| 4 | Ekonomija i diplomatija: resursi i trgovina (opcija), porez i kamata, zajmovi sa zalogom, agresivna ekspanzija, vazali, moreuzi | — |
-| 5 | Vojska: mornarica, avijacija, dronovi, jače nuklearke, gvozdena kupola | — |
-| 6 | Vladari s komentarima | Portreti |
-| 7 | DEFCON mod, duge igre kroz dane, nove karte | Faza 2 |
-| 8 | Kampanja (~100 h) | Faze 3–5 |
+| 1 | Server i domen, Docker, HTTPS, automatska objava s testovima | gotovo |
+| 2 | Balans v0.5: Rim, male države u stvarnim granicama, dužina partije 1914. | |
+| 3 | Vlastiti online server (Node + WebSocket u Dockeru): online na war.deovilab.com, gledaoci | |
+| 4 | Cijeli svijet: karta, doba, dijelovi svijeta, učitavanje sa servera | |
+| 5 | Brze stvari: usmjereni napad, vrati granice, pravo prolaza, ping i brze poruke, zvuk i muzika, sitnice, tutorijal | |
+| 6 | Nalozi i baza (PostgreSQL): prijava, statistike i ljestvica, dostignuća, snimi i nastavi | |
+| 7 | Ekonomija i diplomatija: resursi i trgovina (opcija), porez i kamata, zajmovi sa zalogom, agresivna ekspanzija, vazali, moreuzi i kanali | |
+| 8 | Vojska: mornarica, avijacija, dronovi, jače nuklearke, gvozdena kupola | |
+| 9 | Vladari s komentarima (portreti: Codex) | |
+| 10 | DEFCON mod, duge igre kroz dane | |
+| 11 | Kampanja (~100 h, cijeli svijet) | |
 
 ## Otvorena pitanja
 
-- [ ] Domen (i gdje je kupljen) i sistem koji je Contabo instalirao.
-- [ ] Privatni GitHub repozitorij ratni-atlas i Claude povezan s GitHubom (koraci gore).
-- [ ] Prijava na nalog: e-mail i lozinka, Google prijava, ili oboje?
-- [ ] Tajne na GitHubu: IP servera i root lozinka (za prvo postavljanje).
-- [ ] Gvozdena kupola: da li i obara nuklearke u letu, ili samo automatski uzvraća?
-- [ ] Nove karte: koje prve?
-- [ ] Kampanja: jedna država kroz sva doba ili novi izbor države u svakom poglavlju?
-- [ ] Portreti: potvrdi izmišljene vladare umjesto stvarnih.
+Dok ne kažeš drugačije, radim po pretpostavci u zagradi.
+
+- [x] Domen: war.deovilab.com (Porkbun); server Ubuntu 24.04.
+- [x] GitHub repozitorij i automatska objava.
+- [x] Nove karte: prvo cijeli svijet.
+- [ ] Prijava na nalog (pretpostavka: e-mail i lozinka; Google prijava kasnije ako želiš).
+- [ ] Gvozdena kupola (pretpostavka: automatski uzvraća, a nuklearke u letu obara PVO).
+- [ ] Kampanja (pretpostavka: jedna država i dinastija kroz sva doba, kako piše gore).
+- [ ] Portreti (pretpostavka: izmišljeni vladari).

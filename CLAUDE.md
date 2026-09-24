@@ -4,8 +4,8 @@
 
 ## Claude only
 
-- Living plan with all of Darko's decisions (items 1–67 from the ideas list, UI/UX, server):
-  https://claude.ai/code/artifact/165734ed-94a2-469d-9c8f-fcf9cc122ce7 (snapshot in `docs/PLAN.md`). Do not add things he rejected there.
+- The plan with all of Darko's decisions is `docs/PLAN.md` (source of truth since 24. 9. 2026; the old claude.ai living doc
+  is no longer updated). Follow its phase order, mark phases done there, and do not add things he rejected.
 - The public build is https://war.deovilab.com. The old claude.ai artifact https://claude.ai/artifact/978GoCbiKGTJjrKhQnrwoS (v0.4)
   is legacy; if it is ever republished, reuse that URL.
 - `git pull` at session start is done by the SessionStart hook in `.claude/settings.json`; if it fails, fix it before working.
