@@ -100,6 +100,7 @@ async def main():
             await ctx.expose_binding('__roomSend', lambda src, patch, peer=peer: broker.send(peer, patch))
             await ctx.add_init_script(MOCK)
             page = await ctx.new_page()
+            page.set_default_timeout(90_000)  # CI (GitHub runner, swiftshader) crta sporo
             page.on('pageerror', lambda e, n=name: errs.append(f'{n} PAGEERROR: {e}'))
             page.on('console', lambda m, n=name: errs.append(f'{n}: {m.text}') if m.type == 'error' and 'ERR_FAILED' not in m.text else None)
 
@@ -239,8 +240,11 @@ async def main():
         # the guest leaves: the host's computer takes over the guest's country
         await broker.drop('pB')
         await B.close()
-        await asyncio.sleep(10)
-        ai = await A.evaluate('() => !!window.__ra.G.humans[1].ai')
+        for _ in range(60):  # the host takes over after 8 s without the guest; slow CI needs more than 10 s
+            await asyncio.sleep(0.5)
+            ai = await A.evaluate('() => !!window.__ra.G.humans[1].ai')
+            if ai:
+                break
         check(ai, 'guest left → computer took over the country')
         await A.screenshot(path=OUT + 'mp_6_left.png')
         print('\n'.join(errs[:20]) or 'no page errors')
@@ -251,3 +255,4 @@ async def main():
     print('FAILS:', fails if fails else 'none')
 
 asyncio.run(main())
+sys.exit(1 if fails else 0)

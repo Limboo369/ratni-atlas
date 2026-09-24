@@ -34,13 +34,15 @@ say so first: asset delivery (build + deploy + tests) is not wired up yet.
   `.github/workflows/setup.yml` on every push to `server/**`; it is idempotent.
 - `server/deploy.sh` is installed as `deovilab-deploy <app> <domain> <port>`: `docker compose up`, certificate, nginx site.
 - `.github/workflows/audit.yml` prints the server state (read only).
-- Secrets: `SERVER_IP`, `SERVER_SSH_KEY` (root, key only — password login is off).
+- Secrets: `SERVER_IP`, `SERVER_SSH_KEY` (root, key only — password login is off), `SERVER_HOST_KEY` (pinned; workflows
+  use `StrictHostKeyChecking yes`). Server-side steps are serialized with `flock /run/deovilab.lock`.
 
 | App | Domain | Port | Source |
 | --- | --- | --- | --- |
 | war | war.deovilab.com | 8101 | this repo, `deploy/compose.yml` |
 
-New app (any repo): a `compose.yml` publishing `127.0.0.1:<free port>`, the two secrets above, a deploy workflow that
+New app (any repo): a `compose.yml` publishing only `127.0.0.1:<free port>` (deovilab-deploy refuses anything else,
+because Docker bypasses ufw), the two secrets above, a deploy workflow that
 rsyncs to `/srv/apps/<app>/` and runs `deovilab-deploy`, and a DNS A record `<sub>.deovilab.com → server IP` (Darko, Porkbun).
 Add the row to the table.
 
@@ -77,7 +79,7 @@ Rebuild era data: `scripts/fetch_data.sh && python3 build/eras.py`.
   with `RA.takeBorders`.
 - Internal names stay as they are (`RA` namespace, storage keys, room ids, file names) — renaming them breaks saves and online play.
 
-## Tests (CI runs the first three before every publish)
+## Tests (CI runs `make.py`, `test_ui2.py` and `test_mp.py` before every publish; a failed check blocks it)
 
 ```
 python3 build/make.py

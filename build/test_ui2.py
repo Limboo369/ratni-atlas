@@ -224,3 +224,4 @@ async def main():
     print('FAILS:', fails if fails else 'none')
 
 asyncio.run(main())
+sys.exit(1 if fails else 0)

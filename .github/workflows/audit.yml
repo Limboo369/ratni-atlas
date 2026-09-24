@@ -9,9 +9,11 @@ jobs:
         env:
           IP: ${{ secrets.SERVER_IP }}
           KEY: ${{ secrets.SERVER_SSH_KEY }}
+          HOST_KEY: ${{ secrets.SERVER_HOST_KEY }}
         run: |
           mkdir -p ~/.ssh && printf '%s\n' "$KEY" > ~/.ssh/id_ed25519 && chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -H "$IP" >> ~/.ssh/known_hosts 2>/dev/null
+          printf '%s %s\n' "$IP" "$HOST_KEY" > ~/.ssh/known_hosts
+          printf 'Host *\n  StrictHostKeyChecking yes\n  BatchMode yes\n' > ~/.ssh/config
           ssh root@"$IP" 'bash -s' <<'EOF'
           s() { echo; echo "===== $1"; }
           s "apt povijest (ručne instalacije)"; zgrep -h -E "^(Start-Date|Commandline)" /var/log/apt/history.log* 2>/dev/null | grep -v "unattended" | paste - - | sort | grep -v "^$"
@@ -28,6 +30,9 @@ jobs:
           s "web direktoriji"; ls -la /var/www /srv /opt /home 2>&1; du -sh /var/www/* /srv/* /opt/* 2>/dev/null
           s "korisnici sa shellom"; grep -E "(bash|sh)$" /etc/passwd | cut -d: -f1,6
           s "authorized_keys (broj, komentari)"; for f in /root/.ssh/authorized_keys /home/*/.ssh/authorized_keys; do [ -f $f ] && echo "$f: $(wc -l <$f) -> $(awk '{print $NF}' $f | tr '\n' ' ')"; done
+          s "host ključ"; ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub
+          s "certbot obnavljanje"; grep -H -E "^(authenticator|installer|renew_hook)|/var/www" /etc/letsencrypt/renewal/*.conf
+          s "aplikacije"; ls -la /srv/apps; docker ps --format '{{.Names}}  {{.Image}}  {{.Ports}}  {{.Status}}'
           s "sshd"; sshd -T | grep -E "^(passwordauthentication|permitrootlogin|port|pubkeyauthentication) "
           s "cron"; crontab -l 2>/dev/null; ls /etc/cron.d
           s "disk/ram"; df -h / ; free -h

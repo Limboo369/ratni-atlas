@@ -1,20 +1,40 @@
 #!/bin/bash
 # deovilab-deploy <app> <domena> <port>
-# Pokreće Docker projekat /srv/apps/<app>/compose.yml (port objavljen samo na 127.0.0.1:<port>) i objavljuje ga
+# Pokreće Docker projekat /srv/apps/<app>/compose.yml (portovi smiju biti samo na 127.0.0.1) i objavljuje ga
 # na https://<domena>: Let's Encrypt certifikat (webroot, obnavlja se sam) + nginx proxy s WebSocketom.
 # Instalira ga server/setup.sh; zovu ga deploy workflowi svih repozitorija.
 set -euo pipefail
+exec 9>/run/deovilab.lock
+flock 9
 APP=${1:-} D=${2:-} PORT=${3:-}
 [[ $APP =~ ^[a-z0-9-]+$ && $D =~ ^[a-z0-9.-]+\.[a-z]+$ && $PORT =~ ^[0-9]{4,5}$ ]] \
   || { echo "upotreba: deovilab-deploy <app> <domena> <port>"; exit 2; }
 DIR=/srv/apps/$APP SITE=/etc/nginx/sites-available/$D
 [ -f "$DIR/compose.yml" ] || { echo "nema $DIR/compose.yml"; exit 1; }
 
-# Jedan port = jedna aplikacija
-other=$(grep -l "proxy_pass http://127.0.0.1:$PORT;" /etc/nginx/sites-available/* 2>/dev/null | grep -vx "$SITE" || true)
+# Jedna domena = jedna aplikacija, jedan port = jedna aplikacija
+[ ! -f "$SITE" ] || head -1 "$SITE" | grep -q "^# deovilab-deploy: $APP -> " \
+  || { echo "$D već pripada drugoj aplikaciji: $(head -1 "$SITE")"; exit 1; }
+other=$(grep -l "proxy_pass http://127.0.0.1:$PORT;" /etc/nginx/sites-available/* 2>/dev/null | grep -vxF -e "$SITE" -e "$SITE.bak" || true)
 [ -z "$other" ] || { echo "port $PORT već koristi: $other"; exit 1; }
 
-docker compose -p "$APP" -f "$DIR/compose.yml" up -d --build --remove-orphans --wait
+# Docker zaobilazi ufw: svaki objavljeni port mora biti 127.0.0.1:..., bez network_mode: host
+CFG=$(docker compose -p "$APP" -f "$DIR/compose.yml" config --format json) python3 - <<'PY'
+import json, os, sys
+bad = []
+for name, s in json.loads(os.environ['CFG']).get('services', {}).items():
+    if s.get('network_mode') == 'host':
+        bad.append(f'{name}: network_mode host nije dozvoljen')
+    for p in s.get('ports') or []:
+        if p.get('host_ip') != '127.0.0.1':
+            bad.append(f'{name}: port {p.get("published")} mora biti "127.0.0.1:{p.get("published")}:{p.get("target")}"')
+sys.exit('\n'.join(bad) or None)
+PY
+
+cd "$DIR"
+docker compose -p "$APP" pull -q --ignore-buildable
+docker compose -p "$APP" build -q --pull
+docker compose -p "$APP" up -d --remove-orphans --wait
 for i in $(seq 20); do curl -fsS -o /dev/null "http://127.0.0.1:$PORT/" && break; sleep 1; done
 curl -fsS -o /dev/null "http://127.0.0.1:$PORT/" || { echo "$APP ne odgovara na 127.0.0.1:$PORT"; exit 1; }
 
@@ -27,6 +47,7 @@ elif ! grep -q '^authenticator = webroot' "/etc/letsencrypt/renewal/$D.conf"; th
     || echo "UPOZORENJE: obnavljanje certifikata za $D nije prebačeno na webroot"
 fi
 
+nginx -t -q || { echo "nginx konfiguracija je već neispravna prije $D — popraviti ručno"; exit 1; }
 new=$(mktemp)
 cat > "$new" <<EOF
 # deovilab-deploy: $APP -> 127.0.0.1:$PORT (ne mijenjati ručno, prepisuje se pri svakoj objavi)
@@ -43,8 +64,6 @@ server {
     server_name $D;
     ssl_certificate /etc/letsencrypt/live/$D/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/$D/privkey.pem;
-    include /etc/letsencrypt/options-ssl-nginx.conf;
-    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
     add_header Strict-Transport-Security "max-age=31536000" always;
     client_max_body_size 20m;
     location / {
@@ -60,7 +79,7 @@ server {
     }
 }
 EOF
-if ! cmp -s "$new" "$SITE"; then
+if ! cmp -s "$new" "$SITE" || [ ! -L "/etc/nginx/sites-enabled/$D" ]; then
   [ -f "$SITE" ] && cp "$SITE" "$SITE.bak"
   mv "$new" "$SITE" && chmod 644 "$SITE"
   ln -sf "$SITE" "/etc/nginx/sites-enabled/$D"
