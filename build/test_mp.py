@@ -191,8 +191,12 @@ async def main():
         me = await A.evaluate('() => window.__ra.G && window.__ra.G.me && window.__ra.G.me.name')
         check(me == 'Bosna i Hercegovina', f'host came back to the same country ({me})')
         t1 = await B.evaluate('() => window.__ra.G.tick')
-        await asyncio.sleep(2)
-        t2 = await B.evaluate('() => window.__ra.G.tick')
+        t2 = t1
+        for _ in range(60):  # the host replays the whole game first; slow CI needs time
+            await asyncio.sleep(0.5)
+            t2 = await B.evaluate('() => window.__ra.G.tick')
+            if t2 > t1 + 5:
+                break
         check(t2 > t1, f'game runs again after the host came back ({t1} -> {t2})')
         await sync_check('after host came back')
 
