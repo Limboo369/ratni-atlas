@@ -1,0 +1,215 @@
+<div id="app">
+  <div id="map" aria-label="Karta Evrope"></div>
+
+  <header id="hud" hidden>
+    <div class="stat troops">
+      <span class="lab">Vojska</span>
+      <span class="val num" id="hTroops">0</span>
+      <div class="tbar" id="hBar" title="Zelena zona: vojska najbrže raste (oko 42% kapaciteta)"><div class="zone"></div><div class="fill"></div><div class="mark"></div></div>
+      <span class="sub" id="hTroopsSub">/ 0</span>
+    </div>
+    <div class="stat">
+      <span class="lab">Zlato</span>
+      <span class="val num" id="hGold">0</span>
+      <span class="sub" id="hGoldSub">+0/s</span>
+    </div>
+    <div class="stat">
+      <span class="lab">Kopno</span>
+      <span class="val num" id="hLand">0%</span>
+      <span class="sub" id="hRank">cilj 70%</span>
+    </div>
+    <div class="hud-btns">
+      <div>
+        <button class="icon-btn" id="speedBtn" aria-label="Brzina igre">1×</button>
+        <div id="clock">00:00</div>
+      </div>
+      <button class="icon-btn" id="pauseBtn" aria-label="Pauza"></button>
+      <button class="icon-btn" id="menuBtn" aria-label="Meni"></button>
+    </div>
+  </header>
+
+  <aside id="board" hidden>
+    <header><span id="boardHead">Poredak</span><button id="boardToggle" aria-label="Prikaži ili sakrij poredak">▾</button></header>
+    <ol id="boardList"></ol>
+  </aside>
+
+  <div id="status"></div>
+  <div id="toasts" aria-live="polite"></div>
+
+  <button class="icon-btn" id="meBtn" hidden aria-label="Prikaži moju državu"></button>
+
+  <div id="attBar" hidden aria-label="Aktivni napadi"></div>
+
+  <div id="modeBar" hidden><span id="modeText"></span><button id="modeExtra" hidden></button><button id="modeCancel">Odustani</button></div>
+
+  <footer id="dock" hidden>
+    <div class="ratio-row">
+      <span class="lab">Snaga<br>napada</span>
+      <input type="range" id="ratio" min="5" max="100" step="5" value="30" aria-label="Snaga napada u postocima">
+      <span class="rv" id="ratioVal"><b>30%</b></span>
+    </div>
+    <div class="acts-row">
+      <button class="act" id="aArmy"><i data-ic="army"></i><span>Vojska</span></button>
+      <button class="act" id="aBuild"><i data-ic="build"></i><span>Gradi</span></button>
+      <button class="act" id="aLand"><i data-ic="boat"></i><span>Desant</span></button>
+      <button class="act" id="aStrike"><i data-ic="rocket"></i><span>Rakete</span></button>
+      <button class="act" id="aDiplo"><i data-ic="ally"></i><span>Savezi</span><b class="bdg" id="diploBdg" hidden>0</b></button>
+    </div>
+  </footer>
+
+  <div id="spawnBar" hidden>
+    <h3>Odaberi početak</h3>
+    <p id="spawnText">Dodirni bilo gdje na kopnu ili izaberi državu.</p>
+    <select id="natSel" aria-label="Preuzmi državu"></select>
+    <button class="go" id="startBtn" disabled>Kreni</button>
+  </div>
+
+  <div id="sheetWrap" hidden><div id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle"></div></div>
+
+  <div class="screen" id="startScreen" hidden>
+    <div class="card">
+      <div class="coords">43°51′N 18°25′E · mjerilo 1:10 000 000</div>
+      <h1 class="brand">Ratni<br><em>Atlas</em></h1>
+      <div id="joinBanner" class="btns" hidden></div>
+      <p class="tagline">Osvajaj Evropu na stvarnoj karti — grad po grad, preko rijeka i planina.</p>
+      <div class="field">
+        <label for="nameIn">Tvoje ime</label>
+        <input type="text" id="nameIn" maxlength="18" placeholder="npr. Darko" autocomplete="off">
+      </div>
+      <div class="field">
+        <span class="lab">Doba</span>
+        <div class="seg wrap era" id="eraSeg"></div>
+        <p class="note era-note" id="eraNote"></p>
+      </div>
+      <div class="field">
+        <span class="lab">Početak</span>
+        <div class="seg" id="startSeg">
+          <button data-v="granice" aria-pressed="true">Stvarne granice</button>
+          <button data-v="slobodno" aria-pressed="false">Od prijestolnice</button>
+        </div>
+      </div>
+      <div class="field">
+        <span class="lab">Način igre</span>
+        <div class="seg" id="gmSeg">
+          <button data-v="klasik" aria-pressed="true">Klasično</button>
+          <button data-v="br" aria-pressed="false">Battle royale</button>
+        </div>
+        <p class="note era-note" id="modeNote"></p>
+      </div>
+      <div class="field">
+        <span class="lab">Dio karte</span>
+        <div class="seg wrap" id="regSeg"></div>
+      </div>
+      <div class="field">
+        <span class="lab">Težina</span>
+        <div class="seg" id="diffSeg">
+          <button data-v="lako" aria-pressed="false">Lako</button>
+          <button data-v="srednje" aria-pressed="true">Srednje</button>
+          <button data-v="tesko" aria-pressed="false">Teško</button>
+        </div>
+      </div>
+      <div class="field">
+        <span class="lab">Mirno doba na početku (bez napada na države)</span>
+        <div class="seg" id="peaceSeg">
+          <button data-v="0" aria-pressed="false">Bez</button>
+          <button data-v="60" aria-pressed="true">1 min</button>
+          <button data-v="180" aria-pressed="false">3 min</button>
+        </div>
+      </div>
+      <div class="field" id="csField">
+        <span class="lab">Gradovi-države (mali protivnici)</span>
+        <div class="seg" id="csSeg">
+          <button data-v="0" aria-pressed="false">Bez</button>
+          <button data-v="25" aria-pressed="false">25</button>
+          <button data-v="50" aria-pressed="true">50</button>
+        </div>
+      </div>
+      <button class="go" id="goBtn">Igraj</button>
+      <div class="online-box" id="onlineBox">
+        <div class="sec-t">Igraj s prijateljem (online)</div>
+        <p class="note" id="onlineNote">Povezujem se…</p>
+        <div class="btns" id="onlineBtns"></div>
+      </div>
+      <div class="small-links"><button id="howBtn">Kako se igra</button><span>v0.5 · doba i battle royale</span></div>
+      <p class="credits">Karta: Natural Earth (javno vlasništvo) · historijske granice: historical-basemaps, A. Ourednik (GPL-3.0) · reljef: NASA · motor karte: Leaflet.</p>
+    </div>
+  </div>
+
+  <div class="screen" id="lobbyScreen" hidden>
+    <div class="card">
+      <h2 class="end-title lobby-title">Online soba</h2>
+      <p class="end-sub" id="lobbySub"></p>
+      <div class="sec-t">Igrači</div>
+      <div class="list" id="lobbyPlayers"></div>
+      <div class="field" style="margin-top:14px">
+        <label for="lobbyNat">Tvoja država</label>
+        <select id="lobbyNat" class="sel"></select>
+      </div>
+      <div id="lobbyHost">
+        <div class="field">
+          <span class="lab">Način igre</span>
+          <div class="seg" id="modeSeg">
+            <button data-v="coop" aria-pressed="true">Zajedno protiv svih</button>
+            <button data-v="vs" aria-pressed="false">Jedan protiv drugog</button>
+          </div>
+        </div>
+        <div class="field">
+          <span class="lab">Doba</span>
+          <div class="seg wrap era" id="lEraSeg"></div>
+        </div>
+        <div class="field">
+          <span class="lab">Početak</span>
+          <div class="seg" id="lStartSeg">
+            <button data-v="granice" aria-pressed="true">Stvarne granice</button>
+            <button data-v="slobodno" aria-pressed="false">Od prijestolnice</button>
+          </div>
+        </div>
+        <div class="field">
+          <span class="lab">Battle royale (zona se sužava)</span>
+          <div class="seg" id="lGmSeg">
+            <button data-v="klasik" aria-pressed="true">Ne</button>
+            <button data-v="br" aria-pressed="false">Da</button>
+          </div>
+        </div>
+        <div class="field">
+          <span class="lab">Dio karte</span>
+          <div class="seg wrap" id="lRegSeg"></div>
+        </div>
+        <div class="field">
+          <span class="lab">Težina (kompjuter)</span>
+          <div class="seg" id="lDiffSeg">
+            <button data-v="lako" aria-pressed="false">Lako</button>
+            <button data-v="srednje" aria-pressed="true">Srednje</button>
+            <button data-v="tesko" aria-pressed="false">Teško</button>
+          </div>
+        </div>
+        <div class="field">
+          <span class="lab">Mirno doba na početku</span>
+          <div class="seg" id="lPeaceSeg">
+            <button data-v="0" aria-pressed="false">Bez</button>
+            <button data-v="60" aria-pressed="true">1 min</button>
+            <button data-v="180" aria-pressed="false">3 min</button>
+          </div>
+        </div>
+      </div>
+      <p class="note" id="lobbyInfo"></p>
+      <button class="go" id="lobbyGo">Počni igru</button>
+      <div class="small-links"><button id="lobbyLeave">Izađi iz sobe</button><span id="lobbyCount"></span></div>
+    </div>
+  </div>
+
+  <div class="screen" id="endScreen" hidden>
+    <div class="card">
+      <h2 class="end-title" id="endTitle">Pobjeda</h2>
+      <p class="end-sub" id="endSub"></p>
+      <div class="kv" id="endStats"></div>
+      <div class="sec-t">Udio kopna kroz vrijeme</div>
+      <canvas id="chart"></canvas>
+      <div class="legend" id="legend"></div>
+      <button class="go" id="againBtn">Nova igra</button>
+      <div class="small-links"><button id="watchBtn">Gledaj dalje</button><span id="endTime"></span></div>
+    </div>
+  </div>
+
+  <div id="loading"><div><h1 class="brand">Ratni <em>Atlas</em></h1><p id="loadMsg">Učitavam kartu Evrope…</p></div></div>
+</div>
