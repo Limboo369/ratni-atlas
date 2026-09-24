@@ -76,10 +76,12 @@ async def main():
         # 3. region + peace, then spawn by picking a nation from the list
         await page.fill('#nameIn', 'Darko')
         await page.click('#eraSeg button[data-v="danas"]')
+        await page.click('#configBtn')
         await page.click('#startSeg button[data-v="slobodno"]')
         await page.click('#gmSeg button[data-v="klasik"]')
         await page.click(f'#regSeg button[data-v="{REGION}"]')
         await page.click('#peaceSeg button[data-v="60"]')
+        await page.click('#configDone')
         await page.click('#goBtn')
         await page.wait_for_timeout(900)
         info = await ev('() => { const G = window.__ra.G; return { region: G.map.region && G.map.region.name, nations: G.P.filter(p => p && p.type === "nation").map(p => p.iso), land: G.map.landCount, peace: G.peaceUntil }; }')
@@ -97,6 +99,8 @@ async def main():
             r = await ev(f'() => RA.placeHuman(window.__ra.G, {bad}, "x")')
             check('err' in r, 'spawn outside the region is refused: ' + str(r.get('err')))
             await ev(f'() => window.__ra.ui.pickNation("{pid}")')
+        # This test fast-forwards a minute of play; queued tutorial toasts would cover map tap targets.
+        await ev('() => { window.__ra.ui.noTips = true; }')
         await page.click('#startBtn')
         await page.wait_for_timeout(1200)
 
@@ -168,9 +172,12 @@ async def main():
             check(anchor == cap or anchor >= 0, 'unit got a new position')
         # 7. diplomacy: alliance offer and trade offer are separate
         offer = await ev('''() => { const G = window.__ra.G, me = G.me; const os = G.P.filter(p => p && p.alive && p.type === 'nation' && p !== me && !me.allies.has(p.id) && !me.trade.has(p.id)); const a = os[0], t = os[1] || os[0]; G.allyReqs.push({from: a.id, to: me.id, exp: G.tick + 300}); G.tradeReqs.push({from: t.id, to: me.id, exp: G.tick + 300}); return {a: a.id, t: t.id}; }''')
-        await page.wait_for_timeout(900)
+        try:
+            await page.wait_for_function('document.getElementById("diploBdg").textContent === "2"', timeout=10000)
+        except Exception:
+            pass
         badge = await ev('() => document.getElementById("diploBdg").textContent')
-        check(badge == '2', 'diplomacy badge shows 2 offers')
+        check(badge == '2', f'diplomacy badge shows 2 offers (got {badge})')
         await page.screenshot(path=OUT + f'{MODE}_v3_8_offers.png')
         await page.click('#aDiplo')
         await page.wait_for_timeout(900)

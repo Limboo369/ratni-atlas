@@ -175,6 +175,7 @@ RA.UI = class {
     ro.observe($('dock'));
     ro.observe($('hud'));
     ro.observe($('status'));
+    this.command = new RA.CommandScreen(this);
   }
   /* start screen: region buttons with the number of countries of the chosen era, and short explanations */
   startNotes() {
@@ -200,6 +201,7 @@ RA.UI = class {
     this.$('aStrike').innerHTML = `${RA.icon(E.strikeIcon)}<span>${RA.esc(E.strikeTab)}</span>`;
   }
   _save() {
+    if (this.command) this.command.refresh();
     try {
       localStorage.setItem('ra_settings', JSON.stringify(this.settings));
     } catch (e) {}
