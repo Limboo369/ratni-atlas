@@ -11,6 +11,12 @@ He plays and tests mostly on an **Android phone** — every screen must work at 
   (SSH and unknown HTTPS are blocked by the egress proxy), so the server is set up and deployed through **GitHub Actions**
   from this repository; server credentials live only in GitHub Secrets, never in chat.
 
+## Git (automatski, bez pitanja)
+
+Darko radi s više računara; GitHub (`Limboo369/ratni-atlas`, `main`) je jedini izvor koda.
+- Na početku sesije: `git pull --ff-only` (hook u `.claude/settings.json` to radi sam; ako padne, riješi prije rada).
+- Nakon svake završene i testirane promjene: commit + `git push`, bez pitanja. Nikad ne ostavljaj nepushane promjene na kraju odgovora.
+
 ## Layout
 
 | Path | What |
