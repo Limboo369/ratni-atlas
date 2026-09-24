@@ -280,7 +280,8 @@ RA.eraRegionNations = function (base, inside, minCells) {
     let bc = -1, bd = 1e18;
     for (let c = 0; c < N; c++) {
       if (own[c] !== n.k || !inside(c)) continue;
-      const d = ((c % W) - mx) ** 2 + (((c / W) | 0) - my) ** 2;
+      const dx = (c % W) - mx, dy = ((c / W) | 0) - my;
+      const d = dx * dx + dy * dy;
       if (d < bd) {
         bd = d;
         bc = c;

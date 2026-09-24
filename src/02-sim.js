@@ -173,7 +173,6 @@ RA.Game = class Game {
     if (pid) {
       const np = P[pid];
       this._addCell(np, c);
-      np.changed = true;
       if (np.tiles > np.peak) np.peak = np.tiles;
     }
     this.capTick[c] = this.tick & 255;
@@ -246,7 +245,9 @@ RA.Game = class Game {
 
   /* ---------------- economy ---------------- */
   computeMax(p) {
-    const base = 2 * (RA.dpow(p.tiles * 3, 0.56) * 1100 + 50000) + p.cityT + p.n.barracks * RA.CFG.BARRACKS_T + p.n.city * RA.CFG.CITY_BUILT_T;
+    const land = 2 * (RA.dpow(p.tiles * 3, 0.56) * 1100 + 50000);
+    // cities add at most half of the land-based army, so a city-rich empire cannot snowball
+    const base = land + Math.min(p.cityT, land * 0.5) + p.n.barracks * RA.CFG.BARRACKS_T + p.n.city * RA.CFG.CITY_BUILT_T;
     if (p.type === 'bot') return base / 3;
     if (p.type === 'nation') return base * this.diff.maxT;
     return base;
@@ -517,7 +518,7 @@ RA.Game = class Game {
         const dens = T.troops / Math.max(1, T.tiles);
         let lm = traitor ? 0.5 : 1;
         if (T.type === 'bot' && A.type !== 'bot') lm *= 0.7;
-        lossA = mag * RA.clamp(ratio, 0.7, 2) * (0.463 * RA.CFG.K * this.densScale + 0.0039 * dens) * lm;
+        lossA = mag * RA.clamp(ratio, 0.7, 2) * (0.463 * RA.CFG.K * this.densScale + 0.0078 * dens) * lm;
         lossD = dens;
         frac = (((RA.clamp(ratio, 0.82, 7.5) * Math.max(1, ratio / 20)) / 8.5) * spd * (traitor ? 0.8 : 1) * this.pace) / front;
       }
@@ -700,7 +701,7 @@ RA.Game = class Game {
       if (dx * dx + dy * dy < R * R) return 'Preblizu drugoj zgradi.';
     }
     if (type === 'city') {
-      for (const ct of this.cities) if ((ct.x - x) ** 2 + (ct.y - y) ** 2 < 25) return 'Preblizu postojećem gradu.';
+      for (const ct of this.cities) if ((ct.x - x) * (ct.x - x) + (ct.y - y) * (ct.y - y) < 25) return 'Preblizu postojećem gradu.';
     }
     if (p.gold < this.structCost(p, type)) return 'Nemaš dovoljno zlata.';
     return c;
@@ -920,6 +921,9 @@ RA.Game = class Game {
       if (!X || !X.alive || this.isFriendly(X, p)) continue;
       const size = cp.end - cp.start;
       if (size > 400) continue;
+      // a landing or paratroopers still fighting there, or the country's own exclave in a borders game
+      if (this.attacks.some((a) => !a.done && a.a === p.id && a.t === X.id)) continue;
+      if (this.borders && p.nation && this.map.eraOwn && this.map.eraOwn[q[cp.start]] === p.nation.k) continue;
       const cells = Array.from(q.subarray(cp.start, cp.end));
       for (const c of cells) this.setOwner(c, X.id);
     }

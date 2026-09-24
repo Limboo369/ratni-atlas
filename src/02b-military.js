@@ -307,7 +307,7 @@ RA.NUKE = RA.MISSILE;
     let best = null, bd = 1e9;
     for (const e of this.units) {
       if (e.dead || e.owner === u.owner || !this.hostile(p, e.owner)) continue;
-      const d2 = (e.x - u.x) ** 2 + (e.y - u.y) ** 2;
+      const d2 = (e.x - u.x) * (e.x - u.x) + (e.y - u.y) * (e.y - u.y);
       if (d2 <= R2 && d2 < bd) {
         bd = d2;
         best = e;

@@ -338,6 +338,7 @@ RA.startGame = function (G) {
   const nations = G.P.filter((p) => p && p.alive && p.spawned && p.type !== 'bot').length;
   const ref = RA.typicalDensity(162857 / 43);
   G.densScale = RA.clamp(RA.typicalDensity(G.map.landCount / Math.max(1, nations)) / ref, 1, 3);
+  if (G.borders) G.densScale *= 1.6;
   G.humans = G.P.filter((p) => p && p.human);
   if (G.opts.gm === 'br') G.zoneInit();
   G.state = 'play';

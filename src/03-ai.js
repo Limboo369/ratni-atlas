@@ -126,8 +126,8 @@ RA.AI = {
       let weak = null;
       for (const [oid] of info.nb) {
         const o = G.P[oid];
-        if (!o.alive || G.isFriendly(p, o) || (o.human && G.tick < G.diff.grace)) continue;
-        if (!weak || o.troops < weak.troops) weak = o;
+        if (!o.alive || G.isFriendly(p, o) || (o.human && G.tick < G.diff.grace) || RA.AI.spare(G, p, o)) continue;
+        if (o.troops < p.troops * 0.8 && (!weak || o.troops < weak.troops)) weak = o;
       }
       if (weak) {
         G.launchAttack(p.id, weak.id, p.troops * 0.5, RA.AI.focusOn(G, p, weak));
@@ -168,7 +168,7 @@ RA.AI = {
     const px = p.capital % W, py = (p.capital / W) | 0;
     for (const c of G.cities) {
       if (c.owner !== T.id) continue;
-      const d = (c.x - px) ** 2 + (c.y - py) ** 2;
+      const d = (c.x - px) * (c.x - px) + (c.y - py) * (c.y - py);
       if (d < bd) {
         bd = d;
         best = c.c;
@@ -183,7 +183,7 @@ RA.AI = {
     const px = p.capital % W, py = (p.capital / W) | 0;
     for (const c of G.cities) {
       if (c.owner !== 0 || !land[c.c] || (G.zone && G.zoneOut(c.c))) continue;
-      const d = (c.x - px) ** 2 + (c.y - py) ** 2;
+      const d = (c.x - px) * (c.x - px) + (c.y - py) * (c.y - py);
       if (d < bd) {
         bd = d;
         best = c.c;
@@ -192,6 +192,10 @@ RA.AI = {
     return bd < 45 * 45 ? best : -1;
   },
 
+  /* borders game: small states get 3 minutes after the peace before the AI picks on them (unless they hit first) */
+  spare(G, p, o) {
+    return G.borders && o.type === 'nation' && o.peak < G.map.landCount * 0.005 && G.tick < G.peaceUntil + 1800 && p.lastAttackedBy !== o.id;
+  },
   pickTarget(G, p, info) {
     if (G.tick < G.peaceUntil) return null;
     let best = null, bs = 0;
@@ -204,7 +208,8 @@ RA.AI = {
       // balance of power: everybody leans on a runaway leader (human or AI alike)
       const Ld = G.leader;
       const hegemon = Ld && Ld.id === oid && Ld.id !== p.id && Ld.share > 0.26 ? Ld.share : 0;
-      if (strength < 0.7 && hate < 1.2 && !(hegemon > 0.32 && strength > 0.25)) continue;
+      if (strength < 1.3 && hate < 1.2 && !(hegemon && strength > 0.12)) continue;
+      if (RA.AI.spare(G, p, o)) continue;
       let s = strength * (1 + Math.min(border, 200) / 150) * (1 + hate);
       if (hegemon) s *= 1.6 + (hegemon - 0.26) * 8;
       if (o.type === 'bot') s *= 1.5;
