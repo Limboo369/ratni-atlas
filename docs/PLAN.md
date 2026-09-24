@@ -206,7 +206,7 @@ Svijet dolazi prije ekonomije, vojske i kampanje: resursi, moreuzi, mornarica i 
 | Faza | Šta | Stanje |
 | --- | --- | --- |
 | 1 | Server i domen, Docker, HTTPS, automatska objava s testovima | gotovo |
-| 2 | Balans v0.5: Rim, male države u stvarnim granicama, dužina partije 1914. | gotovo (Rim se još dotjeruje) |
+| 2 | Balans v0.5: Rim, male države u stvarnim granicama, dužina partije 1914. | gotovo: Rim pobjeđuje ~1/3 partija (15–30 min), partije 15–33 min |
 | 3 | Vlastiti online server (Node + WebSocket u Dockeru): online na war.deovilab.com, gledaoci; svaka igra ima svoj link (war.deovilab.com/game-k3x9pq) za poziv prijatelja i povratak u igru nakon zatvaranja stranice ili pada veze | u toku |
 | 4 | Cijeli svijet: karta, doba, dijelovi svijeta, učitavanje sa servera | |
 | 5 | Brze stvari: usmjereni napad, vrati granice, pravo prolaza, ping i brze poruke, zvuk i muzika, sitnice, tutorijal | |

@@ -6,7 +6,7 @@ RA.CFG = {
   K: 3.2, // one cell ~ several "classic" pixels: scales per-cell attack costs
   NEUTRAL_SLOW: 3.0,
   WIN_SHARE: 0.7,
-  OVERTIME_MIN: 12, // after this many minutes the share needed to win drops 2%/min (floor 50%)
+  OVERTIME_MIN: 12, // after this many minutes the share needed to win drops 2%/min to 50%, then 1%/min to 40%
   ALLY_MAX: 2,
   ALLY_DUR: 3000, // 5 min
   ALLY_REQ_DUR: 200,
@@ -518,6 +518,9 @@ RA.Game = class Game {
         const dens = T.troops / Math.max(1, T.tiles);
         let lm = traitor ? 0.5 : 1;
         if (T.type === 'bot' && A.type !== 'bot') lm *= 0.7;
+        // whoever holds more than 35% of the map pays more for every further conquest (no runaway winner)
+        const L = this.leader;
+        if (L && L.id === A.id && L.share > 0.35) lm *= 1 + (L.share - 0.35) * 2;
         lossA = mag * RA.clamp(ratio, 0.7, 2) * (0.463 * RA.CFG.K * this.densScale + 0.0078 * dens) * lm;
         lossD = dens;
         frac = (((RA.clamp(ratio, 0.82, 7.5) * Math.max(1, ratio / 20)) / 8.5) * spd * (traitor ? 0.8 : 1) * this.pace) / front;
@@ -1032,7 +1035,9 @@ RA.Game = class Game {
   }
   winShare() {
     const m = this.tick / 600;
-    return Math.max(0.5, RA.CFG.WIN_SHARE - Math.max(0, Math.floor(m - RA.CFG.OVERTIME_MIN)) * 0.02);
+    const over = Math.max(0, Math.floor(m - RA.CFG.OVERTIME_MIN));
+    // -2%/min down to 50%, then -1%/min down to 40%: a long stalemate still ends
+    return over <= 10 ? RA.CFG.WIN_SHARE - over * 0.02 : Math.max(0.4, 0.5 - (over - 10) * 0.01);
   }
   _history() {
     const snap = { t: this.tick, v: {} };

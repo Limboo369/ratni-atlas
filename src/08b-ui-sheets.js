@@ -489,7 +489,7 @@ Object.assign(RA.UI.prototype, {
     const C = RA.CFG;
     const eras = RA.ERAS.map((e) => `<li><b>${RA.esc(e.name)}</b> (${RA.esc(e.sub)}) — ${RA.esc(e.blurb)}</li>`).join('');
     const h = this.head('Kako se igra', 'Overtake — pravila ukratko') + `<div class="howto">
-      <h4>Cilj</h4><p>Zauzmi 70% kopna odabranog dijela karte ili ostani posljednja država. Poslije ${C.OVERTIME_MIN}. minute prag pada 2% po minuti.</p>
+      <h4>Cilj</h4><p>Zauzmi 70% kopna odabranog dijela karte ili ostani posljednja država. Poslije ${C.OVERTIME_MIN}. minute prag pada 2% po minuti do 50%, pa 1% po minuti do 40%. Ko drži više od 35% karte, plaća svako novo osvajanje skuplje.</p>
       <h4>Doba</h4><p>Na početnom ekranu biraš period u kojem se boriš. Svako doba ima svoje granice, gradove, jedinice, zgrade i oružje:</p><ul>${eras}</ul>
       <h4>Početak</h4><ul>
         <li><b>Stvarne granice</b>: sve države kreću sa svojom teritorijom iz tog doba. Dodirni državu ili je izaberi sa spiska — dobijaš njenu zemlju, vojsku i zlato.</li>

@@ -200,7 +200,8 @@ RA.newGame = function (map, opts) {
       }
       p.capCity = ci;
       p.maxT = G.computeMax(p);
-      p.troops = p.maxT * 0.4;
+      // a giant (Rome, Russia) starts with a smaller share of its huge army, so it cannot overrun everyone in minutes
+      p.troops = p.maxT * 0.4 * RA.clamp(0.12 / Math.max(0.001, p.tiles / map.landCount), 0.45, 1);
       p.gold = 100000;
     }
     G.replaced = [];
