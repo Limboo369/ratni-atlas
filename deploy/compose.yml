@@ -1,4 +1,4 @@
-# ConquError na serveru: /srv/apps/war (deovilab-deploy war war.deovilab.com 8101)
+# Overtake na serveru: /srv/apps/war (deovilab-deploy war war.deovilab.com 8101)
 services:
   web:
     build: .

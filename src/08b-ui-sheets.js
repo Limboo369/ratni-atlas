@@ -488,7 +488,7 @@ Object.assign(RA.UI.prototype, {
   howTo() {
     const C = RA.CFG;
     const eras = RA.ERAS.map((e) => `<li><b>${RA.esc(e.name)}</b> (${RA.esc(e.sub)}) — ${RA.esc(e.blurb)}</li>`).join('');
-    const h = this.head('Kako se igra', 'ConquError — pravila ukratko') + `<div class="howto">
+    const h = this.head('Kako se igra', 'Overtake — pravila ukratko') + `<div class="howto">
       <h4>Cilj</h4><p>Zauzmi 70% kopna odabranog dijela karte ili ostani posljednja država. Poslije ${C.OVERTIME_MIN}. minute prag pada 2% po minuti.</p>
       <h4>Doba</h4><p>Na početnom ekranu biraš period u kojem se boriš. Svako doba ima svoje granice, gradove, jedinice, zgrade i oružje:</p><ul>${eras}</ul>
       <h4>Početak</h4><ul>

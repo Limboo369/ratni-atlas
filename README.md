@@ -1,4 +1,4 @@
-# ConquError
+# Overtake
 
 Strateška igra osvajanja teritorije na stvarnoj karti Evrope (u pregledniku, prilagođeno telefonu).
 Doba od Rima do danas, klasična igra i battle royale, igra protiv AI i online.

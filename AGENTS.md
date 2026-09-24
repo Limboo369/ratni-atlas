@@ -1,7 +1,7 @@
-# ConquError — pravila za sve agente (Claude Code, Codex)
+# Overtake — pravila za sve agente (Claude Code, Codex)
 
 Browser territory-conquest strategy game (OpenFront.io-style, made better) on a real map of Europe.
-Game name **ConquError** (logo: "Conqu" in the text color, "Error" in red `var(--danger)`); the repository stays `ratni-atlas`.
+Game name **Overtake** (logo: "Over" in the text color, "take" in red `var(--danger)`); the repository stays `ratni-atlas`.
 Owner: **Darko** (Bosnia). Talk to him in **Bosnian, ijekavica**, short and concrete. All in-game text is Bosnian (ijekavica).
 He plays and tests mostly on an **Android phone** — every screen must work at phone width (375 px).
 

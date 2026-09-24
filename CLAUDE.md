@@ -1,4 +1,4 @@
-# ConquError (repo ratni-atlas) — notes for Claude
+# Overtake (repo ratni-atlas) — notes for Claude
 
 @AGENTS.md
 
