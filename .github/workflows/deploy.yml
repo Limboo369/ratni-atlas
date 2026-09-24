@@ -1,18 +1,39 @@
-﻿name: Objava igre
+name: Objava igre
 on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ['src/**', 'build/**']
+    paths: ['src/**', 'build/**', 'package/**', 'deploy/**', '.github/workflows/deploy.yml']
 
-concurrency: deploy
+concurrency: server
+
+env:
+  APP: war
+  DOMAIN: war.deovilab.com
+  PORT: 8101
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - run: pip install -q playwright && python3 -m playwright install --with-deps chromium >/dev/null
+      - run: python3 build/make.py
+      - run: python3 build/test_ui2.py phone balkan
+      - run: python3 build/test_mp.py
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with: { name: shots, path: build/shots/ }
+
   deploy:
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: python3 build/make.py
+      - run: python3 build/make.py && mkdir -p deploy/public && cp dist/test.html deploy/public/index.html
       - name: Slanje na server
         env:
           IP: ${{ secrets.SERVER_IP }}
@@ -20,6 +41,7 @@ jobs:
         run: |
           mkdir -p ~/.ssh && printf '%s\n' "$KEY" > ~/.ssh/id_ed25519 && chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan -H "$IP" >> ~/.ssh/known_hosts 2>/dev/null
-          mkdir -p out && cp dist/test.html out/index.html
-          rsync -az --delete out/ root@"$IP":/var/www/ratni-atlas/
-      - run: curl -fsS -o /dev/null -w '%{http_code} https://${{ vars.DOMAIN }}\n' https://${{ vars.DOMAIN }}/
+          ssh root@"$IP" mkdir -p /srv/apps/$APP
+          rsync -rlptz --delete deploy/ root@"$IP":/srv/apps/$APP/
+          ssh root@"$IP" deovilab-deploy $APP $DOMAIN $PORT
+      - run: curl -fsS https://$DOMAIN/ | grep -o '<title>[^<]*'

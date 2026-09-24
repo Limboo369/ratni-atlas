@@ -1,0 +1,9 @@
+# ConquError na serveru: /srv/apps/war (deovilab-deploy war war.deovilab.com 8101)
+services:
+  web:
+    image: nginx:stable-alpine
+    restart: unless-stopped
+    ports: ["127.0.0.1:8101:80"]
+    volumes:
+      - ./public:/usr/share/nginx/html:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
