@@ -72,16 +72,25 @@ RA.UI = class {
     };
 
     // settings (remembered per viewer)
-    this.settings = { name: '', difficulty: 'srednje', cityStates: 50, region: 'evropa', peace: 60, era: 'danas', start: 'granice', gm: 'klasik' };
+    this.settings = { name: '', difficulty: 'srednje', cityStates: 50, map: 'evropa', region: 'evropa', peace: 60, era: 'danas', start: 'granice', gm: 'klasik' };
     try {
       const s = JSON.parse(localStorage.getItem('ra_settings') || '{}');
       Object.assign(this.settings, s);
     } catch (e) {}
-    if (!RA.REGIONS.some((r) => r.id === this.settings.region)) this.settings.region = 'evropa';
+    if (!RA.MAPS.some((m) => m.id === this.settings.map)) this.settings.map = 'evropa';
+    this.fixRegion();
     if (!RA.ERAS.some((e) => e.id === this.settings.era)) this.settings.era = 'danas';
     if (this.settings.start !== 'slobodno') this.settings.start = 'granice';
     if (this.settings.gm !== 'br') this.settings.gm = 'klasik';
     $('nameIn').value = this.settings.name || '';
+    // the map: Europe is always there; the world only on our own server (probed at boot, see mapsChanged)
+    $('mapSeg').innerHTML = RA.MAPS.map((m) => `<button data-v="${m.id}" aria-pressed="false"${m.id === 'evropa' ? '' : ' hidden'}>${RA.esc(m.name)}<small>${RA.esc(m.sub)}</small></button>`).join('');
+    this._seg('mapSeg', this.settings.map, (v) => {
+      this.settings.map = v;
+      this.fixRegion();
+      this.startNotes();
+      this.app.useMap(v);
+    });
     $('eraSeg').innerHTML = RA.ERAS.map((e) => `<button data-v="${e.id}" aria-pressed="false">${RA.esc(e.short)}<small>${RA.esc(e.sub)}</small></button>`).join('');
     this._seg('eraSeg', this.settings.era, (v) => {
       this.settings.era = v;
@@ -176,11 +185,32 @@ RA.UI = class {
     ro.observe($('hud'));
     ro.observe($('status'));
   }
+  /* start screen buttons after the lobby changed the settings (and the map shown behind it) */
+  syncStart() {
+    const s = this.settings;
+    for (const [id, v] of [['mapSeg', s.map], ['eraSeg', s.era], ['startSeg', s.start], ['gmSeg', s.gm], ['diffSeg', s.difficulty], ['peaceSeg', String(s.peace)]]) this._press(id, v);
+    this.startNotes();
+    if (this.app.map.id !== s.map && this.app.mapOK && this.app.mapOK[s.map]) this.app.useMap(s.map);
+  }
+  /* the region must belong to the chosen map (else: all of that map) */
+  fixRegion() {
+    const s = this.settings;
+    if (!RA.regionsOf(s.map).some((r) => r.id === s.region)) s.region = RA.regionsOf(s.map)[0].id;
+  }
   /* start screen: region buttons with the number of countries of the chosen era, and short explanations */
   startNotes() {
     const s = this.settings, $ = this.$;
     const E = RA.eraById(s.era);
-    $('regSeg').innerHTML = RA.REGIONS.map((r) => `<button data-v="${r.id}" aria-pressed="${r.id === s.region}">${RA.esc(r.name)}<small>${this.regionCount(r.id, s.era, s.start)} država</small></button>`).join('');
+    const m = this.app.maps && this.app.maps[s.map];
+    const ready = !!m && RA.eraReady(m, E.id);
+    // a world era not downloaded yet: '…' until it is
+    if (m && !ready) RA.loadEra(m, E.id).then(() => this.startNotes(), () => {});
+    // eras the map does not have yet (the world: only today's borders for now)
+    for (const b of $('eraSeg').querySelectorAll('button')) b.disabled = !!(m && m.eraOK && !m.eraOK[b.dataset.v]);
+    $('regSeg').innerHTML = RA.regionsOf(s.map).map((r) => {
+      const n = ready ? this.regionCount(m, r.id, s.era, s.start) : null;
+      return `<button data-v="${r.id}" aria-pressed="${r.id === s.region}"${n === 0 ? ' disabled' : ''}>${RA.esc(r.name)}<small>${n == null ? '…' : n} država</small></button>`;
+    }).join('');
     $('eraNote').textContent = E.blurb;
     $('csField').hidden = s.start === 'granice';
     $('modeNote').textContent = (s.start === 'granice'
@@ -188,11 +218,75 @@ RA.UI = class {
       : 'Od prijestolnice: države kreću od malog kruga oko glavnog grada, a ostalo je slobodna zemlja. ')
       + (s.gm === 'br' ? 'Battle royale: radioaktivna zona se sužava prema nasumičnoj tački — sve izvan kruga propada.' : '');
   }
-  regionCount(reg, era, start) {
-    const key = `${reg}|${era}|${start}`;
+  regionCount(m, reg, era, start) {
+    const key = `${m.id}|${reg}|${era}|${start}`;
     this._rc = this._rc || {};
-    if (this._rc[key] == null) this._rc[key] = RA.regionMap(RA.eraMap(this.app.map, era, start), reg).nations.length;
+    if (this._rc[key] == null) this._rc[key] = RA.regionNations(RA.eraMap(m, era, start), reg).length;
     return this._rc[key];
+  }
+  /* boot probe: a map our server has shows up on the start screen (and in the lobby) */
+  mapsChanged(id) {
+    const ok = this.app.mapOK[id];
+    this.showMap(id, ok);
+    const s = this.settings;
+    if (s.map !== id) return;
+    if (ok) this.app.useMap(id);
+    else this.mapFailed(id);
+  }
+  /* the map could not be loaded (offline, or the page is not on our server): back to Europe */
+  mapFailed(id) {
+    this.app.mapOK[id] = false;
+    this.$('mapNote').hidden = false;
+    this.showMap(id, false);
+    this.$('mapNote').textContent = `${RA.mapInfo(id).aria} se sada ne može učitati (nema veze ili stranica nije na war.deovilab.com) — igraš na karti Evrope.`;
+    const s = this.settings;
+    if (s.map === id) {
+      s.map = 'evropa';
+      this.fixRegion();
+      this._press('mapSeg', 'evropa');
+      this._save();
+      this.startNotes();
+      this.app.useMap('evropa');
+    }
+  }
+  /* the map is there but not this era yet (the world gets its historical borders later): its latest era instead */
+  eraMissing(id, era) {
+    const m = this.app.maps[id], alt = m && m.eraOK && [...RA.ERAS].reverse().find((e) => m.eraOK[e.id]);
+    if (!alt) return this.mapFailed(id);
+    const s = this.settings, L = this.lobbySet, net = this.app.net;
+    let changed = false;
+    if (s.map === id && s.era === era) {
+      s.era = alt.id;
+      this._press('eraSeg', alt.id);
+      this._save();
+      this.startNotes();
+      if (!this.$('startScreen').hidden) this.app.useMap(id);
+      changed = true;
+    }
+    if (net && net.role === 'host' && net.phase === 'lobby' && L && L.map === id && L.era === era) {
+      L.era = alt.id;
+      this._press('lEraSeg', alt.id);
+      net.setSettings(L);
+      this.renderLobby();
+      changed = true;
+    }
+    if (changed) this.toast('info', `Za doba „${RA.esc(RA.eraById(era).short)}” ova karta još nije gotova — izabrano je „${RA.esc(alt.short)}”.`);
+  }
+  /* a map's button on the start screen and in the lobby; the "Karta" fields show only when there is a choice */
+  showMap(id, ok) {
+    for (const seg of ['mapSeg', 'lMapSeg']) {
+      const b = this.$(seg).querySelector(`[data-v="${id}"]`);
+      if (b) b.hidden = !ok;
+    }
+    const many = RA.MAPS.some((m) => m.id !== 'evropa' && this.app.mapOK && this.app.mapOK[m.id]);
+    this.$('mapField').hidden = !many && this.$('mapNote').hidden;
+    this.$('lMapField').hidden = !many;
+  }
+  /* texts that name the map (screen reader label, tagline) */
+  applyMapUI() {
+    const I = RA.mapInfo(this.app.map.id);
+    this.$('map').setAttribute('aria-label', I.aria);
+    document.querySelector('#startScreen .tagline').textContent = I.tag;
   }
   /* dock labels of the current era (siege engines, zeppelins, rockets) */
   applyEraUI() {
@@ -204,9 +298,12 @@ RA.UI = class {
       localStorage.setItem('ra_settings', JSON.stringify(this.settings));
     } catch (e) {}
   }
+  _press(id, v) {
+    this.$(id).querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === v)));
+  }
   _seg(id, val, cb) {
     const el = this.$(id);
-    const set = (v) => el.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === v)));
+    const set = (v) => this._press(id, v);
     set(val);
     el.addEventListener('click', (e) => {
       const b = e.target.closest('button');
@@ -217,11 +314,11 @@ RA.UI = class {
     });
   }
   previewRegion(id) {
-    const R = RA.REGIONS.find((r) => r.id === id);
+    const R = RA.regionsOf(this.app.map.id).find((r) => r.id === id);
     const lm = this.app.lmap;
     if (!lm) return;
     if (R && R.box) lm.flyToBounds([[R.box[1], R.box[0]], [R.box[3], R.box[2]]], { duration: 0.8 });
-    else this.app.fitEurope();
+    else this.app.fitMap();
   }
 
   get G() {
@@ -270,7 +367,7 @@ RA.UI = class {
     }
     this.spawnPicked(res);
     this.app.terr.updatePalette();
-    this.flyVisible(G.map.latLngOfCell(p.nation.c), Math.max(this.app.lmap.getZoom(), 4.6));
+    this.flyVisible(G.map.latLngOfCell(p.nation.c), Math.max(this.app.lmap.getZoom(), this.app.zoomAt(4.6)));
   }
   /* fly so that a point ends up in the middle of the map area left free by the bottom bars */
   flyVisible(ll, z) {
@@ -423,13 +520,13 @@ RA.UI = class {
     if (L0) ll = G.map.latLngOfXY(L0.x + 0.5, L0.y + 0.5);
     else if (p && p.tiles) ll = G.map.latLngOfCell(p.cells[0]);
     if (!ll) return;
-    this.app.lmap.flyTo(ll, Math.max(this.app.lmap.getZoom(), 5), { duration: 0.8 });
+    this.app.lmap.flyTo(ll, Math.max(this.app.lmap.getZoom(), this.app.zoomAt(5)), { duration: 0.8 });
     this.app.terr.setHighlight(pid);
     clearTimeout(this._hiT);
     this._hiT = setTimeout(() => this.app.terr.setHighlight(0), 2200);
   }
   flyToCell(c, z) {
-    this.app.lmap.flyTo(this.G.map.latLngOfCell(c), Math.max(this.app.lmap.getZoom(), z || 5.2), { duration: 0.7 });
+    this.app.lmap.flyTo(this.G.map.latLngOfCell(c), Math.max(this.app.lmap.getZoom(), this.app.zoomAt(z || 5.2)), { duration: 0.7 });
   }
 
   /* ---------------- toasts & sim events ---------------- */
@@ -657,11 +754,11 @@ RA.UI = class {
       if (tk < G.peaceUntil) pills.push(['calm', `☮ Mirno doba · ${T(G.peaceUntil - tk)}`]);
       else if (tk < G.diff.grace) pills.push(['calm', `Zaštita početnika · ${T(G.diff.grace - tk)}`]);
       const t = tk % C.WINTER_CYCLE, start = C.WINTER_CYCLE - C.WINTER_LEN;
-      if (t >= start) pills.push(['winter', `❄ Zima na sjeveru · ${T(C.WINTER_CYCLE - t)}`]);
+      if (t >= start) pills.push(['winter', `❄ ${RA.mapInfo(G.map.id).winter} · ${T(C.WINTER_CYCLE - t)}`]);
       else if (start - t <= 300) pills.push(['winter soon', `❄ Zima za ${T(start - t)}`]);
       const Z = G.zone;
       if (Z) {
-        if (Z.state === 'shrink') pills.push(['zone', `☢ Zona se sužava · ${T(Z.t0 + C.BR_SHRINK - tk)}`]);
+        if (Z.state === 'shrink') pills.push(['zone', `☢ Zona se sužava · ${T(Z.t0 + Z.shrinkT - tk)}`]);
         else if (Z.state === 'final') pills.push(['zone soon', '☢ Posljednji krug']);
         else pills.push(['zone soon', `☢ Zona ${Z.phase + 1}/${C.BR_PHASES} za ${T(Z.shrinkAt - tk)}`]);
       }

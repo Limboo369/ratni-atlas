@@ -74,7 +74,7 @@ Object.assign(RA.UI.prototype, {
         const u = me.units.find((x) => x.id === +b.dataset.sel);
         this.closeSheet();
         if (!u) return;
-        this.app.lmap.flyTo(G.map.latLngOfXY(u.x, u.y), Math.max(this.app.lmap.getZoom(), 5.6), { duration: 0.7 });
+        this.app.lmap.flyTo(G.map.latLngOfXY(u.x, u.y), Math.max(this.app.lmap.getZoom(), this.app.zoomAt(5.6)), { duration: 0.7 });
         this.setMode({ kind: 'unit', id: u.id });
       }));
       s.querySelectorAll('[data-dis]').forEach((b) => (b.onclick = () => {
@@ -453,7 +453,7 @@ Object.assign(RA.UI.prototype, {
   menu() {
     const app = this.app, G = this.G;
     const reg = G.map.region;
-    let h = this.head('Meni', `${RA.esc(RA.ERA.name)} · ${reg ? RA.esc(reg.name) : 'Cijela Evropa'}${G.zone ? ' · battle royale' : ''} · ${RA.DIFF[G.opts.difficulty] ? RA.DIFF[G.opts.difficulty].label : ''} · vrijeme ${RA.fmtTime(G.tick / 10)}`);
+    let h = this.head('Meni', `${RA.esc(RA.ERA.name)} · ${RA.esc(reg ? reg.name : RA.mapInfo(G.map.id).all)}${G.zone ? ' · battle royale' : ''} · ${RA.DIFF[G.opts.difficulty] ? RA.DIFF[G.opts.difficulty].label : ''} · vrijeme ${RA.fmtTime(G.tick / 10)}`);
     h += `<div class="btns">
       <button class="btn primary" data-m="resume"><span class="t">Nastavi</span></button>
       <button class="btn" data-m="how"><span class="t">Kako se igra</span></button>
@@ -486,10 +486,11 @@ Object.assign(RA.UI.prototype, {
   },
 
   howTo() {
-    const C = RA.CFG;
+    const C = RA.CFG, M = this.app.map, I = RA.mapInfo(M.id);
+    const win = Math.round((M.meta.winShare > 0 ? M.meta.winShare : C.WIN_SHARE) * 100), ot = M.meta.overtimeMin > 0 ? M.meta.overtimeMin : C.OVERTIME_MIN;
     const eras = RA.ERAS.map((e) => `<li><b>${RA.esc(e.name)}</b> (${RA.esc(e.sub)}) — ${RA.esc(e.blurb)}</li>`).join('');
     const h = this.head('Kako se igra', 'Overtake — pravila ukratko') + `<div class="howto">
-      <h4>Cilj</h4><p>Zauzmi 70% kopna odabranog dijela karte ili ostani posljednja država. Poslije ${C.OVERTIME_MIN}. minute prag pada 2% po minuti.</p>
+      <h4>Cilj</h4><p>Zauzmi ${win}% kopna odabranog dijela karte ili ostani posljednja država. Poslije ${ot}. minute prag pada 2% po minuti.</p>
       <h4>Doba</h4><p>Na početnom ekranu biraš period u kojem se boriš. Svako doba ima svoje granice, gradove, jedinice, zgrade i oružje:</p><ul>${eras}</ul>
       <h4>Početak</h4><ul>
         <li><b>Stvarne granice</b>: sve države kreću sa svojom teritorijom iz tog doba. Dodirni državu ili je izaberi sa spiska — dobijaš njenu zemlju, vojsku i zlato.</li>
@@ -519,7 +520,7 @@ Object.assign(RA.UI.prototype, {
         <li><b>Vojni savez</b> (najviše ${C.ALLY_MAX}, traje 5 min): ne napadate se, a saveznici ti pomažu kad te neko napadne. Možeš im slati vojsku i tražiti pomoć.</li>
         <li><b>Trgovinski savez</b> (najviše ${C.TRADE_MAX}): trgovački brodovi između luka i trgovina preko granice donose zlato objema stranama — bez obaveza u ratu.</li>
         <li>Izdaja saveznika = 30 s prepolovljene odbrane i loš ugled kod svih.</li></ul>
-      <h4>Zima i prijestolnice</h4><p>Svake 4 minute sjever (iznad ~51°) prekrije snijeg na 1 minut: napadi i jedinice su tamo sporiji. Pad prijestolnice znači krizu: −25% vojske, pola prihoda 60 s i plijen za osvajača.</p>
+      <h4>Zima i prijestolnice</h4><p>Svake 4 minute ${RA.esc(I.winterHow)} prekrije snijeg na 1 minut: napadi i jedinice su tamo sporiji. Pad prijestolnice znači krizu: −25% vojske, pola prihoda 60 s i plijen za osvajača.</p>
       <h4>Online s prijateljem</h4><p>Oboje otvorite war.deovilab.com; jedan pritisne „Napravi sobu”, drugi „Pridruži se”. Domaćin bira doba, kartu i način: <b>zajedno protiv svih</b> (stalni savez, dijelite pobjedu) ili <b>jedan protiv drugog</b>, uz battle royale ako želite. Brzinu i pauzu kontroliše domaćin.</p>
       <h4>Kontrole</h4><p>Jedan prst: pomjeranje · dva prsta: zum · dugi pritisak (desni klik): meni za to mjesto. Igru možeš pauzirati i ubrzati (1×–3×).</p>
     </div>`;
@@ -533,9 +534,9 @@ Object.assign(RA.UI.prototype, {
     const won = !!(G.winner && me && (G.winner === me || G.sameTeam(G.winner, me)));
     $('endTitle').textContent = won ? 'Pobjeda' : kind === 'lost' ? 'Poraz' : 'Kraj igre';
     $('endTitle').classList.toggle('win', !!won);
-    const where = G.map.region ? G.map.region.name : 'Evropa';
+    const where = G.map.region ? G.map.region.name : RA.mapInfo(G.map.id).name;
     $('endSub').textContent = won
-      ? (G.winner !== me ? `Vaš tim je osvojio: ${where} (${RA.fmtTime(G.tick / 10)}).` : `${where} je tvoja nakon ${RA.fmtTime(G.tick / 10)}.`)
+      ? (G.winner !== me ? `Vaš tim je osvojio: ${where} (${RA.fmtTime(G.tick / 10)}).` : `Osvojeno: ${where}, za ${RA.fmtTime(G.tick / 10)}.`)
       : kind === 'lost'
       ? `Tvoja država je pala poslije ${RA.fmtTime(G.tick / 10)}.`
       : `Pobjednik je ${G.winner ? G.winner.name : 'neko drugi'} (${where}).`;

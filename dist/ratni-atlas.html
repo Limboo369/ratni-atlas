@@ -331,6 +331,7 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
 .pill.zone { background: rgba(120, 18, 38, 0.92); color: #ffd9de; border-color: rgba(255, 110, 110, 0.55); }
 .pill.zone.soon { background: rgba(60, 20, 28, 0.9); }
 .seg button[aria-pressed=true] { background: var(--text); color: var(--ink); }
+.seg button:disabled { opacity: 0.4; }
 .go {
   width: 100%; height: 54px; border-radius: 14px; background: var(--signal); color: var(--signal-ink);
   font-family: var(--font-d); font-weight: 900; font-size: 26px; letter-spacing: 0.08em; text-transform: uppercase; margin-top: 4px;
@@ -473,6 +474,11 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
         <label for="nameIn">Tvoje ime</label>
         <input type="text" id="nameIn" maxlength="18" placeholder="npr. Darko" autocomplete="off">
       </div>
+      <div class="field" id="mapField" hidden>
+        <span class="lab">Karta</span>
+        <div class="seg wrap" id="mapSeg"></div>
+        <p class="note era-note" id="mapNote" hidden></p>
+      </div>
       <div class="field">
         <span class="lab">Doba</span>
         <div class="seg wrap era" id="eraSeg"></div>
@@ -544,6 +550,10 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
         <select id="lobbyNat" class="sel"></select>
       </div>
       <div id="lobbyHost">
+        <div class="field" id="lMapField" hidden>
+          <span class="lab">Karta</span>
+          <div class="seg wrap" id="lMapSeg"></div>
+        </div>
         <div class="field">
           <span class="lab">Način igre</span>
           <div class="seg" id="modeSeg">
@@ -827,13 +837,54 @@ RA.inflate = async function (b64) {
   return new Uint8Array(buf);
 };
 
-RA.loadMap = async function () {
-  const D = window.MAPDATA;
+/* Maps other than the embedded Europe live on our server as static files (data/<map>/map.json, era_<id>.json).
+   fetch() cannot read file:// pages and the claude.ai artifact has no such files: there the world is not offered. */
+RA.DATA_URL = typeof location !== 'undefined' && /^https?:$/.test(location.protocol) ? '/data/' : '';
+RA.fetchJSON = async function (url, onProgress) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  if (!onProgress || !r.body) return r.json();
+  // read in chunks so the loading screen can show how much has arrived
+  const rd = r.body.getReader(), parts = [];
+  const total = +r.headers.get('content-length') || 0;
+  let got = 0;
+  for (;;) {
+    const { done, value } = await rd.read();
+    if (done) break;
+    parts.push(value);
+    got += value.length;
+    onProgress(got, total);
+  }
+  return JSON.parse(await new Blob(parts).text());
+};
+/* is this data file on the server? (a host that answers unknown paths with the page itself does not count) */
+RA.hasFile = (url) => fetch(url, { method: 'HEAD' }).then((r) => r.ok && !/html/.test(r.headers.get('content-type') || ''), () => false);
+/* a map that is not embedded (the world): fetched and decoded on first use; its eras load one at a time */
+RA.fetchMap = async function (id, onProgress) {
+  if (!RA.DATA_URL) throw new Error('no-data');
+  // which eras this map has (the world gets its historical borders one by one)
+  const eraOK = Promise.all(RA.ERAS.map((e) => RA.hasFile(RA.DATA_URL + id + '/era_' + e.id + '.json')));
+  const D = await RA.fetchJSON(RA.DATA_URL + id + '/map.json', onProgress);
+  if (onProgress) onProgress(-1);
+  const m = await RA.loadMap(D);
+  if (m.id !== id) throw new Error('map id ' + m.id);
+  const ok = await eraOK;
+  m.eraOK = {};
+  RA.ERAS.forEach((e, i) => (m.eraOK[e.id] = ok[i]));
+  m.eras = {};
+  m.lazyEras = true;
+  m.eraNations = true; // no hand-made nation lists: every start (and region) takes its countries from the era rasters
+  return m;
+};
+
+RA.loadMap = async function (D = window.MAPDATA) {
   const M = D.meta;
   const W = M.W, H = M.H, N = W * H;
   const raw = await RA.inflate(D.grid);
 
   const map = {
+    id: M.id || 'evropa', // the embedded map is Europe
+    name: M.name || 'Cijela Evropa',
     W, H, N,
     X0: M.X0, Y0: M.Y0, CELL: M.CELL,
     X1: M.X0 + W * M.CELL, Y1: M.Y0 + H * M.CELL,
@@ -843,7 +894,6 @@ RA.loadMap = async function () {
     coast: new Uint8Array(N), // land touching sea (4-neighbour)
     wcomp: new Int32Array(N).fill(-1), // water component id
     wsize: [],
-    mirror: new Int32Array(N).fill(-1), // water cell -> land cell whose owner it mirrors (render only)
     block: new Uint8Array(N), // 1 = outside the playable region (regional maps)
     region: null,
     landCount: 0,
@@ -880,6 +930,7 @@ RA.loadMap = async function () {
   }
 
   // coast (touching navigable water: component bigger than 30 cells) + mirror for rendering
+  const mirror = new Int32Array(N).fill(-1); // water cell -> land cell whose owner it mirrors (render only)
   for (let i = 0; i < N; i++) {
     const x = i % W, y = (i / W) | 0;
     if (map.land[i]) {
@@ -895,7 +946,7 @@ RA.loadMap = async function () {
       const ok = [x > 0, x < W - 1, y > 0, y < H - 1, x > 0 && y > 0, x < W - 1 && y > 0, x > 0 && y < H - 1, x < W - 1 && y < H - 1];
       for (let k = 0; k < 8; k++) {
         if (ok[k] && map.land[cand[k]]) {
-          map.mirror[i] = cand[k];
+          mirror[i] = cand[k];
           break;
         }
       }
@@ -903,11 +954,11 @@ RA.loadMap = async function () {
   }
   // CSR: land cell -> mirrored water cells
   const cnt = new Int32Array(N + 1);
-  for (let i = 0; i < N; i++) if (map.mirror[i] >= 0) cnt[map.mirror[i] + 1]++;
+  for (let i = 0; i < N; i++) if (mirror[i] >= 0) cnt[mirror[i] + 1]++;
   for (let i = 0; i < N; i++) cnt[i + 1] += cnt[i];
   const list = new Int32Array(cnt[N]);
   const fill = cnt.slice(0, N);
-  for (let i = 0; i < N; i++) if (map.mirror[i] >= 0) list[fill[map.mirror[i]]++] = i;
+  for (let i = 0; i < N; i++) if (mirror[i] >= 0) list[fill[mirror[i]]++] = i;
   map.mirOff = cnt;
   map.mirList = list;
 
@@ -945,7 +996,8 @@ RA.loadMap = async function () {
   // vectors
   map.vec = {};
   const QX0 = M.QX0, QX1 = M.QX1, QY0 = M.QY0, QY1 = M.QY1;
-  const sx = (QX1 - QX0) / 65535, sy = (QY1 - QY0) / 65535;
+  const Q = M.Q || 65535; // quantisation steps of the vector coordinates
+  const sx = (QX1 - QX0) / Q, sy = (QY1 - QY0) / Q;
   const keys = Object.keys(D.vec);
   const bufs = await Promise.all(keys.map((k) => RA.inflate(D.vec[k])));
   keys.forEach((k, ki) => {
@@ -1033,6 +1085,8 @@ RA.CFG = {
   TRAITOR_DUR: 300,
   BOAT_MAX: 3,
   BOAT_SPEED: 1.15, // cells per tick
+  BOAT_RANGE: 800, // longest sea voyage in cells (BFS steps): farther is 'predaleko'
+  SEA_CELLS: 300000, // a sea search (boats, trade routes) gives up after this many water cells (big maps)
   FORT_R: 8,
   SAM_R: 28,
   SILO_CD: 100,
@@ -1589,10 +1643,11 @@ RA.Game = class Game {
 
   /* ---------------- boats ---------------- */
   findBoatPath(pid, tgt) {
-    // BFS over water from target coast towards any water cell next to pid's land
+    // BFS over water from target coast towards any water cell next to pid's land (null: no way, 'far': too far)
     const map = this.map, W = map.W, H = map.H, N = map.N, land = map.land, own = this.owner, block = map.block;
     const seen = this.stamp, gen = ++this.stampGen, prev = this.bfsPrev, q = this.queue;
-    let qh = 0, qt = 0;
+    const maxD = RA.CFG.BOAT_RANGE, maxN = RA.CFG.SEA_CELLS;
+    let qh = 0, qt = 0, depth = 0, layer = 0;
     const tx = tgt % W, ty = (tgt / W) | 0;
     for (let dy = -1; dy <= 1; dy++)
       for (let dx = -1; dx <= 1; dx++) {
@@ -1604,7 +1659,14 @@ RA.Game = class Game {
         prev[c] = -1;
         q[qt++] = c;
       }
+    // a coast on another sea (lake, closed basin) cannot be reached: skip the search (on a big map it floods an ocean)
+    if (!this._sharesWater(pid, q, qt)) return null;
+    layer = qt;
     while (qh < qt) {
+      if (qh === layer) {
+        if (++depth > maxD || qt > maxN) return 'far';
+        layer = qt;
+      }
       const c = q[qh++];
       const x = c % W, y = (c / W) | 0;
       // departure check
@@ -1637,6 +1699,20 @@ RA.Game = class Game {
     }
     return null;
   }
+  /* does player pid own land next to one of the water components of these start cells? (4-connected components:
+     the boat search never crosses between them either) */
+  _sharesWater(pid, cells, n) {
+    const map = this.map, W = map.W, H = map.H, wc = map.wcomp, land = map.land;
+    const want = new Set();
+    for (let i = 0; i < n; i++) want.add(wc[cells[i]]);
+    const p = this.P[pid];
+    for (let i = 0; i < p.tiles; i++) {
+      const c = p.cells[i];
+      const x = c % W, y = (c / W) | 0;
+      if ((x > 0 && !land[c - 1] && want.has(wc[c - 1])) || (x < W - 1 && !land[c + 1] && want.has(wc[c + 1])) || (y > 0 && !land[c - W] && want.has(wc[c - W])) || (y < H - 1 && !land[c + W] && want.has(wc[c + W]))) return true;
+    }
+    return false;
+  }
 
   launchBoat(pid, tgtCell, troops) {
     const p = this.P[pid];
@@ -1653,6 +1729,7 @@ RA.Game = class Game {
     if (troops < 50) return 'troops';
     const r = this.findBoatPath(pid, tgtCell);
     if (!r) return 'nopath';
+    if (r === 'far') return 'far';
     p.troops -= troops;
     p.boats++;
     const path = r.path;
@@ -1714,12 +1791,15 @@ RA.Game = class Game {
       if (ok === false) return 'Luka mora biti na obali.';
       c = ok;
     }
-    const W = map.W, x = c % W, y = (c / W) | 0, R = RA.CFG.STRUCT_MIN_DIST;
-    for (const s of this.structs) {
-      if (s.dead) continue;
-      const dx = s.x - x, dy = s.y - y;
-      if (dx * dx + dy * dy < R * R) return 'Preblizu drugoj zgradi.';
-    }
+    const W = map.W, H = map.H, x = c % W, y = (c / W) | 0, R = RA.CFG.STRUCT_MIN_DIST;
+    // spacing: look at the cells around (structAt), not at every building on the map
+    for (let dy = 1 - R; dy < R; dy++)
+      for (let dx = 1 - R; dx < R; dx++) {
+        const sx = x + dx, sy = y + dy;
+        if (sx < 0 || sy < 0 || sx >= W || sy >= H || dx * dx + dy * dy >= R * R) continue;
+        const si = this.structAt[sy * W + sx];
+        if (si >= 0 && !this.structs[si].dead) return 'Preblizu drugoj zgradi.';
+      }
     if (type === 'city') {
       for (const ct of this.cities) if ((ct.x - x) * (ct.x - x) + (ct.y - y) * (ct.y - y) < 25) return 'Preblizu postojećem gradu.';
     }
@@ -2050,9 +2130,11 @@ RA.Game = class Game {
   landTotal() {
     return this.map.landCount - this.falloutCount - (this.zone ? this.zone.deadLand : 0);
   }
+  /* share of the land needed to win: per map (meta.winShare / meta.overtimeMin), Europe uses the defaults */
   winShare() {
-    const m = this.tick / 600;
-    return Math.max(0.5, RA.CFG.WIN_SHARE - Math.max(0, Math.floor(m - RA.CFG.OVERTIME_MIN)) * 0.02);
+    const m = this.tick / 600, M = this.map.meta || {};
+    const base = M.winShare > 0 ? M.winShare : RA.CFG.WIN_SHARE, ot = M.overtimeMin > 0 ? M.overtimeMin : RA.CFG.OVERTIME_MIN;
+    return Math.max(Math.min(0.5, base), base - Math.max(0, Math.floor(m - ot)) * 0.02);
   }
   _history() {
     const snap = { t: this.tick, v: {} };
@@ -2129,6 +2211,7 @@ RA.Game = class Game {
     return ({
       max: `Najviše ${RA.CFG.BOAT_MAX} broda istovremeno.`,
       nopath: 'Nema morskog puta do te obale.',
+      far: `Predaleko — brod plovi najviše ${RA.CFG.BOAT_RANGE} polja.`,
       nocoast: 'Brod može pristati samo na obalu.',
       water: 'Dodirni obalu, ne more.',
       own: 'To je tvoja obala.',
@@ -3074,7 +3157,8 @@ Object.assign(RA.CFG, {
     q[qt++] = wa;
     seen[wa] = gen;
     prev[wa] = -1;
-    while (qh < qt) {
+    while (qh < qt && qt < RA.CFG.SEA_CELLS) {
+      // (on a big map two far ports would flood an ocean: past SEA_CELLS the route counts as none)
       const c = q[qh++];
       if (c === wb) {
         found = true;
@@ -3122,7 +3206,7 @@ Object.assign(RA.CFG, {
         const t = cands[Math.floor(this.rng() * cands.length)];
         const path = this._tradePath(s, t);
         if (!path || path.length < 3) continue;
-        this.tships.push({ id: this.nextId++, owner: s.owner, partner: t.owner, path, pos: 0, gold: 2500 + 40 * path.length, done: false });
+        this.tships.push({ id: this.nextId++, owner: s.owner, partner: t.owner, path, pos: 0, gold: 2500 + 40 * Math.min(path.length, 1000), done: false });
         break;
       }
     }
@@ -3360,7 +3444,10 @@ RA.dcos = (a) => RA.dsin(a + 1.5707963267948966);
       if (d > r) r = d;
     }
     r = Math.ceil(r + 1);
-    this.zone = { cx, cy, r, fx: cx, fy: cy, fr: r, tx: cx, ty: cy, tr: r, t0: 0, phase: 0, state: 'wait', shrinkAt: this.peaceUntil + RA.CFG.BR_DELAY, deadLand: 0 };
+    // a big map (the world) shrinks and holds longer: about a tick per cell of the first radius, so the edge never
+    // outruns the fronts (Europe, r ≈ 440, keeps 45 s)
+    const shrinkT = Math.max(RA.CFG.BR_SHRINK, r), holdT = Math.max(RA.CFG.BR_HOLD, r);
+    this.zone = { cx, cy, r, fx: cx, fy: cy, fr: r, tx: cx, ty: cy, tr: r, t0: 0, phase: 0, state: 'wait', shrinkAt: this.peaceUntil + RA.CFG.BR_DELAY, deadLand: 0, shrinkT, holdT };
     this._zoneNext();
   };
   /* next target ring: smaller, entirely inside the current one, centred on playable land if possible */
@@ -3407,14 +3494,14 @@ RA.dcos = (a) => RA.dsin(a + 1.5707963267948966);
       return;
     }
     if (Z.state !== 'shrink') return;
-    const f = Math.min(1, (tk - Z.t0) / C.BR_SHRINK);
+    const f = Math.min(1, (tk - Z.t0) / Z.shrinkT);
     Z.cx = RA.snap(Z.fx + (Z.tx - Z.fx) * f, 1e-6);
     Z.cy = RA.snap(Z.fy + (Z.ty - Z.fy) * f, 1e-6);
     Z.r = RA.snap(Z.fr + (Z.tr - Z.fr) * f, 1e-6);
     if ((tk - Z.t0) % 5 === 0 || f >= 1) this._zoneBurn();
     if (f >= 1) {
       Z.phase++;
-      Z.shrinkAt = tk + C.BR_HOLD;
+      Z.shrinkAt = tk + Z.holdT;
       if (Z.phase >= C.BR_PHASES) {
         Z.state = 'final';
         Z.tx = Z.cx;
@@ -3692,12 +3779,13 @@ RA.AI = {
   },
 
   boatAttack(G, p, share) {
-    const coastList = G.coastList;
     const W = G.map.W;
     const px = p.capital % W, py = (p.capital / W) | 0;
+    const pick = RA.AI.coastNear(G, px, py, 170);
     let best = -1, bs = -1;
     for (let k = 0; k < 40; k++) {
-      const c = coastList[Math.floor(G.rng() * coastList.length)];
+      const c = pick();
+      if (c < 0) break;
       const o = G.owner[c];
       if (o === p.id) continue;
       if (G.zone && (G.zoneOut(c) || !G.zoneSafe(c))) continue;
@@ -3718,6 +3806,42 @@ RA.AI = {
     const r = G.launchBoat(p.id, best, p.troops * share);
     if (typeof r === 'object') p.ai.lastBoat = G.tick;
     else p.ai.lastBoat = G.tick - 100; // retry a bit later
+  },
+  /* random coast cells to try a landing on. Small maps (Europe): any coast cell, most are within reach. Big maps
+     (the world): only the coast in the box R around (px, py) — rows of the sorted coast list, found by binary search */
+  coastNear(G, px, py, R) {
+    const L = G.coastList, W = G.map.W, H = G.map.H;
+    if ((2 * R + 1) * (2 * R + 1) * 4 >= G.map.N) return () => (L.length ? L[Math.floor(G.rng() * L.length)] : -1);
+    const lo = (v) => {
+      let a = 0, b = L.length;
+      while (a < b) {
+        const m = (a + b) >> 1;
+        if (L[m] < v) a = m + 1;
+        else b = m;
+      }
+      return a;
+    };
+    const x0 = Math.max(0, px - R), x1 = Math.min(W - 1, px + R);
+    const st = [], acc = [];
+    let tot = 0;
+    for (let y = Math.max(0, py - R); y <= Math.min(H - 1, py + R); y++) {
+      const a = lo(y * W + x0), b = lo(y * W + x1 + 1);
+      if (b <= a) continue;
+      st.push(a - tot);
+      tot += b - a;
+      acc.push(tot);
+    }
+    return () => {
+      if (!tot) return -1;
+      const r = Math.floor(G.rng() * tot);
+      let a = 0, b = acc.length - 1;
+      while (a < b) {
+        const m = (a + b) >> 1;
+        if (acc[m] > r) b = m;
+        else a = m + 1;
+      }
+      return L[st[a] + r];
+    };
   },
 
   sampleCell(G, p, pred, tries) {
@@ -4142,9 +4266,23 @@ RA.setupOnline = function (baseMap, st, mySlot) {
   return G;
 };
 
+/* The maps: Europe is embedded in the page; the world is fetched from our server (data/svijet/) on first use. */
+RA.MAPS = [
+  { id: 'evropa', name: 'Evropa', sub: 'detaljno', all: 'Cijela Evropa', aria: 'Karta Evrope', load: 'Učitavam kartu Evrope…',
+    tag: 'Osvajaj Evropu na stvarnoj karti — grad po grad, preko rijeka i planina.',
+    winter: 'Zima na sjeveru', winterHow: 'sjever (iznad ~51°)' },
+  { id: 'svijet', name: 'Svijet', sub: 'svi kontinenti', all: 'Cijeli svijet', aria: 'Karta svijeta', load: 'Učitavam kartu svijeta…',
+    tag: 'Osvajaj cijeli svijet na stvarnoj karti — kontinent po kontinent, preko okeana.',
+    winter: 'Zima na dalekom sjeveru', winterHow: 'daleki sjever svijeta (iznad ~51° sjeverne širine: Kanada, sjever Evrope, Rusija)' },
+];
+RA.mapInfo = (id) => RA.MAPS.find((m) => m.id === id) || RA.MAPS[0];
+/* what a device must have downloaded to play a room's game (lobby presence ld) */
+RA.mapKey = (set) => RA.mapInfo(set.map).id + ':' + RA.eraById(set.era).id;
+
 /* Playable regions: a polygon (lon, lat) roughly following coasts and borders + the nations that play there.
    Cells outside the polygon are blocked (not conquerable, boats can't sail there). A listed nation whose real
-   capital lies outside the region starts from its biggest city inside it. */
+   capital lies outside the region starts from its biggest city inside it. Regions without a nation list (the
+   world) take every country with enough land inside from the era raster. The first region of a map is all of it. */
 RA.REGIONS = [
   { id: 'evropa', name: 'Cijela Evropa' },
   { id: 'balkan', name: 'Balkan', nations: ['SVN', 'HRV', 'BIH', 'SRB', 'MNE', 'ALB', 'MKD', 'GRC', 'BGR', 'ROU', 'MDA', 'HUN'],
@@ -4168,12 +4306,24 @@ RA.REGIONS = [
   { id: 'jug', name: 'Mediteran', nations: ['PRT', 'ESP', 'FRA', 'ITA', 'SVN', 'HRV', 'BIH', 'SRB', 'MNE', 'ALB', 'MKD', 'GRC', 'BGR', 'TUR', 'CYP', 'MAR', 'DZA', 'TUN', 'SYR'],
     poly: [[-11.0, 33.0], [36.8, 33.0], [36.8, 42.0], [31.0, 43.0], [28.6, 43.7], [27.0, 44.1], [26.0, 43.9], [24.0, 43.7], [22.7, 44.5], [21.4, 45.2],
       [19.0, 45.9], [16.5, 46.5], [13.0, 46.5], [9.0, 46.0], [7.0, 45.9], [4.5, 45.9], [0.0, 44.2], [-11.0, 44.2]] },
-];
+].map((r) => Object.assign(r, { map: 'evropa' })).concat([
+  { id: 'svijet', name: 'Cijeli svijet' },
+  { id: 'bliski', name: 'Bliski istok i Mediteran',
+    poly: [[-10, 29], [-10, 44.5], [3, 44.5], [15, 47], [30, 46.5], [41, 44.5], [50, 45], [63, 42], [63, 23], [57, 12], [43, 11], [34.5, 28], [32, 30], [10, 28]] },
+  { id: 'afrika', name: 'Afrika', poly: [[-19, 37], [-6, 36.2], [11, 38], [32.3, 31.6], [34.3, 29.5], [43.2, 12.6], [52, 12.5], [52, -36], [-19, -36]] },
+  { id: 'azija', name: 'Azija',
+    poly: [[26, 36], [26, 42], [40, 42], [40, 50], [60, 50], [60, 72], [180, 72], [180, 60], [165, 50], [150, 30], [155, -11], [95, -11], [75, 5], [60, 22], [48, 12], [43.5, 12.5], [34.5, 28], [34.5, 36]] },
+  { id: 'sam', name: 'Sjeverna Amerika', poly: [[-180, 72], [-12, 72], [-12, 58], [-50, 45], [-58, 10], [-77, 7.5], [-83, 7], [-120, 20], [-180, 50]] },
+  { id: 'jam', name: 'Južna Amerika', poly: [[-82, 13], [-58, 13], [-34, -5], [-34, -56], [-82, -56]] },
+  { id: 'okeanija', name: 'Okeanija', poly: [[110, -20], [112, -9], [130, -9], [140, -1], [180, 0], [180, -50], [110, -50]] },
+].map((r) => Object.assign(r, { map: 'svijet' })));
 for (const r of RA.REGIONS) {
   if (!r.poly) continue;
   const lons = r.poly.map((q) => q[0]), lats = r.poly.map((q) => q[1]);
-  r.box = [Math.max(-11, Math.min(...lons)), Math.max(33, Math.min(...lats)), Math.min(41, Math.max(...lons)), Math.min(71.3, Math.max(...lats))];
+  r.box = [Math.min(...lons), Math.min(...lats), Math.max(...lons), Math.max(...lats)]; // the cell range is clamped to the grid in regionMask
 }
+RA.regionsOf = (mapId) => RA.REGIONS.filter((r) => r.map === mapId);
+RA.regionOf = (base, id) => RA.REGIONS.find((r) => r.id === id && r.map === base.id);
 RA.pointInPoly = function (x, y, P) {
   let inside = false;
   for (let i = 0, j = P.length - 1; i < P.length; j = i++) {
@@ -4183,9 +4333,14 @@ RA.pointInPoly = function (x, y, P) {
   return inside;
 };
 
-RA.regionMap = function (base, id) {
-  const R = RA.REGIONS.find((r) => r.id === id);
-  if (!R || !R.poly) return base;
+/* The cells of a region (block = 1 outside), cached per map: it does not depend on the era, and the start screen
+   counts countries of every region on each tap. Only the current map's masks are kept (1 byte per cell each). */
+RA._regMasks = new Map();
+RA.regionMask = function (base, R) {
+  const key = base.id + '|' + R.id;
+  const hit = RA._regMasks.get(key);
+  if (hit && hit.land === base.land) return hit;
+  for (const [k, v] of RA._regMasks) if (v.land !== base.land) RA._regMasks.delete(k);
   const W = base.W, H = base.H, N = base.N;
   // polygon in normalized Mercator, so the cell mask matches the outline drawn on the map exactly
   const mp = R.poly.map(([lon, lat]) => [RA.snap(RA.lonToX(lon), 1e-10), RA.snap(RA.latToY(lat), 1e-10)]);
@@ -4193,31 +4348,33 @@ RA.regionMap = function (base, id) {
   const gy = (lat) => (RA.latToY(lat) - base.Y0) / base.CELL;
   const x0 = Math.max(0, Math.floor(gx(R.box[0])) - 2), x1 = Math.min(W - 1, Math.ceil(gx(R.box[2])) + 2);
   const y0 = Math.max(0, Math.floor(gy(R.box[3])) - 2), y1 = Math.min(H - 1, Math.ceil(gy(R.box[1])) + 2);
-  const m = Object.create(base); // same geometry, own land/coast/block masks
-  m.land = new Uint8Array(N);
-  m.coast = new Uint8Array(N);
-  m.block = new Uint8Array(N).fill(1);
+  const block = new Uint8Array(N).fill(1);
   let cnt = 0;
   for (let y = y0; y <= y1; y++) {
     const cy = base.Y0 + (y + 0.5) * base.CELL;
     for (let x = x0; x <= x1; x++) {
       if (!RA.pointInPoly(base.X0 + (x + 0.5) * base.CELL, cy, mp)) continue;
       const c = y * W + x;
-      m.block[c] = 0;
-      if (base.land[c]) {
-        m.land[c] = 1;
-        m.coast[c] = base.coast[c];
-        cnt++;
-      }
+      block[c] = 0;
+      if (base.land[c]) cnt++;
     }
   }
-  m.landCount = cnt;
-  // smaller maps: wars between states move slower so a regional game still lasts ~10+ minutes
-  m.pace = RA.clamp(RA.dpow(base.landCount / Math.max(1, cnt), 0.3), 1, 2.5);
-  const inside = (c) => !m.block[c] && m.land[c];
-  m.region = { id: R.id, name: R.name, box: R.box, mpoly: mp };
-  const nats = base.eraOwn ? RA.eraRegionNations(base, inside, 40) : [];
-  for (const iso of base.eraOwn ? [] : R.nations) {
+  const K = { land: base.land, block, cnt, mp, c0: Math.max(0, y0) * W, c1: Math.min(N, (y1 + 1) * W) };
+  RA._regMasks.set(key, K);
+  return K;
+};
+/* the nations that play in a region (without building the region's map: the start screen and the lobby list them) */
+RA.regionNations = function (base, id) {
+  const R = RA.regionOf(base, id);
+  if (!R || !R.poly) return base.nations;
+  const K = RA.regionMask(base, R), land = base.land, block = K.block;
+  return RA._regionNats(base, R, K, (c) => !block[c] && land[c]);
+};
+RA._regionNats = function (base, R, K, inside) {
+  if (base.eraOwn) return RA.eraRegionNations(base, inside, 40, K.c0, K.c1);
+  if (!R.nations) return base.nations.filter((n) => inside(n.c)); // era raster not loaded (should not happen)
+  const nats = [];
+  for (const iso of R.nations) {
     const n = base.nations.find((q) => q.iso === iso);
     if (!n) continue;
     if (inside(n.c)) {
@@ -4231,6 +4388,30 @@ RA.regionMap = function (base, id) {
     }
     if (best) nats.push(Object.assign({}, n, { c: best.c, x: best.x, y: best.y, capital: best.name }));
   }
+  return nats;
+};
+
+RA.regionMap = function (base, id) {
+  const R = RA.regionOf(base, id);
+  if (!R || !R.poly) return base;
+  const N = base.N;
+  const K = RA.regionMask(base, R);
+  const m = Object.create(base); // same geometry, own land/coast masks; the block mask is shared (read-only)
+  m.land = new Uint8Array(N);
+  m.coast = new Uint8Array(N);
+  m.block = K.block;
+  for (let c = K.c0; c < K.c1; c++) {
+    if (K.block[c] || !base.land[c]) continue;
+    m.land[c] = 1;
+    m.coast[c] = base.coast[c];
+  }
+  const cnt = K.cnt;
+  m.landCount = cnt;
+  // smaller maps: wars between states move slower so a regional game still lasts ~10+ minutes
+  m.pace = RA.clamp(RA.dpow(base.landCount / Math.max(1, cnt), 0.3), 1, 2.5);
+  const inside = (c) => !m.block[c] && m.land[c];
+  m.region = { id: R.id, name: R.name, box: R.box, mpoly: K.mp };
+  const nats = RA._regionNats(base, R, K, inside);
   m.nations = nats;
   // city-states: the usual ones inside the region, topped up with real towns so small regions stay lively
   const cs = base.cityStates.filter((s) => inside(s.c));
@@ -4256,6 +4437,7 @@ RA.newGame = function (map, opts) {
   const borders = (G.borders = opts.start === 'granice' && !!map.eraOwn);
   for (const n of map.nations) {
     const p = G.addPlayer({ name: n.name, type: 'nation', color: n.color, iso: n.iso });
+    if (!p) break; // at most 250 players (8-bit owner ids); the build keeps an era under 190 polities
     p.nation = n;
     p.capCity = map.cityAt[n.c];
     if (!borders) G.spawnDisk(p, n.c, 3);
@@ -4296,12 +4478,14 @@ RA.newGame = function (map, opts) {
     [cs[i], cs[j]] = [cs[j], cs[i]];
   }
   // regional maps get a proportional number of city-states
-  const k = Math.min(Math.round((opts.cityStates || 0) * (map.region ? Math.min(1, map.landCount / 110000) : 1)), cs.length);
+  // (and never more than the 250 player ids leave, with a seat kept for every possible human)
+  const k = Math.min(Math.round((opts.cityStates || 0) * (map.region ? Math.min(1, map.landCount / 110000) : 1)), cs.length, 250 - (G.P.length - 1) - RA.SLOT_COLORS.length);
   for (let i = 0; i < k; i++) {
     const s = cs[i];
     const h = G.rng();
     const rgb = hsl(h, 0.16 + G.rng() * 0.1, 0.5 + G.rng() * 0.12);
     const p = G.addPlayer({ name: s.name, type: 'bot', color: RA.rgbToHex(rgb) });
+    if (!p) break;
     p.capCity = map.cityAt[s.c];
     G.spawnDisk(p, s.c, 2);
     p.troops = 9000;
@@ -4602,26 +4786,47 @@ RA.missileIcon = (t) => {
   return M.icon || (M.kind === 'emp' ? 'emp' : M.kind === 'conv' ? 'rocket' : 'nuke');
 };
 
-/* ---------------- era borders (decoded once at boot) ---------------- */
-RA.ERA_DATA = {};
-RA.loadEras = async function () {
-  const D = window.ERADATA || {};
-  for (const id of Object.keys(D)) {
-    const e = D[id];
-    RA.ERA_DATA[id] = { pol: e.pol, own: await RA.inflate(e.own), ren: e.ren || {} };
-  }
+/* ---------------- era borders ---------------- */
+/* Europe: all eras are embedded and decoded at boot (map.eras = RA.loadEras()).
+   Other maps (map.lazyEras): era_<id>.json is fetched and decoded when that era is chosen; two stay decoded. */
+const eraOf = async (e, N) => {
+  const own = await RA.inflate(e.own);
+  if (own.length !== N) throw new Error('era/grid mismatch');
+  return { pol: e.pol, own, ren: e.ren || {} };
+};
+RA.loadEras = async function (D, N) {
+  const out = {};
+  for (const id of Object.keys(D || {})) out[id] = await eraOf(D[id], N);
+  return out;
+};
+RA.eraReady = (map, id) => !map.lazyEras || !!map.eras[id];
+RA.loadEra = function (map, id) {
+  if (RA.eraReady(map, id)) return Promise.resolve();
+  if (map.eraOK && !map.eraOK[id]) return Promise.reject(new Error('no-era'));
+  const L = (map._eraLoads = map._eraLoads || {});
+  return (L[id] = L[id] || RA.fetchJSON(RA.DATA_URL + map.id + '/era_' + id + '.json')
+    .then((e) => eraOf(e, map.N))
+    .then((E) => {
+      map.eras[id] = E;
+      const ks = Object.keys(map.eras);
+      if (ks.length > 2) delete map.eras[ks[0]]; // ~1 MB per decoded world era
+    })
+    .finally(() => delete L[id]));
 };
 
 /* The map of one era: its polities as nations, renamed cities (+ historical capitals that are not modern cities),
-   capital-tier cities where that era had its capitals. The modern game with a free start is the plain base map. */
+   capital-tier cities where that era had its capitals. The modern game with a free start is the plain base map
+   (except on maps whose nations always come from the era rasters). */
 RA._eraMaps = new Map();
 RA.eraMap = function (base, id, start) {
-  const E = RA.ERA_DATA[id];
-  if (!E || (id === 'danas' && start !== 'granice')) return base;
-  // cached per era (maps are read-only; a game resets its cities' owners when it starts)
-  const key = id + '|' + (id === 'danas' ? 'granice' : 'x');
+  const E = (base.eras || {})[id];
+  if (!E || (id === 'danas' && start !== 'granice' && !base.eraNations)) return base;
+  // cached per map and era (maps are read-only; a game resets its cities' owners when it starts)
+  const key = base.id + '|' + id;
   const hit = RA._eraMaps.get(key);
-  if (hit && hit.__base === base) return hit;
+  if (hit && hit.__base === base && hit.eraOwn === E.own) return hit;
+  // only this map's era maps stay (a world era map holds ~5 MB), and of a lazily loaded map only one
+  for (const [k, v] of RA._eraMaps) if (v.__base !== base || base.lazyEras) RA._eraMaps.delete(k);
   const m = Object.create(base);
   m.__base = base;
   RA._eraMaps.set(key, m);
@@ -4676,12 +4881,13 @@ RA.eraMap = function (base, id, start) {
   return m;
 };
 
-/* nations of an era map that play inside a region polygon (enough land there), capitals moved inside if needed */
-RA.eraRegionNations = function (base, inside, minCells) {
-  const own = base.eraOwn, N = base.N, W = base.W;
+/* nations of an era map that play inside a region polygon (enough land there), capitals moved inside if needed.
+   c0..c1: the cell range that holds the region (its bounding rows), so small regions of a big map scan less */
+RA.eraRegionNations = function (base, inside, minCells, c0 = 0, c1 = base.N) {
+  const own = base.eraOwn, W = base.W;
   const K = base.nations.length + 1;
   const cnt = new Int32Array(K), sx = new Float64Array(K), sy = new Float64Array(K);
-  for (let c = 0; c < N; c++) {
+  for (let c = c0; c < c1; c++) {
     if (!inside(c)) continue;
     const k = own[c];
     if (!k) continue;
@@ -4708,7 +4914,7 @@ RA.eraRegionNations = function (base, inside, minCells) {
     }
     const mx = sx[n.k] / cnt[n.k], my = sy[n.k] / cnt[n.k];
     let bc = -1, bd = 1e18;
-    for (let c = 0; c < N; c++) {
+    for (let c = c0; c < c1; c++) {
       if (own[c] !== n.k || !inside(c)) continue;
       const dx = (c % W) - mx, dy = ((c / W) | 0) - my;
       const d = dx * dx + dy * dy;
@@ -4777,9 +4983,22 @@ RA.makeBaseLayers = function (map) {
   const dpr = Math.min(2, window.devicePixelRatio || 1);
   const V = map.vec;
 
-  function lodKey(z) {
-    return z < 4.6 ? 'z3' : z < 6.6 ? 'z5' : 'z7';
+  // detail levels differ per map (Europe: z3/z5/z7, the world adds a coarse z1): a layer's levels from its keys
+  const lv = {};
+  for (const k of Object.keys(V)) {
+    const [kind, z] = k.split('_z');
+    (lv[kind] = lv[kind] || []).push(+z);
   }
+  for (const k in lv) lv[k].sort((a, b) => a - b);
+  // the most detailed level n with z >= n - bias (Europe: land z3 below 4.6, z5 below 6.6; rivers z3 below 5.5)
+  function lod(kind, z, bias) {
+    const L0 = lv[kind];
+    if (!L0) return null;
+    let n = L0[0];
+    for (const v of L0) if (z >= v - bias) n = v;
+    return V[kind + '_z' + n];
+  }
+  const EMPTY = { rings: [], bbox: new Float32Array(0) };
 
   // path builders ---------------------------------------------------------
   function fillRings(ctx, layer, tb, T) {
@@ -4878,10 +5097,12 @@ RA.makeBaseLayers = function (map) {
       const ctx = c.getContext('2d');
       const T = tileFrame(coords, px);
       const z = coords.z;
-      const lod = lodKey(z);
       const pad = T.span * 0.06;
       const tb = [T.ox - pad, T.oy - pad, T.ox + T.span + pad, T.oy + T.span + pad];
-      const land = V['land_' + lod], lakes = V['lake_' + lod];
+      const land = lod('land', z, 0.4) || EMPTY, lakes = lod('lake', z, 0.4) || EMPTY;
+      // coastline strokes: separate lines when the map has them (big land fills cut into pieces would show the cuts)
+      const coast = lod('coast', z, 0.4) || land;
+      const riv1 = lod('riv1', z, 1.5), riv2 = lod('riv2', z, 1.5), bord = lod('bord', z, 1.5);
       const zf = Math.pow(1.35, z - 5); // line width scaling with zoom
 
       // sea
@@ -4892,7 +5113,7 @@ RA.makeBaseLayers = function (map) {
       ctx.strokeStyle = S.seaGlow;
       ctx.lineWidth = Math.max(2, 7 * zf) * dpr;
       ctx.beginPath();
-      strokeLines(ctx, land, tb, T, true);
+      strokeLines(ctx, coast, tb, T, coast === land);
       ctx.stroke();
       // cut out land
       ctx.globalCompositeOperation = 'destination-out';
@@ -4907,23 +5128,25 @@ RA.makeBaseLayers = function (map) {
       ctx.fill('nonzero');
       // rivers
       ctx.lineCap = 'round';
-      if (z >= 5.5) {
+      if (z >= 5.5 && riv2) {
         ctx.strokeStyle = S.river2;
         ctx.lineWidth = Math.max(0.6, 0.8 * zf) * dpr;
         ctx.beginPath();
-        strokeLines(ctx, V.riv2_z7, tb, T, false);
+        strokeLines(ctx, riv2, tb, T, false);
         ctx.stroke();
       }
-      ctx.strokeStyle = S.river1;
-      ctx.lineWidth = Math.max(0.9, 1.35 * zf) * dpr;
-      ctx.beginPath();
-      strokeLines(ctx, z < 5.5 ? V.riv1_z3 : V.riv1_z7, tb, T, false);
-      ctx.stroke();
+      if (riv1) {
+        ctx.strokeStyle = S.river1;
+        ctx.lineWidth = Math.max(0.9, 1.35 * zf) * dpr;
+        ctx.beginPath();
+        strokeLines(ctx, riv1, tb, T, false);
+        ctx.stroke();
+      }
       // lake + sea outlines
       ctx.strokeStyle = S.coast;
       ctx.lineWidth = Math.max(0.6, 0.75 * Math.sqrt(zf)) * dpr;
       ctx.beginPath();
-      strokeLines(ctx, land, tb, T, true);
+      strokeLines(ctx, coast, tb, T, coast === land);
       strokeLines(ctx, lakes, tb, T, true);
       ctx.stroke();
       // country borders (real, for orientation only)
@@ -4931,7 +5154,7 @@ RA.makeBaseLayers = function (map) {
       ctx.lineWidth = Math.max(0.6, 0.9 * Math.sqrt(zf)) * dpr;
       ctx.setLineDash([4 * dpr, 3 * dpr]);
       ctx.beginPath();
-      strokeLines(ctx, z < 5.5 ? V.bord_z3 : V.bord_z7, tb, T, false);
+      if (bord) strokeLines(ctx, bord, tb, T, false);
       ctx.stroke();
       ctx.setLineDash([]);
       // veil outside the playable rectangle
@@ -5133,6 +5356,19 @@ void main(){
     this.corner = L.latLng(RA.yToLat(M.Y0), RA.xToLon(M.X0));
   },
 
+  /* another map (Europe <-> world): textures for its grid, in the same GL context (browsers cap the contexts) */
+  setMap(M) {
+    if (this.gm === M) return;
+    this.gm = M;
+    this.G = null;
+    if (!this.gl || this.gl.isContextLost()) return;
+    const gl = this.gl;
+    for (const t of [this.tOwner, this.tFall, this.tPal]) gl.deleteTexture(t);
+    gl.deleteProgram(this.prog);
+    this.ok = Math.max(M.W, M.H) <= gl.getParameter(gl.MAX_TEXTURE_SIZE);
+    if (this.ok) this._initGL();
+    this.dirtyView = true;
+  },
   /* full reset for a new game */
   reset(G) {
     this.G = G;
@@ -6401,16 +6637,25 @@ RA.UI = class {
     };
 
     // settings (remembered per viewer)
-    this.settings = { name: '', difficulty: 'srednje', cityStates: 50, region: 'evropa', peace: 60, era: 'danas', start: 'granice', gm: 'klasik' };
+    this.settings = { name: '', difficulty: 'srednje', cityStates: 50, map: 'evropa', region: 'evropa', peace: 60, era: 'danas', start: 'granice', gm: 'klasik' };
     try {
       const s = JSON.parse(localStorage.getItem('ra_settings') || '{}');
       Object.assign(this.settings, s);
     } catch (e) {}
-    if (!RA.REGIONS.some((r) => r.id === this.settings.region)) this.settings.region = 'evropa';
+    if (!RA.MAPS.some((m) => m.id === this.settings.map)) this.settings.map = 'evropa';
+    this.fixRegion();
     if (!RA.ERAS.some((e) => e.id === this.settings.era)) this.settings.era = 'danas';
     if (this.settings.start !== 'slobodno') this.settings.start = 'granice';
     if (this.settings.gm !== 'br') this.settings.gm = 'klasik';
     $('nameIn').value = this.settings.name || '';
+    // the map: Europe is always there; the world only on our own server (probed at boot, see mapsChanged)
+    $('mapSeg').innerHTML = RA.MAPS.map((m) => `<button data-v="${m.id}" aria-pressed="false"${m.id === 'evropa' ? '' : ' hidden'}>${RA.esc(m.name)}<small>${RA.esc(m.sub)}</small></button>`).join('');
+    this._seg('mapSeg', this.settings.map, (v) => {
+      this.settings.map = v;
+      this.fixRegion();
+      this.startNotes();
+      this.app.useMap(v);
+    });
     $('eraSeg').innerHTML = RA.ERAS.map((e) => `<button data-v="${e.id}" aria-pressed="false">${RA.esc(e.short)}<small>${RA.esc(e.sub)}</small></button>`).join('');
     this._seg('eraSeg', this.settings.era, (v) => {
       this.settings.era = v;
@@ -6505,11 +6750,32 @@ RA.UI = class {
     ro.observe($('hud'));
     ro.observe($('status'));
   }
+  /* start screen buttons after the lobby changed the settings (and the map shown behind it) */
+  syncStart() {
+    const s = this.settings;
+    for (const [id, v] of [['mapSeg', s.map], ['eraSeg', s.era], ['startSeg', s.start], ['gmSeg', s.gm], ['diffSeg', s.difficulty], ['peaceSeg', String(s.peace)]]) this._press(id, v);
+    this.startNotes();
+    if (this.app.map.id !== s.map && this.app.mapOK && this.app.mapOK[s.map]) this.app.useMap(s.map);
+  }
+  /* the region must belong to the chosen map (else: all of that map) */
+  fixRegion() {
+    const s = this.settings;
+    if (!RA.regionsOf(s.map).some((r) => r.id === s.region)) s.region = RA.regionsOf(s.map)[0].id;
+  }
   /* start screen: region buttons with the number of countries of the chosen era, and short explanations */
   startNotes() {
     const s = this.settings, $ = this.$;
     const E = RA.eraById(s.era);
-    $('regSeg').innerHTML = RA.REGIONS.map((r) => `<button data-v="${r.id}" aria-pressed="${r.id === s.region}">${RA.esc(r.name)}<small>${this.regionCount(r.id, s.era, s.start)} država</small></button>`).join('');
+    const m = this.app.maps && this.app.maps[s.map];
+    const ready = !!m && RA.eraReady(m, E.id);
+    // a world era not downloaded yet: '…' until it is
+    if (m && !ready) RA.loadEra(m, E.id).then(() => this.startNotes(), () => {});
+    // eras the map does not have yet (the world: only today's borders for now)
+    for (const b of $('eraSeg').querySelectorAll('button')) b.disabled = !!(m && m.eraOK && !m.eraOK[b.dataset.v]);
+    $('regSeg').innerHTML = RA.regionsOf(s.map).map((r) => {
+      const n = ready ? this.regionCount(m, r.id, s.era, s.start) : null;
+      return `<button data-v="${r.id}" aria-pressed="${r.id === s.region}"${n === 0 ? ' disabled' : ''}>${RA.esc(r.name)}<small>${n == null ? '…' : n} država</small></button>`;
+    }).join('');
     $('eraNote').textContent = E.blurb;
     $('csField').hidden = s.start === 'granice';
     $('modeNote').textContent = (s.start === 'granice'
@@ -6517,11 +6783,75 @@ RA.UI = class {
       : 'Od prijestolnice: države kreću od malog kruga oko glavnog grada, a ostalo je slobodna zemlja. ')
       + (s.gm === 'br' ? 'Battle royale: radioaktivna zona se sužava prema nasumičnoj tački — sve izvan kruga propada.' : '');
   }
-  regionCount(reg, era, start) {
-    const key = `${reg}|${era}|${start}`;
+  regionCount(m, reg, era, start) {
+    const key = `${m.id}|${reg}|${era}|${start}`;
     this._rc = this._rc || {};
-    if (this._rc[key] == null) this._rc[key] = RA.regionMap(RA.eraMap(this.app.map, era, start), reg).nations.length;
+    if (this._rc[key] == null) this._rc[key] = RA.regionNations(RA.eraMap(m, era, start), reg).length;
     return this._rc[key];
+  }
+  /* boot probe: a map our server has shows up on the start screen (and in the lobby) */
+  mapsChanged(id) {
+    const ok = this.app.mapOK[id];
+    this.showMap(id, ok);
+    const s = this.settings;
+    if (s.map !== id) return;
+    if (ok) this.app.useMap(id);
+    else this.mapFailed(id);
+  }
+  /* the map could not be loaded (offline, or the page is not on our server): back to Europe */
+  mapFailed(id) {
+    this.app.mapOK[id] = false;
+    this.$('mapNote').hidden = false;
+    this.showMap(id, false);
+    this.$('mapNote').textContent = `${RA.mapInfo(id).aria} se sada ne može učitati (nema veze ili stranica nije na war.deovilab.com) — igraš na karti Evrope.`;
+    const s = this.settings;
+    if (s.map === id) {
+      s.map = 'evropa';
+      this.fixRegion();
+      this._press('mapSeg', 'evropa');
+      this._save();
+      this.startNotes();
+      this.app.useMap('evropa');
+    }
+  }
+  /* the map is there but not this era yet (the world gets its historical borders later): its latest era instead */
+  eraMissing(id, era) {
+    const m = this.app.maps[id], alt = m && m.eraOK && [...RA.ERAS].reverse().find((e) => m.eraOK[e.id]);
+    if (!alt) return this.mapFailed(id);
+    const s = this.settings, L = this.lobbySet, net = this.app.net;
+    let changed = false;
+    if (s.map === id && s.era === era) {
+      s.era = alt.id;
+      this._press('eraSeg', alt.id);
+      this._save();
+      this.startNotes();
+      if (!this.$('startScreen').hidden) this.app.useMap(id);
+      changed = true;
+    }
+    if (net && net.role === 'host' && net.phase === 'lobby' && L && L.map === id && L.era === era) {
+      L.era = alt.id;
+      this._press('lEraSeg', alt.id);
+      net.setSettings(L);
+      this.renderLobby();
+      changed = true;
+    }
+    if (changed) this.toast('info', `Za doba „${RA.esc(RA.eraById(era).short)}” ova karta još nije gotova — izabrano je „${RA.esc(alt.short)}”.`);
+  }
+  /* a map's button on the start screen and in the lobby; the "Karta" fields show only when there is a choice */
+  showMap(id, ok) {
+    for (const seg of ['mapSeg', 'lMapSeg']) {
+      const b = this.$(seg).querySelector(`[data-v="${id}"]`);
+      if (b) b.hidden = !ok;
+    }
+    const many = RA.MAPS.some((m) => m.id !== 'evropa' && this.app.mapOK && this.app.mapOK[m.id]);
+    this.$('mapField').hidden = !many && this.$('mapNote').hidden;
+    this.$('lMapField').hidden = !many;
+  }
+  /* texts that name the map (screen reader label, tagline) */
+  applyMapUI() {
+    const I = RA.mapInfo(this.app.map.id);
+    this.$('map').setAttribute('aria-label', I.aria);
+    document.querySelector('#startScreen .tagline').textContent = I.tag;
   }
   /* dock labels of the current era (siege engines, zeppelins, rockets) */
   applyEraUI() {
@@ -6533,9 +6863,12 @@ RA.UI = class {
       localStorage.setItem('ra_settings', JSON.stringify(this.settings));
     } catch (e) {}
   }
+  _press(id, v) {
+    this.$(id).querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === v)));
+  }
   _seg(id, val, cb) {
     const el = this.$(id);
-    const set = (v) => el.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === v)));
+    const set = (v) => this._press(id, v);
     set(val);
     el.addEventListener('click', (e) => {
       const b = e.target.closest('button');
@@ -6546,11 +6879,11 @@ RA.UI = class {
     });
   }
   previewRegion(id) {
-    const R = RA.REGIONS.find((r) => r.id === id);
+    const R = RA.regionsOf(this.app.map.id).find((r) => r.id === id);
     const lm = this.app.lmap;
     if (!lm) return;
     if (R && R.box) lm.flyToBounds([[R.box[1], R.box[0]], [R.box[3], R.box[2]]], { duration: 0.8 });
-    else this.app.fitEurope();
+    else this.app.fitMap();
   }
 
   get G() {
@@ -6599,7 +6932,7 @@ RA.UI = class {
     }
     this.spawnPicked(res);
     this.app.terr.updatePalette();
-    this.flyVisible(G.map.latLngOfCell(p.nation.c), Math.max(this.app.lmap.getZoom(), 4.6));
+    this.flyVisible(G.map.latLngOfCell(p.nation.c), Math.max(this.app.lmap.getZoom(), this.app.zoomAt(4.6)));
   }
   /* fly so that a point ends up in the middle of the map area left free by the bottom bars */
   flyVisible(ll, z) {
@@ -6752,13 +7085,13 @@ RA.UI = class {
     if (L0) ll = G.map.latLngOfXY(L0.x + 0.5, L0.y + 0.5);
     else if (p && p.tiles) ll = G.map.latLngOfCell(p.cells[0]);
     if (!ll) return;
-    this.app.lmap.flyTo(ll, Math.max(this.app.lmap.getZoom(), 5), { duration: 0.8 });
+    this.app.lmap.flyTo(ll, Math.max(this.app.lmap.getZoom(), this.app.zoomAt(5)), { duration: 0.8 });
     this.app.terr.setHighlight(pid);
     clearTimeout(this._hiT);
     this._hiT = setTimeout(() => this.app.terr.setHighlight(0), 2200);
   }
   flyToCell(c, z) {
-    this.app.lmap.flyTo(this.G.map.latLngOfCell(c), Math.max(this.app.lmap.getZoom(), z || 5.2), { duration: 0.7 });
+    this.app.lmap.flyTo(this.G.map.latLngOfCell(c), Math.max(this.app.lmap.getZoom(), this.app.zoomAt(z || 5.2)), { duration: 0.7 });
   }
 
   /* ---------------- toasts & sim events ---------------- */
@@ -6986,11 +7319,11 @@ RA.UI = class {
       if (tk < G.peaceUntil) pills.push(['calm', `☮ Mirno doba · ${T(G.peaceUntil - tk)}`]);
       else if (tk < G.diff.grace) pills.push(['calm', `Zaštita početnika · ${T(G.diff.grace - tk)}`]);
       const t = tk % C.WINTER_CYCLE, start = C.WINTER_CYCLE - C.WINTER_LEN;
-      if (t >= start) pills.push(['winter', `❄ Zima na sjeveru · ${T(C.WINTER_CYCLE - t)}`]);
+      if (t >= start) pills.push(['winter', `❄ ${RA.mapInfo(G.map.id).winter} · ${T(C.WINTER_CYCLE - t)}`]);
       else if (start - t <= 300) pills.push(['winter soon', `❄ Zima za ${T(start - t)}`]);
       const Z = G.zone;
       if (Z) {
-        if (Z.state === 'shrink') pills.push(['zone', `☢ Zona se sužava · ${T(Z.t0 + C.BR_SHRINK - tk)}`]);
+        if (Z.state === 'shrink') pills.push(['zone', `☢ Zona se sužava · ${T(Z.t0 + Z.shrinkT - tk)}`]);
         else if (Z.state === 'final') pills.push(['zone soon', '☢ Posljednji krug']);
         else pills.push(['zone soon', `☢ Zona ${Z.phase + 1}/${C.BR_PHASES} za ${T(Z.shrinkAt - tk)}`]);
       }
@@ -7409,7 +7742,7 @@ Object.assign(RA.UI.prototype, {
         const u = me.units.find((x) => x.id === +b.dataset.sel);
         this.closeSheet();
         if (!u) return;
-        this.app.lmap.flyTo(G.map.latLngOfXY(u.x, u.y), Math.max(this.app.lmap.getZoom(), 5.6), { duration: 0.7 });
+        this.app.lmap.flyTo(G.map.latLngOfXY(u.x, u.y), Math.max(this.app.lmap.getZoom(), this.app.zoomAt(5.6)), { duration: 0.7 });
         this.setMode({ kind: 'unit', id: u.id });
       }));
       s.querySelectorAll('[data-dis]').forEach((b) => (b.onclick = () => {
@@ -7788,7 +8121,7 @@ Object.assign(RA.UI.prototype, {
   menu() {
     const app = this.app, G = this.G;
     const reg = G.map.region;
-    let h = this.head('Meni', `${RA.esc(RA.ERA.name)} · ${reg ? RA.esc(reg.name) : 'Cijela Evropa'}${G.zone ? ' · battle royale' : ''} · ${RA.DIFF[G.opts.difficulty] ? RA.DIFF[G.opts.difficulty].label : ''} · vrijeme ${RA.fmtTime(G.tick / 10)}`);
+    let h = this.head('Meni', `${RA.esc(RA.ERA.name)} · ${RA.esc(reg ? reg.name : RA.mapInfo(G.map.id).all)}${G.zone ? ' · battle royale' : ''} · ${RA.DIFF[G.opts.difficulty] ? RA.DIFF[G.opts.difficulty].label : ''} · vrijeme ${RA.fmtTime(G.tick / 10)}`);
     h += `<div class="btns">
       <button class="btn primary" data-m="resume"><span class="t">Nastavi</span></button>
       <button class="btn" data-m="how"><span class="t">Kako se igra</span></button>
@@ -7821,10 +8154,11 @@ Object.assign(RA.UI.prototype, {
   },
 
   howTo() {
-    const C = RA.CFG;
+    const C = RA.CFG, M = this.app.map, I = RA.mapInfo(M.id);
+    const win = Math.round((M.meta.winShare > 0 ? M.meta.winShare : C.WIN_SHARE) * 100), ot = M.meta.overtimeMin > 0 ? M.meta.overtimeMin : C.OVERTIME_MIN;
     const eras = RA.ERAS.map((e) => `<li><b>${RA.esc(e.name)}</b> (${RA.esc(e.sub)}) — ${RA.esc(e.blurb)}</li>`).join('');
     const h = this.head('Kako se igra', 'Overtake — pravila ukratko') + `<div class="howto">
-      <h4>Cilj</h4><p>Zauzmi 70% kopna odabranog dijela karte ili ostani posljednja država. Poslije ${C.OVERTIME_MIN}. minute prag pada 2% po minuti.</p>
+      <h4>Cilj</h4><p>Zauzmi ${win}% kopna odabranog dijela karte ili ostani posljednja država. Poslije ${ot}. minute prag pada 2% po minuti.</p>
       <h4>Doba</h4><p>Na početnom ekranu biraš period u kojem se boriš. Svako doba ima svoje granice, gradove, jedinice, zgrade i oružje:</p><ul>${eras}</ul>
       <h4>Početak</h4><ul>
         <li><b>Stvarne granice</b>: sve države kreću sa svojom teritorijom iz tog doba. Dodirni državu ili je izaberi sa spiska — dobijaš njenu zemlju, vojsku i zlato.</li>
@@ -7854,7 +8188,7 @@ Object.assign(RA.UI.prototype, {
         <li><b>Vojni savez</b> (najviše ${C.ALLY_MAX}, traje 5 min): ne napadate se, a saveznici ti pomažu kad te neko napadne. Možeš im slati vojsku i tražiti pomoć.</li>
         <li><b>Trgovinski savez</b> (najviše ${C.TRADE_MAX}): trgovački brodovi između luka i trgovina preko granice donose zlato objema stranama — bez obaveza u ratu.</li>
         <li>Izdaja saveznika = 30 s prepolovljene odbrane i loš ugled kod svih.</li></ul>
-      <h4>Zima i prijestolnice</h4><p>Svake 4 minute sjever (iznad ~51°) prekrije snijeg na 1 minut: napadi i jedinice su tamo sporiji. Pad prijestolnice znači krizu: −25% vojske, pola prihoda 60 s i plijen za osvajača.</p>
+      <h4>Zima i prijestolnice</h4><p>Svake 4 minute ${RA.esc(I.winterHow)} prekrije snijeg na 1 minut: napadi i jedinice su tamo sporiji. Pad prijestolnice znači krizu: −25% vojske, pola prihoda 60 s i plijen za osvajača.</p>
       <h4>Online s prijateljem</h4><p>Oboje otvorite war.deovilab.com; jedan pritisne „Napravi sobu”, drugi „Pridruži se”. Domaćin bira doba, kartu i način: <b>zajedno protiv svih</b> (stalni savez, dijelite pobjedu) ili <b>jedan protiv drugog</b>, uz battle royale ako želite. Brzinu i pauzu kontroliše domaćin.</p>
       <h4>Kontrole</h4><p>Jedan prst: pomjeranje · dva prsta: zum · dugi pritisak (desni klik): meni za to mjesto. Igru možeš pauzirati i ubrzati (1×–3×).</p>
     </div>`;
@@ -7868,9 +8202,9 @@ Object.assign(RA.UI.prototype, {
     const won = !!(G.winner && me && (G.winner === me || G.sameTeam(G.winner, me)));
     $('endTitle').textContent = won ? 'Pobjeda' : kind === 'lost' ? 'Poraz' : 'Kraj igre';
     $('endTitle').classList.toggle('win', !!won);
-    const where = G.map.region ? G.map.region.name : 'Evropa';
+    const where = G.map.region ? G.map.region.name : RA.mapInfo(G.map.id).name;
     $('endSub').textContent = won
-      ? (G.winner !== me ? `Vaš tim je osvojio: ${where} (${RA.fmtTime(G.tick / 10)}).` : `${where} je tvoja nakon ${RA.fmtTime(G.tick / 10)}.`)
+      ? (G.winner !== me ? `Vaš tim je osvojio: ${where} (${RA.fmtTime(G.tick / 10)}).` : `Osvojeno: ${where}, za ${RA.fmtTime(G.tick / 10)}.`)
       : kind === 'lost'
       ? `Tvoja država je pala poslije ${RA.fmtTime(G.tick / 10)}.`
       : `Pobjednik je ${G.winner ? G.winner.name : 'neko drugi'} (${where}).`;
@@ -7953,12 +8287,20 @@ Object.assign(RA.UI.prototype, {
 Object.assign(RA.UI.prototype, {
   initOnline() {
     const $ = this.$, s = this.settings;
-    this.lobbySet = { reg: s.region, dif: s.difficulty, peace: s.peace, cs: s.cityStates, mode: s.mode === 'vs' ? 'vs' : 'coop', era: s.era, st: s.start, gm: s.gm };
+    this.lobbySet = { map: s.map, reg: s.region, dif: s.difficulty, peace: s.peace, cs: s.cityStates, mode: s.mode === 'vs' ? 'vs' : 'coop', era: s.era, st: s.start, gm: s.gm };
     this.natCache = {};
-    $('lRegSeg').innerHTML = RA.REGIONS.map((r) => `<button data-v="${r.id}" aria-pressed="false">${RA.esc(r.name)}</button>`).join('');
+    $('lMapSeg').innerHTML = RA.MAPS.map((m) => `<button data-v="${m.id}" aria-pressed="false"${m.id === 'evropa' ? '' : ' hidden'}>${RA.esc(m.name)}<small>${RA.esc(m.sub)}</small></button>`).join('');
+    this.lobbyRegs();
     $('lEraSeg').innerHTML = RA.ERAS.map((e) => `<button data-v="${e.id}" aria-pressed="false">${RA.esc(e.short)}<small>${RA.esc(e.sub)}</small></button>`).join('');
     const upd = (k, conv) => (v) => {
       this.lobbySet[k] = conv ? conv(v) : v;
+      if (k === 'map') {
+        // another map: its regions (all of it by default)
+        s.map = v;
+        this.fixRegion();
+        this.lobbySet.reg = s.region;
+        this.lobbyRegs();
+      }
       if (k === 'reg') s.region = v;
       if (k === 'dif') s.difficulty = v;
       if (k === 'peace') s.peace = +v;
@@ -7970,17 +8312,24 @@ Object.assign(RA.UI.prototype, {
       this.app.net.setSettings(this.lobbySet);
       this.renderLobby();
     };
+    this._seg('lMapSeg', this.lobbySet.map, upd('map'));
     this._seg('lEraSeg', this.lobbySet.era, upd('era'));
     this._seg('lStartSeg', this.lobbySet.st, upd('st'));
     this._seg('lGmSeg', this.lobbySet.gm, upd('gm'));
-    this._seg('lRegSeg', this.lobbySet.reg, upd('reg'));
+    $('lRegSeg').addEventListener('click', (e) => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      this._press('lRegSeg', b.dataset.v);
+      upd('reg')(b.dataset.v);
+    });
     this._seg('modeSeg', this.lobbySet.mode, upd('mode'));
     this._seg('lDiffSeg', this.lobbySet.dif, upd('dif'));
     this._seg('lPeaceSeg', String(this.lobbySet.peace), upd('peace', Number));
     $('lobbyNat').onchange = () => this.app.net.setPick($('lobbyNat').value);
     $('lobbyGo').onclick = () => {
       const L = this.lobbySet;
-      const r = this.app.net.start(Object.assign({}, L), this.regionNations(L.reg, L.era, L.st));
+      const nats = this.regionNations(L);
+      const r = !nats ? 'Karta se još učitava…' : !this.lobbyReady(L) ? 'Čeka se da svi učitaju kartu.' : this.app.net.start(Object.assign({}, L), nats);
       if (typeof r === 'string') this.toast('info', RA.esc(r));
     };
     $('lobbyShare').onclick = async () => {
@@ -8001,6 +8350,7 @@ Object.assign(RA.UI.prototype, {
       this.app.net.leave();
       $('lobbyScreen').hidden = true;
       $('startScreen').hidden = false;
+      this.syncStart();
     };
     $('startScreen').addEventListener('click', (e) => {
       const w = e.target.closest('[data-watch]');
@@ -8021,6 +8371,8 @@ Object.assign(RA.UI.prototype, {
       }
       if (b.dataset.on === 'close') return net.closeRoom();
       if (b.dataset.on === 'host') {
+        this.lobbySet.map = this.settings.map;
+        this.lobbyRegs();
         this.lobbySet.reg = this.settings.region;
         this.lobbySet.dif = this.settings.difficulty;
         this.lobbySet.peace = this.settings.peace;
@@ -8028,8 +8380,7 @@ Object.assign(RA.UI.prototype, {
         this.lobbySet.era = this.settings.era;
         this.lobbySet.st = this.settings.start;
         this.lobbySet.gm = this.settings.gm;
-        for (const [id, v] of [['lEraSeg', this.lobbySet.era], ['lStartSeg', this.lobbySet.st], ['lGmSeg', this.lobbySet.gm], ['lRegSeg', this.lobbySet.reg]])
-          $(id).querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === v)));
+        for (const [id, v] of [['lMapSeg', this.lobbySet.map], ['lEraSeg', this.lobbySet.era], ['lStartSeg', this.lobbySet.st], ['lGmSeg', this.lobbySet.gm], ['lRegSeg', this.lobbySet.reg]]) this._press(id, v);
         net.host(Object.assign({}, this.lobbySet));
       } else net.join(b.dataset.on);
       $('startScreen').hidden = true;
@@ -8039,16 +8390,28 @@ Object.assign(RA.UI.prototype, {
     this.app.net.onChange(() => this.renderOnline());
     this.renderOnline();
   },
-  /* nations a region starts with in an era (names sorted), cached */
-  regionNations(reg, era, st) {
-    era = era || 'danas';
-    st = st || 'slobodno';
-    const key = `${reg}|${era}|${st}`;
+  /* the host's region buttons: the regions of the lobby's map */
+  lobbyRegs() {
+    const L = this.lobbySet;
+    const regs = RA.regionsOf(L.map);
+    if (!regs.some((r) => r.id === L.reg)) L.reg = regs[0].id;
+    this.$('lRegSeg').innerHTML = regs.map((r) => `<button data-v="${r.id}" aria-pressed="${r.id === L.reg}">${RA.esc(r.name)}</button>`).join('');
+  },
+  /* nations a region starts with in an era (names sorted), cached; null while the map (or era) is still loading */
+  regionNations(set) {
+    const map = RA.mapInfo(set.map).id, era = RA.eraById(set.era).id, st = set.st || 'slobodno';
+    const key = `${map}|${set.reg}|${era}|${st}`;
     if (!this.natCache[key]) {
-      const m = RA.regionMap(RA.eraMap(this.app.map, era, st), reg);
-      this.natCache[key] = m.nations.map((n) => ({ iso: n.iso, name: n.name, capital: n.capital })).sort((a, b) => a.name.localeCompare(b.name, 'bs'));
+      if (!this.app.mapReady(map, era)) return null;
+      const nats = RA.regionNations(RA.eraMap(this.app.maps[map], era, st), set.reg);
+      this.natCache[key] = nats.map((n) => ({ iso: n.iso, name: n.name, capital: n.capital })).sort((a, b) => a.name.localeCompare(b.name, 'bs'));
     }
     return this.natCache[key];
+  },
+  /* everyone in the lobby has the map and era of the game (Europe is in the page: always) */
+  lobbyReady(set) {
+    const key = RA.mapKey(set);
+    return RA.mapInfo(set.map).id === 'evropa' || this.app.net.members().every((m) => m.ld === key);
   },
   showLobby(set) {
     const $ = this.$;
@@ -8137,6 +8500,21 @@ Object.assign(RA.UI.prototype, {
       return;
     }
     const set = isHost ? this.lobbySet : (hp && hp.set) || this.lobbySet;
+    // the game's map: download it now (a guest as soon as the host picks it), then tell the others (ld)
+    const mapId = RA.mapInfo(set.map).id, era = RA.eraById(set.era).id, key = RA.mapKey(set);
+    const loaded = this.app.mapReady(mapId, era);
+    if (loaded && net.pres.ld !== key) net.publish({ ld: key });
+    if (!loaded && this._lobbyLoad !== key && this._lobbyFail !== key) {
+      this._lobbyLoad = key;
+      this.app.ensureMap(mapId, era).then(
+        () => this.renderLobby(),
+        (e) => {
+          this._lobbyFail = key; // once: renderLobby runs on every change in the room
+          if (e && e.message === 'no-era') this.eraMissing(mapId, era); // the host picks another era
+          else this.toast('bad', `${RA.esc(RA.mapInfo(mapId).aria)} se ne može učitati — provjeri vezu i uđi ponovo.`);
+        }
+      ).finally(() => (this._lobbyLoad = null));
+    }
     const mem = net.members();
     const hostName = mem[0] ? mem[0].name : 'domaćin';
     $('lobbySub').textContent = isHost
@@ -8144,14 +8522,15 @@ Object.assign(RA.UI.prototype, {
       : `Domaćin: ${hostName}. Postavke bira domaćin.`;
     $('lobbyLinkRow').hidden = !net.code;
     if (net.code && $('lobbyLink').textContent !== net.link()) $('lobbyLink').textContent = net.link();
-    const nats = this.regionNations(set.reg, set.era, set.st);
+    const nats = this.regionNations(set) || [];
     const natName = (iso) => (nats.find((n) => n.iso === iso) || {}).name;
-    $('lobbyPlayers').innerHTML = mem.map((m, i) => `<div class="prow"><span class="sw" style="background:${RA.SLOT_COLORS[i]}"></span><div class="pn"><div class="nm">${RA.esc(m.name)}${m.isMe ? ' <span class="tag">ti</span>' : ''}${i === 0 ? ' <span class="tag tr">domaćin</span>' : ''}</div><div class="d">${m.pick && natName(m.pick) ? RA.esc(natName(m.pick)) : 'država: nasumično'}</div></div><div></div></div>`).join('')
+    const far = mapId !== 'evropa';
+    $('lobbyPlayers').innerHTML = mem.map((m, i) => `<div class="prow"><span class="sw" style="background:${RA.SLOT_COLORS[i]}"></span><div class="pn"><div class="nm">${RA.esc(m.name)}${m.isMe ? ' <span class="tag">ti</span>' : ''}${i === 0 ? ' <span class="tag tr">domaćin</span>' : ''}</div><div class="d">${far && m.ld !== key ? 'učitava kartu…' : m.pick && natName(m.pick) ? RA.esc(natName(m.pick)) : 'država: nasumično'}</div></div><div></div></div>`).join('')
       + (mem.length < 2 ? '<p class="note" style="margin:2px">Čeka se prijatelj…</p>' : '');
     // my country
     const sel = $('lobbyNat');
     const opts = '<option value="">Nasumično</option>' + nats.map((n) => `<option value="${n.iso}">${RA.esc(n.name)} — ${RA.esc(n.capital)}</option>`).join('');
-    const natKey = `${set.reg}|${set.era}|${set.st}`;
+    const natKey = `${key}|${set.reg}|${set.st}|${nats.length}`;
     if (sel.dataset.reg !== natKey) {
       sel.innerHTML = opts;
       sel.dataset.reg = natKey;
@@ -8159,14 +8538,19 @@ Object.assign(RA.UI.prototype, {
     }
     sel.value = net.pick || '';
     $('lobbyHost').hidden = !isHost;
-    const reg = RA.REGIONS.find((r) => r.id === set.reg);
+    const lm = this.app.maps[mapId];
+    for (const b of $('lEraSeg').querySelectorAll('button')) b.disabled = !!(lm && lm.eraOK && !lm.eraOK[b.dataset.v]);
+    const reg = RA.regionsOf(mapId).find((r) => r.id === set.reg);
     const E = RA.eraById(set.era);
-    const summary = `${E.name} (${E.sub}) · ${set.st === 'granice' ? 'stvarne granice' : 'od prijestolnice'}${set.gm === 'br' ? ' · battle royale' : ''} · ${reg ? reg.name : 'Evropa'} · ${RA.DIFF[set.dif] ? RA.DIFF[set.dif].label : ''} · mirno doba ${set.peace ? Math.round(set.peace / 60) + ' min' : 'bez'} · ${set.mode === 'vs' ? 'jedan protiv drugog' : 'zajedno protiv svih'}`;
-    $('lobbyInfo').innerHTML = isHost
-      ? `Kad svi izaberu države, pritisni „Počni igru”. Ista država se ne može uzeti dvaput.`
+    const summary = `${E.name} (${E.sub}) · ${set.st === 'granice' ? 'stvarne granice' : 'od prijestolnice'}${set.gm === 'br' ? ' · battle royale' : ''} · ${reg ? reg.name : RA.mapInfo(mapId).all} · ${RA.DIFF[set.dif] ? RA.DIFF[set.dif].label : ''} · mirno doba ${set.peace ? Math.round(set.peace / 60) + ' min' : 'bez'} · ${set.mode === 'vs' ? 'jedan protiv drugog' : 'zajedno protiv svih'}`;
+    const ready = loaded && this.lobbyReady(set);
+    $('lobbyInfo').innerHTML = !loaded
+      ? RA.esc(RA.mapInfo(mapId).load)
+      : isHost
+      ? (ready ? `Kad svi izaberu države, pritisni „Počni igru”. Ista država se ne može uzeti dvaput.` : 'Čeka se da svi učitaju kartu…')
       : `${RA.esc(summary)}<br>Čeka se da domaćin pokrene igru…`;
     $('lobbyGo').hidden = !isHost;
-    $('lobbyGo').disabled = mem.length < 2;
+    $('lobbyGo').disabled = mem.length < 2 || !ready;
     $('lobbyCount').textContent = `${mem.length}/4 igrača`;
   },
 });
@@ -8187,8 +8571,10 @@ RA.App = class {
   async boot() {
     const msg = document.getElementById('loadMsg');
     try {
-      this.map = await RA.loadMap();
-      await RA.loadEras();
+      const eu = await RA.loadMap();
+      eu.eras = await RA.loadEras(window.ERADATA, eu.N);
+      this.maps = { evropa: eu }; // other maps (the world) are fetched from our server when chosen
+      this.map = eu; // the map shown now (layers are built for it)
     } catch (e) {
       msg.textContent = e && e.message === 'no-decompression' ? 'Preglednik je prestar za ovu igru. Ažuriraj Chrome/Safari.' : 'Greška pri učitavanju karte: ' + (e && e.message);
       console.error(e);
@@ -8204,6 +8590,107 @@ RA.App = class {
     document.getElementById('loading').hidden = true;
     requestAnimationFrame(this.frame);
     window.__ra = this; // debug handle
+    this.probeMaps();
+  }
+
+  /* ---------------- maps ---------------- */
+  /* which other maps our server has (HEAD request; none on file:// or in the claude.ai artifact) */
+  probeMaps() {
+    this.mapOK = { evropa: true };
+    for (const m of RA.MAPS) {
+      if (this.mapOK[m.id]) continue;
+      const done = (ok) => {
+        this.mapOK[m.id] = ok;
+        this.ui.mapsChanged(m.id);
+      };
+      if (!RA.DATA_URL) done(false);
+      else RA.hasFile(RA.DATA_URL + m.id + '/map.json').then(done);
+    }
+  }
+  mapReady(id, era) {
+    const m = this.maps[id];
+    return !!m && RA.eraReady(m, RA.eraById(era).id);
+  }
+  /* fetch + decode a map and one of its eras (cached; one download at a time per map) */
+  ensureMap(id, era) {
+    const P = (this._mapP = this._mapP || {});
+    const got = this.maps[id]
+      ? Promise.resolve(this.maps[id])
+      : (P[id] = P[id] || RA.fetchMap(id, (n, tot) => this.loadProgress(id, n, tot)).then((m) => (this.maps[id] = m)).finally(() => delete P[id]));
+    return got.then((m) => RA.loadEra(m, RA.eraById(era).id).then(() => m));
+  }
+  loadProgress(id, n, tot) {
+    const base = RA.mapInfo(id).load;
+    const txt = n < 0 ? base.replace('Učitavam', 'Pripremam') : n > 0 ? `${base} ${tot ? Math.round((n / tot) * 100) + '%' : (n / 1048576).toFixed(1).replace('.', ',') + ' MB'}` : base;
+    document.getElementById('loadMsg').textContent = txt;
+  }
+  /* run fn once the map and era are there (at once for Europe); loading shows the full-screen loading overlay */
+  withMap(id, era, fn) {
+    if (this.mapReady(id, era)) {
+      fn();
+      return Promise.resolve(true);
+    }
+    const ov = document.getElementById('loading');
+    this.loadProgress(id, 0);
+    ov.hidden = false;
+    return this.ensureMap(id, era).then(
+      () => {
+        ov.hidden = true;
+        fn();
+        return true;
+      },
+      (e) => {
+        ov.hidden = true;
+        console.warn('map', id, e);
+        if (e && e.message === 'no-era') this.ui.eraMissing(id, RA.eraById(era).id);
+        else this.ui.mapFailed(id);
+        return false;
+      }
+    );
+  }
+  /* start screen: show this map (the background game runs on it) */
+  useMap(id) {
+    const s = this.ui.settings;
+    return this.withMap(id, s.era, () => {
+      if (s.map !== id) return; // switched again while loading
+      this.setMap(this.maps[id]);
+      this.attract();
+      this.fitMap();
+      this.ui.startNotes();
+    });
+  }
+  /* layers, bounds and zoom for another map's geometry */
+  setMap(M) {
+    if (this.map === M) return;
+    this.map = M;
+    const land = this.lmap.hasLayer(this.base.land);
+    this.base.land.remove();
+    this.base.sea.remove();
+    this.addBase(M, land);
+    this.terr.setMap(M);
+    this.fx.gm = M;
+    this.mapBounds(M);
+    this.ui.applyMapUI();
+  }
+  addBase(M, withLand) {
+    const base = (this.base = RA.makeBaseLayers(M));
+    const rb = L.latLngBounds([[M.meta.RLAT0, M.meta.RLON0], [M.meta.RLAT1, M.meta.RLON1]]);
+    base.land.options.bounds = rb;
+    base.sea.options.bounds = rb;
+    if (withLand) base.land.addTo(this.lmap);
+    base.sea.addTo(this.lmap);
+  }
+  mapBounds(M) {
+    const me = M.meta, lm = this.lmap;
+    this.defBounds = M.id === 'evropa' ? L.latLngBounds([[4, -45], [83, 75]]) : L.latLngBounds([[me.RLAT0, me.RLON0], [me.RLAT1, me.RLON1]]).pad(0.08);
+    lm.setMinZoom(me.minZoom != null ? me.minZoom : 2);
+    lm.setMaxZoom(me.maxZoom != null ? me.maxZoom : 9.5);
+    lm.setMaxBounds(this.defBounds);
+    // zooms in the code are tuned for Europe's cells: on a map with bigger cells the same view is a bit farther out
+    this.zoomOff = Math.log2(this.maps.evropa.CELL / M.CELL);
+  }
+  zoomAt(z) {
+    return z + (this.zoomOff || 0);
   }
 
   initLeaflet() {
@@ -8220,10 +8707,7 @@ RA.App = class {
       doubleClickZoom: false,
       boxZoom: false,
       keyboard: false,
-      minZoom: 2,
-      maxZoom: 9.5,
       bounceAtZoomLimits: false,
-      maxBounds: (this.defBounds = L.latLngBounds([[4, -45], [83, 75]])),
       maxBoundsViscosity: 0.85,
       inertiaDeceleration: 2600,
       tapTolerance: 14,
@@ -8239,12 +8723,8 @@ RA.App = class {
     pane('territory', 350);
     pane('sea', 400);
     pane('fx', 450);
-    const base = (this.base = RA.makeBaseLayers(M));
-    const rb = L.latLngBounds([[M.meta.RLAT0, M.meta.RLON0], [M.meta.RLAT1, M.meta.RLON1]]);
-    base.land.options.bounds = rb;
-    base.sea.options.bounds = rb;
-    base.land.addTo(lmap);
-    base.sea.addTo(lmap);
+    this.mapBounds(M);
+    this.addBase(M, true);
     this.terr = new RA.TerritoryLayer(M);
     this.terr.addTo(lmap);
     if (!this.terr.ok) {
@@ -8266,7 +8746,7 @@ RA.App = class {
       if (e.originalEvent) e.originalEvent.preventDefault();
       this.ui.onLong(e.latlng, e.containerPoint);
     });
-    this.fitEurope();
+    this.fitMap();
   }
   setOSM(on) {
     if (on && !this.osmOK) return false;
@@ -8289,7 +8769,7 @@ RA.App = class {
     const b = L.latLngBounds([[box[1], box[0]], [box[3], box[2]]]);
     this.lmap.fitBounds(b, { paddingTopLeft: [8, 60], paddingBottomRight: [8, padBottom || 20], animate: false });
   }
-  fitEurope(padBottom) {
+  fitMap(padBottom) {
     const M = this.map.meta;
     const b = L.latLngBounds([[M.LAT0 + 1, M.LON0], [M.LAT1 - 1.5, M.LON1]]);
     this.lmap.fitBounds(b, { paddingTopLeft: [8, 60], paddingBottomRight: [8, padBottom || 20], animate: false });
@@ -8322,16 +8802,24 @@ RA.App = class {
     document.getElementById('toasts').innerHTML = '';
     ui.reqToasts.clear();
     document.getElementById('endScreen').hidden = true;
+    const want = this.maps[ui.settings.map] || this.maps.evropa;
+    if (want !== this.map) {
+      this.setMap(want);
+      this.attractMode = false;
+    }
     if (!this.attractMode) {
       this.lmap.setMaxBounds(this.defBounds);
       this.attract();
-      this.fitEurope();
+      this.fitMap();
     }
     this.paused = false;
+    ui.syncStart();
     document.getElementById('startScreen').hidden = false;
   }
   newGame() {
     const s = this.ui.settings;
+    if (!this.mapReady(s.map, s.era)) return this.withMap(s.map, s.era, () => this.newGame());
+    this.setMap(this.maps[s.map]);
     document.getElementById('startScreen').hidden = true;
     const gm = RA.regionMap(RA.eraMap(this.map, s.era, s.start), s.region);
     const G = RA.newGame(gm, { seed: (Math.random() * 1e9) | 0, difficulty: s.difficulty, cityStates: s.cityStates, peace: s.peace, era: s.era, start: s.start, gm: s.gm });
@@ -8353,7 +8841,7 @@ RA.App = class {
       this.fitBox(bx, pb);
     } else {
       this.lmap.setMaxBounds(this.defBounds);
-      this.fitEurope(pb);
+      this.fitMap(pb);
     }
   }
   start() {
@@ -8366,10 +8854,24 @@ RA.App = class {
     this.updateSpeedBtn();
     this.updatePauseBtn();
     const ll = this.map.latLngOfCell(G.me.capital);
-    this.lmap.flyTo(ll, Math.max(this.lmap.getZoom(), 4.9), { duration: 1.1 });
+    this.lmap.flyTo(ll, Math.max(this.lmap.getZoom(), this.zoomAt(4.9)), { duration: 1.1 });
   }
   /* an online game: identical on every device (seed, settings, players), stepped in lockstep by RA.Net */
   startOnline(st, mySlot) {
+    // the host's settings are untrusted: a known map (old builds had none: Europe) and a known era
+    const set = st.set || {};
+    const id = RA.MAPS.some((m) => m.id === set.map) ? set.map : 'evropa', era = RA.eraById(set.era).id;
+    if (!this.mapReady(id, era)) {
+      this.withMap(id, era, () => {
+        if (this.net.st === st && this.net.inGame) this.startOnline(st, mySlot);
+      }).then((ok) => {
+        if (ok || !this.net.inGame) return;
+        this.ui.toast('bad', 'Karta ove igre se ne može učitati — online igra nije moguća.', { ms: 6000 });
+        this.showStart();
+      });
+      return;
+    }
+    this.setMap(this.maps[id]);
     const G = RA.setupOnline(this.map, st, mySlot);
     this.setGame(G);
     this.attractMode = false;
@@ -8392,7 +8894,7 @@ RA.App = class {
     this.updatePauseBtn();
     const reg = G.map.region;
     this.lmap.setMaxBounds(reg ? L.latLngBounds([[reg.box[1], reg.box[0]], [reg.box[3], reg.box[2]]]).pad(0.7) : this.defBounds);
-    if (G.me) this.lmap.setView(this.map.latLngOfCell(G.me.capital), 5, { animate: false });
+    if (G.me) this.lmap.setView(this.map.latLngOfCell(G.me.capital), this.zoomAt(5), { animate: false });
     const others = G.humans.filter((p) => p !== G.me).map((p) => p.nick).join(', ');
     ui.toast('good', `Online igra je počela — ${st.set.mode === 'coop' ? 'zajedno s: ' : 'protiv: '}${RA.esc(others)}.`, { ms: 6000 });
   }
@@ -8567,6 +9069,7 @@ RA.App = class {
 
    Host presence:  { v, r:'h', n, g, ph:'lobby'|'play', set, pk, sl:[peer], st, T, c:[[i,e,slot,kind,seq,...args]], sp, pz, ds }
    Guest presence: { v, r:'g', n, g, pk, q:[[seq,kind,...args]], ak, t, hs:[tick,hash] }
+   Both, in the lobby: ld = '<map>:<era>' once that map and era are downloaded (the host starts when all have it)
    Spectator:      { v, r:'s', n, g }
 
    On our own server (war.deovilab.com) every game is a private room with its own link /game-<code>: the host
@@ -8874,7 +9377,7 @@ RA.Net = class {
       const p = this.peerBy(peer);
       const isMe = !!(p && p.isMe && p.sameTab);
       const pr = isMe ? this.pres : (p && p.presence) || {};
-      return { peer, name: PEER_STR(pr.n, '') || 'Igrač', pick: PEER_STR(pr.pk, ''), isMe, here: !!p };
+      return { peer, name: PEER_STR(pr.n, '') || 'Igrač', pick: PEER_STR(pr.pk, ''), ld: typeof pr.ld === 'string' ? pr.ld.slice(0, 40) : '', isMe, here: !!p };
     });
   }
   /* host: start the game for everyone in the lobby */
@@ -9261,7 +9764,7 @@ RA.wsRoom = function (url, creds, onCreds, onBack) {
   };
 };
 
-RA.BUILD = 'fac5e79e';
+RA.BUILD = 'ba9d8a54';
 new RA.App().boot();
 }
 function __raFallback(){

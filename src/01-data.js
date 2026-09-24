@@ -9,13 +9,54 @@ RA.inflate = async function (b64) {
   return new Uint8Array(buf);
 };
 
-RA.loadMap = async function () {
-  const D = window.MAPDATA;
+/* Maps other than the embedded Europe live on our server as static files (data/<map>/map.json, era_<id>.json).
+   fetch() cannot read file:// pages and the claude.ai artifact has no such files: there the world is not offered. */
+RA.DATA_URL = typeof location !== 'undefined' && /^https?:$/.test(location.protocol) ? '/data/' : '';
+RA.fetchJSON = async function (url, onProgress) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  if (!onProgress || !r.body) return r.json();
+  // read in chunks so the loading screen can show how much has arrived
+  const rd = r.body.getReader(), parts = [];
+  const total = +r.headers.get('content-length') || 0;
+  let got = 0;
+  for (;;) {
+    const { done, value } = await rd.read();
+    if (done) break;
+    parts.push(value);
+    got += value.length;
+    onProgress(got, total);
+  }
+  return JSON.parse(await new Blob(parts).text());
+};
+/* is this data file on the server? (a host that answers unknown paths with the page itself does not count) */
+RA.hasFile = (url) => fetch(url, { method: 'HEAD' }).then((r) => r.ok && !/html/.test(r.headers.get('content-type') || ''), () => false);
+/* a map that is not embedded (the world): fetched and decoded on first use; its eras load one at a time */
+RA.fetchMap = async function (id, onProgress) {
+  if (!RA.DATA_URL) throw new Error('no-data');
+  // which eras this map has (the world gets its historical borders one by one)
+  const eraOK = Promise.all(RA.ERAS.map((e) => RA.hasFile(RA.DATA_URL + id + '/era_' + e.id + '.json')));
+  const D = await RA.fetchJSON(RA.DATA_URL + id + '/map.json', onProgress);
+  if (onProgress) onProgress(-1);
+  const m = await RA.loadMap(D);
+  if (m.id !== id) throw new Error('map id ' + m.id);
+  const ok = await eraOK;
+  m.eraOK = {};
+  RA.ERAS.forEach((e, i) => (m.eraOK[e.id] = ok[i]));
+  m.eras = {};
+  m.lazyEras = true;
+  m.eraNations = true; // no hand-made nation lists: every start (and region) takes its countries from the era rasters
+  return m;
+};
+
+RA.loadMap = async function (D = window.MAPDATA) {
   const M = D.meta;
   const W = M.W, H = M.H, N = W * H;
   const raw = await RA.inflate(D.grid);
 
   const map = {
+    id: M.id || 'evropa', // the embedded map is Europe
+    name: M.name || 'Cijela Evropa',
     W, H, N,
     X0: M.X0, Y0: M.Y0, CELL: M.CELL,
     X1: M.X0 + W * M.CELL, Y1: M.Y0 + H * M.CELL,
@@ -25,7 +66,6 @@ RA.loadMap = async function () {
     coast: new Uint8Array(N), // land touching sea (4-neighbour)
     wcomp: new Int32Array(N).fill(-1), // water component id
     wsize: [],
-    mirror: new Int32Array(N).fill(-1), // water cell -> land cell whose owner it mirrors (render only)
     block: new Uint8Array(N), // 1 = outside the playable region (regional maps)
     region: null,
     landCount: 0,
@@ -62,6 +102,7 @@ RA.loadMap = async function () {
   }
 
   // coast (touching navigable water: component bigger than 30 cells) + mirror for rendering
+  const mirror = new Int32Array(N).fill(-1); // water cell -> land cell whose owner it mirrors (render only)
   for (let i = 0; i < N; i++) {
     const x = i % W, y = (i / W) | 0;
     if (map.land[i]) {
@@ -77,7 +118,7 @@ RA.loadMap = async function () {
       const ok = [x > 0, x < W - 1, y > 0, y < H - 1, x > 0 && y > 0, x < W - 1 && y > 0, x > 0 && y < H - 1, x < W - 1 && y < H - 1];
       for (let k = 0; k < 8; k++) {
         if (ok[k] && map.land[cand[k]]) {
-          map.mirror[i] = cand[k];
+          mirror[i] = cand[k];
           break;
         }
       }
@@ -85,11 +126,11 @@ RA.loadMap = async function () {
   }
   // CSR: land cell -> mirrored water cells
   const cnt = new Int32Array(N + 1);
-  for (let i = 0; i < N; i++) if (map.mirror[i] >= 0) cnt[map.mirror[i] + 1]++;
+  for (let i = 0; i < N; i++) if (mirror[i] >= 0) cnt[mirror[i] + 1]++;
   for (let i = 0; i < N; i++) cnt[i + 1] += cnt[i];
   const list = new Int32Array(cnt[N]);
   const fill = cnt.slice(0, N);
-  for (let i = 0; i < N; i++) if (map.mirror[i] >= 0) list[fill[map.mirror[i]]++] = i;
+  for (let i = 0; i < N; i++) if (mirror[i] >= 0) list[fill[mirror[i]]++] = i;
   map.mirOff = cnt;
   map.mirList = list;
 
@@ -127,7 +168,8 @@ RA.loadMap = async function () {
   // vectors
   map.vec = {};
   const QX0 = M.QX0, QX1 = M.QX1, QY0 = M.QY0, QY1 = M.QY1;
-  const sx = (QX1 - QX0) / 65535, sy = (QY1 - QY0) / 65535;
+  const Q = M.Q || 65535; // quantisation steps of the vector coordinates
+  const sx = (QX1 - QX0) / Q, sy = (QY1 - QY0) / Q;
   const keys = Object.keys(D.vec);
   const bufs = await Promise.all(keys.map((k) => RA.inflate(D.vec[k])));
   keys.forEach((k, ki) => {

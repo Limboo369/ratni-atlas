@@ -76,6 +76,11 @@
         <label for="nameIn">Tvoje ime</label>
         <input type="text" id="nameIn" maxlength="18" placeholder="npr. Darko" autocomplete="off">
       </div>
+      <div class="field" id="mapField" hidden>
+        <span class="lab">Karta</span>
+        <div class="seg wrap" id="mapSeg"></div>
+        <p class="note era-note" id="mapNote" hidden></p>
+      </div>
       <div class="field">
         <span class="lab">Doba</span>
         <div class="seg wrap era" id="eraSeg"></div>
@@ -147,6 +152,10 @@
         <select id="lobbyNat" class="sel"></select>
       </div>
       <div id="lobbyHost">
+        <div class="field" id="lMapField" hidden>
+          <span class="lab">Karta</span>
+          <div class="seg wrap" id="lMapSeg"></div>
+        </div>
         <div class="field">
           <span class="lab">Način igre</span>
           <div class="seg" id="modeSeg">

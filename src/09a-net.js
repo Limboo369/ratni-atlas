@@ -11,6 +11,7 @@
 
    Host presence:  { v, r:'h', n, g, ph:'lobby'|'play', set, pk, sl:[peer], st, T, c:[[i,e,slot,kind,seq,...args]], sp, pz, ds }
    Guest presence: { v, r:'g', n, g, pk, q:[[seq,kind,...args]], ak, t, hs:[tick,hash] }
+   Both, in the lobby: ld = '<map>:<era>' once that map and era are downloaded (the host starts when all have it)
    Spectator:      { v, r:'s', n, g }
 
    On our own server (war.deovilab.com) every game is a private room with its own link /game-<code>: the host
@@ -318,7 +319,7 @@ RA.Net = class {
       const p = this.peerBy(peer);
       const isMe = !!(p && p.isMe && p.sameTab);
       const pr = isMe ? this.pres : (p && p.presence) || {};
-      return { peer, name: PEER_STR(pr.n, '') || 'Igrač', pick: PEER_STR(pr.pk, ''), isMe, here: !!p };
+      return { peer, name: PEER_STR(pr.n, '') || 'Igrač', pick: PEER_STR(pr.pk, ''), ld: typeof pr.ld === 'string' ? pr.ld.slice(0, 40) : '', isMe, here: !!p };
     });
   }
   /* host: start the game for everyone in the lobby */

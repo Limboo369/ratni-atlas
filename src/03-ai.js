@@ -228,12 +228,13 @@ RA.AI = {
   },
 
   boatAttack(G, p, share) {
-    const coastList = G.coastList;
     const W = G.map.W;
     const px = p.capital % W, py = (p.capital / W) | 0;
+    const pick = RA.AI.coastNear(G, px, py, 170);
     let best = -1, bs = -1;
     for (let k = 0; k < 40; k++) {
-      const c = coastList[Math.floor(G.rng() * coastList.length)];
+      const c = pick();
+      if (c < 0) break;
       const o = G.owner[c];
       if (o === p.id) continue;
       if (G.zone && (G.zoneOut(c) || !G.zoneSafe(c))) continue;
@@ -254,6 +255,42 @@ RA.AI = {
     const r = G.launchBoat(p.id, best, p.troops * share);
     if (typeof r === 'object') p.ai.lastBoat = G.tick;
     else p.ai.lastBoat = G.tick - 100; // retry a bit later
+  },
+  /* random coast cells to try a landing on. Small maps (Europe): any coast cell, most are within reach. Big maps
+     (the world): only the coast in the box R around (px, py) — rows of the sorted coast list, found by binary search */
+  coastNear(G, px, py, R) {
+    const L = G.coastList, W = G.map.W, H = G.map.H;
+    if ((2 * R + 1) * (2 * R + 1) * 4 >= G.map.N) return () => (L.length ? L[Math.floor(G.rng() * L.length)] : -1);
+    const lo = (v) => {
+      let a = 0, b = L.length;
+      while (a < b) {
+        const m = (a + b) >> 1;
+        if (L[m] < v) a = m + 1;
+        else b = m;
+      }
+      return a;
+    };
+    const x0 = Math.max(0, px - R), x1 = Math.min(W - 1, px + R);
+    const st = [], acc = [];
+    let tot = 0;
+    for (let y = Math.max(0, py - R); y <= Math.min(H - 1, py + R); y++) {
+      const a = lo(y * W + x0), b = lo(y * W + x1 + 1);
+      if (b <= a) continue;
+      st.push(a - tot);
+      tot += b - a;
+      acc.push(tot);
+    }
+    return () => {
+      if (!tot) return -1;
+      const r = Math.floor(G.rng() * tot);
+      let a = 0, b = acc.length - 1;
+      while (a < b) {
+        const m = (a + b) >> 1;
+        if (acc[m] > r) b = m;
+        else a = m + 1;
+      }
+      return L[st[a] + r];
+    };
   },
 
   sampleCell(G, p, pred, tries) {

@@ -173,6 +173,19 @@ void main(){
     this.corner = L.latLng(RA.yToLat(M.Y0), RA.xToLon(M.X0));
   },
 
+  /* another map (Europe <-> world): textures for its grid, in the same GL context (browsers cap the contexts) */
+  setMap(M) {
+    if (this.gm === M) return;
+    this.gm = M;
+    this.G = null;
+    if (!this.gl || this.gl.isContextLost()) return;
+    const gl = this.gl;
+    for (const t of [this.tOwner, this.tFall, this.tPal]) gl.deleteTexture(t);
+    gl.deleteProgram(this.prog);
+    this.ok = Math.max(M.W, M.H) <= gl.getParameter(gl.MAX_TEXTURE_SIZE);
+    if (this.ok) this._initGL();
+    this.dirtyView = true;
+  },
   /* full reset for a new game */
   reset(G) {
     this.G = G;
