@@ -1,4 +1,6 @@
 """Historical borders for Ratni Atlas eras -> build/eradata.js
+eras.py [era ids]              Europe: all eras -> build/eradata.js (with era ids: previews only)
+eras.py --map svijet [era ids] whole world -> build/svijet/era_<id>.json (today's borders only so far)
 
 Sources: historical-basemaps by A. Ourednik (GPL-3.0) for past years, Natural Earth (public domain) for today.
 Each era: polities with Bosnian names, capitals, and an owner raster on the game grid.
@@ -14,12 +16,20 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + '/'  # repo
 
 B = ROOT + 'build/'
 D = ROOT + 'data/'
-core = json.load(open(B + 'mapdata_core.json'))
+ARGS = sys.argv[1:]
+MAP = ARGS[ARGS.index('--map') + 1] if '--map' in ARGS else 'evropa'
+ONLY = set(a for i, a in enumerate(ARGS) if a != '--map' and (i == 0 or ARGS[i - 1] != '--map'))
+WORLD = MAP == 'svijet'
+if WORLD:
+    MD = json.load(open(B + 'svijet/map.json', encoding='utf-8'))
+    core = MD
+else:
+    core = json.load(open(B + 'mapdata_core.json'))
+    MD = json.loads(open(B + 'mapdata.js').read()[len('window.MAPDATA='):].rstrip().rstrip(';'))
 M = core['meta']
 W, H, X0, Y0, CELL = M['W'], M['H'], M['X0'], M['Y0'], M['CELL']
 grid = np.frombuffer(zlib.decompress(base64.b64decode(core['grid'])), np.uint8).reshape(H, W)
 LAND = (grid & 3) != 0
-MD = json.loads(open(B + 'mapdata.js').read()[len('window.MAPDATA='):].rstrip().rstrip(';'))
 CITIES = MD['cities']
 NATIONS = MD['nations']
 
@@ -55,30 +65,42 @@ def area_ll(polys):
 def raster_features(features):
     """features: list of (props, polys). Returns (feature list in draw order, int raster of 1-based indices)."""
     feats = []
+    wide = 0
     for pr, polys in features:
         keep = []
         for poly in polys:
             ext = poly[0]
             lons = [p[0] for p in ext]
             lats = [p[1] for p in ext]
-            if max(lons) < -12 or min(lons) > 42 or max(lats) < 32 or min(lats) > 72:
+            if max(lons) < M['LON0'] - 1 or min(lons) > M['LON1'] + 1 or max(lats) < M['LAT0'] - 1 or min(lats) > M['LAT1'] + 1:
                 continue
+            if max(lons) - min(lons) > 180:  # stored across the antimeridian: unwrap to one side, drawn twice below
+                poly = [[[p[0] + 360 if p[0] < 0 else p[0], p[1]] for p in ring] for ring in poly]
+                wide += 1
             keep.append(poly)
         if keep:
             feats.append((pr, keep))
+    if wide:
+        print('  rings across the antimeridian:', wide)
     feats.sort(key=lambda t: -area_ll(t[1]))  # big first, small (enclaves) on top
     img = Image.new('I', (W, H), 0)
     dr = ImageDraw.Draw(img)
     for idx, (pr, polys) in enumerate(feats):
         for poly in polys:
-            pts = [gxy(p[0], p[1]) for p in poly[0]]
-            if len(pts) >= 3:
-                dr.polygon(pts, fill=idx + 1)
-            for hole in poly[1:]:
-                hp = [gxy(p[0], p[1]) for p in hole]
-                if len(hp) >= 3:
-                    dr.polygon(hp, fill=0)
+            for sh in ((0, -1 / CELL) if max(p[0] for p in poly[0]) > 180 else (0,)):  # 360 degrees to the left
+                pts = [(x + sh, y) for x, y in (gxy(p[0], p[1]) for p in poly[0])]
+                if len(pts) >= 3:
+                    dr.polygon(pts, fill=idx + 1)
+                for hole in poly[1:]:
+                    hp = [(x + sh, y) for x, y in (gxy(p[0], p[1]) for p in hole)]
+                    if len(hp) >= 3:
+                        dr.polygon(hp, fill=0)
     return feats, np.asarray(img, dtype=np.int32).copy()
+
+
+def bbox_ll(geom):
+    pts = [p for poly in polys_of(geom) for p in poly[0]]
+    return (min(p[0] for p in pts), min(p[1] for p in pts), max(p[0] for p in pts), max(p[1] for p in pts))
 
 
 def paint_mask(poly_ll):
@@ -373,8 +395,14 @@ ERAS.append(dict(id='danas', src='ne', unmatched='near', ren={}, tiny='neutral',
                  paint=[(None, [(32.3, 45.35), (33.1, 46.15), (33.75, 46.25), (34.6, 46.2), (35.35, 45.4), (36.7, 45.55), (36.75, 44.9),
                                 (35.5, 44.3), (33.3, 44.3)])]))
 
-MIN_POL = 40      # smaller polities are merged into a neighbour
-SLIVER = 10       # disconnected land pieces smaller than this (touching others) join their neighbour
+
+# whole world today: Natural Earth countries (nations chosen by build/world.py svijet); dependencies, disputed areas and
+# countries too small for the grid are free land; Crimea and Kashmir (disputed-areas layer) too. Taiwan is a normal country.
+WORLD_ERAS = [dict(id='danas', src='ne', unmatched='neutral', near_max=4, ren={}, tiny='neutral',
+                   disputed=lambda pr, b: pr['NAME'] == 'Crimea' or (b[0] >= 72 and b[2] <= 81 and b[1] >= 32 and b[3] <= 37.5))]
+
+MIN_POL = 4 if WORLD else 40    # smaller polities are merged into a neighbour
+SLIVER = 3 if WORLD else 10     # disconnected land pieces smaller than this (touching others) join their neighbour
 
 
 def build_era(E):
@@ -386,7 +414,7 @@ def build_era(E):
         pol = []
         for n in NATIONS:
             pol.append((n['iso'], n['n'], [n['iso']], None, dict(cell=(n['y'], n['x']), capName=n['cap'], color=n['c'])))
-        for k, (nm, cap) in DANAS_EXTRA.items():
+        for k, (nm, cap) in ({} if WORLD else DANAS_EXTRA).items():
             pol.append((k, nm, [k], cap))
         keyname = lambda pr: pr.get('ADM0_A3')
         neutral_keys = {'KOS', 'CYN'}
@@ -422,6 +450,17 @@ def build_era(E):
     state = np.where(land, fstate[arr], 0)
     locked = np.zeros((H, W), bool)  # neutral on purpose
     locked |= land & (state == 3)
+    if E.get('unmatched') == 'neutral':
+        locked |= land & (state == 2)
+    if E.get('disputed'):
+        dfs = json.load(open(D + 'ne_10m_admin_0_disputed_areas.geojson', encoding='utf-8'))['features']
+        dfs = [f for f in dfs if E['disputed'](f['properties'], bbox_ll(f['geometry']))]
+        print('  disputed areas (free land):', ', '.join(sorted(set(f['properties']['NAME'] for f in dfs))))
+        _, darr = raster_features([(f['properties'], polys_of(f['geometry'])) for f in dfs])
+        m = land & (darr > 0)
+        own[m] = 0
+        locked |= m
+        state[m] = 3
     # 2) manual paint
     for key, poly in E.get('paint', []):
         m = paint_mask(poly) & land
@@ -455,7 +494,9 @@ def build_era(E):
     # 4) everything else on land: nearest polity
     todo = land & (own == 0) & ~locked
     if todo.any():
-        _, (iy, ix) = ndimage.distance_transform_edt(own == 0, return_indices=True)
+        dist, (iy, ix) = ndimage.distance_transform_edt(own == 0, return_indices=True)
+        if E.get('near_max'):  # only coastal gaps and nearby islands; land far from every polity stays free
+            todo &= dist <= E['near_max']
         own[todo] = own[iy[todo], ix[todo]]
     # 5) sliver cleanup (twice)
     for _ in range(2):
@@ -605,22 +646,23 @@ def preview(E, pols, own):
     img[:] = (40, 60, 90)
     lut = np.array([(235, 235, 235)] + [tuple(int(p['color'][i:i + 2], 16) for i in (1, 3, 5)) for p in pols], np.uint8)
     img[LAND] = lut[own][LAND]
-    im = Image.fromarray(img).resize((W * 2, H * 2), Image.NEAREST)
+    k = 1 if WORLD else 2
+    im = Image.fromarray(img).resize((W * k, H * k), Image.NEAREST)
     dr = ImageDraw.Draw(im)
     for p in pols:
-        if p['cells'] < 60:
+        if p['cells'] < (400 if WORLD else 60):
             continue
-        x, y = p['x'] * 2, p['y'] * 2
+        x, y = p['x'] * k, p['y'] * k
         dr.rectangle([x - 3, y - 3, x + 3, y + 3], fill=(0, 0, 0))
         dr.text((x + 5, y - 6), p['n'][:24], fill=(0, 0, 0))
     os.makedirs(B + 'shots', exist_ok=True)
-    im.save(B + f'shots/era_{E["id"]}.png')
+    im.save(B + (f'shots/world_{E["id"]}.png' if WORLD else f'shots/era_{E["id"]}.png'))
 
 
 def main():
-    only = set(sys.argv[1:])
+    only = ONLY
     out = {}
-    for i, E in enumerate(ERAS):
+    for i, E in enumerate(WORLD_ERAS if WORLD else ERAS):
         if only and E['id'] not in only:
             continue
         print('era', E['id'])
@@ -628,13 +670,16 @@ def main():
         assign_colors(pols, 11 + i)
         preview(E, pols, own)
         own8 = own.astype(np.uint8)
-        assert own.max() < 250
+        assert own.max() < 250 and len(pols) <= 190
         b64 = base64.b64encode(zlib.compress(own8.tobytes(), 9)).decode()
         out[E['id']] = dict(pol=[dict(k=p['k'], n=p['n'], x=p['x'], y=p['y'], cap=p['cap'], c=p['color']) for p in pols], own=b64, ren=E['ren'])
         print(f'  polities {len(pols)}  bytes {len(b64)}  neutral land {int((LAND & (own == 0)).sum())}')
         for p in sorted(pols, key=lambda p: -p['cells']):
             print(f'    {p["k"]:4} {p["n"]:28} {p["cells"]:6} cap {p["cap"]}')
-    if not only:
+        if WORLD:  # one file per era, fetched when that era is chosen
+            with open(B + f'svijet/era_{E["id"]}.json', 'w', encoding='utf-8', newline='\n') as f:
+                f.write(json.dumps(out[E['id']], ensure_ascii=False, separators=(',', ':')))
+    if not only and not WORLD:
         js = 'window.ERADATA=' + json.dumps(out, ensure_ascii=False, separators=(',', ':')) + ';\n'
         open(B + 'eradata.js', 'w').write(js)
         print('eradata.js bytes', len(js.encode()))
