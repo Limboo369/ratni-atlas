@@ -28,6 +28,7 @@ async def main():
         else:
             ctx = await b.new_context(viewport={'width': 1400, 'height': 900})
         page = await ctx.new_page()
+        page.set_default_timeout(90_000)  # CI (GitHub runner, swiftshader) crta sporo; screenshot usred partije zna preći 30 s
         errs = []
         page.on('pageerror', lambda e: errs.append('PAGEERROR: ' + str(e)))
         page.on('console', lambda m: errs.append(m.text) if m.type == 'error' and 'ERR_FAILED' not in m.text else None)
