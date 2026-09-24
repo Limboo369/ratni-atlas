@@ -1,0 +1,34 @@
+name: Pregled servera
+on: workflow_dispatch
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Stanje servera (samo čitanje)
+        env:
+          IP: ${{ secrets.SERVER_IP }}
+          KEY: ${{ secrets.SERVER_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh && printf '%s\n' "$KEY" > ~/.ssh/id_ed25519 && chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "$IP" >> ~/.ssh/known_hosts 2>/dev/null
+          ssh root@"$IP" 'bash -s' <<'EOF'
+          s() { echo; echo "===== $1"; }
+          s "apt povijest (ručne instalacije)"; zgrep -h -E "^(Start-Date|Commandline)" /var/log/apt/history.log* 2>/dev/null | grep -v "unattended" | paste - - | sort | grep -v "^$"
+          s "ručno instalirani paketi"; apt-mark showmanual | tr '\n' ' '
+          s "snap"; snap list 2>/dev/null
+          s "docker"; command -v docker && docker version --format '{{.Server.Version}}' && docker ps -a && docker compose version
+          s "node/python/pm2"; for c in node npm pm2 python3 pip3 php mysql psql redis-server; do command -v $c >/dev/null && echo "$c: $($c --version 2>&1 | head -1)"; done
+          s "servisi koji rade"; systemctl list-units --type=service --state=running --no-legend | awk '{print $1}'
+          s "portovi"; ss -tlnpu
+          s "ufw"; ufw status verbose
+          s "nginx sites"; ls -la /etc/nginx/sites-available /etc/nginx/sites-enabled /etc/nginx/conf.d
+          s "nginx -T"; nginx -T 2>&1 | grep -vE "^\s*#|^\s*$"
+          s "certbot"; certbot certificates 2>&1 | grep -E "Name|Domains|Expiry"
+          s "web direktoriji"; ls -la /var/www /srv /opt /home 2>&1; du -sh /var/www/* /srv/* /opt/* 2>/dev/null
+          s "korisnici sa shellom"; grep -E "(bash|sh)$" /etc/passwd | cut -d: -f1,6
+          s "authorized_keys (broj, komentari)"; for f in /root/.ssh/authorized_keys /home/*/.ssh/authorized_keys; do [ -f $f ] && echo "$f: $(wc -l <$f) -> $(awk '{print $NF}' $f | tr '\n' ' ')"; done
+          s "sshd"; sshd -T | grep -E "^(passwordauthentication|permitrootlogin|port|pubkeyauthentication) "
+          s "cron"; crontab -l 2>/dev/null; ls /etc/cron.d
+          s "disk/ram"; df -h / ; free -h
+          EOF
