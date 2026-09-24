@@ -59,9 +59,23 @@ RA.setupOnline = function (baseMap, st, mySlot) {
   return G;
 };
 
+/* The maps: Europe is embedded in the page; the world is fetched from our server (data/svijet/) on first use. */
+RA.MAPS = [
+  { id: 'evropa', name: 'Evropa', sub: 'detaljno', all: 'Cijela Evropa', aria: 'Karta Evrope', load: 'Učitavam kartu Evrope…',
+    tag: 'Osvajaj Evropu na stvarnoj karti — grad po grad, preko rijeka i planina.',
+    winter: 'Zima na sjeveru', winterHow: 'sjever (iznad ~51°)' },
+  { id: 'svijet', name: 'Svijet', sub: 'svi kontinenti', all: 'Cijeli svijet', aria: 'Karta svijeta', load: 'Učitavam kartu svijeta…',
+    tag: 'Osvajaj cijeli svijet na stvarnoj karti — kontinent po kontinent, preko okeana.',
+    winter: 'Zima na dalekom sjeveru', winterHow: 'daleki sjever svijeta (iznad ~51° sjeverne širine: Kanada, sjever Evrope, Rusija)' },
+];
+RA.mapInfo = (id) => RA.MAPS.find((m) => m.id === id) || RA.MAPS[0];
+/* what a device must have downloaded to play a room's game (lobby presence ld) */
+RA.mapKey = (set) => RA.mapInfo(set.map).id + ':' + RA.eraById(set.era).id;
+
 /* Playable regions: a polygon (lon, lat) roughly following coasts and borders + the nations that play there.
    Cells outside the polygon are blocked (not conquerable, boats can't sail there). A listed nation whose real
-   capital lies outside the region starts from its biggest city inside it. */
+   capital lies outside the region starts from its biggest city inside it. Regions without a nation list (the
+   world) take every country with enough land inside from the era raster. The first region of a map is all of it. */
 RA.REGIONS = [
   { id: 'evropa', name: 'Cijela Evropa' },
   { id: 'balkan', name: 'Balkan', nations: ['SVN', 'HRV', 'BIH', 'SRB', 'MNE', 'ALB', 'MKD', 'GRC', 'BGR', 'ROU', 'MDA', 'HUN'],
@@ -85,12 +99,24 @@ RA.REGIONS = [
   { id: 'jug', name: 'Mediteran', nations: ['PRT', 'ESP', 'FRA', 'ITA', 'SVN', 'HRV', 'BIH', 'SRB', 'MNE', 'ALB', 'MKD', 'GRC', 'BGR', 'TUR', 'CYP', 'MAR', 'DZA', 'TUN', 'SYR'],
     poly: [[-11.0, 33.0], [36.8, 33.0], [36.8, 42.0], [31.0, 43.0], [28.6, 43.7], [27.0, 44.1], [26.0, 43.9], [24.0, 43.7], [22.7, 44.5], [21.4, 45.2],
       [19.0, 45.9], [16.5, 46.5], [13.0, 46.5], [9.0, 46.0], [7.0, 45.9], [4.5, 45.9], [0.0, 44.2], [-11.0, 44.2]] },
-];
+].map((r) => Object.assign(r, { map: 'evropa' })).concat([
+  { id: 'svijet', name: 'Cijeli svijet' },
+  { id: 'bliski', name: 'Bliski istok i Mediteran',
+    poly: [[-10, 29], [-10, 44.5], [3, 44.5], [15, 47], [30, 46.5], [41, 44.5], [50, 45], [63, 42], [63, 23], [57, 12], [43, 11], [34.5, 28], [32, 30], [10, 28]] },
+  { id: 'afrika', name: 'Afrika', poly: [[-19, 37], [-6, 36.2], [11, 38], [32.3, 31.6], [34.3, 29.5], [43.2, 12.6], [52, 12.5], [52, -36], [-19, -36]] },
+  { id: 'azija', name: 'Azija',
+    poly: [[26, 36], [26, 42], [40, 42], [40, 50], [60, 50], [60, 72], [180, 72], [180, 60], [165, 50], [150, 30], [155, -11], [95, -11], [75, 5], [60, 22], [48, 12], [43.5, 12.5], [34.5, 28], [34.5, 36]] },
+  { id: 'sam', name: 'Sjeverna Amerika', poly: [[-180, 72], [-12, 72], [-12, 58], [-50, 45], [-58, 10], [-77, 7.5], [-83, 7], [-120, 20], [-180, 50]] },
+  { id: 'jam', name: 'Južna Amerika', poly: [[-82, 13], [-58, 13], [-34, -5], [-34, -56], [-82, -56]] },
+  { id: 'okeanija', name: 'Okeanija', poly: [[110, -20], [112, -9], [130, -9], [140, -1], [180, 0], [180, -50], [110, -50]] },
+].map((r) => Object.assign(r, { map: 'svijet' })));
 for (const r of RA.REGIONS) {
   if (!r.poly) continue;
   const lons = r.poly.map((q) => q[0]), lats = r.poly.map((q) => q[1]);
-  r.box = [Math.max(-11, Math.min(...lons)), Math.max(33, Math.min(...lats)), Math.min(41, Math.max(...lons)), Math.min(71.3, Math.max(...lats))];
+  r.box = [Math.min(...lons), Math.min(...lats), Math.max(...lons), Math.max(...lats)]; // the cell range is clamped to the grid in regionMask
 }
+RA.regionsOf = (mapId) => RA.REGIONS.filter((r) => r.map === mapId);
+RA.regionOf = (base, id) => RA.REGIONS.find((r) => r.id === id && r.map === base.id);
 RA.pointInPoly = function (x, y, P) {
   let inside = false;
   for (let i = 0, j = P.length - 1; i < P.length; j = i++) {
@@ -100,9 +126,14 @@ RA.pointInPoly = function (x, y, P) {
   return inside;
 };
 
-RA.regionMap = function (base, id) {
-  const R = RA.REGIONS.find((r) => r.id === id);
-  if (!R || !R.poly) return base;
+/* The cells of a region (block = 1 outside), cached per map: it does not depend on the era, and the start screen
+   counts countries of every region on each tap. Only the current map's masks are kept (1 byte per cell each). */
+RA._regMasks = new Map();
+RA.regionMask = function (base, R) {
+  const key = base.id + '|' + R.id;
+  const hit = RA._regMasks.get(key);
+  if (hit && hit.land === base.land) return hit;
+  for (const [k, v] of RA._regMasks) if (v.land !== base.land) RA._regMasks.delete(k);
   const W = base.W, H = base.H, N = base.N;
   // polygon in normalized Mercator, so the cell mask matches the outline drawn on the map exactly
   const mp = R.poly.map(([lon, lat]) => [RA.snap(RA.lonToX(lon), 1e-10), RA.snap(RA.latToY(lat), 1e-10)]);
@@ -110,31 +141,33 @@ RA.regionMap = function (base, id) {
   const gy = (lat) => (RA.latToY(lat) - base.Y0) / base.CELL;
   const x0 = Math.max(0, Math.floor(gx(R.box[0])) - 2), x1 = Math.min(W - 1, Math.ceil(gx(R.box[2])) + 2);
   const y0 = Math.max(0, Math.floor(gy(R.box[3])) - 2), y1 = Math.min(H - 1, Math.ceil(gy(R.box[1])) + 2);
-  const m = Object.create(base); // same geometry, own land/coast/block masks
-  m.land = new Uint8Array(N);
-  m.coast = new Uint8Array(N);
-  m.block = new Uint8Array(N).fill(1);
+  const block = new Uint8Array(N).fill(1);
   let cnt = 0;
   for (let y = y0; y <= y1; y++) {
     const cy = base.Y0 + (y + 0.5) * base.CELL;
     for (let x = x0; x <= x1; x++) {
       if (!RA.pointInPoly(base.X0 + (x + 0.5) * base.CELL, cy, mp)) continue;
       const c = y * W + x;
-      m.block[c] = 0;
-      if (base.land[c]) {
-        m.land[c] = 1;
-        m.coast[c] = base.coast[c];
-        cnt++;
-      }
+      block[c] = 0;
+      if (base.land[c]) cnt++;
     }
   }
-  m.landCount = cnt;
-  // smaller maps: wars between states move slower so a regional game still lasts ~10+ minutes
-  m.pace = RA.clamp(RA.dpow(base.landCount / Math.max(1, cnt), 0.3), 1, 2.5);
-  const inside = (c) => !m.block[c] && m.land[c];
-  m.region = { id: R.id, name: R.name, box: R.box, mpoly: mp };
-  const nats = base.eraOwn ? RA.eraRegionNations(base, inside, 40) : [];
-  for (const iso of base.eraOwn ? [] : R.nations) {
+  const K = { land: base.land, block, cnt, mp, c0: Math.max(0, y0) * W, c1: Math.min(N, (y1 + 1) * W) };
+  RA._regMasks.set(key, K);
+  return K;
+};
+/* the nations that play in a region (without building the region's map: the start screen and the lobby list them) */
+RA.regionNations = function (base, id) {
+  const R = RA.regionOf(base, id);
+  if (!R || !R.poly) return base.nations;
+  const K = RA.regionMask(base, R), land = base.land, block = K.block;
+  return RA._regionNats(base, R, K, (c) => !block[c] && land[c]);
+};
+RA._regionNats = function (base, R, K, inside) {
+  if (base.eraOwn) return RA.eraRegionNations(base, inside, 40, K.c0, K.c1);
+  if (!R.nations) return base.nations.filter((n) => inside(n.c)); // era raster not loaded (should not happen)
+  const nats = [];
+  for (const iso of R.nations) {
     const n = base.nations.find((q) => q.iso === iso);
     if (!n) continue;
     if (inside(n.c)) {
@@ -148,6 +181,30 @@ RA.regionMap = function (base, id) {
     }
     if (best) nats.push(Object.assign({}, n, { c: best.c, x: best.x, y: best.y, capital: best.name }));
   }
+  return nats;
+};
+
+RA.regionMap = function (base, id) {
+  const R = RA.regionOf(base, id);
+  if (!R || !R.poly) return base;
+  const N = base.N;
+  const K = RA.regionMask(base, R);
+  const m = Object.create(base); // same geometry, own land/coast masks; the block mask is shared (read-only)
+  m.land = new Uint8Array(N);
+  m.coast = new Uint8Array(N);
+  m.block = K.block;
+  for (let c = K.c0; c < K.c1; c++) {
+    if (K.block[c] || !base.land[c]) continue;
+    m.land[c] = 1;
+    m.coast[c] = base.coast[c];
+  }
+  const cnt = K.cnt;
+  m.landCount = cnt;
+  // smaller maps: wars between states move slower so a regional game still lasts ~10+ minutes
+  m.pace = RA.clamp(RA.dpow(base.landCount / Math.max(1, cnt), 0.3), 1, 2.5);
+  const inside = (c) => !m.block[c] && m.land[c];
+  m.region = { id: R.id, name: R.name, box: R.box, mpoly: K.mp };
+  const nats = RA._regionNats(base, R, K, inside);
   m.nations = nats;
   // city-states: the usual ones inside the region, topped up with real towns so small regions stay lively
   const cs = base.cityStates.filter((s) => inside(s.c));
@@ -173,6 +230,7 @@ RA.newGame = function (map, opts) {
   const borders = (G.borders = opts.start === 'granice' && !!map.eraOwn);
   for (const n of map.nations) {
     const p = G.addPlayer({ name: n.name, type: 'nation', color: n.color, iso: n.iso });
+    if (!p) break; // at most 250 players (8-bit owner ids); the build keeps an era under 190 polities
     p.nation = n;
     p.capCity = map.cityAt[n.c];
     if (!borders) G.spawnDisk(p, n.c, 3);
@@ -214,12 +272,14 @@ RA.newGame = function (map, opts) {
     [cs[i], cs[j]] = [cs[j], cs[i]];
   }
   // regional maps get a proportional number of city-states
-  const k = Math.min(Math.round((opts.cityStates || 0) * (map.region ? Math.min(1, map.landCount / 110000) : 1)), cs.length);
+  // (and never more than the 250 player ids leave, with a seat kept for every possible human)
+  const k = Math.min(Math.round((opts.cityStates || 0) * (map.region ? Math.min(1, map.landCount / 110000) : 1)), cs.length, 250 - (G.P.length - 1) - RA.SLOT_COLORS.length);
   for (let i = 0; i < k; i++) {
     const s = cs[i];
     const h = G.rng();
     const rgb = hsl(h, 0.16 + G.rng() * 0.1, 0.5 + G.rng() * 0.12);
     const p = G.addPlayer({ name: s.name, type: 'bot', color: RA.rgbToHex(rgb) });
+    if (!p) break;
     p.capCity = map.cityAt[s.c];
     G.spawnDisk(p, s.c, 2);
     p.troops = 9000;

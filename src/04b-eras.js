@@ -172,26 +172,47 @@ RA.missileIcon = (t) => {
   return M.icon || (M.kind === 'emp' ? 'emp' : M.kind === 'conv' ? 'rocket' : 'nuke');
 };
 
-/* ---------------- era borders (decoded once at boot) ---------------- */
-RA.ERA_DATA = {};
-RA.loadEras = async function () {
-  const D = window.ERADATA || {};
-  for (const id of Object.keys(D)) {
-    const e = D[id];
-    RA.ERA_DATA[id] = { pol: e.pol, own: await RA.inflate(e.own), ren: e.ren || {} };
-  }
+/* ---------------- era borders ---------------- */
+/* Europe: all eras are embedded and decoded at boot (map.eras = RA.loadEras()).
+   Other maps (map.lazyEras): era_<id>.json is fetched and decoded when that era is chosen; two stay decoded. */
+const eraOf = async (e, N) => {
+  const own = await RA.inflate(e.own);
+  if (own.length !== N) throw new Error('era/grid mismatch');
+  return { pol: e.pol, own, ren: e.ren || {} };
+};
+RA.loadEras = async function (D, N) {
+  const out = {};
+  for (const id of Object.keys(D || {})) out[id] = await eraOf(D[id], N);
+  return out;
+};
+RA.eraReady = (map, id) => !map.lazyEras || !!map.eras[id];
+RA.loadEra = function (map, id) {
+  if (RA.eraReady(map, id)) return Promise.resolve();
+  if (map.eraOK && !map.eraOK[id]) return Promise.reject(new Error('no-era'));
+  const L = (map._eraLoads = map._eraLoads || {});
+  return (L[id] = L[id] || RA.fetchJSON(RA.DATA_URL + map.id + '/era_' + id + '.json')
+    .then((e) => eraOf(e, map.N))
+    .then((E) => {
+      map.eras[id] = E;
+      const ks = Object.keys(map.eras);
+      if (ks.length > 2) delete map.eras[ks[0]]; // ~1 MB per decoded world era
+    })
+    .finally(() => delete L[id]));
 };
 
 /* The map of one era: its polities as nations, renamed cities (+ historical capitals that are not modern cities),
-   capital-tier cities where that era had its capitals. The modern game with a free start is the plain base map. */
+   capital-tier cities where that era had its capitals. The modern game with a free start is the plain base map
+   (except on maps whose nations always come from the era rasters). */
 RA._eraMaps = new Map();
 RA.eraMap = function (base, id, start) {
-  const E = RA.ERA_DATA[id];
-  if (!E || (id === 'danas' && start !== 'granice')) return base;
-  // cached per era (maps are read-only; a game resets its cities' owners when it starts)
-  const key = id + '|' + (id === 'danas' ? 'granice' : 'x');
+  const E = (base.eras || {})[id];
+  if (!E || (id === 'danas' && start !== 'granice' && !base.eraNations)) return base;
+  // cached per map and era (maps are read-only; a game resets its cities' owners when it starts)
+  const key = base.id + '|' + id;
   const hit = RA._eraMaps.get(key);
-  if (hit && hit.__base === base) return hit;
+  if (hit && hit.__base === base && hit.eraOwn === E.own) return hit;
+  // only this map's era maps stay (a world era map holds ~5 MB), and of a lazily loaded map only one
+  for (const [k, v] of RA._eraMaps) if (v.__base !== base || base.lazyEras) RA._eraMaps.delete(k);
   const m = Object.create(base);
   m.__base = base;
   RA._eraMaps.set(key, m);
@@ -246,12 +267,13 @@ RA.eraMap = function (base, id, start) {
   return m;
 };
 
-/* nations of an era map that play inside a region polygon (enough land there), capitals moved inside if needed */
-RA.eraRegionNations = function (base, inside, minCells) {
-  const own = base.eraOwn, N = base.N, W = base.W;
+/* nations of an era map that play inside a region polygon (enough land there), capitals moved inside if needed.
+   c0..c1: the cell range that holds the region (its bounding rows), so small regions of a big map scan less */
+RA.eraRegionNations = function (base, inside, minCells, c0 = 0, c1 = base.N) {
+  const own = base.eraOwn, W = base.W;
   const K = base.nations.length + 1;
   const cnt = new Int32Array(K), sx = new Float64Array(K), sy = new Float64Array(K);
-  for (let c = 0; c < N; c++) {
+  for (let c = c0; c < c1; c++) {
     if (!inside(c)) continue;
     const k = own[c];
     if (!k) continue;
@@ -278,7 +300,7 @@ RA.eraRegionNations = function (base, inside, minCells) {
     }
     const mx = sx[n.k] / cnt[n.k], my = sy[n.k] / cnt[n.k];
     let bc = -1, bd = 1e18;
-    for (let c = 0; c < N; c++) {
+    for (let c = c0; c < c1; c++) {
       if (own[c] !== n.k || !inside(c)) continue;
       const dx = (c % W) - mx, dy = ((c / W) | 0) - my;
       const d = dx * dx + dy * dy;

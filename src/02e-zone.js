@@ -31,7 +31,10 @@ RA.dcos = (a) => RA.dsin(a + 1.5707963267948966);
       if (d > r) r = d;
     }
     r = Math.ceil(r + 1);
-    this.zone = { cx, cy, r, fx: cx, fy: cy, fr: r, tx: cx, ty: cy, tr: r, t0: 0, phase: 0, state: 'wait', shrinkAt: this.peaceUntil + RA.CFG.BR_DELAY, deadLand: 0 };
+    // a big map (the world) shrinks and holds longer: about a tick per cell of the first radius, so the edge never
+    // outruns the fronts (Europe, r ≈ 440, keeps 45 s)
+    const shrinkT = Math.max(RA.CFG.BR_SHRINK, r), holdT = Math.max(RA.CFG.BR_HOLD, r);
+    this.zone = { cx, cy, r, fx: cx, fy: cy, fr: r, tx: cx, ty: cy, tr: r, t0: 0, phase: 0, state: 'wait', shrinkAt: this.peaceUntil + RA.CFG.BR_DELAY, deadLand: 0, shrinkT, holdT };
     this._zoneNext();
   };
   /* next target ring: smaller, entirely inside the current one, centred on playable land if possible */
@@ -78,14 +81,14 @@ RA.dcos = (a) => RA.dsin(a + 1.5707963267948966);
       return;
     }
     if (Z.state !== 'shrink') return;
-    const f = Math.min(1, (tk - Z.t0) / C.BR_SHRINK);
+    const f = Math.min(1, (tk - Z.t0) / Z.shrinkT);
     Z.cx = RA.snap(Z.fx + (Z.tx - Z.fx) * f, 1e-6);
     Z.cy = RA.snap(Z.fy + (Z.ty - Z.fy) * f, 1e-6);
     Z.r = RA.snap(Z.fr + (Z.tr - Z.fr) * f, 1e-6);
     if ((tk - Z.t0) % 5 === 0 || f >= 1) this._zoneBurn();
     if (f >= 1) {
       Z.phase++;
-      Z.shrinkAt = tk + C.BR_HOLD;
+      Z.shrinkAt = tk + Z.holdT;
       if (Z.phase >= C.BR_PHASES) {
         Z.state = 'final';
         Z.tx = Z.cx;

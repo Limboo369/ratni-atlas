@@ -21,9 +21,22 @@ RA.makeBaseLayers = function (map) {
   const dpr = Math.min(2, window.devicePixelRatio || 1);
   const V = map.vec;
 
-  function lodKey(z) {
-    return z < 4.6 ? 'z3' : z < 6.6 ? 'z5' : 'z7';
+  // detail levels differ per map (Europe: z3/z5/z7, the world adds a coarse z1): a layer's levels from its keys
+  const lv = {};
+  for (const k of Object.keys(V)) {
+    const [kind, z] = k.split('_z');
+    (lv[kind] = lv[kind] || []).push(+z);
   }
+  for (const k in lv) lv[k].sort((a, b) => a - b);
+  // the most detailed level n with z >= n - bias (Europe: land z3 below 4.6, z5 below 6.6; rivers z3 below 5.5)
+  function lod(kind, z, bias) {
+    const L0 = lv[kind];
+    if (!L0) return null;
+    let n = L0[0];
+    for (const v of L0) if (z >= v - bias) n = v;
+    return V[kind + '_z' + n];
+  }
+  const EMPTY = { rings: [], bbox: new Float32Array(0) };
 
   // path builders ---------------------------------------------------------
   function fillRings(ctx, layer, tb, T) {
@@ -122,10 +135,12 @@ RA.makeBaseLayers = function (map) {
       const ctx = c.getContext('2d');
       const T = tileFrame(coords, px);
       const z = coords.z;
-      const lod = lodKey(z);
       const pad = T.span * 0.06;
       const tb = [T.ox - pad, T.oy - pad, T.ox + T.span + pad, T.oy + T.span + pad];
-      const land = V['land_' + lod], lakes = V['lake_' + lod];
+      const land = lod('land', z, 0.4) || EMPTY, lakes = lod('lake', z, 0.4) || EMPTY;
+      // coastline strokes: separate lines when the map has them (big land fills cut into pieces would show the cuts)
+      const coast = lod('coast', z, 0.4) || land;
+      const riv1 = lod('riv1', z, 1.5), riv2 = lod('riv2', z, 1.5), bord = lod('bord', z, 1.5);
       const zf = Math.pow(1.35, z - 5); // line width scaling with zoom
 
       // sea
@@ -136,7 +151,7 @@ RA.makeBaseLayers = function (map) {
       ctx.strokeStyle = S.seaGlow;
       ctx.lineWidth = Math.max(2, 7 * zf) * dpr;
       ctx.beginPath();
-      strokeLines(ctx, land, tb, T, true);
+      strokeLines(ctx, coast, tb, T, coast === land);
       ctx.stroke();
       // cut out land
       ctx.globalCompositeOperation = 'destination-out';
@@ -151,23 +166,25 @@ RA.makeBaseLayers = function (map) {
       ctx.fill('nonzero');
       // rivers
       ctx.lineCap = 'round';
-      if (z >= 5.5) {
+      if (z >= 5.5 && riv2) {
         ctx.strokeStyle = S.river2;
         ctx.lineWidth = Math.max(0.6, 0.8 * zf) * dpr;
         ctx.beginPath();
-        strokeLines(ctx, V.riv2_z7, tb, T, false);
+        strokeLines(ctx, riv2, tb, T, false);
         ctx.stroke();
       }
-      ctx.strokeStyle = S.river1;
-      ctx.lineWidth = Math.max(0.9, 1.35 * zf) * dpr;
-      ctx.beginPath();
-      strokeLines(ctx, z < 5.5 ? V.riv1_z3 : V.riv1_z7, tb, T, false);
-      ctx.stroke();
+      if (riv1) {
+        ctx.strokeStyle = S.river1;
+        ctx.lineWidth = Math.max(0.9, 1.35 * zf) * dpr;
+        ctx.beginPath();
+        strokeLines(ctx, riv1, tb, T, false);
+        ctx.stroke();
+      }
       // lake + sea outlines
       ctx.strokeStyle = S.coast;
       ctx.lineWidth = Math.max(0.6, 0.75 * Math.sqrt(zf)) * dpr;
       ctx.beginPath();
-      strokeLines(ctx, land, tb, T, true);
+      strokeLines(ctx, coast, tb, T, coast === land);
       strokeLines(ctx, lakes, tb, T, true);
       ctx.stroke();
       // country borders (real, for orientation only)
@@ -175,7 +192,7 @@ RA.makeBaseLayers = function (map) {
       ctx.lineWidth = Math.max(0.6, 0.9 * Math.sqrt(zf)) * dpr;
       ctx.setLineDash([4 * dpr, 3 * dpr]);
       ctx.beginPath();
-      strokeLines(ctx, z < 5.5 ? V.bord_z3 : V.bord_z7, tb, T, false);
+      if (bord) strokeLines(ctx, bord, tb, T, false);
       ctx.stroke();
       ctx.setLineDash([]);
       // veil outside the playable rectangle

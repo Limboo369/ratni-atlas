@@ -18,7 +18,7 @@ new Function(files.map((f) => fs.readFileSync(R + 'src/' + f + '.js', 'utf8').re
 
 (async () => {
   const map = await RA.loadMap();
-  await RA.loadEras();
+  map.eras = await RA.loadEras(window.ERADATA, map.N);
   for (const r of process.argv.slice(2)) {
     const [era, start, gm, region, maxMin, seed, diff, pick] = r.split(':');
     const G = RA.newGame(RA.regionMap(RA.eraMap(map, era, start), region), { seed: +seed, difficulty: diff || 'srednje', cityStates: 50, peace: 60, era, start, gm });

@@ -103,7 +103,8 @@ Object.assign(RA.CFG, {
     q[qt++] = wa;
     seen[wa] = gen;
     prev[wa] = -1;
-    while (qh < qt) {
+    while (qh < qt && qt < RA.CFG.SEA_CELLS) {
+      // (on a big map two far ports would flood an ocean: past SEA_CELLS the route counts as none)
       const c = q[qh++];
       if (c === wb) {
         found = true;
@@ -151,7 +152,7 @@ Object.assign(RA.CFG, {
         const t = cands[Math.floor(this.rng() * cands.length)];
         const path = this._tradePath(s, t);
         if (!path || path.length < 3) continue;
-        this.tships.push({ id: this.nextId++, owner: s.owner, partner: t.owner, path, pos: 0, gold: 2500 + 40 * path.length, done: false });
+        this.tships.push({ id: this.nextId++, owner: s.owner, partner: t.owner, path, pos: 0, gold: 2500 + 40 * Math.min(path.length, 1000), done: false });
         break;
       }
     }

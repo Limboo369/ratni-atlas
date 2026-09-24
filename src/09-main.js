@@ -14,8 +14,10 @@ RA.App = class {
   async boot() {
     const msg = document.getElementById('loadMsg');
     try {
-      this.map = await RA.loadMap();
-      await RA.loadEras();
+      const eu = await RA.loadMap();
+      eu.eras = await RA.loadEras(window.ERADATA, eu.N);
+      this.maps = { evropa: eu }; // other maps (the world) are fetched from our server when chosen
+      this.map = eu; // the map shown now (layers are built for it)
     } catch (e) {
       msg.textContent = e && e.message === 'no-decompression' ? 'Preglednik je prestar za ovu igru. Ažuriraj Chrome/Safari.' : 'Greška pri učitavanju karte: ' + (e && e.message);
       console.error(e);
@@ -31,6 +33,107 @@ RA.App = class {
     document.getElementById('loading').hidden = true;
     requestAnimationFrame(this.frame);
     window.__ra = this; // debug handle
+    this.probeMaps();
+  }
+
+  /* ---------------- maps ---------------- */
+  /* which other maps our server has (HEAD request; none on file:// or in the claude.ai artifact) */
+  probeMaps() {
+    this.mapOK = { evropa: true };
+    for (const m of RA.MAPS) {
+      if (this.mapOK[m.id]) continue;
+      const done = (ok) => {
+        this.mapOK[m.id] = ok;
+        this.ui.mapsChanged(m.id);
+      };
+      if (!RA.DATA_URL) done(false);
+      else RA.hasFile(RA.DATA_URL + m.id + '/map.json').then(done);
+    }
+  }
+  mapReady(id, era) {
+    const m = this.maps[id];
+    return !!m && RA.eraReady(m, RA.eraById(era).id);
+  }
+  /* fetch + decode a map and one of its eras (cached; one download at a time per map) */
+  ensureMap(id, era) {
+    const P = (this._mapP = this._mapP || {});
+    const got = this.maps[id]
+      ? Promise.resolve(this.maps[id])
+      : (P[id] = P[id] || RA.fetchMap(id, (n, tot) => this.loadProgress(id, n, tot)).then((m) => (this.maps[id] = m)).finally(() => delete P[id]));
+    return got.then((m) => RA.loadEra(m, RA.eraById(era).id).then(() => m));
+  }
+  loadProgress(id, n, tot) {
+    const base = RA.mapInfo(id).load;
+    const txt = n < 0 ? base.replace('Učitavam', 'Pripremam') : n > 0 ? `${base} ${tot ? Math.round((n / tot) * 100) + '%' : (n / 1048576).toFixed(1).replace('.', ',') + ' MB'}` : base;
+    document.getElementById('loadMsg').textContent = txt;
+  }
+  /* run fn once the map and era are there (at once for Europe); loading shows the full-screen loading overlay */
+  withMap(id, era, fn) {
+    if (this.mapReady(id, era)) {
+      fn();
+      return Promise.resolve(true);
+    }
+    const ov = document.getElementById('loading');
+    this.loadProgress(id, 0);
+    ov.hidden = false;
+    return this.ensureMap(id, era).then(
+      () => {
+        ov.hidden = true;
+        fn();
+        return true;
+      },
+      (e) => {
+        ov.hidden = true;
+        console.warn('map', id, e);
+        if (e && e.message === 'no-era') this.ui.eraMissing(id, RA.eraById(era).id);
+        else this.ui.mapFailed(id);
+        return false;
+      }
+    );
+  }
+  /* start screen: show this map (the background game runs on it) */
+  useMap(id) {
+    const s = this.ui.settings;
+    return this.withMap(id, s.era, () => {
+      if (s.map !== id) return; // switched again while loading
+      this.setMap(this.maps[id]);
+      this.attract();
+      this.fitMap();
+      this.ui.startNotes();
+    });
+  }
+  /* layers, bounds and zoom for another map's geometry */
+  setMap(M) {
+    if (this.map === M) return;
+    this.map = M;
+    const land = this.lmap.hasLayer(this.base.land);
+    this.base.land.remove();
+    this.base.sea.remove();
+    this.addBase(M, land);
+    this.terr.setMap(M);
+    this.fx.gm = M;
+    this.mapBounds(M);
+    this.ui.applyMapUI();
+  }
+  addBase(M, withLand) {
+    const base = (this.base = RA.makeBaseLayers(M));
+    const rb = L.latLngBounds([[M.meta.RLAT0, M.meta.RLON0], [M.meta.RLAT1, M.meta.RLON1]]);
+    base.land.options.bounds = rb;
+    base.sea.options.bounds = rb;
+    if (withLand) base.land.addTo(this.lmap);
+    base.sea.addTo(this.lmap);
+  }
+  mapBounds(M) {
+    const me = M.meta, lm = this.lmap;
+    this.defBounds = M.id === 'evropa' ? L.latLngBounds([[4, -45], [83, 75]]) : L.latLngBounds([[me.RLAT0, me.RLON0], [me.RLAT1, me.RLON1]]).pad(0.08);
+    lm.setMinZoom(me.minZoom != null ? me.minZoom : 2);
+    lm.setMaxZoom(me.maxZoom != null ? me.maxZoom : 9.5);
+    lm.setMaxBounds(this.defBounds);
+    // zooms in the code are tuned for Europe's cells: on a map with bigger cells the same view is a bit farther out
+    this.zoomOff = Math.log2(this.maps.evropa.CELL / M.CELL);
+  }
+  zoomAt(z) {
+    return z + (this.zoomOff || 0);
   }
 
   initLeaflet() {
@@ -47,10 +150,7 @@ RA.App = class {
       doubleClickZoom: false,
       boxZoom: false,
       keyboard: false,
-      minZoom: 2,
-      maxZoom: 9.5,
       bounceAtZoomLimits: false,
-      maxBounds: (this.defBounds = L.latLngBounds([[4, -45], [83, 75]])),
       maxBoundsViscosity: 0.85,
       inertiaDeceleration: 2600,
       tapTolerance: 14,
@@ -66,12 +166,8 @@ RA.App = class {
     pane('territory', 350);
     pane('sea', 400);
     pane('fx', 450);
-    const base = (this.base = RA.makeBaseLayers(M));
-    const rb = L.latLngBounds([[M.meta.RLAT0, M.meta.RLON0], [M.meta.RLAT1, M.meta.RLON1]]);
-    base.land.options.bounds = rb;
-    base.sea.options.bounds = rb;
-    base.land.addTo(lmap);
-    base.sea.addTo(lmap);
+    this.mapBounds(M);
+    this.addBase(M, true);
     this.terr = new RA.TerritoryLayer(M);
     this.terr.addTo(lmap);
     if (!this.terr.ok) {
@@ -93,7 +189,7 @@ RA.App = class {
       if (e.originalEvent) e.originalEvent.preventDefault();
       this.ui.onLong(e.latlng, e.containerPoint);
     });
-    this.fitEurope();
+    this.fitMap();
   }
   setOSM(on) {
     if (on && !this.osmOK) return false;
@@ -116,7 +212,7 @@ RA.App = class {
     const b = L.latLngBounds([[box[1], box[0]], [box[3], box[2]]]);
     this.lmap.fitBounds(b, { paddingTopLeft: [8, 60], paddingBottomRight: [8, padBottom || 20], animate: false });
   }
-  fitEurope(padBottom) {
+  fitMap(padBottom) {
     const M = this.map.meta;
     const b = L.latLngBounds([[M.LAT0 + 1, M.LON0], [M.LAT1 - 1.5, M.LON1]]);
     this.lmap.fitBounds(b, { paddingTopLeft: [8, 60], paddingBottomRight: [8, padBottom || 20], animate: false });
@@ -149,16 +245,24 @@ RA.App = class {
     document.getElementById('toasts').innerHTML = '';
     ui.reqToasts.clear();
     document.getElementById('endScreen').hidden = true;
+    const want = this.maps[ui.settings.map] || this.maps.evropa;
+    if (want !== this.map) {
+      this.setMap(want);
+      this.attractMode = false;
+    }
     if (!this.attractMode) {
       this.lmap.setMaxBounds(this.defBounds);
       this.attract();
-      this.fitEurope();
+      this.fitMap();
     }
     this.paused = false;
+    ui.syncStart();
     document.getElementById('startScreen').hidden = false;
   }
   newGame() {
     const s = this.ui.settings;
+    if (!this.mapReady(s.map, s.era)) return this.withMap(s.map, s.era, () => this.newGame());
+    this.setMap(this.maps[s.map]);
     document.getElementById('startScreen').hidden = true;
     const gm = RA.regionMap(RA.eraMap(this.map, s.era, s.start), s.region);
     const G = RA.newGame(gm, { seed: (Math.random() * 1e9) | 0, difficulty: s.difficulty, cityStates: s.cityStates, peace: s.peace, era: s.era, start: s.start, gm: s.gm });
@@ -180,7 +284,7 @@ RA.App = class {
       this.fitBox(bx, pb);
     } else {
       this.lmap.setMaxBounds(this.defBounds);
-      this.fitEurope(pb);
+      this.fitMap(pb);
     }
   }
   start() {
@@ -193,10 +297,24 @@ RA.App = class {
     this.updateSpeedBtn();
     this.updatePauseBtn();
     const ll = this.map.latLngOfCell(G.me.capital);
-    this.lmap.flyTo(ll, Math.max(this.lmap.getZoom(), 4.9), { duration: 1.1 });
+    this.lmap.flyTo(ll, Math.max(this.lmap.getZoom(), this.zoomAt(4.9)), { duration: 1.1 });
   }
   /* an online game: identical on every device (seed, settings, players), stepped in lockstep by RA.Net */
   startOnline(st, mySlot) {
+    // the host's settings are untrusted: a known map (old builds had none: Europe) and a known era
+    const set = st.set || {};
+    const id = RA.MAPS.some((m) => m.id === set.map) ? set.map : 'evropa', era = RA.eraById(set.era).id;
+    if (!this.mapReady(id, era)) {
+      this.withMap(id, era, () => {
+        if (this.net.st === st && this.net.inGame) this.startOnline(st, mySlot);
+      }).then((ok) => {
+        if (ok || !this.net.inGame) return;
+        this.ui.toast('bad', 'Karta ove igre se ne može učitati — online igra nije moguća.', { ms: 6000 });
+        this.showStart();
+      });
+      return;
+    }
+    this.setMap(this.maps[id]);
     const G = RA.setupOnline(this.map, st, mySlot);
     this.setGame(G);
     this.attractMode = false;
@@ -219,7 +337,7 @@ RA.App = class {
     this.updatePauseBtn();
     const reg = G.map.region;
     this.lmap.setMaxBounds(reg ? L.latLngBounds([[reg.box[1], reg.box[0]], [reg.box[3], reg.box[2]]]).pad(0.7) : this.defBounds);
-    if (G.me) this.lmap.setView(this.map.latLngOfCell(G.me.capital), 5, { animate: false });
+    if (G.me) this.lmap.setView(this.map.latLngOfCell(G.me.capital), this.zoomAt(5), { animate: false });
     const others = G.humans.filter((p) => p !== G.me).map((p) => p.nick).join(', ');
     ui.toast('good', `Online igra je počela — ${st.set.mode === 'coop' ? 'zajedno s: ' : 'protiv: '}${RA.esc(others)}.`, { ms: 6000 });
   }

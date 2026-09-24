@@ -13,6 +13,8 @@ RA.CFG = {
   TRAITOR_DUR: 300,
   BOAT_MAX: 3,
   BOAT_SPEED: 1.15, // cells per tick
+  BOAT_RANGE: 800, // longest sea voyage in cells (BFS steps): farther is 'predaleko'
+  SEA_CELLS: 300000, // a sea search (boats, trade routes) gives up after this many water cells (big maps)
   FORT_R: 8,
   SAM_R: 28,
   SILO_CD: 100,
@@ -572,10 +574,11 @@ RA.Game = class Game {
 
   /* ---------------- boats ---------------- */
   findBoatPath(pid, tgt) {
-    // BFS over water from target coast towards any water cell next to pid's land
+    // BFS over water from target coast towards any water cell next to pid's land (null: no way, 'far': too far)
     const map = this.map, W = map.W, H = map.H, N = map.N, land = map.land, own = this.owner, block = map.block;
     const seen = this.stamp, gen = ++this.stampGen, prev = this.bfsPrev, q = this.queue;
-    let qh = 0, qt = 0;
+    const maxD = RA.CFG.BOAT_RANGE, maxN = RA.CFG.SEA_CELLS;
+    let qh = 0, qt = 0, depth = 0, layer = 0;
     const tx = tgt % W, ty = (tgt / W) | 0;
     for (let dy = -1; dy <= 1; dy++)
       for (let dx = -1; dx <= 1; dx++) {
@@ -587,7 +590,14 @@ RA.Game = class Game {
         prev[c] = -1;
         q[qt++] = c;
       }
+    // a coast on another sea (lake, closed basin) cannot be reached: skip the search (on a big map it floods an ocean)
+    if (!this._sharesWater(pid, q, qt)) return null;
+    layer = qt;
     while (qh < qt) {
+      if (qh === layer) {
+        if (++depth > maxD || qt > maxN) return 'far';
+        layer = qt;
+      }
       const c = q[qh++];
       const x = c % W, y = (c / W) | 0;
       // departure check
@@ -620,6 +630,20 @@ RA.Game = class Game {
     }
     return null;
   }
+  /* does player pid own land next to one of the water components of these start cells? (4-connected components:
+     the boat search never crosses between them either) */
+  _sharesWater(pid, cells, n) {
+    const map = this.map, W = map.W, H = map.H, wc = map.wcomp, land = map.land;
+    const want = new Set();
+    for (let i = 0; i < n; i++) want.add(wc[cells[i]]);
+    const p = this.P[pid];
+    for (let i = 0; i < p.tiles; i++) {
+      const c = p.cells[i];
+      const x = c % W, y = (c / W) | 0;
+      if ((x > 0 && !land[c - 1] && want.has(wc[c - 1])) || (x < W - 1 && !land[c + 1] && want.has(wc[c + 1])) || (y > 0 && !land[c - W] && want.has(wc[c - W])) || (y < H - 1 && !land[c + W] && want.has(wc[c + W]))) return true;
+    }
+    return false;
+  }
 
   launchBoat(pid, tgtCell, troops) {
     const p = this.P[pid];
@@ -636,6 +660,7 @@ RA.Game = class Game {
     if (troops < 50) return 'troops';
     const r = this.findBoatPath(pid, tgtCell);
     if (!r) return 'nopath';
+    if (r === 'far') return 'far';
     p.troops -= troops;
     p.boats++;
     const path = r.path;
@@ -697,12 +722,15 @@ RA.Game = class Game {
       if (ok === false) return 'Luka mora biti na obali.';
       c = ok;
     }
-    const W = map.W, x = c % W, y = (c / W) | 0, R = RA.CFG.STRUCT_MIN_DIST;
-    for (const s of this.structs) {
-      if (s.dead) continue;
-      const dx = s.x - x, dy = s.y - y;
-      if (dx * dx + dy * dy < R * R) return 'Preblizu drugoj zgradi.';
-    }
+    const W = map.W, H = map.H, x = c % W, y = (c / W) | 0, R = RA.CFG.STRUCT_MIN_DIST;
+    // spacing: look at the cells around (structAt), not at every building on the map
+    for (let dy = 1 - R; dy < R; dy++)
+      for (let dx = 1 - R; dx < R; dx++) {
+        const sx = x + dx, sy = y + dy;
+        if (sx < 0 || sy < 0 || sx >= W || sy >= H || dx * dx + dy * dy >= R * R) continue;
+        const si = this.structAt[sy * W + sx];
+        if (si >= 0 && !this.structs[si].dead) return 'Preblizu drugoj zgradi.';
+      }
     if (type === 'city') {
       for (const ct of this.cities) if ((ct.x - x) * (ct.x - x) + (ct.y - y) * (ct.y - y) < 25) return 'Preblizu postojećem gradu.';
     }
@@ -1033,11 +1061,14 @@ RA.Game = class Game {
   landTotal() {
     return this.map.landCount - this.falloutCount - (this.zone ? this.zone.deadLand : 0);
   }
+  /* share of the land needed to win: per map (meta.winShare / meta.overtimeMin), Europe uses the defaults */
   winShare() {
-    const m = this.tick / 600;
-    const over = Math.max(0, Math.floor(m - RA.CFG.OVERTIME_MIN));
+    const m = this.tick / 600, M = this.map.meta || {};
+    const base = M.winShare > 0 ? M.winShare : RA.CFG.WIN_SHARE, ot = M.overtimeMin > 0 ? M.overtimeMin : RA.CFG.OVERTIME_MIN;
+    const over = Math.max(0, Math.floor(m - ot));
     // -2%/min down to 50%, then -1%/min down to 40%: a long stalemate still ends
-    return over <= 10 ? RA.CFG.WIN_SHARE - over * 0.02 : Math.max(0.4, 0.5 - (over - 10) * 0.01);
+    const fast = Math.round(Math.max(0, base - 0.5) * 50);
+    return over <= fast ? Math.max(0.5, base - over * 0.02) : Math.max(0.4, Math.min(0.5, base) - (over - fast) * 0.01);
   }
   _history() {
     const snap = { t: this.tick, v: {} };
@@ -1114,6 +1145,7 @@ RA.Game = class Game {
     return ({
       max: `Najviše ${RA.CFG.BOAT_MAX} broda istovremeno.`,
       nopath: 'Nema morskog puta do te obale.',
+      far: `Predaleko — brod plovi najviše ${RA.CFG.BOAT_RANGE} polja.`,
       nocoast: 'Brod može pristati samo na obalu.',
       water: 'Dodirni obalu, ne more.',
       own: 'To je tvoja obala.',

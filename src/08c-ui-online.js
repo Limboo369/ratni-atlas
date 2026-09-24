@@ -4,12 +4,20 @@
 Object.assign(RA.UI.prototype, {
   initOnline() {
     const $ = this.$, s = this.settings;
-    this.lobbySet = { reg: s.region, dif: s.difficulty, peace: s.peace, cs: s.cityStates, mode: s.mode === 'vs' ? 'vs' : 'coop', era: s.era, st: s.start, gm: s.gm };
+    this.lobbySet = { map: s.map, reg: s.region, dif: s.difficulty, peace: s.peace, cs: s.cityStates, mode: s.mode === 'vs' ? 'vs' : 'coop', era: s.era, st: s.start, gm: s.gm };
     this.natCache = {};
-    $('lRegSeg').innerHTML = RA.REGIONS.map((r) => `<button data-v="${r.id}" aria-pressed="false">${RA.esc(r.name)}</button>`).join('');
+    $('lMapSeg').innerHTML = RA.MAPS.map((m) => `<button data-v="${m.id}" aria-pressed="false"${m.id === 'evropa' ? '' : ' hidden'}>${RA.esc(m.name)}<small>${RA.esc(m.sub)}</small></button>`).join('');
+    this.lobbyRegs();
     $('lEraSeg').innerHTML = RA.ERAS.map((e) => `<button data-v="${e.id}" aria-pressed="false">${RA.esc(e.short)}<small>${RA.esc(e.sub)}</small></button>`).join('');
     const upd = (k, conv) => (v) => {
       this.lobbySet[k] = conv ? conv(v) : v;
+      if (k === 'map') {
+        // another map: its regions (all of it by default)
+        s.map = v;
+        this.fixRegion();
+        this.lobbySet.reg = s.region;
+        this.lobbyRegs();
+      }
       if (k === 'reg') s.region = v;
       if (k === 'dif') s.difficulty = v;
       if (k === 'peace') s.peace = +v;
@@ -21,17 +29,24 @@ Object.assign(RA.UI.prototype, {
       this.app.net.setSettings(this.lobbySet);
       this.renderLobby();
     };
+    this._seg('lMapSeg', this.lobbySet.map, upd('map'));
     this._seg('lEraSeg', this.lobbySet.era, upd('era'));
     this._seg('lStartSeg', this.lobbySet.st, upd('st'));
     this._seg('lGmSeg', this.lobbySet.gm, upd('gm'));
-    this._seg('lRegSeg', this.lobbySet.reg, upd('reg'));
+    $('lRegSeg').addEventListener('click', (e) => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      this._press('lRegSeg', b.dataset.v);
+      upd('reg')(b.dataset.v);
+    });
     this._seg('modeSeg', this.lobbySet.mode, upd('mode'));
     this._seg('lDiffSeg', this.lobbySet.dif, upd('dif'));
     this._seg('lPeaceSeg', String(this.lobbySet.peace), upd('peace', Number));
     $('lobbyNat').onchange = () => this.app.net.setPick($('lobbyNat').value);
     $('lobbyGo').onclick = () => {
       const L = this.lobbySet;
-      const r = this.app.net.start(Object.assign({}, L), this.regionNations(L.reg, L.era, L.st));
+      const nats = this.regionNations(L);
+      const r = !nats ? 'Karta se još učitava…' : !this.lobbyReady(L) ? 'Čeka se da svi učitaju kartu.' : this.app.net.start(Object.assign({}, L), nats);
       if (typeof r === 'string') this.toast('info', RA.esc(r));
     };
     $('lobbyShare').onclick = async () => {
@@ -52,6 +67,7 @@ Object.assign(RA.UI.prototype, {
       this.app.net.leave();
       $('lobbyScreen').hidden = true;
       $('startScreen').hidden = false;
+      this.syncStart();
     };
     $('startScreen').addEventListener('click', (e) => {
       const w = e.target.closest('[data-watch]');
@@ -72,6 +88,8 @@ Object.assign(RA.UI.prototype, {
       }
       if (b.dataset.on === 'close') return net.closeRoom();
       if (b.dataset.on === 'host') {
+        this.lobbySet.map = this.settings.map;
+        this.lobbyRegs();
         this.lobbySet.reg = this.settings.region;
         this.lobbySet.dif = this.settings.difficulty;
         this.lobbySet.peace = this.settings.peace;
@@ -79,8 +97,7 @@ Object.assign(RA.UI.prototype, {
         this.lobbySet.era = this.settings.era;
         this.lobbySet.st = this.settings.start;
         this.lobbySet.gm = this.settings.gm;
-        for (const [id, v] of [['lEraSeg', this.lobbySet.era], ['lStartSeg', this.lobbySet.st], ['lGmSeg', this.lobbySet.gm], ['lRegSeg', this.lobbySet.reg]])
-          $(id).querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === v)));
+        for (const [id, v] of [['lMapSeg', this.lobbySet.map], ['lEraSeg', this.lobbySet.era], ['lStartSeg', this.lobbySet.st], ['lGmSeg', this.lobbySet.gm], ['lRegSeg', this.lobbySet.reg]]) this._press(id, v);
         net.host(Object.assign({}, this.lobbySet));
       } else net.join(b.dataset.on);
       $('startScreen').hidden = true;
@@ -90,16 +107,28 @@ Object.assign(RA.UI.prototype, {
     this.app.net.onChange(() => this.renderOnline());
     this.renderOnline();
   },
-  /* nations a region starts with in an era (names sorted), cached */
-  regionNations(reg, era, st) {
-    era = era || 'danas';
-    st = st || 'slobodno';
-    const key = `${reg}|${era}|${st}`;
+  /* the host's region buttons: the regions of the lobby's map */
+  lobbyRegs() {
+    const L = this.lobbySet;
+    const regs = RA.regionsOf(L.map);
+    if (!regs.some((r) => r.id === L.reg)) L.reg = regs[0].id;
+    this.$('lRegSeg').innerHTML = regs.map((r) => `<button data-v="${r.id}" aria-pressed="${r.id === L.reg}">${RA.esc(r.name)}</button>`).join('');
+  },
+  /* nations a region starts with in an era (names sorted), cached; null while the map (or era) is still loading */
+  regionNations(set) {
+    const map = RA.mapInfo(set.map).id, era = RA.eraById(set.era).id, st = set.st || 'slobodno';
+    const key = `${map}|${set.reg}|${era}|${st}`;
     if (!this.natCache[key]) {
-      const m = RA.regionMap(RA.eraMap(this.app.map, era, st), reg);
-      this.natCache[key] = m.nations.map((n) => ({ iso: n.iso, name: n.name, capital: n.capital })).sort((a, b) => a.name.localeCompare(b.name, 'bs'));
+      if (!this.app.mapReady(map, era)) return null;
+      const nats = RA.regionNations(RA.eraMap(this.app.maps[map], era, st), set.reg);
+      this.natCache[key] = nats.map((n) => ({ iso: n.iso, name: n.name, capital: n.capital })).sort((a, b) => a.name.localeCompare(b.name, 'bs'));
     }
     return this.natCache[key];
+  },
+  /* everyone in the lobby has the map and era of the game (Europe is in the page: always) */
+  lobbyReady(set) {
+    const key = RA.mapKey(set);
+    return RA.mapInfo(set.map).id === 'evropa' || this.app.net.members().every((m) => m.ld === key);
   },
   showLobby(set) {
     const $ = this.$;
@@ -188,6 +217,21 @@ Object.assign(RA.UI.prototype, {
       return;
     }
     const set = isHost ? this.lobbySet : (hp && hp.set) || this.lobbySet;
+    // the game's map: download it now (a guest as soon as the host picks it), then tell the others (ld)
+    const mapId = RA.mapInfo(set.map).id, era = RA.eraById(set.era).id, key = RA.mapKey(set);
+    const loaded = this.app.mapReady(mapId, era);
+    if (loaded && net.pres.ld !== key) net.publish({ ld: key });
+    if (!loaded && this._lobbyLoad !== key && this._lobbyFail !== key) {
+      this._lobbyLoad = key;
+      this.app.ensureMap(mapId, era).then(
+        () => this.renderLobby(),
+        (e) => {
+          this._lobbyFail = key; // once: renderLobby runs on every change in the room
+          if (e && e.message === 'no-era') this.eraMissing(mapId, era); // the host picks another era
+          else this.toast('bad', `${RA.esc(RA.mapInfo(mapId).aria)} se ne može učitati — provjeri vezu i uđi ponovo.`);
+        }
+      ).finally(() => (this._lobbyLoad = null));
+    }
     const mem = net.members();
     const hostName = mem[0] ? mem[0].name : 'domaćin';
     $('lobbySub').textContent = isHost
@@ -195,14 +239,15 @@ Object.assign(RA.UI.prototype, {
       : `Domaćin: ${hostName}. Postavke bira domaćin.`;
     $('lobbyLinkRow').hidden = !net.code;
     if (net.code && $('lobbyLink').textContent !== net.link()) $('lobbyLink').textContent = net.link();
-    const nats = this.regionNations(set.reg, set.era, set.st);
+    const nats = this.regionNations(set) || [];
     const natName = (iso) => (nats.find((n) => n.iso === iso) || {}).name;
-    $('lobbyPlayers').innerHTML = mem.map((m, i) => `<div class="prow"><span class="sw" style="background:${RA.SLOT_COLORS[i]}"></span><div class="pn"><div class="nm">${RA.esc(m.name)}${m.isMe ? ' <span class="tag">ti</span>' : ''}${i === 0 ? ' <span class="tag tr">domaćin</span>' : ''}</div><div class="d">${m.pick && natName(m.pick) ? RA.esc(natName(m.pick)) : 'država: nasumično'}</div></div><div></div></div>`).join('')
+    const far = mapId !== 'evropa';
+    $('lobbyPlayers').innerHTML = mem.map((m, i) => `<div class="prow"><span class="sw" style="background:${RA.SLOT_COLORS[i]}"></span><div class="pn"><div class="nm">${RA.esc(m.name)}${m.isMe ? ' <span class="tag">ti</span>' : ''}${i === 0 ? ' <span class="tag tr">domaćin</span>' : ''}</div><div class="d">${far && m.ld !== key ? 'učitava kartu…' : m.pick && natName(m.pick) ? RA.esc(natName(m.pick)) : 'država: nasumično'}</div></div><div></div></div>`).join('')
       + (mem.length < 2 ? '<p class="note" style="margin:2px">Čeka se prijatelj…</p>' : '');
     // my country
     const sel = $('lobbyNat');
     const opts = '<option value="">Nasumično</option>' + nats.map((n) => `<option value="${n.iso}">${RA.esc(n.name)} — ${RA.esc(n.capital)}</option>`).join('');
-    const natKey = `${set.reg}|${set.era}|${set.st}`;
+    const natKey = `${key}|${set.reg}|${set.st}|${nats.length}`;
     if (sel.dataset.reg !== natKey) {
       sel.innerHTML = opts;
       sel.dataset.reg = natKey;
@@ -210,14 +255,19 @@ Object.assign(RA.UI.prototype, {
     }
     sel.value = net.pick || '';
     $('lobbyHost').hidden = !isHost;
-    const reg = RA.REGIONS.find((r) => r.id === set.reg);
+    const lm = this.app.maps[mapId];
+    for (const b of $('lEraSeg').querySelectorAll('button')) b.disabled = !!(lm && lm.eraOK && !lm.eraOK[b.dataset.v]);
+    const reg = RA.regionsOf(mapId).find((r) => r.id === set.reg);
     const E = RA.eraById(set.era);
-    const summary = `${E.name} (${E.sub}) · ${set.st === 'granice' ? 'stvarne granice' : 'od prijestolnice'}${set.gm === 'br' ? ' · battle royale' : ''} · ${reg ? reg.name : 'Evropa'} · ${RA.DIFF[set.dif] ? RA.DIFF[set.dif].label : ''} · mirno doba ${set.peace ? Math.round(set.peace / 60) + ' min' : 'bez'} · ${set.mode === 'vs' ? 'jedan protiv drugog' : 'zajedno protiv svih'}`;
-    $('lobbyInfo').innerHTML = isHost
-      ? `Kad svi izaberu države, pritisni „Počni igru”. Ista država se ne može uzeti dvaput.`
+    const summary = `${E.name} (${E.sub}) · ${set.st === 'granice' ? 'stvarne granice' : 'od prijestolnice'}${set.gm === 'br' ? ' · battle royale' : ''} · ${reg ? reg.name : RA.mapInfo(mapId).all} · ${RA.DIFF[set.dif] ? RA.DIFF[set.dif].label : ''} · mirno doba ${set.peace ? Math.round(set.peace / 60) + ' min' : 'bez'} · ${set.mode === 'vs' ? 'jedan protiv drugog' : 'zajedno protiv svih'}`;
+    const ready = loaded && this.lobbyReady(set);
+    $('lobbyInfo').innerHTML = !loaded
+      ? RA.esc(RA.mapInfo(mapId).load)
+      : isHost
+      ? (ready ? `Kad svi izaberu države, pritisni „Počni igru”. Ista država se ne može uzeti dvaput.` : 'Čeka se da svi učitaju kartu…')
       : `${RA.esc(summary)}<br>Čeka se da domaćin pokrene igru…`;
     $('lobbyGo').hidden = !isHost;
-    $('lobbyGo').disabled = mem.length < 2;
+    $('lobbyGo').disabled = mem.length < 2 || !ready;
     $('lobbyCount').textContent = `${mem.length}/4 igrača`;
   },
 });
