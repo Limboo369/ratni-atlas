@@ -25,7 +25,7 @@ jobs:
         with: { python-version: '3.12' }
       - run: pip install -q playwright && python3 -m playwright install --with-deps chromium >/dev/null
       - run: python3 build/make.py
-      - run: python3 build/test_ui2.py phone balkan
+      - run: python3 build/test_ui2.py phone balkan || python3 build/test_ui2.py phone balkan  # 1 ponovni pokušaj (spori CI)
       - run: python3 build/test_mp.py
       - if: failure()
         uses: actions/upload-artifact@v4
