@@ -1,4 +1,4 @@
-# Ratni Atlas — notes for Claude
+﻿# Ratni Atlas — notes for Claude
 
 Browser territory-conquest strategy game (OpenFront.io-style, made better) on a real map of Europe.
 Owner: **Darko** (Bosnia). Talk to him in **Bosnian, ijekavica**, short and concrete. All in-game text is Bosnian (ijekavica).
@@ -16,6 +16,14 @@ He plays and tests mostly on an **Android phone** — every screen must work at 
 Darko radi s više računara; GitHub (`Limboo369/ratni-atlas`, `main`) je jedini izvor koda.
 - Na početku sesije: `git pull --ff-only` (hook u `.claude/settings.json` to radi sam; ako padne, riješi prije rada).
 - Nakon svake završene i testirane promjene: commit + `git push`, bez pitanja. Nikad ne ostavljaj nepushane promjene na kraju odgovora.
+
+## Server (postavljen 2026-09-24)
+
+https://war.deovilab.com — Contabo, Ubuntu 24.04, Nginx + Let's Encrypt, ufw (22/80/443), fail2ban, SSH samo ključem.
+- `server/setup.sh` ← `.github/workflows/setup.yml` (ručno, smije se ponavljati).
+- `.github/workflows/deploy.yml`: svaki push u `src/` ili `build/` na `main` gradi `dist/test.html` i šalje ga kao `index.html`.
+- Tajne: `SERVER_IP`, `SERVER_SSH_KEY` (lozinka za SSH više ne radi); varijabla `DOMAIN`.
+- Online igra (`09a-net.js`) koristi claude.ai sobu pa na domenu ne radi dok ne napravimo vlastiti game server (sljedeći korak).
 
 ## Layout
 
