@@ -2,3 +2,5 @@ deploy/public/
 dist/test.html
 build/shots/
 .claude/worktrees/
+.venv/
+deploy/game/node_modules/

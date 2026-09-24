@@ -48,18 +48,21 @@ RA.Net = class {
   /* ---------- connection ---------- */
   async init() {
     try {
-      if (!window.claude || typeof window.claude.use !== 'function') return this.setStatus('unavailable');
+      const url = window.RA_WS || (/^https?:$/.test(location.protocol) ? location.origin.replace(/^http/, 'ws') + '/ws' : '');
+      const claudeRoom = window.claude && typeof window.claude.use === 'function';
+      if (!claudeRoom && !url) return this.setStatus('unavailable');
       this.setStatus('connecting');
-      const room = await window.claude.use('room');
+      const room = claudeRoom ? await window.claude.use('room') : RA.wsRoom(url);
       if (!room) return this.setStatus('unavailable');
       this.room = room;
       room.onPeers(() => this.changed(), () => this.setStatus('unavailable'));
       room.onConnection((c) => {
         this.connected = c;
+        if (!claudeRoom) this.setStatus(c ? 'ready' : 'connecting');
         this.changed();
       });
-      this.setStatus('ready');
-      this.publish({ v: 1, n: this.myName() });
+      if (claudeRoom) this.setStatus('ready');
+      this.publish({ v: RA.BUILD, n: this.myName() });
     } catch (e) {
       this.setStatus('unavailable');
     }
@@ -104,7 +107,8 @@ RA.Net = class {
     return this.peers().filter((p) => !(p.isMe && p.sameTab) && p.kind === 'viewer');
   }
   openLobbies() {
-    return this.others().filter((p) => p.presence && p.presence.r === 'h' && p.presence.ph === 'lobby' && p.presence.g);
+    // same build only: different code would desync
+    return this.others().filter((p) => p.presence && p.presence.r === 'h' && p.presence.ph === 'lobby' && p.presence.g && p.presence.v === RA.BUILD);
   }
 
   /* ---------- lobby ---------- */
@@ -279,7 +283,8 @@ RA.Net = class {
       const gi = this.guestInfo[s];
       if (gi.ai) continue;
       const peer = this.peerBy(st.slots[s].peer);
-      if (!peer) {
+      // closed the page, or left the game through the menu (still on the page, but no longer in this game)
+      if (!peer || !peer.presence || peer.presence.g !== this.gid) {
         if (!gi.goneAt) gi.goneAt = performance.now();
         else if (performance.now() - gi.goneAt > 8000) {
           // gone for good: the computer takes over their country
@@ -391,4 +396,72 @@ RA.Net = class {
     if (keep) this.publish({ r: null, g: null, ph: null, set: null, sl: null, st: null, T: null, c: null, sp: null, pz: null, ds: null, q: null, ak: null, t: null, hs: null });
     this.changed();
   }
+};
+
+/* Our own relay (deploy/game/server.js) behind the same four methods as the claude.ai room, so RA.Net above
+   does not care which one it talks to. Reconnects by itself and keeps its peer id (id + key from the server). */
+RA.wsRoom = function (url) {
+  let me = '', key = '', ws = null, up = false, peers = [];
+  const mine = {}, pres = new Map(), PL = new Set(), CL = new Set();
+  const emit = () => {
+    peers = [...pres].map(([peer, presence]) => ({ peer, presence, isMe: peer === me, sameTab: peer === me, kind: 'viewer' }));
+    for (const f of PL) f({ peers });
+  };
+  const conn = (c) => {
+    up = c;
+    for (const f of CL) f(c);
+  };
+  const open = () => {
+    ws = new WebSocket(url + (url.includes('?') ? '&' : '?') + `id=${me}&key=${key}`);
+    ws.onmessage = (e) => {
+      let m;
+      try {
+        m = JSON.parse(e.data);
+      } catch (err) {
+        return;
+      }
+      if (m.t === 'all') {
+        me = m.me;
+        key = m.key;
+        pres.clear();
+        for (const k in m.peers) pres.set(k, m.peers[k]);
+        pres.set(me, mine);
+        ws.send(JSON.stringify({ p: mine, full: 1 }));
+        conn(true);
+      } else if (m.t === 'p') {
+        const p = m.full ? {} : Object.assign({}, pres.get(m.id));
+        for (const k in m.p) {
+          if (m.p[k] === null) delete p[k];
+          else p[k] = m.p[k];
+        }
+        pres.set(m.id, p);
+      } else if (m.t === 'x') pres.delete(m.id);
+      emit();
+    };
+    ws.onclose = () => {
+      if (up) conn(false);
+      setTimeout(open, 1500);
+    };
+  };
+  open();
+  return {
+    peers: () => peers,
+    presence(patch) {
+      for (const k in patch) {
+        if (patch[k] === null) delete mine[k];
+        else mine[k] = patch[k];
+      }
+      if (up && ws.readyState === 1) ws.send(JSON.stringify({ p: patch }));
+      return Promise.resolve();
+    },
+    onPeers(f) {
+      PL.add(f);
+      return () => PL.delete(f);
+    },
+    onConnection(f) {
+      CL.add(f);
+      return () => CL.delete(f);
+    },
+    kick: () => ws.close(), // test hook: simulates a dropped connection
+  };
 };

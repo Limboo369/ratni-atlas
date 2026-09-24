@@ -4,3 +4,10 @@ services:
     build: .
     restart: unless-stopped
     ports: ["127.0.0.1:8101:80"]
+    depends_on: [game]
+  game:
+    build: ./game
+    restart: unless-stopped
+    env_file:
+      - path: ./secret.env
+        required: false

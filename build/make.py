@@ -14,6 +14,9 @@ eradata = open(R + 'build/eradata.js').read()
 js_files = sorted(f for f in os.listdir(R + 'src') if f.endswith('.js'))
 js = '\n'.join(open(R + 'src/' + f).read().replace("'use strict';", '') for f in js_files)
 
+import hashlib
+BUILD = hashlib.sha1((css + body + mapdata + eradata + js).encode()).hexdigest()[:8]  # online: only the same build plays together
+
 LEAFLET_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js'
 LEAFLET_ALT = 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js'
 
@@ -31,6 +34,7 @@ page = f'''<title>Overtake</title>
 function __raMain(){{
 'use strict';
 {js}
+RA.BUILD = '{BUILD}';
 new RA.App().boot();
 }}
 function __raFallback(){{

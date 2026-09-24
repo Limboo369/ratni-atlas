@@ -81,15 +81,15 @@ Object.assign(RA.UI.prototype, {
     const note = $('onlineNote'), btns = $('onlineBtns');
     let h = '', txt = '';
     if (net.status === 'unavailable') {
-      txt = 'Igra s prijateljem radi kad je Overtake otvoren na claude.ai: pozovi prijatelja (Share → e-mail), neka se prijavi i otvori isti link. Onda se ovdje pojavi soba.';
+      txt = 'Online igra radi na war.deovilab.com: otvori stranicu, prijatelj otvori istu, pa se ovdje pojavi soba.';
     } else if (net.status !== 'ready') {
-      txt = 'Povezujem se sa sobom…';
+      txt = 'Povezujem se s online serverom…';
     } else {
       const others = net.others();
       const lobbies = net.openLobbies();
       txt = others.length
         ? `Na stranici su sada: ${others.map((p) => RA.esc((p.presence && p.presence.n) || 'igrač')).join(', ')}.`
-        : 'Trenutno si sam na ovoj stranici. Kad prijatelj otvori isti link, pojaviće se ovdje.';
+        : 'Trenutno si sam ovdje. Kad prijatelj otvori war.deovilab.com, pojaviće se ovdje.';
       for (const p of lobbies) h += `<button class="btn good" data-on="${RA.esc(p.peer)}">${RA.icon('ally')}<span><span class="t">Pridruži se: ${RA.esc(p.presence.n || 'igrač')}</span><br><span class="d">Soba je otvorena — uđi i izaberi državu</span></span></button>`;
       // a friend who just opened the link sees the invitation at the top of the screen
       const banner = lobbies.map((p) => `<button class="btn primary" data-on="${RA.esc(p.peer)}">${RA.icon('ally')}<span><span class="t">${RA.esc(p.presence.n || 'Prijatelj')} te čeka u online sobi</span><br><span class="d">Dodirni da se pridružiš</span></span></button>`).join('');
