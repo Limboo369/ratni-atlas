@@ -81,7 +81,7 @@ Object.assign(RA.UI.prototype, {
     const note = $('onlineNote'), btns = $('onlineBtns');
     let h = '', txt = '';
     if (net.status === 'unavailable') {
-      txt = 'Igra s prijateljem radi kad je Ratni Atlas otvoren na claude.ai: pozovi prijatelja (Share → e-mail), neka se prijavi i otvori isti link. Onda se ovdje pojavi soba.';
+      txt = 'Igra s prijateljem radi kad je ConquError otvoren na claude.ai: pozovi prijatelja (Share → e-mail), neka se prijavi i otvori isti link. Onda se ovdje pojavi soba.';
     } else if (net.status !== 'ready') {
       txt = 'Povezujem se sa sobom…';
     } else {

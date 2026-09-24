@@ -305,8 +305,8 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
   padding: 22px 20px 18px; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
   box-shadow: 0 20px 60px rgba(0,0,0,0.5);
 }
-.brand { font-family: var(--font-d); font-weight: 900; font-size: clamp(48px, 15vw, 72px); line-height: 0.86; letter-spacing: 0.02em; margin: 0; text-transform: uppercase; }
-.brand em { font-style: normal; color: var(--signal); }
+.brand { font-family: var(--font-d); font-weight: 900; font-size: clamp(40px, 14vw, 72px); line-height: 0.86; letter-spacing: 0.02em; margin: 0; }
+.brand em { font-style: normal; color: var(--danger); }
 .tagline { margin: 10px 0 18px; color: #c9d4dc; font-size: 15.5px; text-wrap: balance; }
 .coords { font-size: 11px; letter-spacing: 0.14em; color: var(--muted); text-transform: uppercase; margin-bottom: 14px; font-variant-numeric: tabular-nums; }
 .field { margin-bottom: 14px; }
