@@ -1,0 +1,25 @@
+﻿name: Objava igre
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['src/**', 'build/**']
+
+concurrency: deploy
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 build/make.py
+      - name: Slanje na server
+        env:
+          IP: ${{ secrets.SERVER_IP }}
+          KEY: ${{ secrets.SERVER_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh && printf '%s\n' "$KEY" > ~/.ssh/id_ed25519 && chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "$IP" >> ~/.ssh/known_hosts 2>/dev/null
+          mkdir -p out && cp dist/test.html out/index.html
+          rsync -az --delete out/ root@"$IP":/var/www/ratni-atlas/
+      - run: curl -fsS -o /dev/null -w '%{http_code} https://${{ vars.DOMAIN }}\n' https://${{ vars.DOMAIN }}/
