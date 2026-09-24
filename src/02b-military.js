@@ -570,7 +570,7 @@ RA.NUKE = RA.MISSILE;
         const f = Math.round(255 * (d <= nk.r1 ? 1 : 0.75));
         if (!this.fallout[c]) {
           this.falloutList.push(c);
-          this.falloutCount++;
+          this.falloutCount += map.aw[c]; // area, like landTotal()
         }
         this.fallout[c] = Math.max(this.fallout[c], f);
         this.falloutDirty = true;

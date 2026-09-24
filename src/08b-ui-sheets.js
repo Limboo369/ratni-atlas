@@ -341,7 +341,7 @@ Object.assign(RA.UI.prototype, {
     const cityLine = city ? `${city.tier === 3 ? 'Prijestolnica' : city.tier === 2 ? 'Metropola' : 'Grad'} ${RA.esc(city.name)} · ` : '';
     const oid = G.owner[c];
     const O = oid ? G.P[oid] : null;
-    const pct = (p) => ((p.tiles / G.landTotal()) * 100).toFixed(1).replace('.', ',') + '%';
+    const pct = (p) => ((p.area / G.landTotal()) * 100).toFixed(1).replace('.', ',') + '%';
     const unitsNear = G.units.filter((u) => !u.dead && Math.hypot(u.x - cx - 0.5, u.y - cy - 0.5) <= 4);
     const unitLine = unitsNear.length ? `<p class="explain">Jedinice ovdje: ${unitsNear.map((u) => `${RA.UNIT[u.type].name} (${RA.esc(G.P[u.owner].name)}, ${Math.round((u.hp / RA.UNIT[u.type].hp) * 100)}%)`).join(', ')}</p>` : '';
     let h = '';
@@ -487,10 +487,13 @@ Object.assign(RA.UI.prototype, {
 
   howTo() {
     const C = RA.CFG, M = this.app.map, I = RA.mapInfo(M.id);
-    const win = Math.round((M.meta.winShare > 0 ? M.meta.winShare : C.WIN_SHARE) * 100), ot = M.meta.overtimeMin > 0 ? M.meta.overtimeMin : C.OVERTIME_MIN;
+    // the same rules as G.winShare() / G.shareK(): a region of the map plays by the default rules
+    const mm = (RA.regionOf(M, this.settings.region) || {}).poly ? {} : M.meta, ot = mm.overtimeMin > 0 ? mm.overtimeMin : C.OVERTIME_MIN;
+    const k = mm.winShare > 0 ? C.WIN_SHARE / mm.winShare : 1, pc = (v) => Math.round(v / k), rate = (v) => String(+(v / k).toFixed(1)).replace('.', ',');
+    const win = pc(C.WIN_SHARE * 100);
     const eras = RA.ERAS.map((e) => `<li><b>${RA.esc(e.name)}</b> (${RA.esc(e.sub)}) — ${RA.esc(e.blurb)}</li>`).join('');
     const h = this.head('Kako se igra', 'Overtake — pravila ukratko') + `<div class="howto">
-      <h4>Cilj</h4><p>Zauzmi ${win}% kopna odabranog dijela karte ili ostani posljednja država. Poslije ${ot}. minute prag pada 2% po minuti do 50%, pa 1% po minuti do 40%. Ko drži više od 35% karte, plaća svako novo osvajanje skuplje.</p>
+      <h4>Cilj</h4><p>Zauzmi ${win}% kopna odabranog dijela karte ili ostani posljednja država. Poslije ${ot}. minute prag pada ${rate(2)}% po minuti do ${pc(50)}%, pa ${rate(1)}% po minuti do ${pc(40)}%. Ko drži više od ${pc(35)}% karte, plaća svako novo osvajanje skuplje.</p>
       <h4>Doba</h4><p>Na početnom ekranu biraš period u kojem se boriš. Svako doba ima svoje granice, gradove, jedinice, zgrade i oružje:</p><ul>${eras}</ul>
       <h4>Početak</h4><ul>
         <li><b>Stvarne granice</b>: sve države kreću sa svojom teritorijom iz tog doba. Dodirni državu ili je izaberi sa spiska — dobijaš njenu zemlju, vojsku i zlato.</li>
@@ -540,7 +543,7 @@ Object.assign(RA.UI.prototype, {
       : kind === 'lost'
       ? `Tvoja država je pala poslije ${RA.fmtTime(G.tick / 10)}.`
       : `Pobjednik je ${G.winner ? G.winner.name : 'neko drugi'} (${where}).`;
-    const peak = me ? ((me.peak / G.map.landCount) * 100).toFixed(1).replace('.', ',') : '0';
+    const peak = me ? ((me.peak / G.map.landArea) * 100).toFixed(1).replace('.', ',') : '0';
     $('endStats').innerHTML = `<div><div class="k">Vrhunac</div><div class="v">${peak}%</div></div><div><div class="k">Gradova osvojeno</div><div class="v">${me ? me.stats.citiesTaken : 0}</div></div><div><div class="k">Uništeno država</div><div class="v">${me ? me.stats.kills : 0}</div></div>`;
     $('endTime').textContent = RA.fmtTime(G.tick / 10);
     $('watchBtn').hidden = !!(G.state === 'over');
@@ -557,7 +560,7 @@ Object.assign(RA.UI.prototype, {
     ctx.scale(dpr, dpr);
     const H = G.hist;
     if (H.length < 2) return;
-    const tot = G.map.landCount;
+    const tot = G.map.landArea;
     const ids = G.P.filter((p) => p && p.spawned && p.type !== 'bot').sort((a, b) => b.peak - a.peak).slice(0, 6).map((p) => p.id);
     if (G.me && !ids.includes(G.me.id)) ids.push(G.me.id);
     let maxV = 4;

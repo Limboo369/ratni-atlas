@@ -118,6 +118,13 @@ async def main():
         t0 = time.time()
         await A.evaluate('() => { const G = window.__ra.G; for (let i = 0; i < 300; i++) G.step(); }')
         print(f'300 ticks on the world: {time.time() - t0:.1f} s, tick', await A.evaluate('() => window.__ra.G.tick'))
+        # real-area weights (meta.areaWeight): the players' areas, kept as cells change hands, add up to the owned area
+        aw = await A.evaluate('''() => { const G = window.__ra.G, m = G.map; let own = 0, sum = 0;
+            for (let c = 0; c < m.N; c++) if (G.owner[c]) own += m.aw[c];
+            for (const p of G.P) if (p) sum += p.area;
+            return { on: !!m.meta.areaWeight, top: m.aw[0], mid: m.aw[(m.H >> 1) * m.W], own, sum }; }''')
+        print('area weights', aw)
+        check(aw['own'] == aw['sum'] and (not aw['on'] or aw['top'] < aw['mid']), 'area weights: poles count less, player areas add up')
         await A.wait_for_timeout(600)
         await A.screenshot(path=OUT + 'world_2_game.png')
         await A.evaluate('() => window.__ra.ui.menu()')

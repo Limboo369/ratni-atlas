@@ -142,17 +142,20 @@ RA.regionMask = function (base, R) {
   const x0 = Math.max(0, Math.floor(gx(R.box[0])) - 2), x1 = Math.min(W - 1, Math.ceil(gx(R.box[2])) + 2);
   const y0 = Math.max(0, Math.floor(gy(R.box[3])) - 2), y1 = Math.min(H - 1, Math.ceil(gy(R.box[1])) + 2);
   const block = new Uint8Array(N).fill(1);
-  let cnt = 0;
+  let cnt = 0, area = 0;
   for (let y = y0; y <= y1; y++) {
     const cy = base.Y0 + (y + 0.5) * base.CELL;
     for (let x = x0; x <= x1; x++) {
       if (!RA.pointInPoly(base.X0 + (x + 0.5) * base.CELL, cy, mp)) continue;
       const c = y * W + x;
       block[c] = 0;
-      if (base.land[c]) cnt++;
+      if (base.land[c]) {
+        cnt++;
+        area += base.aw[c];
+      }
     }
   }
-  const K = { land: base.land, block, cnt, mp, c0: Math.max(0, y0) * W, c1: Math.min(N, (y1 + 1) * W) };
+  const K = { land: base.land, block, cnt, area, mp, c0: Math.max(0, y0) * W, c1: Math.min(N, (y1 + 1) * W) };
   RA._regMasks.set(key, K);
   return K;
 };
@@ -200,6 +203,7 @@ RA.regionMap = function (base, id) {
   }
   const cnt = K.cnt;
   m.landCount = cnt;
+  m.landArea = K.area;
   // smaller maps: wars between states move slower so a regional game still lasts ~10+ minutes
   m.pace = RA.clamp(RA.dpow(base.landCount / Math.max(1, cnt), 0.3), 1, 2.5);
   const inside = (c) => !m.block[c] && m.land[c];
@@ -259,7 +263,7 @@ RA.newGame = function (map, opts) {
       p.capCity = ci;
       p.maxT = G.computeMax(p);
       // a giant (Rome, Russia) starts with a smaller share of its huge army, so it cannot overrun everyone in minutes
-      p.troops = p.maxT * 0.4 * RA.clamp(0.12 / Math.max(0.001, p.tiles / map.landCount), 0.45, 1);
+      p.troops = p.maxT * 0.4 * RA.clamp(0.12 / Math.max(0.001, (p.area / map.landArea) * G.shareK()), 0.45, 1);
       p.gold = 100000;
     }
     G.replaced = [];

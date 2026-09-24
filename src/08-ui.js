@@ -382,7 +382,7 @@ RA.UI = class {
     this.$('startBtn').disabled = false;
     const near = this.nearestCityName(me.capital);
     this.$('natSel').value = res.took ? String(res.took.id) : '';
-    const pct = ((me.tiles / this.G.landTotal()) * 100).toFixed(1).replace('.', ',');
+    const pct = ((me.area / this.G.landTotal()) * 100).toFixed(1).replace('.', ',');
     this.$('spawnText').innerHTML = this.G.borders && res.took
       ? `Igraš kao <span class="pick">${RA.esc(res.took.name)}</span> (${RA.esc(res.took.nation.capital)}) — ${pct}% kopna, ${RA.fmt(me.troops)} vojske. Možeš izabrati drugu državu ili krenuti.`
       : res.took
@@ -480,7 +480,7 @@ RA.UI = class {
     $('hTroopsSub').textContent = `/ ${RA.fmt(me.maxT)}  ${me.growRate >= 0 ? '+' : '−'}${RA.fmt(Math.abs(me.growRate || 0))}/s`;
     $('hGold').textContent = RA.fmt(me.gold);
     $('hGoldSub').textContent = `+${RA.fmt(me.goldRate || 0)}/s`;
-    const land = (me.tiles / G.landTotal()) * 100;
+    const land = (me.area / G.landTotal()) * 100;
     $('hLand').textContent = (land < 10 ? land.toFixed(1) : land.toFixed(0)).replace('.', ',') + '%';
     $('clock').textContent = RA.fmtTime(G.tick / 10);
     this.updateRatio();
@@ -495,7 +495,7 @@ RA.UI = class {
   updateBoard() {
     const G = this.G;
     const tot = G.landTotal();
-    const alive = G.P.filter((p) => p && p.alive && p.spawned).sort((a, b) => b.tiles - a.tiles);
+    const alive = G.P.filter((p) => p && p.alive && p.spawned).sort((a, b) => b.area - a.area);
     const me = G.me;
     const rank = alive.indexOf(me) + 1;
     this.$('hRank').textContent = me && me.alive ? `cilj ${Math.round(G.winShare() * 100)}% · #${rank}/${alive.length}` : 'poražen';
@@ -505,7 +505,7 @@ RA.UI = class {
     this.$('boardList').innerHTML = rows
       .map((p) => {
         const i = alive.indexOf(p) + 1;
-        const pc = (p.tiles / tot) * 100;
+        const pc = (p.area / tot) * 100;
         const mk = me && p !== me ? (me.allies.has(p.id) ? ' ⛨' : '') + (me.trade.has(p.id) ? ' ⇄' : '') : '';
         const nm = G.online && p.human ? `${p.nick} · ${p.name}` : p.name;
         return `<li data-id="${p.id}" class="${p === me ? 'me' : ''}"><span class="rk">${i}</span><span class="sw" style="background:${p.hex}"></span><span class="nm">${RA.esc(nm)}${mk}</span><span class="pc">${pc.toFixed(1).replace('.', ',')}%</span></li>`;

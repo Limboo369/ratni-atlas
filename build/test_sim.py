@@ -39,9 +39,9 @@ async (args) => {
     if (G.tick % 600 === 0) {
       const alive = G.P.filter(p => p && p.alive && p.spawned);
       const nat = alive.filter(p => p.type !== 'bot');
-      const lead = alive.sort((x, y) => y.tiles - x.tiles)[0];
-      const owned = alive.reduce((s, p) => s + p.tiles, 0);
-      out.mins.push({ m: G.tick / 600, lead: lead.name, share: +(lead.tiles / G.landTotal() * 100).toFixed(1), owned: +(owned / G.landTotal() * 100).toFixed(1), nations: nat.length, alive: alive.length, attacks: G.attacks.filter(x => !x.done).length, structs: G.structs.filter(s => !s.dead).length, units: G.units.filter(u => !u.dead).length, trains: G.trains.length, planes: G.planes.length, win: +G.wLevel.toFixed(2), me: G.me ? +(G.me.tiles / G.landTotal() * 100).toFixed(1) : null, top: alive.slice(0,3).map(p => p.name.slice(0,6)+':'+(p.troops/p.maxT).toFixed(2)+'/'+G.attacks.filter(x=>!x.done&&x.a===p.id).length+'/'+p.allies.size), msPerTick: +((performance.now() - t0) / 600).toFixed(2), maxTick: +chunkMax.toFixed(1) });
+      const lead = alive.sort((x, y) => y.area - x.area)[0];
+      const owned = alive.reduce((s, p) => s + p.area, 0);
+      out.mins.push({ m: G.tick / 600, lead: lead.name, share: +(lead.area / G.landTotal() * 100).toFixed(1), owned: +(owned / G.landTotal() * 100).toFixed(1), nations: nat.length, alive: alive.length, attacks: G.attacks.filter(x => !x.done).length, structs: G.structs.filter(s => !s.dead).length, units: G.units.filter(u => !u.dead).length, trains: G.trains.length, planes: G.planes.length, win: +G.wLevel.toFixed(2), me: G.me ? +(G.me.area / G.landTotal() * 100).toFixed(1) : null, top: alive.slice(0,3).map(p => p.name.slice(0,6)+':'+(p.troops/p.maxT).toFixed(2)+'/'+G.attacks.filter(x=>!x.done&&x.a===p.id).length+'/'+p.allies.size), msPerTick: +((performance.now() - t0) / 600).toFixed(2), maxTick: +chunkMax.toFixed(1) });
       t0 = performance.now(); chunkMax = 0;
       await new Promise(r => setTimeout(r, 0));
     }
