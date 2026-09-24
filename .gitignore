@@ -1,3 +1,4 @@
 deploy/public/
 dist/test.html
 build/shots/
+.claude/worktrees/

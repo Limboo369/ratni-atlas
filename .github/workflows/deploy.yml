@@ -1,6 +1,8 @@
 name: Objava igre
 on:
   workflow_dispatch:
+    inputs:
+      bez_testova: { type: boolean, default: false, description: 'Objavi bez testova (samo za hitne slučajeve)' }
   push:
     branches: [main]
     paths: ['src/**', 'build/**', 'package/**', 'deploy/**', '.github/workflows/deploy.yml']
@@ -14,6 +16,7 @@ env:
 
 jobs:
   test:
+    if: ${{ !inputs.bez_testova }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -30,6 +33,7 @@ jobs:
 
   deploy:
     needs: test
+    if: ${{ !cancelled() && (needs.test.result == 'success' || needs.test.result == 'skipped') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
