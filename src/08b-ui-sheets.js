@@ -491,7 +491,7 @@ Object.assign(RA.UI.prototype, {
     const mm = (RA.regionOf(M, this.settings.region) || {}).poly ? {} : M.meta, ot = mm.overtimeMin > 0 ? mm.overtimeMin : C.OVERTIME_MIN;
     const k = mm.winShare > 0 ? C.WIN_SHARE / mm.winShare : 1, pc = (v) => Math.round(v / k), rate = (v) => String(+(v / k).toFixed(1)).replace('.', ',');
     const win = pc(C.WIN_SHARE * 100);
-    const eras = RA.ERAS.map((e) => `<li><b>${RA.esc(e.name)}</b> (${RA.esc(e.sub)}) — ${RA.esc(e.blurb)}</li>`).join('');
+    const eras = RA.ERAS.map((e) => `<li><b>${RA.esc(e.name)}</b> (${RA.esc(e.sub)}) — ${RA.esc(RA.eraBlurb(e, M.id))}</li>`).join('');
     const h = this.head('Kako se igra', 'Overtake — pravila ukratko') + `<div class="howto">
       <h4>Cilj</h4><p>Zauzmi ${win}% kopna odabranog dijela karte ili ostani posljednja država. Poslije ${ot}. minute prag pada ${rate(2)}% po minuti do ${pc(50)}%, pa ${rate(1)}% po minuti do ${pc(40)}%. Ko drži više od ${pc(35)}% karte, plaća svako novo osvajanje skuplje.</p>
       <h4>Doba</h4><p>Na početnom ekranu biraš period u kojem se boriš. Svako doba ima svoje granice, gradove, jedinice, zgrade i oružje:</p><ul>${eras}</ul>

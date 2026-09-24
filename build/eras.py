@@ -1,13 +1,14 @@
 """Historical borders for Ratni Atlas eras -> build/eradata.js
-eras.py [era ids]              Europe: all eras -> build/eradata.js (with era ids: previews only)
-eras.py --map svijet [era ids] whole world -> build/svijet/era_<id>.json (today's borders only so far)
+eras.py [era ids]                    Europe: all eras -> build/eradata.js (with era ids: previews only)
+eras.py --map svijet [--era <id>|all]  whole world -> build/svijet/era_<id>.json, one per table in build/eras_world/
+                                       (format and workflow: build/eras_world/README.md); previews build/shots/world_<id>.png
 
 Sources: historical-basemaps by A. Ourednik (GPL-3.0) for past years, Natural Earth (public domain) for today.
 Each era: polities with Bosnian names, capitals, and an owner raster on the game grid.
 Pipeline per era: dataset polygons -> polity by NAME, manual paint fixes, tribal fill anchors for unnamed areas,
 gap fill (nearest polity), sliver cleanup, tiny polities merged, capitals snapped, colours assigned.
 """
-import json, math, base64, zlib, colorsys, random, sys
+import json, math, base64, zlib, colorsys, random, runpy, sys
 import numpy as np
 from PIL import Image, ImageDraw
 from scipy import ndimage
@@ -18,7 +19,9 @@ B = ROOT + 'build/'
 D = ROOT + 'data/'
 ARGS = sys.argv[1:]
 MAP = ARGS[ARGS.index('--map') + 1] if '--map' in ARGS else 'evropa'
-ONLY = set(a for i, a in enumerate(ARGS) if a != '--map' and (i == 0 or ARGS[i - 1] != '--map'))
+ONLY = set(a for i, a in enumerate(ARGS) if not a.startswith('--') and (i == 0 or ARGS[i - 1] not in ('--map', '--era')))
+if '--era' in ARGS and ARGS[ARGS.index('--era') + 1] != 'all':
+    ONLY.add(ARGS[ARGS.index('--era') + 1])
 WORLD = MAP == 'svijet'
 if WORLD:
     MD = json.load(open(B + 'svijet/map.json', encoding='utf-8'))
@@ -396,10 +399,18 @@ ERAS.append(dict(id='danas', src='ne', unmatched='near', ren={}, tiny='neutral',
                                 (35.5, 44.3), (33.3, 44.3)])]))
 
 
-# whole world today: Natural Earth countries (nations chosen by build/world.py svijet); dependencies, disputed areas and
-# countries too small for the grid are free land; Crimea and Kashmir (disputed-areas layer) too. Taiwan is a normal country.
-WORLD_ERAS = [dict(id='danas', src='ne', unmatched='neutral', near_max=4, ren={}, tiny='neutral',
-                   disputed=lambda pr, b: pr['NAME'] == 'Crimea' or (b[0] >= 72 and b[2] <= 81 and b[1] >= 32 and b[3] <= 37.5))]
+def world_eras():
+    """The world's eras: one table per file build/eras_world/<id>.py (see the README there), in the game's era order."""
+    out = []
+    for i, eid in enumerate(E['id'] for E in ERAS):
+        f = B + f'eras_world/{eid}.py'
+        if not os.path.exists(f):
+            continue
+        t = runpy.run_path(f)
+        out.append(dict(id=eid, seed=11 + i, src=t['SRC'], pol=t.get('POLITIES', []), paint=t.get('PAINT', []), ren=t.get('RENAMES', {}),
+                        neutral=set(t.get('NEUTRAL', ())), unmatched=t.get('UNMATCHED', 'neutral'), near_max=t.get('NEAR_MAX', 4),
+                        tiny=t.get('TINY'), disputed=t.get('DISPUTED')))
+    return out
 
 MIN_POL = 4 if WORLD else 40    # smaller polities are merged into a neighbour
 SLIVER = 3 if WORLD else 10     # disconnected land pieces smaller than this (touching others) join their neighbour
@@ -423,7 +434,7 @@ def build_era(E):
         feats, arr = raster_features([(f['properties'], polys_of(f['geometry'])) for f in fs])
         pol = E['pol']
         keyname = lambda pr: (pr.get('NAME') or '').strip() or (pr.get('SUBJECTO') or '').strip() or None
-        neutral_keys = set()
+        neutral_keys = E.get('neutral', set())
     P = []
     for t in pol:
         key, name, hb, cap = t[:4]
@@ -437,6 +448,7 @@ def build_era(E):
     # 1) dataset features -> polity
     fmap = np.zeros(len(feats) + 1, np.int32)
     fstate = np.zeros(len(feats) + 1, np.int8)  # 0 none, 1 matched, 2 unmatched feature, 3 neutral feature
+    colony = WORLD and E['src'] != 'ne'  # world history: a colony (SUBJECTO = its empire) belongs to the empire unless listed itself
     for fi, (pr, polys) in enumerate(feats):
         kn = keyname(pr)
         if kn in by_name:
@@ -444,10 +456,20 @@ def build_era(E):
             fstate[fi + 1] = 1
         elif kn in neutral_keys:
             fstate[fi + 1] = 3
+        elif colony and pr.get('SUBJECTO') in by_name:
+            fmap[fi + 1] = by_name[pr['SUBJECTO']]
+            fstate[fi + 1] = 1
+        elif colony and kn is None:
+            pass  # unnamed bits (small islands): like uncovered land, the nearest polity takes them
         else:
             fstate[fi + 1] = 2
     own = np.where(land, fmap[arr], 0).astype(np.int32)
     state = np.where(land, fstate[arr], 0)
+    if WORLD:  # what the table does not name (free land on the world): check it here
+        cnt = np.bincount(arr[land & (state == 2)], minlength=len(feats) + 1)
+        miss = sorted(((int(n), keyname(feats[fi - 1][0])) for fi, n in enumerate(cnt) if n), reverse=True)
+        if miss:
+            print('  unmatched (free land):', ', '.join(f'{k} {n}' for n, k in miss))
     locked = np.zeros((H, W), bool)  # neutral on purpose
     locked |= land & (state == 3)
     if E.get('unmatched') == 'neutral':
@@ -495,8 +517,10 @@ def build_era(E):
     todo = land & (own == 0) & ~locked
     if todo.any():
         dist, (iy, ix) = ndimage.distance_transform_edt(own == 0, return_indices=True)
-        if E.get('near_max'):  # only coastal gaps and nearby islands; land far from every polity stays free
-            todo &= dist <= E['near_max']
+        if E.get('near_max'):  # only coastal gaps and nearby islands (whole, no bands); land far from every polity stays free
+            lab, n = ndimage.label(todo)
+            near = np.concatenate([[False], np.asarray(ndimage.minimum(dist, lab, range(1, n + 1))) <= E['near_max']])
+            todo &= near[lab]
         own[todo] = own[iy[todo], ix[todo]]
     # 5) sliver cleanup (twice)
     for _ in range(2):
@@ -600,7 +624,19 @@ def build_era(E):
     return out, own
 
 
-def assign_colors(pols, seed):
+def neighbours(pols, own, r=6):
+    """keys of polities whose land comes within r cells of each other's (the world: colonies touch far from the capitals)"""
+    adj = {p['k']: set() for p in pols}
+    for dy, dx in [(0, d) for d in range(1, r + 1)] + [(d, 0) for d in range(1, r + 1)]:
+        a, b = own[:H - dy, :W - dx], own[dy:, dx:]
+        m = (a > 0) & (b > 0) & (a != b)
+        for i, j in set(zip(a[m].tolist(), b[m].tolist())):
+            adj[pols[i - 1]['k']].add(pols[j - 1]['k'])
+            adj[pols[j - 1]['k']].add(pols[i - 1]['k'])
+    return adj
+
+
+def assign_colors(pols, seed, adj=None):
     PLAYER_HUE = 0.60
     cands = []
     for i in range(72):
@@ -627,13 +663,18 @@ def assign_colors(pols, seed):
     fixed = [p for p in pols if p['color']]
     for p in fixed:
         assigned.append((p, hls_of(p['color'])))
-    for p in sorted([p for p in pols if not p['color']], key=lambda p: (p['x'] - W / 2) ** 2 + (p['y'] - H / 2) ** 2):
-        near = [a for a in assigned if (a[0]['x'] - p['x']) ** 2 + (a[0]['y'] - p['y']) ** 2 < 140 ** 2]
+    order = sorted([p for p in pols if not p['color']], key=lambda p: (p['x'] - W / 2) ** 2 + (p['y'] - H / 2) ** 2)
+    if adj:  # the world: polities with the most neighbours first, and only real neighbours count
+        order.sort(key=lambda p: -len(adj[p['k']]))
+    for p in order:
+        if adj:
+            near = [a for a in assigned if a[0]['k'] in adj[p['k']]]
+        else:
+            near = [a for a in assigned if (a[0]['x'] - p['x']) ** 2 + (a[0]['y'] - p['y']) ** 2 < 140 ** 2]
         best, bs = None, -1
-        for c in cands:
-            if any(c == a[1] for a in assigned):
-                continue
-            sc = min([hdist(c, a[1]) / (1 + math.hypot(a[0]['x'] - p['x'], a[0]['y'] - p['y']) / 60) for a in near] or [9])
+        used = [a[1] for a in assigned]
+        for c in [c for c in cands if c not in used] or cands:  # more polities than colours: colours repeat
+            sc = min([hdist(c, a[1]) / (1 + (0 if adj else math.hypot(a[0]['x'] - p['x'], a[0]['y'] - p['y']) / 60)) for a in near] or [9])
             sc += rng.random() * 0.02
             if sc > bs:
                 best, bs = c, sc
@@ -662,12 +703,12 @@ def preview(E, pols, own):
 def main():
     only = ONLY
     out = {}
-    for i, E in enumerate(WORLD_ERAS if WORLD else ERAS):
+    for i, E in enumerate(world_eras() if WORLD else ERAS):
         if only and E['id'] not in only:
             continue
         print('era', E['id'])
         pols, own = build_era(E)
-        assign_colors(pols, 11 + i)
+        assign_colors(pols, E.get('seed', 11 + i), neighbours(pols, own) if WORLD else None)
         preview(E, pols, own)
         own8 = own.astype(np.uint8)
         assert own.max() < 250 and len(pols) <= 190

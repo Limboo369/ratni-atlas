@@ -211,7 +211,7 @@ RA.UI = class {
       const n = ready ? this.regionCount(m, r.id, s.era, s.start) : null;
       return `<button data-v="${r.id}" aria-pressed="${r.id === s.region}"${n === 0 ? ' disabled' : ''}>${RA.esc(r.name)}<small>${n == null ? '…' : n} država</small></button>`;
     }).join('');
-    $('eraNote').textContent = E.blurb;
+    $('eraNote').textContent = RA.eraBlurb(E, s.map);
     $('csField').hidden = s.start === 'granice';
     $('modeNote').textContent = (s.start === 'granice'
       ? 'Stvarne granice: svaka država kreće sa svojom teritorijom iz tog doba — izabereš jednu i vodiš je. '
