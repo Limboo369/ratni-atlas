@@ -124,7 +124,10 @@ async def main():
             await page.wait_for_timeout(400)
             n_att = await ev(f'() => window.__ra.G.attacks.filter(a => !a.done && a.a === window.__ra.G.me.id && a.t === {nb["id"]}).length')
             check(n_att == 1, 'tap on neighbour launches an attack')
-            await page.wait_for_timeout(300)
+            try:  # chips redraw in the render loop; one frame can take > 300 ms on the CI runner
+                await page.wait_for_function('document.querySelectorAll("#attBar .achip.out").length > 0', timeout=15_000)
+            except Exception:
+                pass
             chips = await ev('() => document.querySelectorAll("#attBar .achip.out").length')
             check(chips >= 1, f'attack chip shown ({chips})')
             await page.screenshot(path=OUT + f'{MODE}_v3_5_chips.png')
