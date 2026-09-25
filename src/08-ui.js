@@ -200,6 +200,16 @@ RA.UI = class {
     $('sheetWrap').addEventListener('click', (e) => {
       if (e.target.id === 'sheetWrap') this.closeSheet();
     });
+    // Modal input owns its keys, including Escape from a text field and Tab at either end.
+    $('sheet').addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); this.closeSheet(); return; }
+      if (e.key === 'Tab') {
+        const items = [...$('sheet').querySelectorAll('button:not(:disabled), input:not(:disabled), select:not(:disabled), a[href], [tabindex="0"]')].filter((el) => el.getClientRects().length);
+        const first = items[0], last = items[items.length - 1];
+        if (e.shiftKey && (document.activeElement === first || document.activeElement === $('sheet'))) { e.preventDefault(); if (last) last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); if (first) first.focus(); }
+      }
+    }, true);
     document.addEventListener('keydown', (e) => this.onKey(e));
     if (window.innerWidth < 560) {
       $('board').classList.add('collapsed');
@@ -207,8 +217,8 @@ RA.UI = class {
     }
     const root = document.documentElement.style;
     const ro = new ResizeObserver(() => {
-      root.setProperty('--dock-h', ($('dock').hidden ? 0 : $('dock').offsetHeight) + 'px');
-      root.setProperty('--hud-h', ($('hud').hidden ? 0 : $('hud').offsetHeight) + 'px');
+      root.setProperty('--dock-h', ($('dock').hidden ? 0 : innerHeight - $('dock').getBoundingClientRect().top) + 'px');
+      root.setProperty('--hud-h', ($('hud').hidden ? 0 : $('hud').getBoundingClientRect().bottom) + 'px');
       root.setProperty('--st-h', ($('status').offsetHeight ? $('status').offsetHeight + 6 : 0) + 'px');
       root.setProperty('--feed-h', ($('feed').offsetHeight ? $('feed').offsetHeight + 6 : 0) + 'px');
     });
@@ -447,8 +457,8 @@ RA.UI = class {
       this.chips.clear();
     }
     const root = document.documentElement.style;
-    root.setProperty('--dock-h', on ? this.$('dock').offsetHeight + 'px' : '0px');
-    root.setProperty('--hud-h', on ? this.$('hud').offsetHeight + 'px' : '0px');
+    root.setProperty('--dock-h', on ? (innerHeight - this.$('dock').getBoundingClientRect().top) + 'px' : '0px');
+    root.setProperty('--hud-h', on ? this.$('hud').getBoundingClientRect().bottom + 'px' : '0px');
     root.setProperty('--att-h', '0px');
   }
   spawnUI(on) {
@@ -583,6 +593,10 @@ RA.UI = class {
   updateHud() {
     const G = this.G, me = G.me, $ = this.$;
     if (!me) return;
+    $('hNation').textContent = me.name;
+    $('hNation').title = me.name;
+    $('hEra').textContent = RA.ERA.short + (G.online ? ' · ONLINE' : ' · OPERACIJA');
+    $('hObjective').style.width = RA.clamp(me.area / G.landTotal() / G.winShare() * 100, 0, 100) + '%';
     $('hTroops').textContent = RA.fmt(me.troops);
     const r = me.troops / Math.max(1, me.maxT);
     const bar = $('hBar');
@@ -1188,6 +1202,7 @@ RA.UI = class {
       else this.setMode(null);
       return;
     }
+    if (!this.$('sheetWrap').hidden) return;
     if (!G || G.state !== 'play' || !G.me) return;
     const k = e.key.toLowerCase();
     if (k === ' ') {
@@ -1216,6 +1231,12 @@ RA.UI = class {
     this.redraw = redraw || null;
     const s = this.$('sheet');
     const wasOpen = !this.$('sheetWrap').hidden;
+    const focusedId = wasOpen && s.contains(document.activeElement) ? document.activeElement.id : '';
+    if (!wasOpen) {
+      this.sheetFocus = document.activeElement;
+      this.sheetInert = [...this.$('app').children].filter((el) => el !== this.$('sheetWrap')).map((el) => [el, el.inert]);
+      for (const [el] of this.sheetInert) el.inert = true;
+    }
     const top = keepScroll && wasOpen ? s.scrollTop : 0;
     s.innerHTML = '<div class="grab"></div>' + html;
     s.onclick = null; // a delegated handler belongs to one sheet only (bindDiplo)
@@ -1224,6 +1245,10 @@ RA.UI = class {
     const cl = s.querySelector('.sh-close');
     if (cl) cl.onclick = () => this.closeSheet();
     if (onBind) onBind(s);
+    s.tabIndex = -1;
+    const restore = focusedId && document.getElementById(focusedId);
+    if (restore && s.contains(restore)) restore.focus({ preventScroll: true });
+    else if (!keepScroll || !wasOpen) (cl || s).focus({ preventScroll: true });
     this.app.sheetPause(true);
   }
   closeSheet() {
@@ -1231,6 +1256,10 @@ RA.UI = class {
     this.$('sheetWrap').hidden = true;
     this.$('sheet').innerHTML = '';
     this.$('sheet').onclick = null;
+    if (this.sheetInert) for (const [el, inert] of this.sheetInert) el.inert = inert;
+    this.sheetInert = null;
+    if (this.sheetFocus && this.sheetFocus.isConnected && this.sheetFocus.getClientRects().length) this.sheetFocus.focus({ preventScroll: true });
+    this.sheetFocus = null;
     this.app.sheetPause(false);
   }
   head(title, meta, color) {
