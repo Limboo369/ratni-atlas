@@ -43,7 +43,7 @@ Object.assign(RA.UI.prototype, {
       if (U.na) continue;
       const why = this.unitWhy(type);
       h += this.btn({
-        icon: U.sym || type, attrs: `data-rec="${type}"`, dis: !!why,
+        model: U.sym || type, cls: 'model-btn', icon: U.sym || type, attrs: `data-rec="${type}"`, dis: !!why,
         t: U.name, d: RA.esc(why || U.desc),
         r: `${RA.fmt(U.gold)}<small>−${RA.fmt(U.troops)} vojnika</small>`,
       });
@@ -54,7 +54,7 @@ Object.assign(RA.UI.prototype, {
       h += '<div class="list">';
       for (const u of me.units) {
         const U = RA.UNIT[u.type];
-        h += `<div class="prow hasu"><span class="sw u">${RA.icon(U.sym || u.type)}</span><div class="pn" data-sel="${u.id}"><div class="nm">${U.name}</div><div class="d">${Math.round((u.hp / U.hp) * 100)}% snage · ${this.unitStatus(u)}</div></div><div class="bb">${this.mini('Prikaži', `data-sel="${u.id}"`, '', false, 'eye')}${this.mini('Raspusti', `data-dis="${u.id}"`, 'warn')}</div></div>`;
+        h += `<div class="prow hasu"><span class="sw u">${RA.Models.preview(U.sym || u.type, me.hex)}</span><div class="pn" data-sel="${u.id}"><div class="nm">${U.name}</div><div class="d">${Math.round((u.hp / U.hp) * 100)}% snage · ${this.unitStatus(u)}</div></div><div class="bb">${this.mini('Prikaži', `data-sel="${u.id}"`, '', false, 'eye')}${this.mini('Raspusti', `data-dis="${u.id}"`, 'warn')}</div></div>`;
       }
       h += '</div>';
     }
@@ -96,7 +96,7 @@ Object.assign(RA.UI.prototype, {
       const S = RA.STRUCT[t];
       const cost = G.structCost(me, t);
       h += this.btn({
-        icon: S.icon || t, attrs: `data-t="${t}"`, dis: me.gold < cost,
+        model: S.icon || t, cls: 'model-btn', icon: S.icon || t, attrs: `data-t="${t}"`, dis: me.gold < cost,
         t: `${S.name} <span class="d">(${me.n[t]})</span>`, d: RA.esc(S.desc), r: RA.fmt(cost),
       });
     }
@@ -130,9 +130,9 @@ Object.assign(RA.UI.prototype, {
     const troops = RA.fmt(me.troops * this.ratio);
     let h = this.head('Desant', `Brodova ${me.boats}/${C.BOAT_MAX} · spremnih aerodroma ${ap.ready}/${ap.all}`);
     h += '<div class="btns">';
-    h += this.btn({ icon: 'boat', attrs: 'data-l="boat"', dis: me.boats >= C.BOAT_MAX, t: 'Brodom', d: 'Dodirni tuđu ili slobodnu obalu. Brod plovi oko kopna.', r: troops });
+    h += this.btn({ model: 'boat', cls: 'model-btn', icon: 'boat', attrs: 'data-l="boat"', dis: me.boats >= C.BOAT_MAX, t: 'Brodom', d: 'Dodirni tuđu ili slobodnu obalu. Brod plovi oko kopna.', r: troops });
     h += this.btn({
-      icon: 'para', attrs: 'data-l="para"', dis: !ap.ready || me.gold < C.PARA_GOLD, t: 'Padobranci',
+      model: 'plane', cls: 'model-btn', icon: 'para', attrs: 'data-l="para"', dis: !ap.ready || me.gold < C.PARA_GOLD, t: 'Padobranci',
       d: ap.ready ? `Skok do ${C.PARA_RANGE} polja od aerodroma · ${RA.fmt(C.PARA_GOLD)} zlata · PVO ih može oboriti` : 'Aerodromi se pune — pričekaj',
       r: troops,
     });
@@ -166,7 +166,7 @@ Object.assign(RA.UI.prototype, {
       const cost = G.missileCost(t);
       const wait = M.from && tk < M.from;
       h += this.btn({
-        icon: RA.missileIcon(t), cls: M.kind === 'conv' ? '' : 'danger', attrs: `data-m="${t}"`,
+        model: M.icon === 'siege' ? 'siege' : M.icon === 'zeppelin' ? 'zeppelin' : 'missile', icon: RA.missileIcon(t), cls: M.kind === 'conv' ? 'model-btn' : 'model-btn danger', attrs: `data-m="${t}"`,
         dis: !me.n.silo || me.gold < cost || peace || wait, t: M.name,
         d: RA.esc(wait ? `Razvoj traje — dostupna za ${RA.fmtTime((M.from - tk) / 10)}.` : M.desc) + (M.range ? ` <b>Domet ${M.range} polja.</b>` : ''), r: RA.fmt(cost),
       });
