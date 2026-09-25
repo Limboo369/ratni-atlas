@@ -182,10 +182,16 @@ async def main():
             q = await ev('''() => { const G = window.__ra.G, me = G.me, l = G.loans[0];
               if (!l) return null;
               const mine = Array.from(l.cells).filter(c => G.owner[c] === me.id).length;
-              for (let i = 0; i < RA.CFG.LOAN_DUE + 20 && G.state === 'play'; i++) { me.gold = 0; G.step(); }
+              // Isolate maturity from eight minutes of unrelated AI wars: a defeated lender
+              // legitimately forgives its loans, and conquered collateral is no longer ours.
+              me.gold = 0;
+              G._loans();
+              const pending = G.loans.includes(l) && Array.from(l.cells).every(c => G.owner[c] === me.id);
+              l.due = G.tick;
+              G._loans();
               const theirs = Array.from(l.cells).filter(c => G.owner[c] === l.from).length;
-              return [mine, theirs, G.loans.length]; }''')
-            check(q and q[2] == 0 and q[1] >= q[0] * 0.8 and q[1] > 0, f'unpaid: the pledged land goes to the lender {q}')
+              return [mine, theirs, G.loans.length, pending]; }''')
+            check(q and q[3] and q[2] == 0 and q[1] == q[0] and q[1] > 0, f'unpaid: the pledged land goes to the lender {q}')
             await page.keyboard.press('Escape')
         await ev('window.__ra.autosave(true)')
         t2 = await ev('JSON.parse(localStorage.getItem("ra_save")).tick')
