@@ -40,6 +40,7 @@ RA.ICONS = {
   retreat: '<path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/>',
   send: '<path d="M4 12h14M13 6l6 6-6 6"/>',
   eye: '<path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.8"/>',
+  user: '<circle cx="12" cy="8" r="3.6"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/>',
 };
 RA.icon = (n, cls) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"${cls ? ` class="${cls}"` : ''} aria-hidden="true">${RA.ICONS[n] || ''}</svg>`;
 
@@ -185,6 +186,7 @@ RA.UI = class {
     ro.observe($('hud'));
     ro.observe($('status'));
     this.command = new RA.CommandScreen(this);
+    this.account = new RA.Account(this);
   }
   /* start screen buttons after the lobby changed the settings (and the map shown behind it) */
   syncStart() {

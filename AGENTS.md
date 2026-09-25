@@ -51,6 +51,14 @@ presence per private room; `src/09a-net.js` keeps the lockstep protocol. Every g
 (invite + come back to the same seat after a reload; the server keeps a player's presence and the game's command log
 for 10 min). Spectators replay the server's log. Presence from other players is untrusted (`RA.Net.str`, `G.exec`).
 
+Accounts: `deploy/api/server.js` (Node + `pg`, service `api`, behind `/api/`) with PostgreSQL (service `db`, volume
+`pgdata`; daily `pg_dump` by service `backup` into `/srv/backups/war`, kept 14 days). Sign-in with Google only: the page
+(`src/08e-account.js`) loads Google Identity Services when the account sheet opens and posts the ID token to `/api/login`;
+the API checks it against Google's keys (RS256, `aud` = `GOOGLE_CLIENT_ID` in `deploy/compose.yml`) and sets an HttpOnly
+session cookie `ot` (90 days). The Google Cloud client must list `https://war.deovilab.com` as an authorized JavaScript
+origin. The database password lives only in `/srv/apps/war/db.env` on the server (made by the deploy workflow once).
+Without `/api/` (file://, tests) the account button stays hidden and the game works as before.
+
 ## Layout
 
 | Path | What |
@@ -65,7 +73,7 @@ for 10 min). Spectators replay the server's log. Presence from other players is 
 | `scripts/fetch_data.sh` | Downloads the raw GeoJSON sources into `data/` (not in git). |
 | `build/test_*.py`, `build/sim_eras.py` | Playwright tests and AI balance runs (Leaflet served from `package/dist/leaflet.js`). |
 | `build/sim_node.js` | Fast AI-only balance runs in node: `node build/sim_node.js era:start:gm:region:maxMin:seed:diff[:pick]`. |
-| `deploy/` | Docker Compose project of the game on the server (`public/` is filled by the deploy workflow). |
+| `deploy/` | Docker Compose project of the game on the server (`public/` is filled by the deploy workflow): `game/` relay, `api/` accounts, `nginx.conf`. |
 | `server/` | Server setup and the `deovilab-deploy` helper. |
 
 Build: `python3 build/make.py` (on Windows: `python -X utf8 build/make.py`).
@@ -86,13 +94,15 @@ Rebuild era data: `scripts/fetch_data.sh && python3 build/eras.py`.
   with `RA.takeBorders`.
 - Internal names stay as they are (`RA` namespace, storage keys, room ids, file names) — renaming them breaks saves and online play.
 
-## Tests (CI runs `make.py`, `test_ui2.py`, `test_mp.py` and `test_world.py` before every publish; a failed check blocks it)
+## Tests (CI runs `make.py`, `test_ui2.py`, `test_mp.py`, `test_world.py`, `test_api.js` and `test_account.py` before every publish; a failed check blocks it)
 
 ```
 python3 build/make.py
 python3 build/test_ui2.py phone balkan     # single player, end to end
 python3 build/test_mp.py                   # three browsers + the real relay: lockstep, spectator, come-back
 python3 build/test_world.py                # world map over http: switch, regions, play, online on the world
+node build/test_api.js                     # accounts API: Google token checks, sessions, rename, delete (real PostgreSQL)
+python3 build/test_account.py              # sign-in on the start screen (fake Google), reload keeps the session, logout
 python3 build/test_eras.py 1200            # every era + battle royale
 python3 build/sim_eras.py rim:granice:klasik:evropa:DAC:30:11:srednje   # AI balance run
 ```

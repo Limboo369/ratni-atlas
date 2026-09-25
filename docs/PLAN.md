@@ -210,7 +210,7 @@ Svijet dolazi prije ekonomije, vojske i kampanje: resursi, moreuzi, mornarica i 
 | 3 | Vlastiti online server (Node + WebSocket u Dockeru): online na war.deovilab.com, gledaoci; svaka igra ima svoj link (war.deovilab.com/game-k3x9pq) za poziv prijatelja i povratak u igru nakon zatvaranja stranice ili pada veze | u toku |
 | 4 | Cijeli svijet: karta, doba, dijelovi svijeta, učitavanje sa servera | gotovo: 168 država danas, svih 7 doba na svijetu (Rim 26 · 1400. 78 · 1815. 76 · 1914. 60 · 1938. 69 · 1960. 109 država), 7 regija, balans po stvarnoj površini, online |
 | 5 | Brze stvari: usmjereni napad, vrati granice, pravo prolaza, ping i brze poruke, zvuk i muzika, sitnice, tutorijal | |
-| 6 | Nalozi i baza (PostgreSQL): prijava preko Google-a (rezerva: e-mail), tvoje igre vezane za nalog (nastavi igru s bilo kojeg uređaja), statistike i ljestvica, dostignuća, snimi i nastavi | |
+| 6 | Nalozi i baza (PostgreSQL): prijava preko Google-a (rezerva: e-mail), tvoje igre vezane za nalog (nastavi igru s bilo kojeg uređaja), statistike i ljestvica, dostignuća, snimi i nastavi | u toku: baza, Google prijava i nalog (ime, odjava, brisanje) gotovi; slijede statistike, ljestvica, dostignuća, snimi i nastavi |
 | 7 | Ekonomija i diplomatija: resursi i trgovina (opcija), porez i kamata, zajmovi sa zalogom, agresivna ekspanzija, vazali, moreuzi i kanali | |
 | 8 | Vojska: mornarica, avijacija, dronovi, jače nuklearke, gvozdena kupola | |
 | 9 | Vladari s komentarima (portreti: Codex) | |
@@ -224,7 +224,7 @@ Dok ne kažeš drugačije, radim po pretpostavci u zagradi.
 - [x] Domen: war.deovilab.com (Porkbun); server Ubuntu 24.04.
 - [x] GitHub repozitorij i automatska objava.
 - [x] Nove karte: prvo cijeli svijet.
-- [x] Prijava: Google (odlučeno 24. 9.); rezerva e-mail. Za Google treba Client ID iz Google Cloud konzole — koraci kad dođemo do faze 6.
+- [x] Prijava: Google (odlučeno 24. 9.); rezerva e-mail. Client ID dobijen 25. 9. (u `deploy/compose.yml`); u Google Cloud konzoli mora biti dozvoljen origin https://war.deovilab.com.
 - [ ] Gvozdena kupola (pretpostavka: automatski uzvraća, a nuklearke u letu obara PVO).
 - [ ] Kampanja (pretpostavka: jedna država i dinastija kroz sva doba, kako piše gore).
 - [ ] Portreti (pretpostavka: izmišljeni vladari).

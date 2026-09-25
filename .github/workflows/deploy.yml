@@ -19,18 +19,27 @@ jobs:
     if: ${{ !inputs.bez_testova }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env: { POSTGRES_PASSWORD: test }
+        ports: ['5432:5432']
+        options: --health-cmd pg_isready --health-interval 2s --health-timeout 3s --health-retries 30
+    env: { PGHOST: 127.0.0.1, PGUSER: postgres, PGPASSWORD: test, PGDATABASE: postgres }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: '3.12' }
       - uses: actions/setup-node@v4
         with: { node-version: '22' }
-      - run: npm ci --prefix deploy/game
+      - run: npm ci --prefix deploy/game && npm ci --prefix deploy/api
       - run: pip install -q playwright && python3 -m playwright install --with-deps chromium >/dev/null
       - run: python3 build/make.py
       - run: python3 build/test_ui2.py phone balkan || python3 build/test_ui2.py phone balkan  # 1 ponovni pokušaj (spori CI)
       - run: python3 build/test_mp.py
       - run: python3 build/test_world.py
+      - run: node build/test_api.js
+      - run: python3 build/test_account.py
       - if: failure()
         uses: actions/upload-artifact@v4
         with: { name: shots, path: build/shots/ }
@@ -51,11 +60,15 @@ jobs:
           mkdir -p ~/.ssh && printf '%s\n' "$KEY" > ~/.ssh/id_ed25519 && chmod 600 ~/.ssh/id_ed25519
           printf '%s %s\n' "$IP" "$HOST_KEY" > ~/.ssh/known_hosts
           printf 'Host *\n  StrictHostKeyChecking yes\n  BatchMode yes\n' > ~/.ssh/config
-          ssh root@"$IP" "mkdir -p /srv/apps/$APP && cd /srv/apps/$APP && { [ -s secret.env ] || { umask 077; echo WS_SECRET=\$(openssl rand -hex 24) > secret.env; }; }"
-          rsync -rlptz --delete --exclude secret.env --exclude node_modules deploy/ root@"$IP":/srv/apps/$APP/
+          ssh root@"$IP" "mkdir -p /srv/apps/$APP /srv/backups/$APP && chmod 700 /srv/backups/$APP && cd /srv/apps/$APP && umask 077 \
+            && { [ -s secret.env ] || echo WS_SECRET=\$(openssl rand -hex 24) > secret.env; } \
+            && { [ -s db.env ] || { p=\$(openssl rand -hex 24); printf 'POSTGRES_PASSWORD=%s\nPGPASSWORD=%s\n' \$p \$p > db.env; }; }"
+          rsync -rlptz --delete --exclude secret.env --exclude db.env --exclude node_modules deploy/ root@"$IP":/srv/apps/$APP/
           ssh root@"$IP" deovilab-deploy $APP $DOMAIN $PORT
       - run: curl -fsS https://$DOMAIN/ | grep -o '<title>[^<]*'
       - name: Online server odgovara (WebSocket)
         run: |
           code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 --http1.1 -H 'Connection: Upgrade' -H 'Upgrade: websocket' -H 'Sec-WebSocket-Version: 13' -H 'Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==' -H "Origin: https://$DOMAIN" "https://$DOMAIN/ws?room=check1" || true)
           echo "ws: $code"; [ "$code" = "101" ]
+      - name: Nalozi odgovaraju (API + baza)
+        run: curl -fsS --retry 10 --retry-delay 3 --retry-all-errors https://$DOMAIN/api/health

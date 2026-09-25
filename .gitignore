@@ -4,6 +4,7 @@ build/shots/
 .claude/worktrees/
 .venv/
 deploy/game/node_modules/
+deploy/api/node_modules/
 data/*.geojson
 data/hist/
 dist/data/

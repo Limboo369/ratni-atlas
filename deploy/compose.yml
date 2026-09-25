@@ -1,10 +1,11 @@
 # Overtake na serveru: /srv/apps/war (deovilab-deploy war war.deovilab.com 8101)
+# secret.env (WS_SECRET) i db.env (POSTGRES_PASSWORD, PGPASSWORD) pravi deploy workflow na serveru; nisu u gitu.
 services:
   web:
     build: .
     restart: unless-stopped
     ports: ["127.0.0.1:8101:80"]
-    depends_on: [game]
+    depends_on: [game, api]
   game:
     build: ./game
     restart: unless-stopped
@@ -15,3 +16,64 @@ services:
     env_file:
       - path: ./secret.env
         required: true
+  # nalozi (Google prijava), statistike i sačuvane igre; /api/ u nginx.conf
+  api:
+    build: ./api
+    restart: unless-stopped
+    init: true
+    mem_limit: 256m
+    depends_on:
+      db: { condition: service_healthy }
+    environment:
+      ORIGINS: https://war.deovilab.com
+      GOOGLE_CLIENT_ID: 220149253264-0nu5dtko9rihdq81bb9fect9cge0357b.apps.googleusercontent.com
+      PGHOST: db
+      PGUSER: war
+      PGDATABASE: war
+    env_file:
+      - path: ./db.env
+        required: true
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    mem_limit: 384m
+    shm_size: 128m
+    command: postgres -c shared_buffers=64MB -c max_connections=40
+    environment:
+      POSTGRES_USER: war
+      POSTGRES_DB: war
+    env_file:
+      - path: ./db.env
+        required: true
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U war -d war"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  # dnevni backup baze u /srv/backups/war na serveru (čuva se 14 dana)
+  backup:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    mem_limit: 128m
+    depends_on:
+      db: { condition: service_healthy }
+    environment:
+      PGHOST: db
+      PGUSER: war
+      PGDATABASE: war
+    env_file:
+      - path: ./db.env
+        required: true
+    volumes: ["/srv/backups/war:/backup"]
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        while true; do
+          f=/backup/war-$$(date +%F).sql.gz
+          pg_dump --no-owner | gzip > $$f.tmp && mv $$f.tmp $$f && echo "backup $$f"
+          find /backup -name 'war-*.sql.gz' -mtime +14 -delete
+          sleep 86400
+        done
+volumes:
+  pgdata:
