@@ -100,4 +100,4 @@ python3 build/sim_eras.py rim:granice:klasik:evropa:DAC:30:11:srednje   # AI bal
 ## Open work (v0.5)
 
 - Online test of eras + battle royale (`test_mp.py` with era settings).
-- World: 'danas' and 'ww1' exist; the other historical world eras need their table in `build/eras_world/` (see its README).
+- World eras: sparse datasets (Americas/Siberia in 100 and 1400) leave free land; keep NEAR_MAX small there (see build/eras_world/srednji.py).

@@ -208,7 +208,7 @@ Svijet dolazi prije ekonomije, vojske i kampanje: resursi, moreuzi, mornarica i 
 | 1 | Server i domen, Docker, HTTPS, automatska objava s testovima | gotovo |
 | 2 | Balans v0.5: Rim, male države u stvarnim granicama, dužina partije 1914. | gotovo: Rim pobjeđuje ~1/3 partija (15–30 min), partije 15–33 min |
 | 3 | Vlastiti online server (Node + WebSocket u Dockeru): online na war.deovilab.com, gledaoci; svaka igra ima svoj link (war.deovilab.com/game-k3x9pq) za poziv prijatelja i povratak u igru nakon zatvaranja stranice ili pada veze | u toku |
-| 4 | Cijeli svijet: karta, doba, dijelovi svijeta, učitavanje sa servera | u toku: svijet danas igriv (168 država, 7 regija, online); balans svijeta: stvarna površina polja (Rusija ~12% umjesto 29%), partije 20–40 min; 1914., 1938. i 1960. (Hladni rat) na svijetu (carstva s kolonijama; 1960. dvije Njemačke, dvije Koreje, dva Vijetnama, NR Kina/Tajvan, dekolonizacija Afrike); slijede rim, srednji vijek i Napoleon na svijetu (tabele u `build/eras_world/`) |
+| 4 | Cijeli svijet: karta, doba, dijelovi svijeta, učitavanje sa servera | gotovo: 168 država danas, svih 7 doba na svijetu (Rim 26 · 1400. 78 · 1815. 76 · 1914. 60 · 1938. 69 · 1960. 109 država), 7 regija, balans po stvarnoj površini, online |
 | 5 | Brze stvari: usmjereni napad, vrati granice, pravo prolaza, ping i brze poruke, zvuk i muzika, sitnice, tutorijal | |
 | 6 | Nalozi i baza (PostgreSQL): prijava preko Google-a (rezerva: e-mail), tvoje igre vezane za nalog (nastavi igru s bilo kojeg uređaja), statistike i ljestvica, dostignuća, snimi i nastavi | |
 | 7 | Ekonomija i diplomatija: resursi i trgovina (opcija), porez i kamata, zajmovi sa zalogom, agresivna ekspanzija, vazali, moreuzi i kanali | |
