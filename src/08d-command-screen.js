@@ -105,7 +105,7 @@ RA.CommandScreen = class {
     }
     const reg = RA.regionsOf(s.map).find((r) => r.id === s.region);
     const region = s.region === s.map || !reg ? RA.mapInfo(s.map).name : reg.name;
-    this.$('operationSummary').textContent = `${region} · ${s.gm === 'br' ? 'Battle royale' : 'Klasično'} · ${{lako:'Lako',srednje:'Srednje',tesko:'Teško'}[s.difficulty] || 'Srednje'}`;
+    this.$('operationSummary').textContent = `${region} · ${s.gm === 'br' ? 'Battle royale' : s.gm === 'defcon' ? 'DEFCON' : 'Klasično'} · ${{lako:'Lako',srednje:'Srednje',tesko:'Teško'}[s.difficulty] || 'Srednje'}`;
     this.$('atlasRegion').textContent = region.toUpperCase();
     const map = this.ui.app.maps[s.map];
     if (!map) return; // The map loader calls startNotes/refresh again when the data arrives.

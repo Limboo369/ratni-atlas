@@ -113,6 +113,7 @@ RA.Game = class Game {
     this.tships = [];
     this.tick = 0;
     this.peaceUntil = opts.peace !== undefined ? Math.round(opts.peace * 10) : RA.CFG.PEACE;
+    if (opts.gm === 'defcon') this.peaceUntil = Math.max(this.peaceUntil, RA.CFG.DEFCON_STEP); // DEFCON 5: no attacks
     this.era = opts.era || 'danas';
     this.borders = false;
     this.zone = null; // battle royale ring (02e-zone.js)
@@ -789,6 +790,8 @@ RA.Game = class Game {
     const p = this.P[pid];
     if (!p || !p.alive) return 'dead';
     if (!this.map.land[tgtCell]) return 'water';
+    const de = this.defconErr('sea');
+    if (de) return de;
     if (!this.map.coast[tgtCell]) return 'nocoast';
     if (this.zone && this.zoneOut(tgtCell)) return 'zone';
     if (this.owner[tgtCell] === pid) return 'own';
@@ -1183,6 +1186,7 @@ RA.Game = class Game {
     if (this.tick % 10 === 0) {
       this._updateLeader();
       this._checkWin();
+      this._defconEnd();
     }
   }
 
@@ -1353,6 +1357,6 @@ RA.Game = class Game {
       peace: 'Mirno doba — brodom zasad možeš samo na slobodnu obalu.',
       zone: 'Ta obala je u radioaktivnoj zoni.',
       dead: 'Nisi u igri.',
-    })[r] || 'Brod ne može isploviti.';
+    })[r] || (r && r.startsWith('DEFCON') ? r : 'Brod ne može isploviti.');
   }
 };

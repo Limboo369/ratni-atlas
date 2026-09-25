@@ -264,7 +264,7 @@ Object.assign(RA.UI.prototype, {
     for (const b of $('lEraSeg').querySelectorAll('button')) b.disabled = !!(lm && lm.eraOK && !lm.eraOK[b.dataset.v]);
     const reg = RA.regionsOf(mapId).find((r) => r.id === set.reg);
     const E = RA.eraById(set.era);
-    const summary = `${E.name} (${E.sub}) · ${set.st === 'granice' ? 'stvarne granice' : 'od prijestolnice'}${set.gm === 'br' ? ' · battle royale' : ''} · ${reg ? reg.name : RA.mapInfo(mapId).all} · ${RA.DIFF[set.dif] ? RA.DIFF[set.dif].label : ''} · mirno doba ${set.peace ? Math.round(set.peace / 60) + ' min' : 'bez'} · ${set.mode === 'vs' ? 'jedan protiv drugog' : 'zajedno protiv svih'}`;
+    const summary = `${E.name} (${E.sub}) · ${set.st === 'granice' ? 'stvarne granice' : 'od prijestolnice'}${set.gm === 'br' ? ' · battle royale' : set.gm === 'defcon' ? ' · DEFCON' : ''} · ${reg ? reg.name : RA.mapInfo(mapId).all} · ${RA.DIFF[set.dif] ? RA.DIFF[set.dif].label : ''} · mirno doba ${set.peace ? Math.round(set.peace / 60) + ' min' : 'bez'} · ${set.mode === 'vs' ? 'jedan protiv drugog' : 'zajedno protiv svih'}`;
     const ready = loaded && this.lobbyReady(set);
     $('lobbyInfo').innerHTML = !loaded
       ? RA.esc(RA.mapInfo(mapId).load)

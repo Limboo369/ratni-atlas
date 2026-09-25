@@ -212,7 +212,7 @@ RA.Account = class {
   gameLine(r) {
     const reg = RA.REGIONS.find((x) => x.id === r.region && x.map === r.map);
     const where = r.region === r.map || !reg ? RA.mapInfo(r.map).all || RA.mapInfo(r.map).name : reg.name;
-    const how = [RA.eraById(r.era).short, r.online ? (r.mode === 'coop' ? 'online tim' : 'online 1 na 1') : '', r.gm === 'br' ? 'battle royale' : '', r.difficulty === 'tesko' ? 'teško' : r.difficulty === 'lako' ? 'lako' : ''].filter(Boolean).join(' · ');
+    const how = [RA.eraById(r.era).short, r.online ? (r.mode === 'coop' ? 'online tim' : 'online 1 na 1') : '', r.gm === 'br' ? 'battle royale' : r.gm === 'defcon' ? 'DEFCON' : '', r.difficulty === 'tesko' ? 'teško' : r.difficulty === 'lako' ? 'lako' : ''].filter(Boolean).join(' · ');
     const d = new Date(r.at), pad = (n) => String(n).padStart(2, '0');
     const when = `${d.getDate()}. ${d.getMonth() + 1}. ${pad(d.getHours())}:${pad(d.getMinutes())}`;
     return `<li class="${r.won ? 'w' : 'l'}"><span class="res">${r.won ? 'Pobjeda' : 'Poraz'}</span><span class="what"><b>${RA.esc(where)}</b><small>${RA.esc(how)}</small></span><span class="num">${RA.fmtTime(r.secs)}<small>${String(Math.round(r.peak * 10) / 10).replace('.', ',')}% · ${when}</small></span></li>`;

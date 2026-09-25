@@ -144,7 +144,7 @@
       <div class="operation-head"><div><span class="command-kicker">PRIPREMA ZA OSVAJANJE</span><h2 id="operationTitle">Tvoja operacija.</h2></div><button id="configClose" class="command-tool" aria-label="Zatvori postavke"><i data-ic="close"></i></button></div>
       <div class="operation-body">
         <div class="field"><span class="lab" id="startLabel">Početak</span><div class="seg" id="startSeg" role="group" aria-labelledby="startLabel"><button data-v="granice" aria-pressed="true">Stvarne granice</button><button data-v="slobodno" aria-pressed="false">Od prijestolnice</button></div></div>
-        <div class="field"><span class="lab" id="gmLabel">Način igre</span><div class="seg" id="gmSeg" role="group" aria-labelledby="gmLabel"><button data-v="klasik" aria-pressed="true">Klasično</button><button data-v="br" aria-pressed="false">Battle royale</button></div><p class="note era-note" id="modeNote"></p></div>
+        <div class="field"><span class="lab" id="gmLabel">Način igre</span><div class="seg" id="gmSeg" role="group" aria-labelledby="gmLabel"><button data-v="klasik" aria-pressed="true">Klasično</button><button data-v="br" aria-pressed="false">Battle royale</button><button data-v="defcon" aria-pressed="false">DEFCON</button></div><p class="note era-note" id="modeNote"></p></div>
         <div class="field" id="regField"><span class="lab" id="regLabel">Dio Evrope</span><div class="seg wrap" id="regSeg" role="group" aria-labelledby="regLabel"></div></div>
         <div class="field"><span class="lab" id="diffLabel">Težina</span><div class="seg" id="diffSeg" role="group" aria-labelledby="diffLabel"><button data-v="lako" aria-pressed="false">Lako</button><button data-v="srednje" aria-pressed="true">Srednje</button><button data-v="tesko" aria-pressed="false">Teško</button></div></div>
         <div class="field"><span class="lab" id="peaceLabel">Mirno doba na početku</span><div class="seg" id="peaceSeg" role="group" aria-labelledby="peaceLabel"><button data-v="0" aria-pressed="false">Bez</button><button data-v="60" aria-pressed="true">1 min</button><button data-v="180" aria-pressed="false">3 min</button></div><p class="note era-note">Vrijeme za razvoj prije prvih napada na države.</p></div>
@@ -192,10 +192,11 @@
           </div>
         </div>
         <div class="field">
-          <span class="lab">Battle royale (zona se sužava)</span>
+          <span class="lab">Način igre</span>
           <div class="seg" id="lGmSeg">
-            <button data-v="klasik" aria-pressed="true">Ne</button>
-            <button data-v="br" aria-pressed="false">Da</button>
+            <button data-v="klasik" aria-pressed="true">Klasično</button>
+            <button data-v="br" aria-pressed="false">Battle royale</button>
+            <button data-v="defcon" aria-pressed="false">DEFCON</button>
           </div>
         </div>
         <div class="field">

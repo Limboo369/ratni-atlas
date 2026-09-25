@@ -411,6 +411,7 @@ RA.NUKE = RA.MISSILE;
   P._shipFire = function (u, U, p) {
     const tk = this.tick, W = this.map.W, R2 = U.range * U.range;
     u.fireAt = tk + U.fireCd;
+    if (this.defcon() > RA.DEFCON_NEED.sea) return; // DEFCON: warships hold fire until DEFCON 3
     const near = (x, y) => (x - u.x) * (x - u.x) + (y - u.y) * (y - u.y) <= R2;
     const hit = (x, y) => this.fx.push({ kind: 'shell', sx: u.x, sy: u.y, x, y, tick: tk });
     // 1. enemy ships (a raider only fights raiders; nobody sees a submarine from afar)
@@ -481,6 +482,7 @@ RA.NUKE = RA.MISSILE;
   /* ports within reach of a hostile warship are blockaded (no gold, no trade ships) */
   P._blockades = function () {
     const R = RA.CFG.NAVY_BLOCK_R, R2 = R * R, tk = this.tick;
+    if (this.defcon() > RA.DEFCON_NEED.sea) return; // DEFCON: no blockades before DEFCON 3
     const ships = this.units.filter((u) => !u.dead && u.type === 'ship' && u.ready <= tk);
     for (const s of this.structs) {
       if (s.dead || !s.ready || s.type !== 'port') continue;
@@ -634,6 +636,8 @@ RA.NUKE = RA.MISSILE;
     if (!p || !p.alive || !M) return 'Nisi u igri.';
     if (M.na) return 'To oružje ne postoji u ovom dobu.';
     if (c < 0) return 'Nevažeća meta.';
+    const de = this.defconErr(M.kind === 'nuke' || M.kind === 'mirv' ? 'nuke' : 'conv');
+    if (de) return de;
     if (this.tick < this.peaceUntil) return `Mirno doba — udari su dozvoljeni za ${this.peaceLeft()} s.`;
     if (M.from && this.tick < M.from) return `${M.name}: razvoj još traje — dostupna od ${Math.round(M.from / 600)}. minute (još ${RA.fmtTime((M.from - this.tick) / 10)}).`;
     const cost = this.missileCost(type, p);
@@ -1032,6 +1036,7 @@ RA.NUKE = RA.MISSILE;
     const p = this.P[pid];
     if (!p || !p.alive) return 'Nisi u igri.';
     if (!RA.ERA.para || RA.STRUCT.airport.na) return 'U ovom dobu nema padobranaca.';
+    if (this.defconErr('air')) return this.defconErr('air');
     if (c < 0 || !this.map.land[c]) return 'Padobranci skaču samo na kopno.';
     if (this.zone && this.zoneOut(c)) return 'To je u radioaktivnoj zoni.';
     const o = this.owner[c];

@@ -1278,7 +1278,7 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
       <div class="operation-head"><div><span class="command-kicker">PRIPREMA ZA OSVAJANJE</span><h2 id="operationTitle">Tvoja operacija.</h2></div><button id="configClose" class="command-tool" aria-label="Zatvori postavke"><i data-ic="close"></i></button></div>
       <div class="operation-body">
         <div class="field"><span class="lab" id="startLabel">Početak</span><div class="seg" id="startSeg" role="group" aria-labelledby="startLabel"><button data-v="granice" aria-pressed="true">Stvarne granice</button><button data-v="slobodno" aria-pressed="false">Od prijestolnice</button></div></div>
-        <div class="field"><span class="lab" id="gmLabel">Način igre</span><div class="seg" id="gmSeg" role="group" aria-labelledby="gmLabel"><button data-v="klasik" aria-pressed="true">Klasično</button><button data-v="br" aria-pressed="false">Battle royale</button></div><p class="note era-note" id="modeNote"></p></div>
+        <div class="field"><span class="lab" id="gmLabel">Način igre</span><div class="seg" id="gmSeg" role="group" aria-labelledby="gmLabel"><button data-v="klasik" aria-pressed="true">Klasično</button><button data-v="br" aria-pressed="false">Battle royale</button><button data-v="defcon" aria-pressed="false">DEFCON</button></div><p class="note era-note" id="modeNote"></p></div>
         <div class="field" id="regField"><span class="lab" id="regLabel">Dio Evrope</span><div class="seg wrap" id="regSeg" role="group" aria-labelledby="regLabel"></div></div>
         <div class="field"><span class="lab" id="diffLabel">Težina</span><div class="seg" id="diffSeg" role="group" aria-labelledby="diffLabel"><button data-v="lako" aria-pressed="false">Lako</button><button data-v="srednje" aria-pressed="true">Srednje</button><button data-v="tesko" aria-pressed="false">Teško</button></div></div>
         <div class="field"><span class="lab" id="peaceLabel">Mirno doba na početku</span><div class="seg" id="peaceSeg" role="group" aria-labelledby="peaceLabel"><button data-v="0" aria-pressed="false">Bez</button><button data-v="60" aria-pressed="true">1 min</button><button data-v="180" aria-pressed="false">3 min</button></div><p class="note era-note">Vrijeme za razvoj prije prvih napada na države.</p></div>
@@ -1326,10 +1326,11 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
           </div>
         </div>
         <div class="field">
-          <span class="lab">Battle royale (zona se sužava)</span>
+          <span class="lab">Način igre</span>
           <div class="seg" id="lGmSeg">
-            <button data-v="klasik" aria-pressed="true">Ne</button>
-            <button data-v="br" aria-pressed="false">Da</button>
+            <button data-v="klasik" aria-pressed="true">Klasično</button>
+            <button data-v="br" aria-pressed="false">Battle royale</button>
+            <button data-v="defcon" aria-pressed="false">DEFCON</button>
           </div>
         </div>
         <div class="field">
@@ -1956,6 +1957,7 @@ RA.Game = class Game {
     this.tships = [];
     this.tick = 0;
     this.peaceUntil = opts.peace !== undefined ? Math.round(opts.peace * 10) : RA.CFG.PEACE;
+    if (opts.gm === 'defcon') this.peaceUntil = Math.max(this.peaceUntil, RA.CFG.DEFCON_STEP); // DEFCON 5: no attacks
     this.era = opts.era || 'danas';
     this.borders = false;
     this.zone = null; // battle royale ring (02e-zone.js)
@@ -2632,6 +2634,8 @@ RA.Game = class Game {
     const p = this.P[pid];
     if (!p || !p.alive) return 'dead';
     if (!this.map.land[tgtCell]) return 'water';
+    const de = this.defconErr('sea');
+    if (de) return de;
     if (!this.map.coast[tgtCell]) return 'nocoast';
     if (this.zone && this.zoneOut(tgtCell)) return 'zone';
     if (this.owner[tgtCell] === pid) return 'own';
@@ -3026,6 +3030,7 @@ RA.Game = class Game {
     if (this.tick % 10 === 0) {
       this._updateLeader();
       this._checkWin();
+      this._defconEnd();
     }
   }
 
@@ -3196,7 +3201,7 @@ RA.Game = class Game {
       peace: 'Mirno doba — brodom zasad možeš samo na slobodnu obalu.',
       zone: 'Ta obala je u radioaktivnoj zoni.',
       dead: 'Nisi u igri.',
-    })[r] || 'Brod ne može isploviti.';
+    })[r] || (r && r.startsWith('DEFCON') ? r : 'Brod ne može isploviti.');
   }
 };
 
@@ -3613,6 +3618,7 @@ RA.NUKE = RA.MISSILE;
   P._shipFire = function (u, U, p) {
     const tk = this.tick, W = this.map.W, R2 = U.range * U.range;
     u.fireAt = tk + U.fireCd;
+    if (this.defcon() > RA.DEFCON_NEED.sea) return; // DEFCON: warships hold fire until DEFCON 3
     const near = (x, y) => (x - u.x) * (x - u.x) + (y - u.y) * (y - u.y) <= R2;
     const hit = (x, y) => this.fx.push({ kind: 'shell', sx: u.x, sy: u.y, x, y, tick: tk });
     // 1. enemy ships (a raider only fights raiders; nobody sees a submarine from afar)
@@ -3683,6 +3689,7 @@ RA.NUKE = RA.MISSILE;
   /* ports within reach of a hostile warship are blockaded (no gold, no trade ships) */
   P._blockades = function () {
     const R = RA.CFG.NAVY_BLOCK_R, R2 = R * R, tk = this.tick;
+    if (this.defcon() > RA.DEFCON_NEED.sea) return; // DEFCON: no blockades before DEFCON 3
     const ships = this.units.filter((u) => !u.dead && u.type === 'ship' && u.ready <= tk);
     for (const s of this.structs) {
       if (s.dead || !s.ready || s.type !== 'port') continue;
@@ -3836,6 +3843,8 @@ RA.NUKE = RA.MISSILE;
     if (!p || !p.alive || !M) return 'Nisi u igri.';
     if (M.na) return 'To oružje ne postoji u ovom dobu.';
     if (c < 0) return 'Nevažeća meta.';
+    const de = this.defconErr(M.kind === 'nuke' || M.kind === 'mirv' ? 'nuke' : 'conv');
+    if (de) return de;
     if (this.tick < this.peaceUntil) return `Mirno doba — udari su dozvoljeni za ${this.peaceLeft()} s.`;
     if (M.from && this.tick < M.from) return `${M.name}: razvoj još traje — dostupna od ${Math.round(M.from / 600)}. minute (još ${RA.fmtTime((M.from - this.tick) / 10)}).`;
     const cost = this.missileCost(type, p);
@@ -4234,6 +4243,7 @@ RA.NUKE = RA.MISSILE;
     const p = this.P[pid];
     if (!p || !p.alive) return 'Nisi u igri.';
     if (!RA.ERA.para || RA.STRUCT.airport.na) return 'U ovom dobu nema padobranaca.';
+    if (this.defconErr('air')) return this.defconErr('air');
     if (c < 0 || !this.map.land[c]) return 'Padobranci skaču samo na kopno.';
     if (this.zone && this.zoneOut(c)) return 'To je u radioaktivnoj zoni.';
     const o = this.owner[c];
@@ -5405,6 +5415,7 @@ RA.airName = (k) => {
     const o = this.owner[c];
     if (!o || o === pid || this.isFriendly(p, this.P[o])) return 'Izaberi neprijateljsku teritoriju.';
     if (this.tick < this.peaceUntil) return `Mirno doba — napadi su dozvoljeni za ${this.peaceLeft()} s.`;
+    if (this.defconErr('air')) return this.defconErr('air');
     const W = this.map.W, tx = c % W, ty = (c / W) | 0, tk = this.tick;
     let best = null, bd = 1e9, base = null;
     for (const q of p.air || []) {
@@ -5537,6 +5548,64 @@ RA.airName = (k) => {
     }
     this.tell(p, n ? 'good' : 'info', n ? `Dron lovac je pogodio ${n} ${n === 1 ? 'jedinicu' : 'jedinice'}.` : 'Dron lovac nije našao jedinice na meti.', p.id, m.c);
     this.fx.push({ kind: 'conv', x: m.tx, y: m.ty, r: M.r, tick: this.tick });
+  };
+})(RA.Game.prototype);
+
+
+/* DEFCON mode (plan 48, opts.gm === 'defcon'): five stages on a clock, each unlocking more:
+   DEFCON 5 building and alliances, no attacks on states → 4 land attacks → 3 sea and air (landings, paratroopers,
+   warships, bombers) → 2 conventional strikes (rockets, EMP, drones) → 1 nuclear weapons.
+   When the clock runs out the winner is who kept the most cities and people (not just land); 70% of the land still
+   wins at once. Nuclear missiles in flight are shown to everyone anyway (radar). */
+Object.assign(RA.CFG, {
+  DEFCON_STEP: 1800, // 3 min per stage
+  DEFCON_END: 15000, // 25 min
+});
+RA.DEFCON_NAMES = { 5: 'gradnja i savezi', 4: 'kopneni napadi', 3: 'more i zrak', 2: 'rakete', 1: 'nuklearke' };
+RA.DEFCON_NEED = { land: 4, sea: 3, air: 3, conv: 2, nuke: 1 };
+
+(function (P) {
+  /* the stage now: 5…1 (0 = not a DEFCON game) */
+  P.defcon = function () {
+    if (this.opts.gm !== 'defcon') return 0;
+    return Math.max(1, 5 - Math.floor(this.tick / RA.CFG.DEFCON_STEP));
+  };
+  /* '' when allowed, else why not (what: land, sea, air, conv, nuke) */
+  P.defconErr = function (what) {
+    const d = this.defcon(), need = RA.DEFCON_NEED[what];
+    if (!d || d <= need) return '';
+    const at = (5 - need) * RA.CFG.DEFCON_STEP;
+    const txt = { land: 'Napadi na države', sea: 'Brodovi i desanti', air: 'Avijacija i padobranci', conv: 'Raketni udari', nuke: 'Nuklearno oružje' }[what];
+    return `DEFCON ${d}: ${txt} su dozvoljeni od DEFCON ${need} (za ${RA.fmtTime((at - this.tick) / 10)}).`;
+  };
+  /* what a state kept: its cities (bigger count more) and the cities it built */
+  P.defconScore = function (p) {
+    let s = 0;
+    for (const ct of this.cities) if (ct.owner === p.id) s += (ct.tier + 1) * 10 + Math.round((ct.pop || 0) / 50000);
+    return s + (p.bcities ? p.bcities.length * 10 : 0);
+  };
+  /* the clock ran out: the best score wins (a co-op team counts together) */
+  P._defconEnd = function () {
+    if (this.opts.gm !== 'defcon' || this.state !== 'play' || this.continued || this.tick < RA.CFG.DEFCON_END) return;
+    let best = null, bs = -1;
+    const sides = new Map();
+    for (const p of this.P) {
+      if (!p || !p.alive || !p.spawned || p.type === 'bot') continue;
+      const k = p.team ? -p.team : p.id;
+      const sd = sides.get(k) || { s: 0, best: null };
+      sd.s += this.defconScore(p);
+      if (!sd.best || p.area > sd.best.area) sd.best = p;
+      sides.set(k, sd);
+    }
+    for (const sd of sides.values()) if (sd.s > bs) {
+      bs = sd.s;
+      best = sd.best;
+    }
+    if (!best) return;
+    this.winner = best;
+    this.state = 'over';
+    this._history();
+    this.tellAll('over', `DEFCON — vrijeme je isteklo. Pobjednik po gradovima i stanovništvu: ${best.name} (${bs} bodova)`, best.id);
   };
 })(RA.Game.prototype);
 
@@ -8983,7 +9052,7 @@ RA.UI = class {
     this.fixRegion();
     if (!RA.ERAS.some((e) => e.id === this.settings.era)) this.settings.era = 'danas';
     if (this.settings.start !== 'slobodno') this.settings.start = 'granice';
-    if (this.settings.gm !== 'br') this.settings.gm = 'klasik';
+    if (this.settings.gm !== 'br' && this.settings.gm !== 'defcon') this.settings.gm = 'klasik';
     $('nameIn').value = this.settings.name || '';
     // the map: Europe is always there; the world only on our own server (probed at boot, see mapsChanged)
     // where to play: Evropa and the parts of the world in one list (world ones appear once the world map is there)
@@ -9220,7 +9289,8 @@ RA.UI = class {
     $('modeNote').textContent = (s.start === 'granice'
       ? 'Stvarne granice: svaka država kreće sa svojom teritorijom iz tog doba — izabereš jednu i vodiš je. '
       : 'Od prijestolnice: države kreću od malog kruga oko glavnog grada, a ostalo je slobodna zemlja. ')
-      + (s.gm === 'br' ? 'Battle royale: radioaktivna zona se sužava prema nasumičnoj tački — sve izvan kruga propada.' : '');
+      + (s.gm === 'br' ? 'Battle royale: radioaktivna zona se sužava prema nasumičnoj tački — sve izvan kruga propada.' : '')
+      + (s.gm === 'defcon' ? 'DEFCON: pet faza po 3 minute — 5 gradnja i savezi, 4 kopneni napadi, 3 more i zrak, 2 rakete, 1 nuklearke. Poslije 25 minuta pobjeđuje ko ima najviše gradova i stanovništva.' : '');
     if (this.command) this.command.refresh();
   }
   /* number of states of a region in an era (cached); known=true: only if counted already or the era is decoded */
@@ -9837,7 +9907,12 @@ RA.UI = class {
     const pills = [];
     const T = (t) => RA.fmtTime(Math.ceil(Math.max(0, t) / 10));
     if (me && me.alive && G.state === 'play') {
-      if (tk < G.peaceUntil) pills.push(['calm', `☮ Mirno doba · ${T(G.peaceUntil - tk)}`]);
+      const dc = G.defcon();
+      if (dc) {
+        const next = (6 - dc) * C.DEFCON_STEP;
+        pills.push([dc <= 2 ? 'zone' : 'zone soon', `DEFCON ${dc} · ${RA.DEFCON_NAMES[dc]}${dc > 1 ? ` · DEFCON ${dc - 1} za ${T(next - tk)}` : ` · kraj za ${T(C.DEFCON_END - tk)}`}`]);
+        pills.push(['calm', `Gradovi i stanovništvo: ${G.defconScore(me)} bodova`]);
+      } else if (tk < G.peaceUntil) pills.push(['calm', `☮ Mirno doba · ${T(G.peaceUntil - tk)}`]);
       else if (tk < G.diff.grace) pills.push(['calm', `Zaštita početnika · ${T(G.diff.grace - tk)}`]);
       const t = tk % C.WINTER_CYCLE, start = C.WINTER_CYCLE - C.WINTER_LEN;
       if (t >= start) pills.push(['winter', `❄ ${RA.mapInfo(G.map.id).winter} · ${T(C.WINTER_CYCLE - t)}`]);
@@ -11338,7 +11413,7 @@ Object.assign(RA.UI.prototype, {
     for (const b of $('lEraSeg').querySelectorAll('button')) b.disabled = !!(lm && lm.eraOK && !lm.eraOK[b.dataset.v]);
     const reg = RA.regionsOf(mapId).find((r) => r.id === set.reg);
     const E = RA.eraById(set.era);
-    const summary = `${E.name} (${E.sub}) · ${set.st === 'granice' ? 'stvarne granice' : 'od prijestolnice'}${set.gm === 'br' ? ' · battle royale' : ''} · ${reg ? reg.name : RA.mapInfo(mapId).all} · ${RA.DIFF[set.dif] ? RA.DIFF[set.dif].label : ''} · mirno doba ${set.peace ? Math.round(set.peace / 60) + ' min' : 'bez'} · ${set.mode === 'vs' ? 'jedan protiv drugog' : 'zajedno protiv svih'}`;
+    const summary = `${E.name} (${E.sub}) · ${set.st === 'granice' ? 'stvarne granice' : 'od prijestolnice'}${set.gm === 'br' ? ' · battle royale' : set.gm === 'defcon' ? ' · DEFCON' : ''} · ${reg ? reg.name : RA.mapInfo(mapId).all} · ${RA.DIFF[set.dif] ? RA.DIFF[set.dif].label : ''} · mirno doba ${set.peace ? Math.round(set.peace / 60) + ' min' : 'bez'} · ${set.mode === 'vs' ? 'jedan protiv drugog' : 'zajedno protiv svih'}`;
     const ready = loaded && this.lobbyReady(set);
     $('lobbyInfo').innerHTML = !loaded
       ? RA.esc(RA.mapInfo(mapId).load)
@@ -11458,7 +11533,7 @@ RA.CommandScreen = class {
     }
     const reg = RA.regionsOf(s.map).find((r) => r.id === s.region);
     const region = s.region === s.map || !reg ? RA.mapInfo(s.map).name : reg.name;
-    this.$('operationSummary').textContent = `${region} · ${s.gm === 'br' ? 'Battle royale' : 'Klasično'} · ${{lako:'Lako',srednje:'Srednje',tesko:'Teško'}[s.difficulty] || 'Srednje'}`;
+    this.$('operationSummary').textContent = `${region} · ${s.gm === 'br' ? 'Battle royale' : s.gm === 'defcon' ? 'DEFCON' : 'Klasično'} · ${{lako:'Lako',srednje:'Srednje',tesko:'Teško'}[s.difficulty] || 'Srednje'}`;
     this.$('atlasRegion').textContent = region.toUpperCase();
     const map = this.ui.app.maps[s.map];
     if (!map) return; // The map loader calls startNotes/refresh again when the data arrives.
@@ -11773,7 +11848,7 @@ RA.Account = class {
   gameLine(r) {
     const reg = RA.REGIONS.find((x) => x.id === r.region && x.map === r.map);
     const where = r.region === r.map || !reg ? RA.mapInfo(r.map).all || RA.mapInfo(r.map).name : reg.name;
-    const how = [RA.eraById(r.era).short, r.online ? (r.mode === 'coop' ? 'online tim' : 'online 1 na 1') : '', r.gm === 'br' ? 'battle royale' : '', r.difficulty === 'tesko' ? 'teško' : r.difficulty === 'lako' ? 'lako' : ''].filter(Boolean).join(' · ');
+    const how = [RA.eraById(r.era).short, r.online ? (r.mode === 'coop' ? 'online tim' : 'online 1 na 1') : '', r.gm === 'br' ? 'battle royale' : r.gm === 'defcon' ? 'DEFCON' : '', r.difficulty === 'tesko' ? 'teško' : r.difficulty === 'lako' ? 'lako' : ''].filter(Boolean).join(' · ');
     const d = new Date(r.at), pad = (n) => String(n).padStart(2, '0');
     const when = `${d.getDate()}. ${d.getMonth() + 1}. ${pad(d.getHours())}:${pad(d.getMinutes())}`;
     return `<li class="${r.won ? 'w' : 'l'}"><span class="res">${r.won ? 'Pobjeda' : 'Poraz'}</span><span class="what"><b>${RA.esc(where)}</b><small>${RA.esc(how)}</small></span><span class="num">${RA.fmtTime(r.secs)}<small>${String(Math.round(r.peak * 10) / 10).replace('.', ',')}% · ${when}</small></span></li>`;
@@ -14239,7 +14314,7 @@ Object.assign(RA.UI.prototype, {
   },
 });
 
-RA.BUILD = '30793c61';
+RA.BUILD = '894e9a64';
 new RA.App().boot();
 }
 function __raFallback(){

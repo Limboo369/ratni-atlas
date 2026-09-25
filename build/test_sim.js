@@ -239,6 +239,31 @@ const check = (ok, msg) => {
   check(typeof AG.exec(Pm.id, 'mis', ['drone', tgt3]) === 'string', `at most ${RA.CFG.DRONE_MAX} drones in the air`);
   for (let i = 0; i < 80; i++) AG.step();
   check(!Pm.drones, 'drones land and free their slots');
+
+  // DEFCON mode (plan 48): stages on a clock, the clock's end decides by cities and people
+  const DG = RA.newGame(RA.eraMap(m, 'danas', 'granice'), { seed: 51, difficulty: 'srednje', cityStates: 0, peace: 0, era: 'danas', start: 'granice', gm: 'defcon' });
+  RA.applyEra('danas');
+  RA.placeHuman(DG, DG.P.find((p) => p && p.iso === 'FRA').nation.c, 'Test');
+  RA.startGame(DG);
+  const D = DG.me, DE = DG.P.find((p) => p && p.iso === 'DEU');
+  D.gold = 5e7;
+  const deC = DE.cells[0];
+  const stage = [];
+  for (const [t, lvl] of [[10, 5], [1810, 4], [3610, 3], [5410, 2], [7210, 1]]) {
+    while (DG.tick < t && DG.state === 'play') DG.step();
+    stage.push(DG.defcon() === lvl);
+  }
+  check(stage.every(Boolean), `DEFCON 5 → 1 every 3 minutes (${stage})`);
+  const DG2 = RA.newGame(RA.eraMap(m, 'danas', 'granice'), { seed: 52, difficulty: 'srednje', cityStates: 0, peace: 0, era: 'danas', start: 'granice', gm: 'defcon' });
+  RA.placeHuman(DG2, DG2.P.find((p) => p && p.iso === 'FRA').nation.c, 'Test');
+  RA.startGame(DG2);
+  DG2.me.gold = 5e7;
+  const tgtD = DG2.P.find((p) => p && p.iso === 'DEU').cells[0];
+  check(/DEFCON 5/.test(DG2.defconErr('land')) && /DEFCON 5/.test(DG2.exec(DG2.me.id, 'mis', ['rocket', tgtD])) && /DEFCON/.test(DG2.boatErr(DG2.launchBoat(DG2.me.id, tgtD, 1000))), 'at DEFCON 5 no attacks, strikes or landings');
+  while (DG2.tick < 5410) DG2.step();
+  check(!DG2.defconErr('conv') && /DEFCON 2/.test(DG2.defconErr('nuke')), 'DEFCON 2: rockets yes, nukes not yet');
+  while (DG2.state === 'play' && DG2.tick < RA.CFG.DEFCON_END + 20) DG2.step();
+  check(DG2.state === 'over' && DG2.winner && DG2.tick <= RA.CFG.DEFCON_END + 20, `the clock ends it: ${DG2.winner && DG2.winner.name} (${DG2.winner && DG2.defconScore(DG2.winner)} points)`);
   console.log('FAILS:', fails.length ? fails : 'none');
   process.exit(fails.length ? 1 : 0);
 })();

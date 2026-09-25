@@ -65,6 +65,7 @@ RA.airName = (k) => {
     const o = this.owner[c];
     if (!o || o === pid || this.isFriendly(p, this.P[o])) return 'Izaberi neprijateljsku teritoriju.';
     if (this.tick < this.peaceUntil) return `Mirno doba — napadi su dozvoljeni za ${this.peaceLeft()} s.`;
+    if (this.defconErr('air')) return this.defconErr('air');
     const W = this.map.W, tx = c % W, ty = (c / W) | 0, tk = this.tick;
     let best = null, bd = 1e9, base = null;
     for (const q of p.air || []) {

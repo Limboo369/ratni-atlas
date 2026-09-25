@@ -89,7 +89,7 @@ RA.UI = class {
     this.fixRegion();
     if (!RA.ERAS.some((e) => e.id === this.settings.era)) this.settings.era = 'danas';
     if (this.settings.start !== 'slobodno') this.settings.start = 'granice';
-    if (this.settings.gm !== 'br') this.settings.gm = 'klasik';
+    if (this.settings.gm !== 'br' && this.settings.gm !== 'defcon') this.settings.gm = 'klasik';
     $('nameIn').value = this.settings.name || '';
     // the map: Europe is always there; the world only on our own server (probed at boot, see mapsChanged)
     // where to play: Evropa and the parts of the world in one list (world ones appear once the world map is there)
@@ -326,7 +326,8 @@ RA.UI = class {
     $('modeNote').textContent = (s.start === 'granice'
       ? 'Stvarne granice: svaka država kreće sa svojom teritorijom iz tog doba — izabereš jednu i vodiš je. '
       : 'Od prijestolnice: države kreću od malog kruga oko glavnog grada, a ostalo je slobodna zemlja. ')
-      + (s.gm === 'br' ? 'Battle royale: radioaktivna zona se sužava prema nasumičnoj tački — sve izvan kruga propada.' : '');
+      + (s.gm === 'br' ? 'Battle royale: radioaktivna zona se sužava prema nasumičnoj tački — sve izvan kruga propada.' : '')
+      + (s.gm === 'defcon' ? 'DEFCON: pet faza po 3 minute — 5 gradnja i savezi, 4 kopneni napadi, 3 more i zrak, 2 rakete, 1 nuklearke. Poslije 25 minuta pobjeđuje ko ima najviše gradova i stanovništva.' : '');
     if (this.command) this.command.refresh();
   }
   /* number of states of a region in an era (cached); known=true: only if counted already or the era is decoded */
@@ -943,7 +944,12 @@ RA.UI = class {
     const pills = [];
     const T = (t) => RA.fmtTime(Math.ceil(Math.max(0, t) / 10));
     if (me && me.alive && G.state === 'play') {
-      if (tk < G.peaceUntil) pills.push(['calm', `☮ Mirno doba · ${T(G.peaceUntil - tk)}`]);
+      const dc = G.defcon();
+      if (dc) {
+        const next = (6 - dc) * C.DEFCON_STEP;
+        pills.push([dc <= 2 ? 'zone' : 'zone soon', `DEFCON ${dc} · ${RA.DEFCON_NAMES[dc]}${dc > 1 ? ` · DEFCON ${dc - 1} za ${T(next - tk)}` : ` · kraj za ${T(C.DEFCON_END - tk)}`}`]);
+        pills.push(['calm', `Gradovi i stanovništvo: ${G.defconScore(me)} bodova`]);
+      } else if (tk < G.peaceUntil) pills.push(['calm', `☮ Mirno doba · ${T(G.peaceUntil - tk)}`]);
       else if (tk < G.diff.grace) pills.push(['calm', `Zaštita početnika · ${T(G.diff.grace - tk)}`]);
       const t = tk % C.WINTER_CYCLE, start = C.WINTER_CYCLE - C.WINTER_LEN;
       if (t >= start) pills.push(['winter', `❄ ${RA.mapInfo(G.map.id).winter} · ${T(C.WINTER_CYCLE - t)}`]);
