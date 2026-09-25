@@ -3,7 +3,7 @@
    can replay exactly the same inputs on every device (lockstep). Args come from other players' devices:
    they are validated here and never trusted. */
 
-RA.CMD_KINDS = ['atk', 'boat', 'para', 'build', 'rec', 'mv', 'dis', 'mis', 'mob', 'ret', 'aReq', 'aRes', 'tReq', 'tRes', 'ext', 'brk', 'tEnd', 'give', 'help', 'ai', 'back', 'rcl', 'png', 'qm'];
+RA.CMD_KINDS = ['atk', 'boat', 'para', 'build', 'rec', 'mv', 'dis', 'mis', 'mob', 'ret', 'aReq', 'aRes', 'tReq', 'tRes', 'ext', 'brk', 'tEnd', 'give', 'help', 'ai', 'back', 'rcl', 'png', 'qm', 'tax'];
 /* pings on the map and quick messages, seen by the sender's allies and team (plan item 57) */
 RA.PINGS = [
   { name: 'Napadni ovdje', icon: 'attack', color: '#ff5d5d' },
@@ -111,6 +111,10 @@ RA.QUICK_MSGS = ['Napadam!', 'Treba mi pomoć!', 'Pazi, napadaju nas!', 'Idem ta
         if (this.chat.length > 60) this.chat.splice(0, 30);
         return true;
       }
+      case 'tax':
+        if (!Number.isInteger(a[0]) || a[0] < 0 || a[0] >= RA.TAX.length) return 'Nevažeći porez.';
+        p.tax = a[0];
+        return { tax: a[0] };
       case 'rcl':
         return this.cmdReclaim(pid, player(a[0]), ratio(a[1]));
       case 'back':

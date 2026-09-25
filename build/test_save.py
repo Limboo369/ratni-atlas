@@ -63,6 +63,15 @@ async def main():
         # two picks (the second one moves the player): both are replayed
         await ev('''() => { const G = window.__ra.G, ui = window.__ra.ui, ns = G.P.filter(p => p && p.type === 'nation' && p.alive).sort((x, y) => x.area - y.area);
           ui.pickNation(String(ns[0].id)); ui.pickNation(String(ns[ns.length - 1].id)); window.__ra.start(); }''')
+        # tax (plan 33): the gold in the top bar opens the economy sheet
+        await ev('window.__ra.paused = true')
+        await page.click('.stat.gold')
+        await page.wait_for_selector('#taxSeg button[data-v="4"]')
+        g0 = await ev('() => { const G = window.__ra.G; G.step(); return G.me.goldRate; }')
+        await page.click('#taxSeg button[data-v="4"]')
+        t = await ev('() => { const G = window.__ra.G; G.step(); return [G.me.tax, G.me.goldRate, document.querySelector("#taxSeg button[data-v=\\"4\\"]").getAttribute("aria-pressed")]; }')
+        check(t[0] == 4 and t[1] > g0 * 1.3 and t[2] == 'true', f'tax "Vrlo visok": more gold {g0:.0f} -> {t[1]:.0f}/s {t}')
+        await page.keyboard.press('Escape')
         a = await ev(PLAY, 40)
         check(a[2] >= 6 and a[3] == 'play' and a[4], f'commands recorded, still playing: {a[2:]}')
         await ev('window.__ra.autosave(true)')
@@ -81,6 +90,7 @@ async def main():
         check(c[0] == a[0], f'same tick after replay: {c[0]} vs {a[0]}')
         check(c[1] == a[1], f'same game after replay (hash {c[1]} vs {a[1]})')
         check(c[3] is True and c[4] == 'play', f'continued paused, in play: {c[3:]}')
+        check(await ev('window.__ra.G.me.tax') == 4, 'the tax level comes back with the saved game')
         await page.screenshot(path=OUT + 'save_resumed.png')
         # plays on and keeps recording into the same save
         d = await ev(PLAY, 2)

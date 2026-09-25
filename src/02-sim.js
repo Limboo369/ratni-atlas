@@ -27,7 +27,16 @@ RA.CFG = {
   PEACE: 600, // opening peace: no attacks between states for the first minute
   CITY_BUILT_T: 90000,
   CITY_BUILT_G: 8,
+  INTEREST: 0.01 / 600, // on a player's saved gold, per tick (1% a minute), at most a quarter of the income
 };
+/* tax (plan 33): more gold ↔ slower army growth; every state starts at 'Srednji' */
+RA.TAX = [
+  { name: 'Vrlo nizak', g: 0.6, grow: 1.22 },
+  { name: 'Nizak', g: 0.8, grow: 1.1 },
+  { name: 'Srednji', g: 1, grow: 1 },
+  { name: 'Visok', g: 1.22, grow: 0.86 },
+  { name: 'Vrlo visok', g: 1.45, grow: 0.7 },
+];
 
 RA.STRUCT = {
   barracks: { name: 'Kasarna', short: 'Kasarna', cost: (n) => Math.min(1.6e6, 125000 * RA.dpow(2, n)), time: 30,
@@ -120,7 +129,7 @@ RA.Game = class Game {
       cityT: 0, cityG: 0, nCity: [0, 0, 0, 0],
       n: { barracks: 0, fort: 0, port: 0, silo: 0, sam: 0, airport: 0, city: 0, factory: 0 },
       built: { barracks: 0, fort: 0, port: 0, silo: 0, sam: 0, airport: 0, city: 0, factory: 0 },
-      forts: [], bcities: [], units: [], portsOff: 0, mobReady: 0, growPause: 0, crisisUntil: 0, capCity: -1,
+      forts: [], bcities: [], units: [], portsOff: 0, mobReady: 0, growPause: 0, crisisUntil: 0, tax: 2, interest: 0, capCity: -1,
       goldRate: 0, growRate: 0, trade: new Set(), nbCache: null, tradeRate: 0, tradeLand: 0, allies: new Map(), traitorUntil: -1, rel: new Float32Array(256), boats: 0,
       lastAttackedBy: 0, attackedAt: -9999, changed: true, peak: 0, capital: -1,
       stats: { conquered: 0, citiesTaken: 0, nukes: 0, kills: 0 }, deathTick: -1, labelCell: -1, ai: null,
@@ -281,14 +290,21 @@ RA.Game = class Game {
     if (p.type === 'bot') add *= 0.5;
     else if (p.type === 'nation') add *= this.diff.grow;
     if (p.crisisUntil > tk) add *= 0.7;
+    const tax = RA.TAX[p.tax] || RA.TAX[2];
+    if (add > 0) add *= tax.grow;
     if (p.growPause > tk && add > 0) add = 0;
     if (p.troops > maxT) add = -(p.troops - maxT) * (p.growPause > tk ? 0.0025 : 0.01);
     p.troops = Math.max(0, p.troops + add);
     let g = 70 + Math.sqrt(p.tiles) * 1.2 + p.cityG + (p.n.port - p.portsOff) * RA.CFG.PORT_G + p.n.city * RA.CFG.CITY_BUILT_G;
     if (p.type === 'bot') g *= 0.4;
     if (p.crisisUntil > tk) g *= 0.5;
-    p.gold += g;
-    p.goldRate = g * 10 + (p.trainRate || 0) + (p.tradeRate || 0);
+    g *= tax.g;
+    // interest on a player's saved gold, capped at a quarter of the income (saving helps, never beats owning land);
+    // the computer spends as it goes, and interest made its wars drag on
+    const it = p.human && p.gold > 0 ? Math.min(p.gold * RA.CFG.INTEREST, g * 0.25) : 0;
+    p.interest = it * 10;
+    p.gold += g + it;
+    p.goldRate = (g + it) * 10 + (p.trainRate || 0) + (p.tradeRate || 0);
     p.growRate = add * 10;
   }
 

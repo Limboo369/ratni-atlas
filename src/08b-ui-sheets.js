@@ -466,6 +466,20 @@ Object.assign(RA.UI.prototype, {
   },
 
   /* quick messages to allies and team (online) */
+  /* the economy: tax (more gold ↔ slower army growth) and interest on saved gold; tap the gold in the top bar or Z */
+  econSheet(keep) {
+    const G = this.G, me = G && G.me;
+    if (!me || G.state !== 'play') return;
+    const T = RA.TAX, cur = RA.TAX[me.tax] || T[2], pct = (v) => (v >= 1 ? '+' : '−') + Math.round(Math.abs(v - 1) * 100) + '%';
+    const h = this.head('Ekonomija', `Zlato ${RA.fmt(me.gold)} · +${RA.fmt(me.goldRate || 0)}/s · vojska ${me.growRate >= 0 ? '+' : '−'}${RA.fmt(Math.abs(me.growRate || 0))}/s`) +
+      `<div class="field"><span class="lab">Porez: ${RA.esc(cur.name)}</span><div class="seg wrap" id="taxSeg" role="group" aria-label="Porez">${T.map((t, i) => `<button data-v="${i}" aria-pressed="${i === me.tax}">${RA.esc(t.name)}</button>`).join('')}</div>
+      <p class="note">Viši porez: više zlata, ali vojska sporije raste. Niži: vojska brže raste, zlata manje.<br>Sada: zlato ${cur.g === 1 ? 'normalno' : pct(cur.g)}, rast vojske ${cur.grow === 1 ? 'normalan' : pct(cur.grow)}.</p></div>
+      <div class="field"><span class="lab">Kamata</span><p class="note">Ušteđeno zlato donosi 1% u minuti, najviše četvrtinu tvog prihoda. Sada: <b>+${RA.fmt(me.interest || 0)}/s</b>.</p></div>`;
+    this.openSheet(h, (s) => s.querySelectorAll('#taxSeg button').forEach((b) => (b.onclick = () => {
+      this.act('tax', [+b.dataset.v]);
+      if (G.online) setTimeout(() => this.econSheet(true), 400); // offline: afterAct redraws
+    })), keep, () => this.econSheet(true));
+  },
   quickSheet() {
     const G = this.G;
     if (!G || !G.me || G.state !== 'play') return;
@@ -549,7 +563,8 @@ Object.assign(RA.UI.prototype, {
       <h4>Vojska i zlato</h4><ul>
         <li>Vojska raste sama, najbrže oko <b>42%</b> kapaciteta (zelena zona na traci).</li>
         <li><b>Mobilizacija</b> (Vojska): odmah +30% kapaciteta, ali rast stoji 45 s. Jednom u 4 minute.</li>
-        <li>Zlato donose teritorija, gradovi, luke, vozovi ili karavani i trgovina.</li></ul>
+        <li>Zlato donose teritorija, gradovi, luke, vozovi ili karavani i trgovina.</li>
+        <li><b>Porez</b> (klik na zlato gore ili tipka Z): viši porez daje više zlata, ali vojska sporije raste. Ušteđeno zlato donosi malu kamatu.</li></ul>
       <h4>Jedinice</h4><ul>
         <li>Tri vrste u svakom dobu (npr. legija, konjica i strijelci u Rimu; pješadija, tenkovi i artiljerija danas): prva čvrsto brani granicu, druga ubrzava i pojeftinjuje tvoje napade, treća gađa neprijatelja iz daljine.</li>
         <li>Jedinice same prate granicu. Dodirni svoju jedinicu pa novo mjesto da je premjestiš. Opkoljena jedinica propada.</li></ul>

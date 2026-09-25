@@ -169,6 +169,12 @@ RA.UI = class {
     $('speedBtn').onclick = () => app.cycleSpeed();
     $('pauseBtn').onclick = () => app.togglePause();
     $('menuBtn').onclick = () => this.menu();
+    const gs = $('hGold').closest('.stat');
+    gs.tabIndex = 0;
+    gs.setAttribute('role', 'button');
+    gs.title = 'Ekonomija: porez i kamata (Z)';
+    gs.onclick = () => this.econSheet();
+    gs.onkeydown = (e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), e.stopPropagation(), this.econSheet());
     $('chatBtn').innerHTML = RA.icon('chat');
     $('chatBtn').onclick = () => this.quickSheet();
     const modal = (kinds, open) => () => {
@@ -888,6 +894,8 @@ RA.UI = class {
         const T = r.t ? G.P[r.t] : null;
         say('info', `Napad ${T ? 'na ' + RA.esc(T.name) : 'na slobodnu zemlju'} obustavljen — vraćeno ${RA.fmt(r.back)} vojnika${T ? ' (25% izgubljeno u povlačenju)' : ''}.`);
       }
+    } else if (kind === 'tax') {
+      if (r && typeof r === 'object') say('info', `Porez: ${RA.TAX[r.tax].name}.`);
     } else if (kind === 'rcl') {
       if (r && typeof r === 'object') say('good', `Vraćaš granice: ${RA.fmt(r.att.troops)} vojnika ide na ${r.n} otetih polja (${RA.esc(G.P[a[0]].name)}).`);
       else if (err(r)) say('info', RA.esc(r));
@@ -1254,6 +1262,7 @@ RA.UI = class {
     else if (k === 't' && this.G.online) this.quickSheet();
     else if (k === 'g' && this.G.online && this.mouseLL) this.act('png', [this.cellFromLatLng(this.mouseLL), 0]);
     else if (k === 'm') this.act('mob', []);
+    else if (k === 'z') this.econSheet();
   }
 
   /* ---------------- sheet helpers ---------------- */
