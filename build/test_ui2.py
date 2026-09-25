@@ -125,7 +125,10 @@ async def main():
             await page.wait_for_timeout(400)
             await tap_cell(nb['cell'])
             await ev('() => { window.__ra.paused = true; }')  # freeze the sim so a counter-attack can't cancel ours mid-test
-            await page.wait_for_timeout(400)
+            try:  # the tap reaches the game a few hundred ms later on the CI runner
+                await page.wait_for_function(f'window.__ra.G.attacks.some(a => !a.done && a.a === window.__ra.G.me.id && a.t === {nb["id"]})', timeout=10_000)
+            except Exception:
+                pass
             n_att = await ev(f'() => window.__ra.G.attacks.filter(a => !a.done && a.a === window.__ra.G.me.id && a.t === {nb["id"]}).length')
             check(n_att == 1, 'tap on neighbour launches an attack')
             try:  # chips redraw in the render loop; one frame can take > 300 ms on the CI runner
@@ -175,7 +178,8 @@ async def main():
         offer = await ev('''() => { const app = window.__ra, G = app.G, me = G.me; app.paused = true;
             G.allyReqs = G.allyReqs.filter(r => r.to !== me.id); G.tradeReqs = G.tradeReqs.filter(r => r.to !== me.id);
             const os = G.P.filter(p => p && p.alive && p.type === 'nation' && p !== me && !me.allies.has(p.id) && !me.trade.has(p.id));
-            const a = os[0], t = os[1] || os[0]; G.allyReqs.push({from: a.id, to: me.id, exp: G.tick + 300}); G.tradeReqs.push({from: t.id, to: me.id, exp: G.tick + 300}); return {a: a.id, t: t.id}; }''')
+            // the AI makes its own alliances: an offer from a nation already at the limit is (rightly) refused on accept
+            const a = os.find(p => G.allyCount(p) < RA.CFG.ALLY_MAX) || os[0], t = os.find(p => p !== a && p.trade.size < RA.CFG.TRADE_MAX) || os.find(p => p !== a) || a; G.allyReqs.push({from: a.id, to: me.id, exp: G.tick + 300}); G.tradeReqs.push({from: t.id, to: me.id, exp: G.tick + 300}); return {a: a.id, t: t.id}; }''')
         try:
             await page.wait_for_function('document.getElementById("diploBdg").textContent === "2"', timeout=10000)
         except Exception:
