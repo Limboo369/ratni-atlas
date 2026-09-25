@@ -229,7 +229,9 @@ async def main():
             # the guest proposes an alliance to the host, the host accepts
             await act(B, 'aReq', [await A.evaluate('() => window.__ra.G.me.id')])
             await asyncio.sleep(1.5)
-            offers = await A.evaluate('() => window.__ra.G.allyReqs.filter(r => r.to === window.__ra.G.me.id).length')
+            # only the guest's offer: an AI nation may offer the host an alliance at the same moment
+            gid = await B.evaluate('() => window.__ra.G.me.id')
+            offers = await A.evaluate(f'() => window.__ra.G.allyReqs.filter(r => r.to === window.__ra.G.me.id && r.from === {gid}).length')
             check(offers == 1, f'host sees the guest\'s alliance offer ({offers})')
             await asyncio.sleep(0.8)
             await A.screenshot(path=OUT + 'mp_5_offer.png')

@@ -1400,7 +1400,6 @@ RA.CFG = {
   K: 3.2, // one cell ~ several "classic" pixels: scales per-cell attack costs
   NEUTRAL_SLOW: 3.0,
   WIN_SHARE: 0.7,
-  OVERTIME_MIN: 12, // after this many minutes the share needed to win drops 2%/min to 50%, then 1%/min to 40%
   ALLY_MAX: 2,
   ALLY_DUR: 3000, // 5 min
   ALLY_REQ_DUR: 200,
@@ -2468,15 +2467,10 @@ RA.Game = class Game {
   landTotal() {
     return this.map.landArea - this.falloutCount - (this.zone ? this.zone.deadLand : 0);
   }
-  /* share of the land needed to win: per map (meta.winShare / meta.overtimeMin, every share scaled by shareK());
-     Europe and regions use the defaults */
+  /* share of the real land needed to win: 70% on every map and region, all game long (Darko, 25. 9.: no lower
+     target on the world, no overtime drop — the winner may play on to 100% instead, "Nastavi igru") */
   winShare() {
-    const m = this.tick / 600, M = this.map.region ? {} : this.map.meta || {};
-    const base = RA.CFG.WIN_SHARE, ot = M.overtimeMin > 0 ? M.overtimeMin : RA.CFG.OVERTIME_MIN;
-    const over = Math.max(0, Math.floor(m - ot));
-    // -2%/min down to 50%, then -1%/min down to 40%: a long stalemate still ends
-    const fast = Math.round(Math.max(0, base - 0.5) * 50);
-    return (over <= fast ? Math.max(0.5, base - over * 0.02) : Math.max(0.4, Math.min(0.5, base) - (over - fast) * 0.01)) / this.shareK();
+    return RA.CFG.WIN_SHARE;
   }
   _history() {
     const snap = { t: this.tick, v: {} };
@@ -8619,13 +8613,13 @@ Object.assign(RA.UI.prototype, {
 
   howTo() {
     const C = RA.CFG, M = this.app.map, I = RA.mapInfo(M.id);
-    // the same rules as G.winShare() / G.shareK(): a region of the map plays by the default rules
-    const mm = (RA.regionOf(M, this.settings.region) || {}).poly ? {} : M.meta, ot = mm.overtimeMin > 0 ? mm.overtimeMin : C.OVERTIME_MIN;
-    const k = mm.winShare > 0 ? C.WIN_SHARE / mm.winShare : 1, pc = (v) => Math.round(v / k), rate = (v) => String(+(v / k).toFixed(1)).replace('.', ',');
-    const win = pc(C.WIN_SHARE * 100);
+    // the same rules as G.winShare() / G.shareK(): the giant rule starts earlier on a map with meta.winShare (the world)
+    const mm = (RA.regionOf(M, this.settings.region) || {}).poly ? {} : M.meta;
+    const k = mm.winShare > 0 ? C.WIN_SHARE / mm.winShare : 1, pc = (v) => Math.round(v / k);
+    const win = Math.round(C.WIN_SHARE * 100);
     const eras = RA.ERAS.map((e) => `<li><b>${RA.esc(e.name)}</b> (${RA.esc(e.sub)}) — ${RA.esc(RA.eraBlurb(e, M.id))}</li>`).join('');
     const h = this.head('Kako se igra', 'Overtake — pravila ukratko') + `<div class="howto">
-      <h4>Cilj</h4><p>Zauzmi ${win}% kopna odabranog dijela karte ili ostani posljednja država. Poslije ${ot}. minute prag pada ${rate(2)}% po minuti do ${pc(50)}%, pa ${rate(1)}% po minuti do ${pc(40)}%. Ko drži više od ${pc(35)}% karte, plaća svako novo osvajanje skuplje.</p>
+      <h4>Cilj</h4><p>Zauzmi ${win}% kopna odabranog dijela karte ili ostani posljednja država. Kad pobijediš, možeš nastaviti igru i osvojiti sve. Ko drži više od ${pc(35)}% karte, plaća svako novo osvajanje skuplje.</p>
       <h4>Doba</h4><p>Na početnom ekranu biraš period u kojem se boriš. Svako doba ima svoje granice, gradove, jedinice, zgrade i oružje:</p><ul>${eras}</ul>
       <h4>Početak</h4><ul>
         <li><b>Stvarne granice</b>: sve države kreću sa svojom teritorijom iz tog doba. Dodirni državu ili je izaberi sa spiska — dobijaš njenu zemlju, vojsku i zlato.</li>
@@ -10801,7 +10795,7 @@ RA.wsRoom = function (url, creds, onCreds, onBack) {
   };
 };
 
-RA.BUILD = 'd8a6d46d';
+RA.BUILD = '83b168a8';
 new RA.App().boot();
 }
 function __raFallback(){

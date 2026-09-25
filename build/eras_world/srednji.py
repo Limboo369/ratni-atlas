@@ -64,6 +64,9 @@ POLITIES = [
     ('ORI', 'Orisa', ['Orissa'], (85.88, 20.47, 'Katak')),
     ('LKA', 'Sinhalsko kraljevstvo', ['Sinhalese kingdom'], (80.57, 7.16, 'Gampola')),
     ('KSH', 'Kašmir', ['Kashmir and Ladakh'], (74.80, 34.08, 'Srinagar')),
+    ('MGL', 'Mogolistan', ['Chagatai Khanate'], (80.8, 44.0, 'Almalik')),
+    ('TIB', 'Tibet', ['Tibet'], (91.1, 29.65, 'Lasa')),
+    ('BRU', 'Brunej', ['minor Hindu and Buddhist kingdoms'], (114.94, 4.89, 'Brunej')),
     ('CHN', 'Mingska Kina', [], (118.78, 32.06, 'Nanjing')),
     ('KOR', 'Koreja', [], (127.0, 37.57, 'Hanseong')),
     ('MNG', 'Mongolija', ['Great Khanate'], (102.85, 47.20, 'Karakorum')),
@@ -85,6 +88,21 @@ POLITIES = [
     ('SWA', 'Svahilski gradovi', ['Islamic city-states'], (39.51, -8.98, 'Kilva')),
     ('GZW', 'Veliki Zimbabve', ['Great Zimbabwe'], (30.93, -20.27, None)),
     ('BEN', 'Kraljevstvo Benin', ['Benin'], (5.62, 6.34, 'Benin')),
+    ('MAK', 'Makurija', ['Makkura'], (30.48, 18.22, 'Dongola')),
+    ('MRA', 'Kraljevstvo Merina', ['Merina Kingdom'], (47.52, -18.9, 'Analamanga')),
+    ('MDG', 'Plemena Madagaskara', ['Madagascar'], (44.3, -20.3, 'Sakalava')),
+    ('KOI', 'Kojsani', ['Khoisan'], (21.74, -18.75, 'Tsodilo')),
+    ('MSI', 'Mosi kraljevstva', [], (-0.37, 11.78, 'Tenkodogo')),
+    ('HAU', 'Hausa gradovi', [], (8.52, 12.0, 'Kano')),
+    ('IFE', 'Ife', [], (4.56, 7.47, 'Ile-Ife')),
+    ('BAG', 'Plemena Bagirmija', [], (16.4, 11.6, 'Masenja')),
+    ('DAR', 'Plemena Bahr el Gazala', [], (26.0, 9.5, 'Bahr el Gazal')),
+    ('KGO', 'Kraljevstvo Kongo', [], (14.24, -6.27, 'Mbanza Kongo')),
+    ('LUB', 'Luba', [], (26.9, -7.7, 'Kabongo')),
+    ('KIT', 'Kitara', [], (31.4, 0.2, 'Bigo')),
+    ('NGO', 'Plemena ekvatorijalne šume', [], (20.0, 0.0, 'Ekvatorija')),
+    ('MRV', 'Plemena Malavija', [], (34.0, -13.5, 'Maravi')),
+    ('KAZ', 'Plemena Kasaija', [], (21.5, -5.5, 'Kasai')),
     # the Americas -------------------------------------------------------------------------------------------------------
     ('AZT', 'Astečki savez', [], (-99.13, 19.43, 'Tenočtitlan')),
     ('CUS', 'Kraljevstvo Cusco', [], (-71.98, -13.53, 'Cusco')),
@@ -93,9 +111,52 @@ POLITIES = [
     ('MAY', 'Majanski gradovi', ['Maya city-states'], (-88.6, 19.4, None)),
     ('CHM', 'Carstvo Čimu', ['Chimú Empire'], (-79.08, -8.11, 'Čan Čan')),
     ('AYM', 'Ajmarska kraljevstva', ['Aymara kingdoms'], (-69.1, -20.2, None)),
+    ('CHK', 'Andske kneževine', ['Andean states and chiefdoms'], (-73.38, -13.66, 'Andavajlas')),
+    ('SHU', 'Šuari', ['Shuar'], (-78.1, -2.5, 'Šuar')),
+    ('KRB', 'Karibi', ['Caribbean hunter-gatherers'], (-62.2, 8.7, 'Barankas')),
+    ('TAI', 'Taino', ['Taino', 'Guanahatabeyes'], (-72.5, 18.5, 'Jaragva')),
+    ('CAL', 'Kaluse', ['Caloosahatchee culture'], (-81.9, 26.5, 'Kalos')),
+    ('BEO', 'Beotuci', ['Beothuk'], (-55.7, 48.9, 'Beotuk')),
+    ('INN', 'Inu', ['Innu'], (-62.0, 52.0, 'Nitasinan')),
+    ('ATH', 'Atabaskanci', ['Athabaskan'], (-122.0, 60.5, 'Dene')),
+    ('PLT', 'Plemena visoravni', ['Plateau fichers and hunter gatherers'], (-120.9, 45.65, 'Selajlo')),
+    ('PAC', 'Plemena pacifičke obale', ['North American Pacific foraging, hunting and fishing peoples'], (-124.6, 48.15, 'Ozet')),
+    ('BAZ', 'Plemena Velikog bazena', ['Desert hunter-gatherers'], (-118.55, 40.0, 'Lavlok')),
+    ('PLS', 'Plemena sjevernih ravnica', [], (-101.4, 47.3, 'Najf River')),
+    ('PLJ', 'Plemena južnih ravnica', [], (-101.9, 35.6, 'Alibejts')),
+    ('MIS', 'Misisipijska kultura', [], (-90.06, 38.66, 'Kahokija')),
+    ('IRO', 'Irokezi', [], (-76.15, 43.0, 'Onondaga')),
+    ('ALG', 'Algonkinska plemena', [], (-71.5, 42.3, 'Masačuset')),
+    ('JIS', 'Plemena jugoistoka', [], (-87.63, 33.0, 'Moundvil')),
+    ('AMG', 'Plemena gornje Amazone', [], (-64.7, -3.35, 'Tefe')),
+    ('AMD', 'Plemena donje Amazone', [], (-55.5, -4.5, 'Tapažos')),
+    ('GUA', 'Gvarani', ['Savanna hunter-gatherers'], (-56.5, -24.0, 'Gvarani')),
+    ('PAM', 'Plemena pampe', ['Pampas cultures'], (-65.2, -36.9, 'Salinas')),
+    ('MAP', 'Mapuče', ['Andean hunter-gatherers'], (-73.3, -37.2, 'Arauko')),
+    ('PAT', 'Patagonci', ['Patagonian shellfish and marine mammal hunters'], (-69.7, -52.1, 'Pali Aike')),
     # Oceania --------------------------------------------------------------------------------------------------------------
     ('TON', 'Tongansko carstvo', ['Tuʻi Tonga Empire'], (-175.15, -21.13, 'Mua')),
+    ('MAO', 'Maori', ['Maori'], (174.9, -37.0, 'Tamaki')),
+    ('TAS', 'Tasmanci', ['Tasmanian hunter-gatherers'], (145.8, -42.4, 'Kutikina')),
+    ('ARD', 'Arande', [], (131.04, -25.34, 'Uluru')),
+    ('KIM', 'Plemena Kimberlija', [], (125.5, -17.5, 'Kimberli')),
+    ('ARN', 'Plemena Arnhema', [], (132.9, -12.4, 'Ubir')),
+    ('KVI', 'Plemena Kvinslenda', [], (144.2, -15.9, 'Kvinkan')),
+    ('MUR', 'Plemena rijeke Marej', [], (143.0, -33.7, 'Mungo')),
+    ('ZAU', 'Plemena zapada', [], (117.5, -29.5, 'Vadžuk')),
+    ('PPU', 'Papuanska plemena', [], (144.33, -5.78, 'Kuk')),
 ]
+
+# continent-sized culture areas of the dataset shared between several tribal polities (nearest anchor)
+SPLIT = {
+    'Plain bison hunters': [('PLS', (-101.0, 46.5)), ('PLJ', (-100.0, 35.5))],
+    'Eastern North American hunter-gatherers': [('MIS', (-89.5, 38.5)), ('IRO', (-76.5, 43.0)), ('ALG', (-71.5, 43.0)), ('JIS', (-85.5, 33.0))],
+    'Amazon hunter-gatherers': [('AMG', (-68.0, -5.0)), ('AMD', (-53.0, -4.0))],
+    'West African cereal farmers': [('MSI', (-1.5, 12.5)), ('HAU', (8.5, 12.0)), ('IFE', (4.5, 8.0)), ('BAG', (17.0, 10.0)), ('DAR', (25.0, 12.0))],
+    'Bantu peoples': [('KGO', (15.0, -5.5)), ('LUB', (26.5, -8.0)), ('KIT', (31.0, 0.5)), ('NGO', (21.0, 0.5)), ('MRV', (34.0, -12.0)), ('KAZ', (21.5, -6.0))],
+    'Australian aboriginal hunter-gatherers': [('ARD', (133.0, -24.0)), ('KIM', (124.0, -18.0)), ('ARN', (134.0, -14.0)),
+                                               ('KVI', (144.5, -20.0)), ('MUR', (144.0, -33.5)), ('ZAU', (118.0, -29.0))],
+}
 
 PAINT = [
     # Europe (as on the Europe map's srednji table) -----------------------------------------------------------------
@@ -122,6 +183,8 @@ PAINT = [
     # the Americas: the Aztec confederation (1428) and the Inca Empire proper (post-1438) did not exist yet in 1400 --
     ('AZT', [(-99.4, 19.65), (-98.85, 19.65), (-98.85, 19.0), (-99.4, 19.0)]),
     ('CUS', [(-72.3, -13.0), (-71.5, -13.0), (-71.5, -13.8), (-72.3, -13.8)]),
+    # New Guinea (no feature in the dataset)
+    ('PPU', [(131.0, -0.3), (151.0, -0.3), (151.0, -10.8), (146.0, -10.8), (144.5, -9.6), (141.5, -9.6), (141.0, -9.1), (131.0, -9.1)]),
 ]
 
 RENAMES = {

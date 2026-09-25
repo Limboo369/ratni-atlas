@@ -409,7 +409,7 @@ def world_eras():
         t = runpy.run_path(f)
         out.append(dict(id=eid, seed=11 + i, src=t['SRC'], pol=t.get('POLITIES', []), paint=t.get('PAINT', []), ren=t.get('RENAMES', {}),
                         neutral=set(t.get('NEUTRAL', ())), unmatched=t.get('UNMATCHED', 'neutral'), near_max=t.get('NEAR_MAX', 4),
-                        tiny=t.get('TINY'), disputed=t.get('DISPUTED')))
+                        tiny=t.get('TINY'), disputed=t.get('DISPUTED'), split=t.get('SPLIT', {})))
     return out
 
 MIN_POL = 4 if WORLD else 40    # smaller polities are merged into a neighbour
@@ -465,6 +465,23 @@ def build_era(E):
             fstate[fi + 1] = 2
     own = np.where(land, fmap[arr], 0).astype(np.int32)
     state = np.where(land, fstate[arr], 0)
+    # 1b) SPLIT: one big dataset feature (a culture area spanning half a continent) shared by several polities, each
+    #     cell to the nearest anchor with noisy distance (organic borders, like the tribal fill anchors below)
+    for fname, parts in E.get('split', {}).items():
+        fis = [fi + 1 for fi, (pr, _) in enumerate(feats) if keyname(pr) == fname]
+        m = land & np.isin(arr, fis)
+        ys, xs = np.nonzero(m)
+        if not len(ys):
+            print('  split: no such feature', fname)
+            continue
+        A = np.array([gxy(lo, la) for _, (lo, la) in parts], float)
+        d = np.sqrt((xs[:, None] - A[None, :, 0]) ** 2 + (ys[:, None] - A[None, :, 1]) ** 2)
+        rs = np.random.RandomState(7)
+        for k in range(len(parts)):
+            f = ndimage.gaussian_filter(rs.randn(H, W), 9)
+            d[:, k] += (f / (f.std() + 1e-9))[ys, xs] * 9.0
+        own[ys, xs] = np.array([idx_of[k] for k, _ in parts])[np.argmin(d, axis=1)]
+        state[ys, xs] = 1
     if WORLD:  # what the table does not name (free land on the world): check it here
         cnt = np.bincount(arr[land & (state == 2)], minlength=len(feats) + 1)
         miss = sorted(((int(n), keyname(feats[fi - 1][0])) for fi, n in enumerate(cnt) if n), reverse=True)

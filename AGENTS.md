@@ -92,7 +92,10 @@ Rebuild era data: `scripts/fetch_data.sh && python3 build/eras.py`.
   flagged **`na: true`** — never `off` (`off` is the units' offense multiplier).
 - Battle royale ring: `src/02e-zone.js` (`G.zone`, `G.zoneOut(c)`).
 - Land shares (win, leader, army cap) use real area: `p.area` / `G.landTotal()`, cell weights `map.aw` (1 in Europe; on the
-  Mercator world `meta.areaWeight` ∝ cos² lat). Win/leader thresholds scale with `meta.winShare` (`G.shareK()`); regions use the defaults.
+  Mercator world `meta.areaWeight` ∝ cos² lat). Winning is always 70% of the land (`G.winShare()`, no overtime drop; the
+  winner may play on, `G.continued`); only the anti-giant rules scale with `meta.winShare` (`G.shareK()`).
+- World era tables may `SPLIT` one huge dataset culture area between several polities (nearest anchor, noisy borders);
+  polity keys must be unique per era (Europe's keys are in the same table).
 - Borders start: `RA.eraMap` + `RA.regionMap` + `RA.newGame(..., {start: 'granice'})`; the human takes a whole country
   with `RA.takeBorders`.
 - Internal names stay as they are (`RA` namespace, storage keys, room ids, file names) — renaming them breaks saves and online play.

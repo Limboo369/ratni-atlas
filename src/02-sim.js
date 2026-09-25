@@ -6,7 +6,6 @@ RA.CFG = {
   K: 3.2, // one cell ~ several "classic" pixels: scales per-cell attack costs
   NEUTRAL_SLOW: 3.0,
   WIN_SHARE: 0.7,
-  OVERTIME_MIN: 12, // after this many minutes the share needed to win drops 2%/min to 50%, then 1%/min to 40%
   ALLY_MAX: 2,
   ALLY_DUR: 3000, // 5 min
   ALLY_REQ_DUR: 200,
@@ -1074,15 +1073,10 @@ RA.Game = class Game {
   landTotal() {
     return this.map.landArea - this.falloutCount - (this.zone ? this.zone.deadLand : 0);
   }
-  /* share of the land needed to win: per map (meta.winShare / meta.overtimeMin, every share scaled by shareK());
-     Europe and regions use the defaults */
+  /* share of the real land needed to win: 70% on every map and region, all game long (Darko, 25. 9.: no lower
+     target on the world, no overtime drop — the winner may play on to 100% instead, "Nastavi igru") */
   winShare() {
-    const m = this.tick / 600, M = this.map.region ? {} : this.map.meta || {};
-    const base = RA.CFG.WIN_SHARE, ot = M.overtimeMin > 0 ? M.overtimeMin : RA.CFG.OVERTIME_MIN;
-    const over = Math.max(0, Math.floor(m - ot));
-    // -2%/min down to 50%, then -1%/min down to 40%: a long stalemate still ends
-    const fast = Math.round(Math.max(0, base - 0.5) * 50);
-    return (over <= fast ? Math.max(0.5, base - over * 0.02) : Math.max(0.4, Math.min(0.5, base) - (over - fast) * 0.01)) / this.shareK();
+    return RA.CFG.WIN_SHARE;
   }
   _history() {
     const snap = { t: this.tick, v: {} };
