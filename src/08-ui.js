@@ -1084,13 +1084,13 @@ RA.UI = class {
   ping(cp, bad) {
     if (cp) this.pingState = { x: cp.x, y: cp.y, t0: performance.now(), bad };
   }
-  /* my unit under a screen point (units are drawn as NATO symbols) */
+  /* Match the model footprint; retain a minimum touch target on phones. */
   unitAt(cp) {
     const G = this.G, me = G.me;
     if (!me || !me.units.length || !cp) return null;
     const v = this.app.terr.view();
-    const uw = RA.clamp(v.cell * 3.4, 15, 30);
-    const R = Math.max(20, uw * 0.85);
+    const uw = RA.unitSize(v.cell);
+    const R = Math.max(22, uw * 0.72);
     let best = null, bd = R * R;
     for (const u of me.units) {
       if (u.dead) continue;
@@ -1316,7 +1316,7 @@ RA.UI = class {
   }
   /* a big sheet button; t/d/r are HTML */
   btn(o) {
-    return `<button class="btn ${o.cls || ''}" ${o.attrs || ''} ${o.dis ? 'disabled' : ''}>${o.icon ? RA.icon(o.icon) : ''}<span><span class="t">${o.t}</span>${o.d ? `<br><span class="d">${o.d}</span>` : ''}</span>${o.r ? `<span class="r">${o.r}</span>` : ''}</button>`;
+    return `<button class="btn ${o.cls || ''}" ${o.attrs || ''} ${o.dis ? 'disabled' : ''}>${o.model ? RA.Models.preview(o.model, this.G.me.hex) : o.icon ? RA.icon(o.icon) : ''}<span><span class="t">${o.t}</span>${o.d ? `<br><span class="d">${o.d}</span>` : ''}</span>${o.r ? `<span class="r">${o.r}</span>` : ''}</button>`;
   }
   mini(label, attrs, cls, dis, icon) {
     return `<button class="mini ${cls || ''}" ${attrs} ${dis ? 'disabled' : ''}>${icon ? RA.icon(icon) : ''}${label}</button>`;

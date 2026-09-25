@@ -90,7 +90,7 @@ void main(){
     float isAlly = mod(floor(flags / 2.0), 2.0);
     float isTraitor = mod(floor(flags / 4.0), 2.0);
     float hi = abs(best - uHi) < 0.5 ? 1.0 : 0.0;
-    vec3 col = pal.rgb;
+    vec3 col = mix(vec3(dot(pal.rgb, vec3(0.299, 0.587, 0.114))), pal.rgb, 0.78);
     float fillA = 0.40 + 0.10 * isMe + 0.16 * hi;
     float flash = (o0 == best ? w0 * flashOf(t0.a) : 0.0) + (o1 == best ? w1 * flashOf(t1.a) : 0.0) + (o2 == best ? w2 * flashOf(t2.a) : 0.0) + (o3 == best ? w3 * flashOf(t3.a) : 0.0);
     flash = min(1.0, flash / max(0.001, bw));
