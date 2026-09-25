@@ -229,13 +229,16 @@ Object.assign(RA.UI.prototype, {
         b.push(this.mini(`Pošalji ${Math.round(this.ratio * 100)}% vojske`, `data-do="send:${O.id}"`, 'ok', me.troops < 200, 'send'));
         b.push(this.mini('Traži pomoć', `data-do="help:${O.id}"`, '', false, 'flag'));
       }
-      if (!team) {
+      if (O.lord === me.id) b.push(this.mini('Oslobodi', `data-do="brk:${O.id}"`, 'warn'));
+      else if (!team && me.lord !== O.id) {
         b.push(this.mini('Produži', `data-do="ext:${O.id}"`));
         b.push(this.mini('Raskini', `data-do="brk:${O.id}"`, 'warn'));
       }
     } else {
       const why = G.allyCount(me) >= C.ALLY_MAX ? 'limit' : G.allyCount(O) >= C.ALLY_MAX ? 'puno' : '';
-      b.push(this.mini('Vojni savez', `data-do="propA:${O.id}"`, '', !!why || G.allyReqs.some((r) => r.from === me.id && r.to === O.id), 'ally'));
+      if (!O.lord) b.push(this.mini('Vojni savez', `data-do="propA:${O.id}"`, '', !!why || !!me.lord || G.allyReqs.some((r) => r.from === me.id && r.to === O.id), 'ally'));
+      // a weak neighbour (or a beaten enemy) can become a vassal instead of being conquered
+      if (!(O.human && !O.ai) && !G.vassalErr(me, O)) b.push(this.mini('Vazal', `data-do="vas:${O.id}"`, 'ok', false, 'flag'));
     }
     if (me.trade.has(O.id)) b.push(this.mini('Prekini trgovinu', `data-do="endT:${O.id}"`, 'warn'));
     else b.push(this.mini('Trgovina', `data-do="propT:${O.id}"`, '', me.trade.size >= C.TRADE_MAX || O.trade.size >= C.TRADE_MAX || G.atWar(me, O), 'trade'));
@@ -245,10 +248,14 @@ Object.assign(RA.UI.prototype, {
     if (act === 'chat') return this.quickSheet();
     const G = this.G, me = G.me, O = G.P[id];
     if (!me || !O) return;
-    const map = { accA: ['aRes', [id, 1]], decA: ['aRes', [id, 0]], accT: ['tRes', [id, 1]], decT: ['tRes', [id, 0]], propA: ['aReq', [id]], propT: ['tReq', [id]], send: ['give', [id, this.ratio]], help: ['help', [id]], ext: ['ext', [id]], endT: ['tEnd', [id]] };
+    const map = { accA: ['aRes', [id, 1]], decA: ['aRes', [id, 0]], accT: ['tRes', [id, 1]], decT: ['tRes', [id, 0]], propA: ['aReq', [id]], propT: ['tReq', [id]], send: ['give', [id, this.ratio]], help: ['help', [id]], vas: ['vas', [id]], ext: ['ext', [id]], endT: ['tEnd', [id]] };
     if (act === 'show') {
       this.closeSheet();
       this.focusPlayer(id);
+      return;
+    }
+    if (act === 'brk' && O.lord === me.id) {
+      this.confirm(`Osloboditi vazala (${O.name})?`, 'Više ti ne plaća danak i ne bori se uz tebe. Nije izdaja.', 'Oslobodi', () => this.act('brk', [id]));
       return;
     }
     if (act === 'brk') {
@@ -292,7 +299,8 @@ Object.assign(RA.UI.prototype, {
       h += '<div class="list">';
       for (const [oid, exp] of me.allies) {
         const o = G.P[oid];
-        h += row(o, `${isFinite(exp) ? 'ističe za ' + RA.fmtTime(Math.max(0, (exp - tk) / 10)) : '<span class="tag al">tim · stalni savez</span>'} · vojska ${RA.fmt(o.troops)}${o.trade && me.trade.has(oid) ? ' · <span class="tag tr">⇄ trgovina</span>' : ''}`, this.diploButtons(o, true), true);
+        const kind = o.lord === me.id ? `<span class="tag al">vazal · danak +${RA.fmt(o.tribute || 0)}/s</span>` : me.lord === oid ? '<span class="tag al">tvoj gospodar · daješ danak</span>' : isFinite(exp) ? 'ističe za ' + RA.fmtTime(Math.max(0, (exp - tk) / 10)) : '<span class="tag al">tim · stalni savez</span>';
+        h += row(o, `${kind} · vojska ${RA.fmt(o.troops)}${o.trade && me.trade.has(oid) ? ' · <span class="tag tr">⇄ trgovina</span>' : ''}`, this.diploButtons(o, true), true);
       }
       h += '</div>';
     }
@@ -316,11 +324,12 @@ Object.assign(RA.UI.prototype, {
       .slice(0, 24);
     h += '<div class="sec-t">Države</div><div class="list">';
     for (const o of others) {
-      const tags = (me.allies.has(o.id) ? '<span class="tag al">⛨ savez</span>' : '') + (me.trade.has(o.id) ? '<span class="tag tr">⇄ trgovina</span>' : '');
+      const tags = (o.lord ? `<span class="tag al">vazal: ${RA.esc(G.P[o.lord].name)}</span>` : me.allies.has(o.id) ? '<span class="tag al">⛨ savez</span>' : '') + (me.trade.has(o.id) ? '<span class="tag tr">⇄ trgovina</span>' : '');
       const meta = `${o.ai ? this.relLabel(o.rel[me.id]) + ' · ' : ''}${nb.has(o.id) ? 'susjed · ' : ''}vojska ${RA.fmt(o.troops)}${tags}`;
       h += row(o, meta, this.diploButtons(o, false), true);
     }
     h += '</div>';
+    h += `<p class="note">Vazal: slaba država (najviše ${Math.round(C.VASSAL_TROOPS * 100)}% tvoje vojske i ${Math.round(C.VASSAL_AREA * 100)}% zemlje), susjed ili protivnik u ratu, može pristati da ti bude vazal umjesto da je osvojiš — plaća ${Math.round(C.TRIBUTE * 100)}% prihoda i bori se uz tebe; najviše ${C.VASSAL_MAX}. Ako oslabiš, oslobodi se.</p>`;
     h += `<p class="note">Najviše ${C.ALLY_MAX} vojna i ${C.TRADE_MAX} trgovinskih saveza. Izdaja saveznika = 30 s prepolovljene odbrane i loš ugled kod svih.</p>`;
     this.openSheet(h, (s) => this.bindDiplo(s), keep, () => this.diploSheet(true));
   },
@@ -566,6 +575,7 @@ Object.assign(RA.UI.prototype, {
         <li>Vojska raste sama, najbrže oko <b>42%</b> kapaciteta (zelena zona na traci).</li>
         <li><b>Mobilizacija</b> (Vojska): odmah +30% kapaciteta, ali rast stoji 45 s. Jednom u 4 minute.</li>
         <li>Zlato donose teritorija, gradovi, luke, vozovi ili karavani i trgovina.</li>
+        <li><b>Vazal</b> (meni Savezi): slabu susjednu državu možeš učiniti vazalom umjesto da je osvojiš — plaća ti danak i bori se uz tebe. Ako oslabiš, oslobodi se.</li>
         <li><b>Agresivna ekspanzija</b> (meni Savezi): svaka napadnuta i pokorena država ljuti ostale. Previše osvajanja odjednom → kompjuterske države se udružuju protiv tebe. Ljutnja vremenom opada.</li>
         <li><b>Porez</b> (klik na zlato gore ili tipka Z): viši porez daje više zlata, ali vojska sporije raste. Ušteđeno zlato donosi malu kamatu.</li></ul>
       <h4>Jedinice</h4><ul>

@@ -894,6 +894,8 @@ RA.UI = class {
         const T = r.t ? G.P[r.t] : null;
         say('info', `Napad ${T ? 'na ' + RA.esc(T.name) : 'na slobodnu zemlju'} obustavljen — vraćeno ${RA.fmt(r.back)} vojnika${T ? ' (25% izgubljeno u povlačenju)' : ''}.`);
       }
+    } else if (kind === 'vas') {
+      if (err(r)) say('info', RA.esc(r));
     } else if (kind === 'tax') {
       if (r && typeof r === 'object') say('info', `Porez: ${RA.TAX[r.tax].name}.`);
     } else if (kind === 'rcl') {

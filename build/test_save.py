@@ -108,9 +108,42 @@ async def main():
         # plays on and keeps recording into the same save
         d = await ev(PLAY, 2)
         check(d[0] > a[0] and d[2] >= c[2], f'plays on after continue: tick {d[0]}, commands {d[2]}')
+        # vassals (plan 40): a weak neighbour accepts, pays tribute, fights at your side; "Oslobodi" lets it go
+        vid = await ev('''() => { const G = window.__ra.G, me = G.me;
+          me.troops = Math.max(me.troops, 500000);
+          const nb = G.P.filter(o => o && o.alive && o !== me && !o.human && G.hasBorderWith(me, o.id) && !me.allies.has(o.id)).sort((x, y) => (x.type === 'nation' ? 0 : 1) - (y.type === 'nation' ? 0 : 1) || x.area - y.area);
+          const o = nb[0] || null;
+          if (o && o.area > me.area * RA.CFG.VASSAL_AREA) RA.CFG.VASSAL_AREA = 99; // the test's own game: land alone must not block
+          if (!o) return -1;
+          o.troops = Math.min(o.troops, me.troops * 0.05);
+          return o.id; }''')
+        check(vid > 0, f'a weak neighbour to offer vassalage to: {vid}')
+        if vid > 0:
+            await page.keyboard.press('s')
+            await page.wait_for_selector(f'[data-do="vas:{vid}"]')
+            await page.click(f'[data-do="vas:{vid}"]')
+            for _ in range(6):
+                if await ev(f'window.__ra.G.P[{vid}].lord') == await ev('window.__ra.G.me.id'):
+                    break
+                await ev(f'() => {{ window.__ra.G.P[{vid}].troops = 10; window.__ra.ui.act("vas", [{vid}]); }}')
+            v = await ev(f'''() => {{ const G = window.__ra.G, me = G.me, o = G.P[{vid}];
+              const r = [o.lord === me.id, me.allies.get(o.id) === Infinity, G.allyCount(me), G.requestAlliance(o.id, G.P.find(x => x && x.alive && x !== me && x !== o && x.type === 'nation').id)];
+              for (let i = 0; i < 120; i++) G.step();
+              r.push(Math.round(me.tributeRate || 0), Math.round(o.tribute || 0));
+              return r; }}''')
+            check(v[0] and v[1] and v[2] == 0 and 'vazal' in str(v[3]).lower() and v[4] > 0 and v[5] > 0, f'vassal: permanent, not counted, no other alliances, tribute flows {v}')
+            await page.wait_for_timeout(200)
+            await ev('window.__ra.ui.diploSheet(true)')
+            txt = await ev('document.getElementById("sheet").textContent')
+            check('vazal · danak' in txt and 'Oslobodi' in txt, 'Savezi shows the vassal with its tribute and "Oslobodi"')
+            await page.click(f'[data-do="brk:{vid}"]')
+            await page.click('#sheet [data-y]')
+            f = await ev(f'() => {{ const G = window.__ra.G, me = G.me, o = G.P[{vid}]; return [o.lord, me.allies.has(o.id), me.traitorUntil > G.tick]; }}')
+            check(f[0] == 0 and not f[1] and not f[2], f'"Oslobodi" frees the vassal without betrayal {f}')
+            await page.keyboard.press('Escape')
         await ev('window.__ra.autosave(true)')
         t2 = await ev('JSON.parse(localStorage.getItem("ra_save")).tick')
-        check(t2 == d[0], 'the save follows the continued game')
+        check(t2 == await ev('window.__ra.G.tick') and t2 >= d[0], 'the save follows the continued game')
         # leaving to the start screen keeps the save; losing drops it
         await ev('window.__ra.showStart()')
         await page.wait_for_function('!document.getElementById("resumeBtn").hidden', timeout=10_000)

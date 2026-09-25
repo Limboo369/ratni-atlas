@@ -9,6 +9,10 @@ Object.assign(RA.CFG, {
   TRADE_SHIP_SPEED: 0.9,
   TRADE_LAND_G: 30,
   HELP_WINDOW: 300,
+  VASSAL_MAX: 3,
+  VASSAL_TROOPS: 0.4, // a vassal-to-be has at most this share of your army…
+  VASSAL_AREA: 0.5, // …and of your land
+  TRIBUTE: 0.3, // share of a vassal's gold income that goes to its lord
 });
 
 (function (P) {
@@ -190,6 +194,8 @@ Object.assign(RA.CFG, {
         if (!p) continue;
         p.tradeRate = (p.tradeRate || 0) * 0.5 + ((p.tradeAcc || 0) / 10) * 0.5;
         p.tradeAcc = 0;
+        p.tributeRate = (p.tributeRate || 0) * 0.5 + ((p.tributeIn || 0) / 10) * 0.5; // a lord's tribute, per second
+        p.tributeIn = 0;
       }
     }
     if (tk % 30 === 0) for (const h of this.P) if (h && h.human && h.alive && !h.ai) h.nbCache = RA.AI.scan(this, h).nb;
@@ -248,6 +254,81 @@ Object.assign(RA.CFG, {
     return enemy;
   };
   // called when an attack starts: allies of the victim get ready to help; allies of the attacker may join
+  /* ---------------- vassals (plan 40) ----------------
+     A weak computer state can become your vassal instead of being conquered: a permanent alliance (not counted in the
+     limit) — it fights at your side and pays tribute (TRIBUTE of its gold income). It breaks free when its lord gets
+     weaker than it, or when the lord releases it (Raskini). Humans are never vassals. */
+  P.vassalErr = function (a, b) {
+    const C = RA.CFG;
+    if (!a || !b || !a.alive || !b.alive || a === b) return 'Nevažeći igrač.';
+    if (b.human && !b.ai) return 'Igrač ne može biti vazal.';
+    if (b.lord === a.id) return `${b.name} ti je već vazal.`;
+    if (b.lord) return `${b.name} je već vazal (${this.P[b.lord].name}).`;
+    if (a.lord) return 'Vazal ne može imati vazale.';
+    if (this.vassalsOf(b).length) return `${b.name} ima svoje vazale.`;
+    if (this.vassalsOf(a).length >= C.VASSAL_MAX) return `Najviše ${C.VASSAL_MAX} vazala.`;
+    if (this.sameTeam(a, b)) return 'To je tvoj tim.';
+    if (!this.atWar(a, b) && !this.hasBorderWith(a, b.id)) return `${b.name} ti nije susjed.`;
+    if (b.troops > a.troops * C.VASSAL_TROOPS || b.area > a.area * C.VASSAL_AREA) return `${b.name} je prejak/a za vazala: treba imati najviše ${Math.round(C.VASSAL_TROOPS * 100)}% tvoje vojske i ${Math.round(C.VASSAL_AREA * 100)}% zemlje.`;
+    return '';
+  };
+  P.vassalsOf = function (p) {
+    return this.P.filter((o) => o && o.alive && o.lord === p.id);
+  };
+  P.offerVassal = function (aid, bid) {
+    const a = this.P[aid], b = this.P[bid];
+    const err = this.vassalErr(a, b);
+    if (err) return err;
+    // the weaker and the more beaten, the likelier it bows; a state at war with you gives in easier
+    const ratio = b.troops / Math.max(1, a.troops);
+    const chance = RA.clamp((RA.CFG.VASSAL_TROOPS + 0.05 - ratio) * 2.5 + (this.atWar(a, b) ? 0.3 : 0) + b.rel[aid] / 200, 0, 0.95);
+    if (b.type === 'bot' || this.rng() < chance) {
+      this.makeVassal(a, b);
+      return true;
+    }
+    b.rel[aid] = Math.max(-100, b.rel[aid] - 10);
+    this.tell(a, 'info', `${b.name} odbija da ti bude vazal. Oslabi je još pa pokušaj ponovo.`, bid, b.capital);
+    return 'declined';
+  };
+  P.makeVassal = function (a, b) {
+    // the vassal gives up its other alliances and its wars with the lord
+    for (const oid of [...b.allies.keys()]) if (oid !== a.id) this.breakAlliance(b.id, oid, false);
+    for (const att of this.attacks) {
+      if (att.done) continue;
+      if ((att.a === a.id && att.t === b.id) || (att.a === b.id && att.t === a.id)) this._endAttack(att, 0);
+    }
+    b.lord = a.id;
+    a.allies.set(b.id, Infinity);
+    b.allies.set(a.id, Infinity);
+    b.rel[a.id] = Math.max(b.rel[a.id], 20);
+    this.allyReqs = this.allyReqs.filter((r) => r.from !== b.id && r.to !== b.id);
+    this.addAE(a, RA.CFG.AE_WAR);
+    this.news('vassal', a.id, b.id);
+    this.alliancesChanged = true;
+    this.tell(a, 'good', `${b.name} je sada tvoj vazal: plaća danak i bori se uz tebe.`, b.id, b.capital);
+  };
+  P.freeVassal = function (b, why) {
+    const a = this.P[b.lord];
+    b.lord = 0;
+    if (!a) return;
+    a.allies.delete(b.id);
+    b.allies.delete(a.id);
+    this.alliancesChanged = true;
+    if (why === 'rebel') {
+      b.rel[a.id] = Math.min(b.rel[a.id], -30);
+      this.news('rebel', b.id, a.id);
+      this.tell(a, 'bad', `${b.name} se oslobodio/la tvoje vlasti — više nisi dovoljno jak.`, b.id, b.capital);
+    } else if (why === 'free') this.tell(a, 'info', `${b.name} više nije tvoj vazal.`, b.id, b.capital);
+  };
+  P._vassals = function () {
+    for (const b of this.P) {
+      if (!b || !b.lord || !b.alive) continue;
+      const a = this.P[b.lord];
+      if (!a || !a.alive) this.freeVassal(b);
+      else if (a.troops < b.troops * 1.1 && b.area * 1.2 > a.area * RA.CFG.VASSAL_AREA) this.freeVassal(b, 'rebel');
+    }
+  };
+
   P._callAllies = function (A, T) {
     const tk = this.tick;
     for (const lid of T.allies.keys()) {

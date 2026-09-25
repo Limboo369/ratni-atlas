@@ -135,7 +135,7 @@ RA.Game = class Game {
       cityT: 0, cityG: 0, nCity: [0, 0, 0, 0],
       n: { barracks: 0, fort: 0, port: 0, silo: 0, sam: 0, airport: 0, city: 0, factory: 0 },
       built: { barracks: 0, fort: 0, port: 0, silo: 0, sam: 0, airport: 0, city: 0, factory: 0 },
-      forts: [], bcities: [], units: [], portsOff: 0, mobReady: 0, growPause: 0, crisisUntil: 0, tax: 2, interest: 0, ae: 0, aeWarn: false, capCity: -1,
+      forts: [], bcities: [], units: [], portsOff: 0, mobReady: 0, growPause: 0, crisisUntil: 0, tax: 2, interest: 0, ae: 0, aeWarn: false, lord: 0, tribute: 0, capCity: -1,
       goldRate: 0, growRate: 0, trade: new Set(), nbCache: null, tradeRate: 0, tradeLand: 0, allies: new Map(), traitorUntil: -1, rel: new Float32Array(256), boats: 0,
       lastAttackedBy: 0, attackedAt: -9999, changed: true, peak: 0, capital: -1,
       stats: { conquered: 0, citiesTaken: 0, nukes: 0, kills: 0 }, deathTick: -1, labelCell: -1, ai: null,
@@ -155,7 +155,7 @@ RA.Game = class Game {
   /* military alliances that count against the limit (a co-op team partner does not) */
   allyCount(p) {
     let n = 0;
-    for (const id of p.allies.keys()) if (!(p.team && this.P[id].team === p.team)) n++;
+    for (const id of p.allies.keys()) if (!(p.team && this.P[id].team === p.team) && p.lord !== id && this.P[id].lord !== p.id) n++; // vassals don't count
     return n;
   }
   sameTeam(a, b) {
@@ -316,8 +316,16 @@ RA.Game = class Game {
     // the computer spends as it goes, and interest made its wars drag on
     const it = p.human && p.gold > 0 ? Math.min(p.gold * RA.CFG.INTEREST, g * 0.25) : 0;
     p.interest = it * 10;
+    if (p.lord) {
+      // a vassal's tribute
+      const t = g * RA.CFG.TRIBUTE, L = this.P[p.lord];
+      g -= t;
+      L.gold += t;
+      L.tributeIn = (L.tributeIn || 0) + t;
+      p.tribute = t * 10;
+    }
     p.gold += g + it;
-    p.goldRate = (g + it) * 10 + (p.trainRate || 0) + (p.tradeRate || 0);
+    p.goldRate = (g + it) * 10 + (p.trainRate || 0) + (p.tradeRate || 0) + (p.tributeRate || 0);
     p.growRate = add * 10;
   }
 
@@ -938,6 +946,7 @@ RA.Game = class Game {
     const a = this.P[fromId], b = this.P[toId];
     if (!a || !b || !a.alive || !b.alive || a === b) return 'Nevažeći igrač.';
     if (a.allies.has(toId)) return 'Već ste saveznici.';
+    if (a.lord || b.lord) return a.lord ? 'Vazal ne sklapa saveze.' : `${b.name} je vazal (${this.P[b.lord].name}) — ne sklapa saveze.`;
     if (this.allyCount(a) >= RA.CFG.ALLY_MAX) return `Možeš imati najviše ${RA.CFG.ALLY_MAX} saveza.`;
     if (this.allyCount(b) >= RA.CFG.ALLY_MAX) return `${b.name} već ima ${RA.CFG.ALLY_MAX} saveza.`;
     if (this.allyReqs.some((r) => r.from === fromId && r.to === toId)) return 'Zahtjev je već poslan.';
@@ -991,6 +1000,8 @@ RA.Game = class Game {
   breakAlliance(aid, bid, betrayal) {
     const a = this.P[aid], b = this.P[bid];
     if (!a.allies.has(bid) || this.sameTeam(a, b)) return;
+    if (b.lord === aid) return this.freeVassal(b, 'free'); // the lord lets its vassal go (no betrayal)
+    if (a.lord === bid) return this.freeVassal(a, 'rebel');
     a.allies.delete(bid);
     b.allies.delete(aid);
     this.alliancesChanged = true;
@@ -1006,7 +1017,7 @@ RA.Game = class Game {
   extendAlliance(aid, bid) {
     const a = this.P[aid], b = this.P[bid];
     if (!a.allies.has(bid)) return 'Niste saveznici.';
-    if (this.sameTeam(a, b)) return true;
+    if (this.sameTeam(a, b) || a.lord === bid || b.lord === aid) return true;
     const ok = !b.ai ? true : RA.AI.considerExtension(this, b, a);
     if (!ok) return `${b.name} ne želi produžiti savez.`;
     const exp = this.tick + RA.CFG.ALLY_DUR;
@@ -1133,6 +1144,7 @@ RA.Game = class Game {
     }
     if (this.tick % 10 === 0) {
       this._expireAlliances();
+      this._vassals();
       this._decayFallout();
     }
     // enclave check: one player per tick
@@ -1168,6 +1180,8 @@ RA.Game = class Game {
     p.troops = 0;
     for (const oid of p.allies.keys()) this.P[oid].allies.delete(p.id);
     p.allies.clear();
+    p.lord = 0;
+    for (const v of this.P) if (v && v.lord === p.id) v.lord = 0; // its vassals are free
     this.alliancesChanged = true;
     for (const att of this.attacks) if (att.a === p.id) att.done = true;
     for (const b of this.boats) if (b.owner === p.id) b.done = true;

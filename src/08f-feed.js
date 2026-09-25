@@ -70,6 +70,8 @@ Object.assign(RA.UI.prototype, {
       break: `${A} izdao saveznika ${B}`,
       allyEnd: `Istekao savez: ${A} i ${B}`,
       trade: `${A} i ${B} trguju`,
+      vassal: `${B} postaje vazal: ${A}`,
+      rebel: `${A} se oslobađa vlasti: ${B}`,
     }[n.t];
     if (!txt) return;
     this.logLine(n.t, txt, n.tick, focus, mine);
