@@ -90,6 +90,8 @@ async def main():
         t0 = time.time()
         await A.click('#mapSeg button[data-v="svijet"]')
         await A.wait_for_function('window.__ra.map.id === "svijet" && document.getElementById("loading").hidden')
+        await A.wait_for_function('document.getElementById("startScreen").classList.contains("command-world")')
+        check(await A.evaluate('() => { const c=document.getElementById("atlasCanvas"); return c.width > c.height && document.getElementById("atlasRegion").textContent === "SVIJET"; }'), 'launcher atlas follows the world map geometry')
         print(f'world loaded in {time.time() - t0:.1f} s')
         st = await A.evaluate('''() => ({ regs: [...document.querySelectorAll('#regSeg button')].map(b => b.dataset.v + ':' + b.textContent),
             aria: document.getElementById('map').getAttribute('aria-label'), tag: document.querySelector('#startScreen .tagline').textContent,
@@ -107,9 +109,11 @@ async def main():
         await A.click('#eraSeg button[data-v="danas"]')
 
         # 2. a game on the whole world (borders start)
+        await A.click('#configBtn')
         await A.click('#startSeg button[data-v="granice"]')
         await A.click('#gmSeg button[data-v="klasik"]')
         await A.click('#regSeg button[data-v="svijet"]')
+        await A.click('#configDone')
         await A.click('#goBtn')
         await A.wait_for_timeout(900)
         info = await A.evaluate('() => { const G = window.__ra.G; return { map: G.map.id, nations: G.P.filter(p => p && p.type === "nation").length, land: G.map.landCount, players: G.P.length - 1 }; }')
@@ -165,6 +169,7 @@ async def main():
         await G2.fill('#nameIn', 'Marko')
         await H.wait_for_selector('#mapSeg button[data-v="svijet"]:not([hidden])', timeout=10000)
         await H.wait_for_function('window.__ra.net.status === "ready"', timeout=10000)
+        await H.click('#onlineToggle')
         await H.click('[data-on="host"]')
         await H.wait_for_function('window.__ra.net.code', timeout=10000)
         await H.click('#lEraSeg button[data-v="danas"]')
@@ -172,6 +177,7 @@ async def main():
         await H.click('#lMapSeg button[data-v="svijet"]')
         code = await H.evaluate('() => window.__ra.net.code')
         await G2.wait_for_function('window.__ra.net.status === "ready"', timeout=10000)
+        await G2.click('#onlineToggle')
         await G2.fill('#codeIn', code)
         await G2.click('[data-on="code"]')
         await G2.wait_for_selector('#lobbyScreen:not([hidden])', timeout=10000)

@@ -400,6 +400,12 @@ RA.App = class {
     this.last = now;
     const G = this.G;
     const net = this.net;
+    // The opaque launcher has its own atlas. Do not run or draw the hidden demo
+    // behind it; the real single-player / online loop below is unchanged.
+    if (this.attractMode && !document.getElementById('startScreen').hidden) {
+      this.acc = 0;
+      return;
+    }
     if (G && G.online && net && net.inGame) {
       // online: lockstep — the host is the clock, guests replay up to the host's tick
       const t0 = performance.now();

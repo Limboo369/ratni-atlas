@@ -144,7 +144,7 @@ Object.assign(RA.UI.prototype, {
     if (!net.code) {
       txt = 'Napravi igru i pošalji link prijatelju. Svaka igra ima svoj link: preko njega se prijatelj priključuje, a ti se vraćaš u igru ako zatvoriš stranicu.';
       h = `<button class="btn" data-on="host">${RA.icon('flag')}<span><span class="t">Napravi igru</span><br><span class="d">Ti si domaćin: biraš kartu i način igre</span></span></button>`
-        + `<div class="code-row"><input id="codeIn" class="sel" maxlength="60" placeholder="kod ili link igre" autocomplete="off" autocapitalize="off"><button class="btn good" data-on="code">Uđi</button></div>`;
+        + `<div class="code-row"><input id="codeIn" aria-label="Kod ili link igre" class="sel" maxlength="60" placeholder="kod ili link igre" autocomplete="off" autocapitalize="off"><button class="btn good" data-on="code">Uđi</button></div>`;
     } else if (net.status !== 'ready') {
       txt = 'Povezujem se s igrom…';
     } else if (!net.role) {
@@ -178,7 +178,7 @@ Object.assign(RA.UI.prototype, {
       ({ h, txt } = r);
       if (net.code && !net.role && net.status === 'ready' && performance.now() - net.arrivedAt <= 2600) setTimeout(() => net.changed(), 700);
     } else if (net.status === 'unavailable') {
-      txt = 'Online igra radi na war.deovilab.com: otvori stranicu, prijatelj otvori istu, pa se ovdje pojavi soba.';
+      txt = 'Online igru pokreni na war.deovilab.com. Napravi igru i pošalji njen link prijatelju.';
     } else if (net.status !== 'ready') {
       txt = 'Povezujem se s online serverom…';
     } else {
@@ -200,6 +200,10 @@ Object.assign(RA.UI.prototype, {
     }
     if (this._noteH !== txt) note.innerHTML = this._noteH = txt;
     if (this._onlineH !== h) btns.innerHTML = this._onlineH = h;
+    if (net.code && !net.role) {
+      $('onlineBox').hidden = false;
+      $('onlineToggle').setAttribute('aria-expanded', 'true');
+    }
     if (net.role === 'guest') net.pollStart();
     if (net.phase === 'lobby' && !$('lobbyScreen').hidden) this.renderLobby();
   },

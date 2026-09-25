@@ -184,6 +184,7 @@ RA.UI = class {
     ro.observe($('dock'));
     ro.observe($('hud'));
     ro.observe($('status'));
+    this.command = new RA.CommandScreen(this);
   }
   /* start screen buttons after the lobby changed the settings (and the map shown behind it) */
   syncStart() {
@@ -217,6 +218,7 @@ RA.UI = class {
       ? 'Stvarne granice: svaka država kreće sa svojom teritorijom iz tog doba — izabereš jednu i vodiš je. '
       : 'Od prijestolnice: države kreću od malog kruga oko glavnog grada, a ostalo je slobodna zemlja. ')
       + (s.gm === 'br' ? 'Battle royale: radioaktivna zona se sužava prema nasumičnoj tački — sve izvan kruga propada.' : '');
+    if (this.command) this.command.refresh();
   }
   regionCount(m, reg, era, start) {
     const key = `${m.id}|${reg}|${era}|${start}`;
@@ -294,6 +296,7 @@ RA.UI = class {
     this.$('aStrike').innerHTML = `${RA.icon(E.strikeIcon)}<span>${RA.esc(E.strikeTab)}</span>`;
   }
   _save() {
+    if (this.command) this.command.refresh();
     try {
       localStorage.setItem('ra_settings', JSON.stringify(this.settings));
     } catch (e) {}
