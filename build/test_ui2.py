@@ -205,7 +205,8 @@ async def main():
             if has:
                 await ev(f'() => {{ const G = window.__ra.G; G.me.troops = Math.max(G.me.troops, 300000); G.P[{nb["id"]}].troops = 20000; }}')
                 await ev('() => { window.__ra.ui.ratio = 1; }')
-                await page.click('#attBar .achip.back')
+                # the chip of this neighbour (other states at war with me may have taken land too)
+                await ev(f'() => {{ const el = [...document.querySelectorAll("#attBar .achip.back")].find(e => e._it && e._it.who === {nb["id"]}); (el || document.querySelector("#attBar .achip.back")).click(); }}')
                 await page.wait_for_timeout(300)
                 back = await ev(f'''() => {{ const G = window.__ra.G, me = G.me, T = G.P[{nb["id"]}], B = window.__before2;
                     const att = G.attacks.find(a => !a.done && a.only && a.a === me.id); if (!att) return {{ err: 'no reclaim attack' }};
@@ -245,6 +246,8 @@ async def main():
                     const r = a.lmap.getContainer().getBoundingClientRect();
                     return [r.left + p0.x, r.top + p0.y, r.left + p1.x, r.top + p1.y]; }}''')
                 await page.wait_for_timeout(300)
+                # panels over the map (news, log, chips) would catch the mouse: out of the way for this check
+                await ev('() => { for (const id of ["feed", "dlog", "attBar", "toasts", "board"]) document.getElementById(id).style.visibility = "hidden"; }')
                 n0 = await ev('() => window.__ra.G.attacks.filter(a => !a.done && a.a === window.__ra.G.me.id && a.corr).length')
                 await page.mouse.move(pts[0], pts[1])
                 await page.mouse.down(button='right')
@@ -264,6 +267,7 @@ async def main():
                 await page.mouse.click(pts[2], pts[3], button='right')
                 await page.wait_for_timeout(400)
                 check(await ev('() => !document.getElementById("sheetWrap").hidden'), 'right click (no drag) opens the spot menu')
+                await ev('() => { for (const id of ["feed", "dlog", "attBar", "toasts", "board"]) document.getElementById(id).style.visibility = ""; }')
                 await ev('window.__ra.ui.closeSheet()')
             await ev('() => { window.__ra.paused = false; }')
 
@@ -370,6 +374,14 @@ async def main():
         await ev('window.__ra.ui.closeSheet()')
         await page.click('#menuBtn')
         await page.wait_for_timeout(300)
+        # sound: the audio context started with the first click, the era's music pad plays; the menu switches work
+        au = await ev('() => { const A = window.__ra.ui.audio; return [!!A.ctx, !!A.pad, A.era, A.s.sfx, A.s.music]; }')
+        await page.click('[data-m="music"]')
+        await page.wait_for_timeout(200)
+        off = await ev('() => window.__ra.ui.audio.s.music')
+        await page.click('[data-m="music"]')
+        await page.wait_for_timeout(200)
+        check(au[0] and au[1] and au[2] == 'danas' and off is False and await ev('() => window.__ra.ui.audio.s.music'), f'sound starts on the first click, era music, switch in the menu {au}')
         await page.click('[data-m="how"]')
         await page.wait_for_timeout(300)
         check(await ev('() => !!document.querySelector("#sheet .howto")'), 'how-to opens from the in-game menu')

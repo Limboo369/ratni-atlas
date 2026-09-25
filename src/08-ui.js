@@ -218,6 +218,7 @@ RA.UI = class {
     ro.observe($('status'));
     this.command = new RA.CommandScreen(this);
     this.account = new RA.Account(this);
+    this.audio = new RA.Audio();
   }
   /* start screen buttons after the lobby changed the settings (and the map shown behind it) */
   syncStart() {
@@ -525,6 +526,11 @@ RA.UI = class {
     this.feedUpdate(now);
     if (G.fx.length) {
       for (const f of G.fx) if (!f.pid || (G.me && f.pid === G.me.id)) this.fxList.push(Object.assign({ t0: now }, f));
+      if (!this.app.attractMode) for (const f of G.fx) {
+        if (f.kind === 'nuke') this.audio.play('nuke', 400);
+        else if (f.kind === 'conv' || f.kind === 'emp') this.audio.play('boom', 250);
+        else if (f.kind === 'intercept') this.audio.play('rocket', 300);
+      }
       G.fx.length = 0;
     }
     if (this.fxList.length) this.fxList = this.fxList.filter((f) => now - f.t0 < 3200);
@@ -674,6 +680,13 @@ RA.UI = class {
       this.app.gameOver(e.kind);
       return;
     }
+    // sounds for what happens to me
+    const A = this.audio, t = e.text || '';
+    if (/leti na tebe|udar na tvoju/.test(t)) A.play(/☢/.test(t) ? 'siren' : 'rocket', 1500);
+    else if (/te napada/.test(t)) A.play('alarm', 4000);
+    else if (/^Osvojen grad/.test(t)) A.play('city', 600);
+    else if (/^Izgubljen grad|Pala je tvoja prijestolnica/.test(t)) A.play('loss', 800);
+    else if (e.kind === 'offer' || e.kind === 'ally') A.play('msg', 1000);
     if (e.kind === 'offer') return; // shown as an offer toast with buttons
     this.toast(e.kind, RA.esc(e.text), { cell: e.cell, ms: e.kind === 'bad' ? 5200 : 4200 });
     if (e.kind === 'bad' && navigator.vibrate) {

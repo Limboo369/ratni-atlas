@@ -31,6 +31,7 @@ Object.assign(RA.UI.prototype, {
       const m = G.chat[this.chatSeen];
       if (!friend(m.pid)) continue;
       this.logLine('chat', `${this.feedName(m.pid)}: ${RA.esc(RA.QUICK_MSGS[m.m])}`, m.tick, m.pid, true);
+      if (m.pid !== me.id) this.audio.play('msg', 500);
       if (m.pid !== me.id) this.toast('ally', `${this.feedName(m.pid)}: ${RA.esc(RA.QUICK_MSGS[m.m])}`, { ms: 5000 });
     }
     if (this.pingSeen > G.pings.length) this.pingSeen = 0;
