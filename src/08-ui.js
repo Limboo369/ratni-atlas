@@ -872,7 +872,7 @@ RA.UI = class {
     const U = RA.UNIT, S = RA.STRUCT;
     const T = [
       [1, G.borders
-        ? (peace > 0 ? `Mirno doba (${Math.round(peace)} s): niko ne smije napadati države. Gradi, sklapaj saveze (dugme „Savezi”) i spremi vojsku uz granicu.` : 'Dodirni dio susjedne države koji hoćeš: vojska ide s najbliže granice pravo tamo (strelica) i osvaja samo taj dio. Za napad na cijeloj granici: dugi pritisak → „Napadni cijelu granicu”.')
+        ? (peace > 0 ? `Mirno doba (${Math.round(peace)} s): niko ne smije napadati države. Gradi, sklapaj saveze (dugme „Savezi”) i spremi vojsku uz granicu.` : 'Klikni dio susjedne države koji hoćeš: vojska ide s najbliže granice pravo tamo i osvaja samo taj dio. Na računaru desnim dugmetom povuci strelicu za tačan pravac. Napad na cijeloj granici: desni klik / dugi pritisak → „Napadni cijelu granicu”.')
         : peace > 0
         ? `Mirno doba (${Math.round(peace)} s): niko ne smije napadati države. Zauzmi što više slobodne (sive) zemlje i sklopi vojne i trgovinske saveze (dugme „Savezi”).`
         : 'Dodirni sivo, slobodno kopno da se širiš. Front kreće prema mjestu koje dodirneš.'],
@@ -1111,6 +1111,29 @@ RA.UI = class {
       this.act('mv', [u.id, cc]);
       this.setMode(null);
     }
+  }
+  /* desktop arrow (right-drag): from my land to a state's land = a directed attack along that line */
+  arrowDrag(ll0, ll1) {
+    const G = this.G, me = G && G.me;
+    if (!me || G.state !== 'play') return (this.arrow = null);
+    const s = this.cellFromLatLng(ll0), e = this.cellFromLatLng(ll1);
+    const T = e >= 0 ? G.P[G.owner[e]] : null;
+    const why = s < 0 || G.owner[s] !== me.id ? 'Strelicu povuci od svoje teritorije.'
+      : !T || T === me ? 'Povuci do tuđe države.'
+      : G.isFriendly(me, T) ? `${T.name} ti je saveznik.`
+      : G.tick < G.peaceUntil ? `Mirno doba još ${G.peaceLeft()} s.`
+      : !G.hasBorderWith(me, T.id) ? `Nemaš kopnenu granicu s tom državom (${T.name}).` : '';
+    this.arrow = { s, e, ok: !why, why, name: T && T !== me ? T.name : '' };
+  }
+  arrowDrop() {
+    const a = this.arrow;
+    this.arrow = null;
+    if (!a) return;
+    if (!a.ok) {
+      this.toast('info', RA.esc(a.why));
+      return;
+    }
+    this.act('atk', [a.e, this.ratio, 1, a.s]);
   }
   onLong(ll, cp) {
     const G = this.G;

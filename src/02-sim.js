@@ -315,7 +315,7 @@ RA.Game = class Game {
   /* dir: a directed attack (a player's tap on a state): it starts from the own border cell nearest to the focus and
      only takes a corridor from there to the focus plus a disc around it (width grows with the troops sent), then the
      rest of the army comes home. Without dir the whole common border is the front (the AI, "cijela granica"). */
-  launchAttack(aid, tid, troops, focusCell, sourceCell, dir) {
+  launchAttack(aid, tid, troops, focusCell, sourceCell, dir, from) {
     const A = this.P[aid];
     if (!A || !A.alive || aid === tid) return null;
     const T = tid ? this.P[tid] : null;
@@ -342,7 +342,7 @@ RA.Game = class Game {
     }
     // a directed attack: its own corridor (never merged: two taps are two thrusts)
     let corr = null;
-    if (dir && T && sourceCell < 0 && focusCell >= 0) corr = this._corridor(A, T, focusCell, troops);
+    if (dir && T && sourceCell < 0 && focusCell >= 0) corr = this._corridor(A, T, focusCell, troops, from);
     // merge with existing land attack on same target
     if (sourceCell < 0 && !corr) {
       for (const o of this.attacks) {
@@ -378,21 +378,31 @@ RA.Game = class Game {
     return att;
   }
 
-  /* the corridor of a directed attack: from the own border cell (next to T) nearest to the focus to the focus */
-  _corridor(A, T, focus, troops) {
+  /* the corridor of a directed attack: from the own border cell (next to T) nearest to the focus to the focus;
+     from = an own cell the player drew the arrow from (desktop right-drag): the corridor starts there if it crosses
+     the common border, else the nearest border cell is used */
+  _corridor(A, T, focus, troops, from) {
     const own = this.owner, W = this.map.W, N = this.map.N, cells = A.cells;
     const fx = focus % W, fy = (focus / W) | 0;
+    const dens = Math.max(1, T.troops / Math.max(1, T.tiles));
+    const r = RA.clamp(Math.sqrt(troops / dens) * 0.45, 3, 14);
+    const edge = (c) => {
+      const x = c % W;
+      return (x > 0 && own[c - 1] === T.id) || (x < W - 1 && own[c + 1] === T.id) || (c >= W && own[c - W] === T.id) || (c < N - W && own[c + W] === T.id);
+    };
+    if (from >= 0 && own[from] === A.id) {
+      const k = { sx: from % W, sy: (from / W) | 0, fx, fy, r2: r * r, e2: r * r * 2.56 };
+      for (let i = 0; i < A.tiles; i++) if (edge(cells[i]) && this._inCorr(k, cells[i])) return k;
+    }
     let best = -1, bd = Infinity;
     for (let i = 0; i < A.tiles; i++) {
-      const c = cells[i], x = c % W;
-      if (!((x > 0 && own[c - 1] === T.id) || (x < W - 1 && own[c + 1] === T.id) || (c >= W && own[c - W] === T.id) || (c < N - W && own[c + W] === T.id))) continue;
-      const dx = x - fx, dy = ((c / W) | 0) - fy, d = dx * dx + dy * dy;
+      const c = cells[i];
+      if (!edge(c)) continue;
+      const dx = (c % W) - fx, dy = ((c / W) | 0) - fy, d = dx * dx + dy * dy;
       if (d < bd || (d === bd && c < best)) (bd = d), (best = c);
     }
     if (best < 0) return null;
     // width: how many of T's cells the troops are worth (T's army spread over its land)
-    const dens = Math.max(1, T.troops / Math.max(1, T.tiles));
-    const r = RA.clamp(Math.sqrt(troops / dens) * 0.45, 3, 14);
     return { sx: best % W, sy: (best / W) | 0, fx, fy, r2: r * r, e2: r * r * 2.56 };
   }
   /* is a cell inside a directed attack's corridor (segment start-focus within r, or within 1.6 r of the focus) */
@@ -1172,7 +1182,7 @@ RA.Game = class Game {
   }
 
   /* ---------------- player commands ---------------- */
-  cmdAttack(pid, c, ratio, dir) {
+  cmdAttack(pid, c, ratio, dir, from) {
     const p = this.P[pid];
     if (!p || !p.alive) return { err: 'Nisi u igri.' };
     if (c < 0 || !this.map.land[c]) return { err: 'To je voda. Dodirni kopno ili obalu.' };
@@ -1185,7 +1195,7 @@ RA.Game = class Game {
     const troops = p.troops * ratio;
     if (troops < 1) return { err: 'Nemaš dovoljno vojske.' };
     if (this.hasBorderWith(p, tid)) {
-      const a = this.launchAttack(pid, tid, troops, c, -1, !!dir);
+      const a = this.launchAttack(pid, tid, troops, c, -1, !!dir, from);
       return a ? { ok: 'land', att: a } : { err: 'Napad nije moguć.' };
     }
     if (this.map.coast[c]) {

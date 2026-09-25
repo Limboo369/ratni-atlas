@@ -36,6 +36,7 @@ jobs:
       - run: pip install -q playwright && python3 -m playwright install --with-deps chromium >/dev/null
       - run: python3 build/make.py
       - run: python3 build/test_ui2.py phone balkan || python3 build/test_ui2.py phone balkan  # 1 ponovni pokušaj (spori CI)
+      - run: python3 build/test_ui2.py desktop balkan || python3 build/test_ui2.py desktop balkan  # računar je glavna platforma
       - run: python3 build/test_mp.py
       - run: python3 build/test_world.py
       - run: node build/test_api.js

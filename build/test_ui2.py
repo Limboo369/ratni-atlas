@@ -157,13 +157,50 @@ async def main():
                 while (!att.done && n < 4000) {{ G.step(); n++; }}
                 let taken = 0, outside = 0;
                 for (let c = 0; c < G.map.N; c++) if (before[c] === T.id && G.owner[c] === me.id) {{ taken++; if (!G._inCorr(k, c)) outside++; }}
-                const all = G.exec(me.id, 'atk', [tgt, 0.2, 0]);
-                return {{ taken, outside, tiles0, alive: T.alive, done: att.done, ticks: n, r: Math.round(Math.sqrt(k.r2)), whole: !!(all && all.att && !all.att.corr) }}; }}''')
+                // an arrow drawn from one of my cells: the corridor starts there
+                let from = -1; for (let i = 0; i < me.tiles && from < 0; i++) {{ const c = me.cells[i], x = c % W;
+                    if ((x > 0 && G.owner[c - 1] === T.id) || (x < W - 1 && G.owner[c + 1] === T.id)) from = c; }}
+                const tgt2 = G.owner[tgt] === T.id ? tgt : T.cells[T.tiles >> 1]; // the first thrust may have taken tgt
+                const fr = G.exec(me.id, 'atk', [tgt2, 0.1, 1, from]);
+                const fromOk = !!(fr && fr.att && fr.att.corr && fr.att.corr.sx === from % W && fr.att.corr.sy === ((from / W) | 0));
+                const all = G.exec(me.id, 'atk', [tgt2, 0.2, 0]);
+                return {{ taken, outside, tiles0, alive: T.alive, done: att.done, ticks: n, r: Math.round(Math.sqrt(k.r2)), whole: !!(all && all.att && !all.att.corr), fromOk }}; }}''')
             print('directed attack', d)
             check(d.get('taken', 0) > 0 and d.get('outside', 1) == 0, f'directed attack takes only its corridor ({d})')
             check(d.get('done') and d.get('alive') and d.get('taken', 0) < d.get('tiles0', 0), 'the directed attack ends by itself; the rest of the state stays')
             check(d.get('whole'), '"Napadni cijelu granicu" is a whole-border attack')
+            check(d.get('fromOk'), 'an arrow drawn from my own cell starts the corridor there')
             await ev('() => { const G = window.__ra.G; for (const a of G.attacks) if (!a.done && a.a === G.me.id) G.retreat(a.id); }')
+            if MODE != 'phone':
+                # desktop: right button + drag from my land to the neighbour draws the arrow and launches the directed attack
+                pts = await ev(f'''() => {{ const a = window.__ra, G = a.G, me = G.me, T = G.P[{nb["id"]}], W = G.map.W;
+                    const tgt = T.capital >= 0 && G.owner[T.capital] === T.id ? T.capital : T.cells[T.tiles >> 1];
+                    let from = -1, bd = 1e18; const tx = tgt % W, ty = (tgt / W) | 0;
+                    for (let i = 0; i < me.tiles; i++) {{ const c = me.cells[i], dx = c % W - tx, dy = ((c / W) | 0) - ty, d = dx * dx + dy * dy; if (d < bd && d > 64) {{ bd = d; from = c; }} }}
+                    const mid = a.map.latLngOfCell(from), ll = a.map.latLngOfCell(tgt);
+                    a.lmap.fitBounds(L.latLngBounds([mid, ll]).pad(0.4), {{ animate: false }});
+                    const p0 = a.lmap.latLngToContainerPoint(mid), p1 = a.lmap.latLngToContainerPoint(ll);
+                    const r = a.lmap.getContainer().getBoundingClientRect();
+                    return [r.left + p0.x, r.top + p0.y, r.left + p1.x, r.top + p1.y]; }}''')
+                await page.wait_for_timeout(300)
+                n0 = await ev('() => window.__ra.G.attacks.filter(a => !a.done && a.a === window.__ra.G.me.id && a.corr).length')
+                await page.mouse.move(pts[0], pts[1])
+                await page.mouse.down(button='right')
+                await page.mouse.move((pts[0] + pts[2]) / 2, (pts[1] + pts[3]) / 2, steps=5)
+                await page.mouse.move(pts[2], pts[3], steps=5)
+                arrow = await ev('() => window.__ra.ui.arrow && window.__ra.ui.arrow.ok')
+                await page.screenshot(path=OUT + f'{MODE}_v3_5b_arrow.png')
+                await page.mouse.up(button='right')
+                await page.wait_for_timeout(300)
+                n1 = await ev('() => window.__ra.G.attacks.filter(a => !a.done && a.a === window.__ra.G.me.id && a.corr).length')
+                sheet = await ev('() => !document.getElementById("sheetWrap").hidden')
+                check(arrow and n1 == n0 + 1 and not sheet, f'right-drag draws an arrow and launches a directed attack (arrow {arrow}, attacks {n0}->{n1}, menu {sheet})')
+                await ev('() => { const G = window.__ra.G; for (const a of G.attacks) if (!a.done && a.a === G.me.id) G.retreat(a.id); }')
+                # a right click without a drag still opens the menu of that spot
+                await page.mouse.click(pts[2], pts[3], button='right')
+                await page.wait_for_timeout(400)
+                check(await ev('() => !document.getElementById("sheetWrap").hidden'), 'right click (no drag) opens the spot menu')
+                await ev('window.__ra.ui.closeSheet()')
             await ev('() => { window.__ra.paused = false; }')
 
         # 6. units: recruit infantry at the border, select it by tapping, move it

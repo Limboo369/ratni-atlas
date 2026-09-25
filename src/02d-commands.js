@@ -17,7 +17,8 @@ RA.CMD_KINDS = ['atk', 'boat', 'para', 'build', 'rec', 'mv', 'dis', 'mis', 'mob'
     const id = (v) => (Number.isInteger(v) ? v : -1);
     switch (kind) {
       case 'atk':
-        return this.cmdAttack(pid, cell(a[0]), ratio(a[1]), a[2] === 1); // a[2] 1: directed (a corridor to the cell)
+        // a[2] 1: directed (a corridor to the cell); a[3]: the own cell the arrow was drawn from (optional)
+        return this.cmdAttack(pid, cell(a[0]), ratio(a[1]), a[2] === 1, a.length > 3 ? cell(a[3]) : -1);
       case 'boat': {
         const r = this.launchBoat(pid, cell(a[0]), p.troops * ratio(a[1]));
         return typeof r === 'object' ? r : this.boatErr(r);

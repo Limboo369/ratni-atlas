@@ -1709,7 +1709,7 @@ RA.Game = class Game {
   /* dir: a directed attack (a player's tap on a state): it starts from the own border cell nearest to the focus and
      only takes a corridor from there to the focus plus a disc around it (width grows with the troops sent), then the
      rest of the army comes home. Without dir the whole common border is the front (the AI, "cijela granica"). */
-  launchAttack(aid, tid, troops, focusCell, sourceCell, dir) {
+  launchAttack(aid, tid, troops, focusCell, sourceCell, dir, from) {
     const A = this.P[aid];
     if (!A || !A.alive || aid === tid) return null;
     const T = tid ? this.P[tid] : null;
@@ -1736,7 +1736,7 @@ RA.Game = class Game {
     }
     // a directed attack: its own corridor (never merged: two taps are two thrusts)
     let corr = null;
-    if (dir && T && sourceCell < 0 && focusCell >= 0) corr = this._corridor(A, T, focusCell, troops);
+    if (dir && T && sourceCell < 0 && focusCell >= 0) corr = this._corridor(A, T, focusCell, troops, from);
     // merge with existing land attack on same target
     if (sourceCell < 0 && !corr) {
       for (const o of this.attacks) {
@@ -1772,21 +1772,31 @@ RA.Game = class Game {
     return att;
   }
 
-  /* the corridor of a directed attack: from the own border cell (next to T) nearest to the focus to the focus */
-  _corridor(A, T, focus, troops) {
+  /* the corridor of a directed attack: from the own border cell (next to T) nearest to the focus to the focus;
+     from = an own cell the player drew the arrow from (desktop right-drag): the corridor starts there if it crosses
+     the common border, else the nearest border cell is used */
+  _corridor(A, T, focus, troops, from) {
     const own = this.owner, W = this.map.W, N = this.map.N, cells = A.cells;
     const fx = focus % W, fy = (focus / W) | 0;
+    const dens = Math.max(1, T.troops / Math.max(1, T.tiles));
+    const r = RA.clamp(Math.sqrt(troops / dens) * 0.45, 3, 14);
+    const edge = (c) => {
+      const x = c % W;
+      return (x > 0 && own[c - 1] === T.id) || (x < W - 1 && own[c + 1] === T.id) || (c >= W && own[c - W] === T.id) || (c < N - W && own[c + W] === T.id);
+    };
+    if (from >= 0 && own[from] === A.id) {
+      const k = { sx: from % W, sy: (from / W) | 0, fx, fy, r2: r * r, e2: r * r * 2.56 };
+      for (let i = 0; i < A.tiles; i++) if (edge(cells[i]) && this._inCorr(k, cells[i])) return k;
+    }
     let best = -1, bd = Infinity;
     for (let i = 0; i < A.tiles; i++) {
-      const c = cells[i], x = c % W;
-      if (!((x > 0 && own[c - 1] === T.id) || (x < W - 1 && own[c + 1] === T.id) || (c >= W && own[c - W] === T.id) || (c < N - W && own[c + W] === T.id))) continue;
-      const dx = x - fx, dy = ((c / W) | 0) - fy, d = dx * dx + dy * dy;
+      const c = cells[i];
+      if (!edge(c)) continue;
+      const dx = (c % W) - fx, dy = ((c / W) | 0) - fy, d = dx * dx + dy * dy;
       if (d < bd || (d === bd && c < best)) (bd = d), (best = c);
     }
     if (best < 0) return null;
     // width: how many of T's cells the troops are worth (T's army spread over its land)
-    const dens = Math.max(1, T.troops / Math.max(1, T.tiles));
-    const r = RA.clamp(Math.sqrt(troops / dens) * 0.45, 3, 14);
     return { sx: best % W, sy: (best / W) | 0, fx, fy, r2: r * r, e2: r * r * 2.56 };
   }
   /* is a cell inside a directed attack's corridor (segment start-focus within r, or within 1.6 r of the focus) */
@@ -2566,7 +2576,7 @@ RA.Game = class Game {
   }
 
   /* ---------------- player commands ---------------- */
-  cmdAttack(pid, c, ratio, dir) {
+  cmdAttack(pid, c, ratio, dir, from) {
     const p = this.P[pid];
     if (!p || !p.alive) return { err: 'Nisi u igri.' };
     if (c < 0 || !this.map.land[c]) return { err: 'To je voda. Dodirni kopno ili obalu.' };
@@ -2579,7 +2589,7 @@ RA.Game = class Game {
     const troops = p.troops * ratio;
     if (troops < 1) return { err: 'Nemaš dovoljno vojske.' };
     if (this.hasBorderWith(p, tid)) {
-      const a = this.launchAttack(pid, tid, troops, c, -1, !!dir);
+      const a = this.launchAttack(pid, tid, troops, c, -1, !!dir, from);
       return a ? { ok: 'land', att: a } : { err: 'Napad nije moguć.' };
     }
     if (this.map.coast[c]) {
@@ -3719,7 +3729,8 @@ RA.CMD_KINDS = ['atk', 'boat', 'para', 'build', 'rec', 'mv', 'dis', 'mis', 'mob'
     const id = (v) => (Number.isInteger(v) ? v : -1);
     switch (kind) {
       case 'atk':
-        return this.cmdAttack(pid, cell(a[0]), ratio(a[1]), a[2] === 1); // a[2] 1: directed (a corridor to the cell)
+        // a[2] 1: directed (a corridor to the cell); a[3]: the own cell the arrow was drawn from (optional)
+        return this.cmdAttack(pid, cell(a[0]), ratio(a[1]), a[2] === 1, a.length > 3 ? cell(a[3]) : -1);
       case 'boat': {
         const r = this.launchBoat(pid, cell(a[0]), p.troops * ratio(a[1]));
         return typeof r === 'object' ? r : this.boatErr(r);
@@ -6322,6 +6333,40 @@ RA.FxLayer = L.Layer.extend({
       RA.drawUnit(ctx, U.sym || u.type, x, y, uw, G.P[u.owner].hex, mine, u.hp / U.hp, u.ready > G.tick, u.empUntil > G.tick, u.id === selId, now);
     }
 
+    // the arrow being drawn with the right mouse button (desktop) ----------------------------------------------
+    const ar = ui.arrow;
+    if (ar && ar.s >= 0 && ar.e >= 0) {
+      const sx = gx((ar.s % W) + 0.5), sy = gy(((ar.s / W) | 0) + 0.5), ex = gx((ar.e % W) + 0.5), ey = gy(((ar.e / W) | 0) + 0.5);
+      const ang = Math.atan2(ey - sy, ex - sx), len = Math.hypot(ex - sx, ey - sy), head = Math.min(22, Math.max(10, len * 0.25));
+      if (len > 6) {
+        const col = ar.ok ? 'rgba(255,214,102,0.95)' : 'rgba(255,110,110,0.9)';
+        ctx.save();
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = col;
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(sx, sy);
+        ctx.lineTo(ex - Math.cos(ang) * head * 0.6, ey - Math.sin(ang) * head * 0.6);
+        ctx.stroke();
+        ctx.fillStyle = col;
+        ctx.beginPath();
+        ctx.moveTo(ex, ey);
+        ctx.lineTo(ex - Math.cos(ang - 0.45) * head, ey - Math.sin(ang - 0.45) * head);
+        ctx.lineTo(ex - Math.cos(ang + 0.45) * head, ey - Math.sin(ang + 0.45) * head);
+        ctx.closePath();
+        ctx.fill();
+        ctx.font = '600 13px system-ui, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = 'rgba(0,0,0,0.7)';
+        const label = ar.ok ? `${ar.name} · ${Math.round(ui.ratio * 100)}%` : ar.why;
+        ctx.strokeText(label, ex, ey - head - 6);
+        ctx.fillStyle = '#fff';
+        ctx.fillText(label, ex, ey - head - 6);
+        ctx.restore();
+      }
+    }
+
     // my attack focus markers ---------------------------------------------------
     if (G.me) {
       for (const a of G.attacks) {
@@ -7884,7 +7929,7 @@ RA.UI = class {
     const U = RA.UNIT, S = RA.STRUCT;
     const T = [
       [1, G.borders
-        ? (peace > 0 ? `Mirno doba (${Math.round(peace)} s): niko ne smije napadati države. Gradi, sklapaj saveze (dugme „Savezi”) i spremi vojsku uz granicu.` : 'Dodirni dio susjedne države koji hoćeš: vojska ide s najbliže granice pravo tamo (strelica) i osvaja samo taj dio. Za napad na cijeloj granici: dugi pritisak → „Napadni cijelu granicu”.')
+        ? (peace > 0 ? `Mirno doba (${Math.round(peace)} s): niko ne smije napadati države. Gradi, sklapaj saveze (dugme „Savezi”) i spremi vojsku uz granicu.` : 'Klikni dio susjedne države koji hoćeš: vojska ide s najbliže granice pravo tamo i osvaja samo taj dio. Na računaru desnim dugmetom povuci strelicu za tačan pravac. Napad na cijeloj granici: desni klik / dugi pritisak → „Napadni cijelu granicu”.')
         : peace > 0
         ? `Mirno doba (${Math.round(peace)} s): niko ne smije napadati države. Zauzmi što više slobodne (sive) zemlje i sklopi vojne i trgovinske saveze (dugme „Savezi”).`
         : 'Dodirni sivo, slobodno kopno da se širiš. Front kreće prema mjestu koje dodirneš.'],
@@ -8123,6 +8168,29 @@ RA.UI = class {
       this.act('mv', [u.id, cc]);
       this.setMode(null);
     }
+  }
+  /* desktop arrow (right-drag): from my land to a state's land = a directed attack along that line */
+  arrowDrag(ll0, ll1) {
+    const G = this.G, me = G && G.me;
+    if (!me || G.state !== 'play') return (this.arrow = null);
+    const s = this.cellFromLatLng(ll0), e = this.cellFromLatLng(ll1);
+    const T = e >= 0 ? G.P[G.owner[e]] : null;
+    const why = s < 0 || G.owner[s] !== me.id ? 'Strelicu povuci od svoje teritorije.'
+      : !T || T === me ? 'Povuci do tuđe države.'
+      : G.isFriendly(me, T) ? `${T.name} ti je saveznik.`
+      : G.tick < G.peaceUntil ? `Mirno doba još ${G.peaceLeft()} s.`
+      : !G.hasBorderWith(me, T.id) ? `Nemaš kopnenu granicu s tom državom (${T.name}).` : '';
+    this.arrow = { s, e, ok: !why, why, name: T && T !== me ? T.name : '' };
+  }
+  arrowDrop() {
+    const a = this.arrow;
+    this.arrow = null;
+    if (!a) return;
+    if (!a.ok) {
+      this.toast('info', RA.esc(a.why));
+      return;
+    }
+    this.act('atk', [a.e, this.ratio, 1, a.s]);
   }
   onLong(ll, cp) {
     const G = this.G;
@@ -8712,7 +8780,8 @@ Object.assign(RA.UI.prototype, {
       <h4>Širenje i napad</h4><ul>
         <li><b>Dodirni</b> slobodno kopno ili susjeda — šalješ onoliko vojske koliko pokazuje klizač <b>Snaga napada</b>.</li>
         <li><b>Usmjereni napad</b>: dodir na susjednu državu šalje vojsku s tvoje najbliže granice pravo do tog mjesta (strelica na karti) — osvaja se samo taj dio, pa se ostatak vojske vraća. Što više vojske pošalješ, to je koridor širi.</li>
-        <li>Front na cijeloj granici s državom: dugi pritisak na nju → <b>Napadni cijelu granicu</b>. Slobodno kopno se uvijek zauzima s cijele granice.</li>
+        <li>Na računaru: <b>desnim dugmetom miša povuci strelicu</b> od svoje teritorije do cilja — napad ide baš tim pravcem.</li>
+        <li>Front na cijeloj granici s državom: dugi pritisak (desni klik) na nju → <b>Napadni cijelu granicu</b>. Slobodno kopno se uvijek zauzima s cijele granice.</li>
         <li>Rijeke, brda, planine i gradovi usporavaju napadača.</li>
         <li>Aktivni napadi su iznad donje trake. <b>✕</b> obustavlja napad i vraća vojsku (napad na državu: 25% se izgubi u povlačenju).</li></ul>
       <h4>Vojska i zlato</h4><ul>
@@ -9849,8 +9918,42 @@ RA.App = class {
     probe.onload = () => (this.osmOK = true);
     probe.src = 'https://tile.openstreetmap.org/2/2/1.png';
     lmap.on('click', (e) => this.ui.onTap(e.latlng, e.containerPoint));
+    // desktop: right button + drag from own land draws the arrow of a directed attack; a right click without a drag
+    // (and a long touch) opens the menu of that spot. Some systems fire contextmenu on the press, others on release.
+    const box = lmap.getContainer();
+    let rd = null, eatCtx = false; // eatCtx: the contextmenu of a finished drag (released before it came)
+    const cpOf = (e) => {
+      const r = box.getBoundingClientRect();
+      return L.point(e.clientX - r.left, e.clientY - r.top);
+    };
+    box.addEventListener('mousedown', (e) => {
+      if (e.button !== 2) return;
+      rd = { p0: cpOf(e), moved: false, long: null };
+      eatCtx = false;
+    });
+    window.addEventListener('mousemove', (e) => {
+      if (!rd) return;
+      const p = cpOf(e);
+      if (!rd.moved && p.distanceTo(rd.p0) > 10) rd.moved = true;
+      if (rd.moved) this.ui.arrowDrag(lmap.containerPointToLatLng(rd.p0), lmap.containerPointToLatLng(p));
+    });
+    window.addEventListener('mouseup', (e) => {
+      if (e.button !== 2 || !rd) return;
+      const r = rd;
+      rd = null;
+      if (r.moved) {
+        eatCtx = true;
+        setTimeout(() => (eatCtx = false), 400);
+        this.ui.arrowDrop();
+      } else if (r.long) this.ui.onLong(r.long.ll, r.long.cp);
+    });
     lmap.on('contextmenu', (e) => {
       if (e.originalEvent) e.originalEvent.preventDefault();
+      if (eatCtx) return void (eatCtx = false);
+      if (rd) {
+        if (!rd.moved) rd.long = { ll: e.latlng, cp: e.containerPoint };
+        return;
+      }
       this.ui.onLong(e.latlng, e.containerPoint);
     });
     this.fitMap();
@@ -10880,7 +10983,7 @@ RA.wsRoom = function (url, creds, onCreds, onBack) {
   };
 };
 
-RA.BUILD = '98f50528';
+RA.BUILD = 'fd642df0';
 new RA.App().boot();
 }
 function __raFallback(){

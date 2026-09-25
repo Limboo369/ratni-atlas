@@ -414,6 +414,40 @@ RA.FxLayer = L.Layer.extend({
       RA.drawUnit(ctx, U.sym || u.type, x, y, uw, G.P[u.owner].hex, mine, u.hp / U.hp, u.ready > G.tick, u.empUntil > G.tick, u.id === selId, now);
     }
 
+    // the arrow being drawn with the right mouse button (desktop) ----------------------------------------------
+    const ar = ui.arrow;
+    if (ar && ar.s >= 0 && ar.e >= 0) {
+      const sx = gx((ar.s % W) + 0.5), sy = gy(((ar.s / W) | 0) + 0.5), ex = gx((ar.e % W) + 0.5), ey = gy(((ar.e / W) | 0) + 0.5);
+      const ang = Math.atan2(ey - sy, ex - sx), len = Math.hypot(ex - sx, ey - sy), head = Math.min(22, Math.max(10, len * 0.25));
+      if (len > 6) {
+        const col = ar.ok ? 'rgba(255,214,102,0.95)' : 'rgba(255,110,110,0.9)';
+        ctx.save();
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = col;
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(sx, sy);
+        ctx.lineTo(ex - Math.cos(ang) * head * 0.6, ey - Math.sin(ang) * head * 0.6);
+        ctx.stroke();
+        ctx.fillStyle = col;
+        ctx.beginPath();
+        ctx.moveTo(ex, ey);
+        ctx.lineTo(ex - Math.cos(ang - 0.45) * head, ey - Math.sin(ang - 0.45) * head);
+        ctx.lineTo(ex - Math.cos(ang + 0.45) * head, ey - Math.sin(ang + 0.45) * head);
+        ctx.closePath();
+        ctx.fill();
+        ctx.font = '600 13px system-ui, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = 'rgba(0,0,0,0.7)';
+        const label = ar.ok ? `${ar.name} · ${Math.round(ui.ratio * 100)}%` : ar.why;
+        ctx.strokeText(label, ex, ey - head - 6);
+        ctx.fillStyle = '#fff';
+        ctx.fillText(label, ex, ey - head - 6);
+        ctx.restore();
+      }
+    }
+
     // my attack focus markers ---------------------------------------------------
     if (G.me) {
       for (const a of G.attacks) {

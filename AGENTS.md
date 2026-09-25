@@ -101,11 +101,11 @@ Rebuild era data: `scripts/fetch_data.sh && python3 build/eras.py`.
   with `RA.takeBorders`.
 - Internal names stay as they are (`RA` namespace, storage keys, room ids, file names) — renaming them breaks saves and online play.
 
-## Tests (CI runs `make.py`, `test_ui2.py`, `test_mp.py`, `test_world.py`, `test_api.js` and `test_account.py` before every publish; a failed check blocks it)
+## Tests (CI runs `make.py`, `test_ui2.py` (phone and desktop), `test_mp.py`, `test_world.py`, `test_api.js` and `test_account.py` before every publish; a failed check blocks it)
 
 ```
 python3 build/make.py
-python3 build/test_ui2.py phone balkan     # single player, end to end
+python3 build/test_ui2.py phone balkan     # single player, end to end (also `desktop balkan`: the right-drag attack arrow)
 python3 build/test_mp.py                   # three browsers + the real relay: lockstep, spectator, come-back
 python3 build/test_world.py                # world map over http: switch, regions, play, online on the world
 node build/test_api.js                     # accounts API: Google token checks, sessions, rename, delete (real PostgreSQL)

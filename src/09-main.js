@@ -185,8 +185,42 @@ RA.App = class {
     probe.onload = () => (this.osmOK = true);
     probe.src = 'https://tile.openstreetmap.org/2/2/1.png';
     lmap.on('click', (e) => this.ui.onTap(e.latlng, e.containerPoint));
+    // desktop: right button + drag from own land draws the arrow of a directed attack; a right click without a drag
+    // (and a long touch) opens the menu of that spot. Some systems fire contextmenu on the press, others on release.
+    const box = lmap.getContainer();
+    let rd = null, eatCtx = false; // eatCtx: the contextmenu of a finished drag (released before it came)
+    const cpOf = (e) => {
+      const r = box.getBoundingClientRect();
+      return L.point(e.clientX - r.left, e.clientY - r.top);
+    };
+    box.addEventListener('mousedown', (e) => {
+      if (e.button !== 2) return;
+      rd = { p0: cpOf(e), moved: false, long: null };
+      eatCtx = false;
+    });
+    window.addEventListener('mousemove', (e) => {
+      if (!rd) return;
+      const p = cpOf(e);
+      if (!rd.moved && p.distanceTo(rd.p0) > 10) rd.moved = true;
+      if (rd.moved) this.ui.arrowDrag(lmap.containerPointToLatLng(rd.p0), lmap.containerPointToLatLng(p));
+    });
+    window.addEventListener('mouseup', (e) => {
+      if (e.button !== 2 || !rd) return;
+      const r = rd;
+      rd = null;
+      if (r.moved) {
+        eatCtx = true;
+        setTimeout(() => (eatCtx = false), 400);
+        this.ui.arrowDrop();
+      } else if (r.long) this.ui.onLong(r.long.ll, r.long.cp);
+    });
     lmap.on('contextmenu', (e) => {
       if (e.originalEvent) e.originalEvent.preventDefault();
+      if (eatCtx) return void (eatCtx = false);
+      if (rd) {
+        if (!rd.moved) rd.long = { ll: e.latlng, cp: e.containerPoint };
+        return;
+      }
       this.ui.onLong(e.latlng, e.containerPoint);
     });
     this.fitMap();
