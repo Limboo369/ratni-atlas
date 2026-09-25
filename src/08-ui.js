@@ -3,6 +3,10 @@
    The sheets (army, build, landing, missiles, diplomacy, map-cell menu, how-to, end screen) live in 08b-ui-sheets.js */
 
 RA.ICONS = {
+  check: '<path d="m5 12 4 4L19 6"/>',
+  lock: '<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/>',
+  star: '<path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9Z"/>',
+  globe: '<circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18M5 6h14M5 18h14"/>',
   build: '<path d="M4 20h16M6 20V10l6-5 6 5v10M10 20v-5h4v5"/>',
   boat: '<path d="M3 16l2 4h14l2-4H3zM12 3v11M12 4l6 8h-6"/>',
   ally: '<circle cx="9" cy="12" r="5.5"/><circle cx="15" cy="12" r="5.5"/>',

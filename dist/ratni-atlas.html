@@ -728,6 +728,135 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
 #dlog.collapsed { width: auto; }
 @media (max-width: 760px) { #dlog { bottom: calc(var(--dock-h, 90px) + 64px); } .kf { font-size: 12px; } }
 
+/* Commander identity, dossiers and the expanded theatre selector. */
+.command-identity { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 36px; margin-bottom: 4px; }
+.command-player.field .command-identity label { margin: 0; }
+.command-identity .profile-btn { display: flex; align-items: center; gap: 8px; min-height: 36px; min-width: 0; padding: 0 8px; color: #d3dce0; font-size: 12px; border: 1px solid #ffffff15; border-radius: 3px; background: #ffffff04; }
+.command-identity .profile-btn > svg { width: 15px; height: 15px; }
+.command-identity .profile-btn:hover { border-color: #ffffff40; background: #ffffff0b; }
+.command-secondary { gap: 18px; flex-wrap: nowrap; justify-content: space-between; }
+.command-secondary button { white-space: nowrap; }
+@media (min-width: 761px) {
+  .command-main { min-height: 0; }
+}
+#startScreen #mapSeg { background: transparent; border: 0; padding: 0; gap: 8px; }
+#startScreen #mapSeg button { position: relative; padding: 11px 14px; min-height: 62px; border: 1px solid #ffffff16; background: #101b23d9; border-radius: 3px; font-size: 13px; letter-spacing: .025em; transition: background .18s, border-color .18s; }
+#startScreen #mapSeg button[aria-pressed=true] { background: linear-gradient(115deg,#432524,#22252a); border-color: #e767515e; box-shadow: inset 3px 0 var(--danger); }
+#startScreen #mapSeg button[aria-pressed=true]::after { content: '↗'; position: absolute; right: 12px; top: 10px; color: #f98c78; }
+#startScreen #mapSeg small { font: 10px/1.3 var(--font-ui); letter-spacing: .03em; margin-top: 5px; color: #9faeb7; }
+
+#sheetWrap:has(.dossier-marker) { align-items: center; background: #03090fed; }
+#sheet:has(.dossier-marker) { box-sizing: border-box; width: calc(100% - 64px); max-width: 1000px; max-height: calc(100dvh - 64px); padding: 30px; border: 1px solid #ffffff20; border-top-color: #ec755460; border-radius: 6px; background: radial-gradient(ellipse at 90% 0%,#472e2728,transparent 60%),#0c151d; box-shadow: 0 30px 100px #0009; scrollbar-width: thin; scrollbar-color: #45545f #0c151d; overscroll-behavior: contain; }
+#sheet:has(.dossier-marker) > .grab { display: none; }
+#sheet:has(.dossier-marker) .sh-head { position: sticky; top: -30px; z-index: 2; padding-block: 12px 24px; margin-bottom: 24px; border-bottom: 1px solid #ffffff13; align-items: start; background: #0c151d; }
+#sheet:has(.dossier-marker) .sh-head > div { min-width: 0; display: flex; flex-direction: column-reverse; gap: 10px; }
+#sheet:has(.dossier-marker) .sh-head h2 { font: 700 32px/1.1 var(--font-ui); letter-spacing: -.035em; text-wrap: initial; }
+#sheet:has(.dossier-marker) .sh-head .meta { margin: 0; font-size: 9px; letter-spacing: .18em; color: #b3a89b; overflow-wrap: anywhere; }
+#sheet:has(.dossier-marker) .sh-close { width: 44px; height: 44px; border-radius: 3px; background: #ffffff06; border: 1px solid #ffffff14; }
+#sheet:has(.dossier-marker) .sh-close svg { width: 20px; height: 20px; }
+#sheet:has(.dossier-marker) .btn { box-sizing: border-box; border-radius: 3px; background: #ffffff05; min-height: 44px; font-size: 13px; }
+#sheet:has(.dossier-marker) .btn:hover { background: #ffffff0c; border-color: #ffffff35; }
+#sheet:has(.dossier-marker) .btn.good { background: #d9594522; border-color: #db705c66; color: #ffd4c4; }
+#sheet:has(.dossier-marker) > .btns { flex-direction: row; border-top: 1px solid #ffffff12; padding-top: 20px; gap: 10px; }
+#sheet:has(.dossier-marker) > .btns .btn { width: auto; }
+#sheet:has(.dossier-marker) #accDel { margin-left: auto; color: #df9c96; border-color: transparent; background: none; }
+#sheet:has(.dossier-marker) .sec-t { font-size: 10px; letter-spacing: .13em; color: #a9bac4; margin: 0 0 14px; }
+.dossier-eyebrow { display: block; font-size: 9px; letter-spacing: .18em; color: #c5a278; margin-bottom: 8px; }
+#sheet .prof-card { padding: 8px 0 24px; margin: 0; gap: 24px; }
+#sheet .prof-emb { border-radius: 5px; }
+#sheet .prof-emb > .emb { width: 100px; height: 112px; border-radius: 6px; border: 1px solid #dbaa6a66; background: linear-gradient(145deg,#58432a55,#151f28); color: #e2bd86; }
+#sheet .prof-emb > .emb svg { width: 54%; height: 54%; }
+#sheet .prof-emb > i { width: 26px; height: 26px; border-radius: 3px; right: -5px; bottom: -5px; }
+#sheet .prof-name { font: 700 36px/1.1 var(--font-ui); letter-spacing: -.03em; }
+#sheet .prof-rank { color: #ccbdab; margin-top: 10px; }
+#sheet .prof-rank .bar { max-width: 340px; height: 3px; margin: 9px 0 6px; border-radius: 0; background: #ffffff12; }
+#sheet .prof-rank .bar i { background: linear-gradient(90deg,#9b7543,#f0ce95); }
+#sheet .prof-since { font-size: 10px; margin-top: 9px; }
+#sheet .emb-pick { padding: 16px; margin-bottom: 24px; background: #ffffff03; border: 1px solid #ffffff10; border-radius: 4px; }
+#sheet .emb-pick button { border-radius: 4px; min-height: 44px; max-height: 68px; }
+#sheet .acc-grid { gap: 1px; background: #ffffff14; border: 1px solid #ffffff14; border-radius: 4px; overflow: hidden; margin: 0 0 28px; }
+#sheet .acc-grid > div { border: 0; border-radius: 0; background: #101b24; padding: 15px 18px; }
+#sheet .acc-grid > div:nth-child(-n+3) { background: #17222b; padding-top: 20px; padding-bottom: 20px; }
+#sheet .acc-grid .k { color: #9aaebc; font-size: 10px; letter-spacing: .045em; }
+#sheet .acc-grid .v { font: 600 22px/1.2 var(--font-ui); font-variant-numeric: tabular-nums; margin-top: 8px; }
+#sheet .acc-grid > div:nth-child(-n+3) .v { font-size: 38px; letter-spacing: -.04em; }
+#sheet .acc-grid > div:nth-child(2) .v { color: #e8c28c; }
+.dossier-columns { display: grid; grid-template-columns: 1.1fr 1fr; gap: 28px; }
+.dossier-columns > section { min-width: 0; }
+#sheet .ach-list { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
+#sheet .ach { display: flex; gap: 14px; padding: 14px; border-radius: 3px; opacity: 1; background: #ffffff02; border: 1px solid #ffffff0b; }
+#sheet .ach:not(.on) { color: #92a1ab; }
+#sheet .ach b { font-size: 13px; font-weight: 600; }
+#sheet .ach span { font-size: 12px; line-height: 1.4; }
+#sheet .ach small { display: block; font-size: 8px; letter-spacing: .14em; margin-top: 7px; color: #83939c; }
+#sheet .ach.on { border-color: #c8a36840; background: linear-gradient(100deg,#b1883620,#b1883603); }
+#sheet .ach.on small { color: #d8b57c; }
+.ach-mark { width: 36px; height: 40px; flex: none; display: grid; place-items: center; border: 1px solid #ffffff14; border-radius: 3px; color: #7e939f; }
+.ach-mark svg { width: 18px; height: 18px; }
+.ach.on .ach-mark { color: #e9c289; border-color: #c8a36840; background: #b1883612; }
+#sheet .hist li { padding: 12px 10px; border-radius: 2px; background: #ffffff03; gap: 10px; }
+#sheet .hist .res { font-size: 10px; width: 4.5em; }
+#sheet .hist li.w .res { color: #73c9ad; }
+#sheet .hist li.l .res { color: #ea8c81; }
+#sheet .hist .what b { font-size: 13px; }
+#sheet .hist .num { font-size: 12px; }
+#sheet .hist .num small { font-size: 9px; }
+.account-settings { border-top: 1px solid #ffffff14; margin-top: 24px; padding-top: 20px; }
+.account-settings > .note { overflow-wrap: anywhere; font-size: 11px; }
+.account-settings .acc-name { max-width: 420px; }
+.account-settings input[type=text] { border-radius: 3px; background: #ffffff04; font-size: 16px; }
+#sheet:has(.signin-marker) { max-width: 650px; }
+.signin-hero { text-align: center; padding: 8px 0 28px; }
+.signin-hero .emb.lg { width: 84px; height: 94px; border-radius: 6px; border: 1px solid #c6a27855; background: linear-gradient(145deg,#b1883622,#15212b); color: #dfbd89; }
+.signin-hero p { font-size: 25px; letter-spacing: -.04em; font-weight: 600; margin: 18px 0 7px; }
+.signin-hero > span:last-child { color: #9badb9; font-size: 13px; }
+.signin-features { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; padding: 20px 0; border-block: 1px solid #ffffff10; }
+.signin-features > div { min-width: 0; }
+.signin-features svg { display: block; width: 20px; height: 20px; color: #d5b184; margin-bottom: 14px; }
+.signin-features b { display: block; font-size: 12px; font-weight: 600; }
+.signin-features span { display: block; color: #97a9b7; font-size: 11px; margin-top: 6px; }
+.signin-action { text-align: center; padding: 16px 0; }
+.signin-action > p:last-child, .account-privacy { color: #92a4b1; font-size: 11px; line-height: 1.5; }
+.account-privacy { text-align: center; max-width: 400px; margin: 20px auto 0; }
+#sheet:has(.leaderboard-marker) { max-width: 760px; }
+#sheet #topSeg { border-radius: 3px; padding: 4px; background: #ffffff05; }
+#sheet #topSeg button { min-height: 44px; border-radius: 2px; font-size: 13px; }
+#sheet #topSeg [aria-pressed=true] { background: #58423155; color: #f1d4ac; box-shadow: inset 0 -2px #d5a36a; }
+#sheet .top-list { gap: 2px; }
+#sheet .top-list li { align-items: center; min-height: 56px; padding: 10px 18px; background: #ffffff03; border-radius: 2px; border-color: #ffffff07; }
+#sheet .top-list li:first-child { background: linear-gradient(90deg,#b58d3e20,transparent); border-color: #bd995a40; }
+#sheet .top-list li.me { border-color: #72bba77a; }
+#sheet .top-list .rk { font-size: 16px; }
+#sheet .top-list li:first-child .rk { color: #e9c289; }
+#sheet .top-list .emb { width: 34px; height: 34px; border-radius: 4px; }
+#sheet .top-list .sc { font: 600 23px var(--font-ui); font-variant-numeric: tabular-nums; }
+@media (max-width: 760px) {
+  #startScreen #mapSeg { gap: 6px; }
+  #startScreen #mapSeg button { min-height: 57px; padding: 9px 12px; font-size: 12px; }
+  #sheet:has(.dossier-marker) { width: calc(100% - 24px); max-height: calc(100dvh - 24px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px)); padding: 20px; }
+  #sheet:has(.dossier-marker) .sh-head h2 { font-size: 26px; }
+  #sheet:has(.dossier-marker) .sh-head { top: -20px; }
+  #sheet .ach-list { grid-template-columns: 1fr; }
+  .dossier-columns { grid-template-columns: 1fr; gap: 24px; }
+  #sheet .prof-card { gap: 16px; }
+  #sheet .prof-emb > .emb { width: 72px; height: 86px; }
+  #sheet .prof-name { font-size: 29px; }
+  #sheet .acc-grid > div { padding: 12px 10px; }
+  #sheet .acc-grid .v { font-size: 17px; }
+  #sheet .acc-grid > div:nth-child(-n+3) .v { font-size: 30px; }
+  #sheet:has(.dossier-marker) > .btns { flex-wrap: wrap; }
+  .signin-features { gap: 12px; }
+}
+@media (max-width: 360px) {
+  .command-secondary { gap: 10px; }
+  .command-secondary button { font-size: 10px; gap: 4px; }
+  .command-secondary svg { width: 14px; }
+  #sheet:has(.dossier-marker) { padding: 16px; }
+  #sheet .acc-grid > div { padding-inline: 8px; }
+  #sheet .acc-grid .k { font-size: 9px; }
+  #sheet .acc-grid .v { font-size: 15px; }
+}
+
 #app{touch-action:none}#sheet,.screen{touch-action:pan-y}</style>
 <div id="app">
   <div id="map" aria-label="Karta Evrope"></div>
@@ -834,12 +963,12 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
           <div id="joinBanner" class="btns" hidden></div>
 
           <div class="command-player field">
-            <label for="nameIn">TVOJE IME</label>
+            <div class="command-identity"><label for="nameIn">TVOJE IME</label><button id="profileBtn" class="profile-btn" hidden aria-haspopup="dialog"></button></div>
             <div class="command-input"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 21v-2a7 7 0 0 1 14 0v2"/></svg><input type="text" id="nameIn" maxlength="18" placeholder="Komandant" autocomplete="nickname" spellcheck="false"></div>
           </div>
           <button class="go command-play" id="goBtn"><span>Započni osvajanje</span><span aria-hidden="true">↗</span></button>
           <button class="command-config" id="configBtn" aria-haspopup="dialog" aria-controls="operationDialog"><span><span class="command-config-label">POSTAVKE OPERACIJE</span><span id="operationSummary">Evropa · Klasično · Srednje</span></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16M9 3v6M15 9v6M8 15v6"/></svg></button>
-          <div class="command-secondary"><button id="profileBtn" class="profile-btn" hidden></button><button id="onlineToggle" aria-expanded="false" aria-controls="onlineBox"><i data-ic="ally"></i>S prijateljem<span aria-hidden="true">↗</span></button><button id="howBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 .5c0 1.5-2.5 1.5-2.5 3.5M12 16v1"/></svg>Kako se igra</button></div>
+          <div class="command-secondary"><button id="onlineToggle" aria-expanded="false" aria-controls="onlineBox"><i data-ic="ally"></i>S prijateljem<span aria-hidden="true">↗</span></button><button id="howBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 .5c0 1.5-2.5 1.5-2.5 3.5M12 16v1"/></svg>Kako se igra</button><button id="leaderboardBtn" hidden aria-haspopup="dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 4h8v6a4 4 0 0 1-8 0V4ZM8 6H4v3a4 4 0 0 0 4 4m8-7h4v3a4 4 0 0 1-4 4M12 14v6m-4 0h8"/></svg>Ljestvica</button></div>
           <div class="online-box command-online" id="onlineBox" hidden>
             <div class="sec-t">Igra s prijateljem</div>
             <p class="note" id="onlineNote" aria-live="polite">Povezujem se…</p>
@@ -7161,6 +7290,10 @@ RA.drawPlane = function (ctx, x, y, ang, color) {
    The sheets (army, build, landing, missiles, diplomacy, map-cell menu, how-to, end screen) live in 08b-ui-sheets.js */
 
 RA.ICONS = {
+  check: '<path d="m5 12 4 4L19 6"/>',
+  lock: '<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/>',
+  star: '<path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9Z"/>',
+  globe: '<circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18M5 6h14M5 18h14"/>',
   build: '<path d="M4 20h16M6 20V10l6-5 6 5v10M10 20v-5h4v5"/>',
   boat: '<path d="M3 16l2 4h14l2-4H3zM12 3v11M12 4l6 8h-6"/>',
   ally: '<circle cx="9" cy="12" r="5.5"/><circle cx="15" cy="12" r="5.5"/>',
@@ -9380,13 +9513,14 @@ RA.CommandScreen = class {
     this.visibility.observe(this.screen, { attributes: true, attributeFilter: ['hidden'] });
     this.dialogVisibility = new MutationObserver(() => this.applyMotion());
     this.dialogVisibility.observe(this.dialog, { attributes: true, attributeFilter: ['open'] });
+    this.dialogVisibility.observe(this.$('sheetWrap'), { attributes: true, attributeFilter: ['hidden'] });
     document.addEventListener('visibilitychange', () => this.applyMotion());
     this.applyMotion();
     this.refresh();
   }
 
   applyMotion() {
-    const still = !this.motion || this.reduced.matches || this.screen.hidden || this.dialog.open || document.hidden;
+    const still = !this.motion || this.reduced.matches || this.screen.hidden || this.dialog.open || !this.$('sheetWrap').hidden || document.hidden;
     this.screen.classList.toggle('command-still', still);
     const b = this.$('motionBtn'), active = this.motion && !this.reduced.matches;
     b.setAttribute('aria-pressed', String(active));
@@ -9560,6 +9694,7 @@ RA.Account = class {
     b.innerHTML = RA.icon('user');
     b.onclick = () => this.sheet();
     ui.$('profileBtn').onclick = () => this.sheet();
+    ui.$('leaderboardBtn').onclick = () => this.topSheet('wins');
     if (/^https?:$/.test(location.protocol)) this.load();
   }
 
@@ -9596,12 +9731,14 @@ RA.Account = class {
     this.user = u || null;
     const b = ui.$('accountBtn'), pb = ui.$('profileBtn');
     b.hidden = pb.hidden = !this.ok;
+    ui.$('leaderboardBtn').hidden = !this.ok;
     b.classList.toggle('on', !!u);
     const label = u ? `Profil: ${u.name}` : 'Prijava';
     b.setAttribute('aria-label', label);
     b.title = label;
     b.innerHTML = u ? RA.emblem(u) : RA.icon('user');
     pb.innerHTML = u ? `${RA.emblem(u)}<span>${RA.esc(u.name)}</span>` : `${RA.icon('user')}<span>Prijava</span>`;
+    pb.setAttribute('aria-label', u ? `Otvori profil: ${u.name}` : 'Prijava i profil');
     // the account name fills the name field, unless the player already typed one
     if (u && !ui.settings.name) {
       ui.settings.name = u.name;
@@ -9745,7 +9882,7 @@ RA.Account = class {
     put('#accStats', `<div class="acc-grid">${cell('Partija', st.games)}${cell('Pobjeda', st.wins)}${cell('Uspješnost', st.games ? Math.round((st.wins / st.games) * 100) + '%' : '—')}${cell('Online pobjeda', st.onlineWins)}${cell('Najveće carstvo', pct(st.peak))}${cell('Najbrža pobjeda', st.fastest ? RA.fmtTime(st.fastest) : '—')}${cell('Uništeno država', st.kills)}${cell('Osvojeno gradova', st.cities)}${cell('Vrijeme u igri', st.secs >= 3600 ? `${Math.floor(st.secs / 3600)} h ${Math.floor((st.secs % 3600) / 60)} min` : `${Math.floor(st.secs / 60)} min`)}</div>`);
     const got = j.achievements.filter((a) => a.at).length;
     put('#accAchT', `Dostignuća · ${got}/${j.achievements.length}`);
-    put('#accAch', j.achievements.map((a) => `<div class="ach${a.at ? ' on' : ''}"><b>${RA.esc(a.name)}</b><span>${RA.esc(a.desc)}</span></div>`).join(''));
+    put('#accAch', j.achievements.map((a) => `<div class="ach${a.at ? ' on' : ''}"><i class="ach-mark" aria-hidden="true">${RA.icon(a.at ? 'check' : 'lock')}</i><div><b>${RA.esc(a.name)}</b><span>${RA.esc(a.desc)}</span><small>${a.at ? 'OTKLJUČANO' : 'ZAKLJUČANO'}</small></div></div>`).join(''));
     put('#accHist', j.recent.length ? `<ol class="hist">${j.recent.map((r) => this.gameLine(r)).join('')}</ol>` : '<p class="note">Još nema završenih partija. Odigraj jednu do kraja — pobjeda ili poraz se ovdje upisuju.</p>');
   }
   async loadStats(s) {
@@ -9762,7 +9899,7 @@ RA.Account = class {
   /* leaderboard: most wins, or most online wins */
   async topSheet(by) {
     const ui = this.ui;
-    let h = '<div id="accSheet"></div>' + ui.head('Ljestvica', 'Najbolji komandanti');
+    let h = '<div id="accSheet" class="dossier-marker leaderboard-marker"></div>' + ui.head('Ljestvica komandanata', 'POREDAK · OVERTAKE');
     h += `<div class="seg" id="topSeg"><button data-v="wins" aria-pressed="${by !== 'online'}">Pobjede</button><button data-v="online" aria-pressed="${by === 'online'}">Online pobjede</button></div>
       <div id="topList"><p class="note">Učitavam…</p></div>
       <div class="btns" style="margin-top:14px"><button class="btn" id="topBack"><span class="t">${this.user ? 'Nazad na profil' : 'Nazad'}</span></button></div>`;
@@ -9787,11 +9924,12 @@ RA.Account = class {
   sheet(keep) {
     const ui = this.ui, u = this.user;
     if (!u) {
-      const h = `<div id="accSheet"></div>${ui.head('Prijava', 'Google nalog')}
-        <p class="explain">Prijavi se Google nalogom i dobij svoj profil: ime i ikonica, čin, statistike, dostignuća i historija partija, na svakom uređaju. Igra radi i bez prijave.</p>
-        <div class="gsi-slot" id="gsiSlot"></div><p class="note" id="accNote" aria-live="polite"></p>
-        <div class="btns" style="margin-top:14px"><button class="btn" id="accTop"><span class="t">Ljestvica</span></button></div>
-        <p class="note">Od Google-a uzimamo samo ime, e-mail i sliku profila. Nalog možeš obrisati kad god hoćeš.</p>`;
+      const h = `<div id="accSheet" class="dossier-marker signin-marker"></div>${ui.head('Tvoja historija počinje ovdje.', 'PROFIL KOMANDANTA')}
+        <div class="signin-hero">${RA.emblem({icon:'orao'}, 'lg')}<p>Svaka pobjeda ostavlja trag.</p><span>Sačuvaj napredak i nastavi na bilo kojem uređaju.</span></div>
+        <div class="signin-features"><div>${RA.icon('army')}<b>Izgradi svoj ugled</b><span>Činovi i lični grb</span></div><div>${RA.icon('star')}<b>Zabilježi pobjede</b><span>Statistika i dostignuća</span></div><div>${RA.icon('globe')}<b>Zauzmi svoje mjesto</b><span>Svjetska ljestvica</span></div></div>
+        <div class="signin-action"><div class="gsi-slot" id="gsiSlot"></div><p class="note" id="accNote" aria-live="polite"></p><p>Igraj i bez prijave. Tvoj izbor.</p></div>
+        <button class="btn" id="accTop"><span class="t">Pogledaj ljestvicu</span><span class="r" aria-hidden="true">↗</span></button>
+        <p class="account-privacy">Google dijeli ime, e-mail i sliku profila. Nalog možeš obrisati u postavkama profila.</p>`;
       ui.openSheet(h, (s) => {
         s.querySelector('#accTop').onclick = () => this.topSheet('wins');
         this.googleButton(s.querySelector('#gsiSlot'), s.querySelector('#accNote'));
@@ -9800,22 +9938,23 @@ RA.Account = class {
     }
     const since = u.since ? new Date(u.since) : null;
     const embs = (u.pic ? ['google'] : []).concat(Object.keys(RA.EMBLEMS));
-    const h = `<div id="accSheet"></div>${ui.head('Profil', RA.esc(u.email))}
+    const h = `<div id="accSheet" class="dossier-marker profile-marker"></div>${ui.head('Dosje komandanta', 'TVOJA HISTORIJA · TVOJE POBJEDE')}
       <div class="prof-card">
         <button class="prof-emb" id="embBtn" aria-label="Promijeni ikonicu" aria-expanded="false">${RA.emblem(u, 'lg')}<i>${RA.icon('edit')}</i></button>
-        <div class="prof-main"><div class="prof-name">${RA.esc(u.name)}</div><div class="prof-rank" id="accRank"><small>Učitavam…</small></div>${since ? `<small class="prof-since">Član od ${since.getDate()}. ${since.getMonth() + 1}. ${since.getFullYear()}.</small>` : ''}</div>
+        <div class="prof-main"><span class="dossier-eyebrow">KOMANDANT</span><div class="prof-name">${RA.esc(u.name)}</div><div class="prof-rank" id="accRank"><small>Učitavam…</small></div>${since ? `<small class="prof-since">Član od ${since.getDate()}. ${since.getMonth() + 1}. ${since.getFullYear()}.</small>` : ''}</div>
       </div>
       <div class="emb-pick" id="embPick" hidden>${embs.map((id) => `<button data-emb="${id}" aria-pressed="${id === u.icon}" aria-label="Ikonica ${id}">${RA.emblem({ icon: id, pic: u.pic })}</button>`).join('')}</div>
       <div id="accStats"><p class="note">Učitavam statistiku…</p></div>
-      <div class="field acc-name"><label class="lab" for="accName">Ime u igri</label>
+      <div class="dossier-columns"><section class="dossier-achievements"><div class="sec-t" id="accAchT">Dostignuća</div><div class="ach-list" id="accAch"></div></section>
+      <section class="dossier-history"><div class="sec-t">Posljednje operacije</div><div id="accHist"></div></section></div>
+      <div class="account-settings"><div class="sec-t">Postavke profila</div><p class="note">${RA.esc(u.email)}</p><div class="field acc-name"><label class="lab" for="accName">Ime u igri</label>
         <div class="acc-row"><input type="text" id="accName" maxlength="18" value="${RA.esc(u.name)}" autocomplete="nickname" spellcheck="false"><button class="btn good" id="accSave"><span class="t">Sačuvaj</span></button></div></div>
       <p class="note" id="accNote" aria-live="polite"></p>
-      <div class="sec-t" id="accAchT">Dostignuća</div><div class="ach-list" id="accAch"></div>
-      <div class="sec-t">Historija partija</div><div id="accHist"></div>
+      </div>
       <div class="btns" style="margin-top:14px">
         <button class="btn" id="accTop"><span class="t">Ljestvica</span></button>
         <button class="btn" id="accOut"><span class="t">Odjavi se</span></button>
-        <button class="btn danger" id="accDel"><span><span class="t">Obriši nalog</span><br><span class="d">Briše nalog, statistike, dostignuća i historiju</span></span></button>
+        <button class="btn danger" id="accDel"><span class="t">Obriši nalog</span></button>
       </div>`;
     ui.openSheet(h, (s) => {
       const note = s.querySelector('#accNote');
@@ -11193,7 +11332,7 @@ RA.wsRoom = function (url, creds, onCreds, onBack) {
   };
 };
 
-RA.BUILD = '51d9dfe8';
+RA.BUILD = '5b193aec';
 new RA.App().boot();
 }
 function __raFallback(){
