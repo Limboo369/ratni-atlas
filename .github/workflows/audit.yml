@@ -13,7 +13,7 @@ jobs:
         run: |
           mkdir -p ~/.ssh && printf '%s\n' "$KEY" > ~/.ssh/id_ed25519 && chmod 600 ~/.ssh/id_ed25519
           printf '%s %s\n' "$IP" "$HOST_KEY" > ~/.ssh/known_hosts
-          printf 'Host *\n  StrictHostKeyChecking yes\n  BatchMode yes\n' > ~/.ssh/config
+          printf 'Host *\n  StrictHostKeyChecking yes\n  BatchMode yes\n  ServerAliveInterval 20\n  ServerAliveCountMax 30\n' > ~/.ssh/config
           ssh root@"$IP" 'bash -s' <<'EOF'
           s() { echo; echo "===== $1"; }
           s "apt povijest (ručne instalacije)"; zgrep -h -E "^(Start-Date|Commandline)" /var/log/apt/history.log* 2>/dev/null | grep -v "unattended" | paste - - | sort | grep -v "^$"

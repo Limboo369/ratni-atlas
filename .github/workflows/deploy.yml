@@ -59,7 +59,7 @@ jobs:
         run: |
           mkdir -p ~/.ssh && printf '%s\n' "$KEY" > ~/.ssh/id_ed25519 && chmod 600 ~/.ssh/id_ed25519
           printf '%s %s\n' "$IP" "$HOST_KEY" > ~/.ssh/known_hosts
-          printf 'Host *\n  StrictHostKeyChecking yes\n  BatchMode yes\n' > ~/.ssh/config
+          printf 'Host *\n  StrictHostKeyChecking yes\n  BatchMode yes\n  ServerAliveInterval 20\n  ServerAliveCountMax 30\n' > ~/.ssh/config
           ssh root@"$IP" "mkdir -p /srv/apps/$APP /srv/backups/$APP && chmod 700 /srv/backups/$APP && cd /srv/apps/$APP && umask 077 \
             && { [ -s secret.env ] || echo WS_SECRET=\$(openssl rand -hex 24) > secret.env; } \
             && { [ -s db.env ] || { p=\$(openssl rand -hex 24); printf 'POSTGRES_PASSWORD=%s\nPGPASSWORD=%s\n' \$p \$p > db.env; }; }"
