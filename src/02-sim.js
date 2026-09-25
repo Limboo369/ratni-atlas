@@ -372,6 +372,7 @@ RA.Game = class Game {
       focus: focusCell >= 0 ? focusCell : -1, done: false, boat: sourceCell >= 0, src: sourceCell, fresh: true, began: this.tick,
       corr,
       only: only || null, // "Vrati granice": only these cells (the land tid took from aid)
+      via: T && A.human && sourceCell < 0 ? this._viaOf(A, T) : null, // right of passage: allies whose border with T is a front too
     };
     this.attacks.push(att);
     if (sourceCell >= 0) {
@@ -396,6 +397,16 @@ RA.Game = class Game {
     return att;
   }
 
+  /* right of passage (a human's military allies): allies that touch T and are not T's allies; their border with T
+     is a front for A's attacks on T (the land taken becomes A's) */
+  _viaOf(A, T) {
+    const via = [];
+    for (const oid of A.allies.keys()) {
+      const O = this.P[oid];
+      if (O && O.alive && O !== T && !O.allies.has(T.id) && this.hasBorderWith(O, T.id)) via.push(oid);
+    }
+    return via.length ? via : null;
+  }
   /* the corridor of a directed attack: from the own border cell (next to T) nearest to the focus to the focus;
      from = an own cell the player drew the arrow from (desktop right-drag): the corridor starts there if it crosses
      the common border, else the nearest border cell is used */
@@ -413,8 +424,11 @@ RA.Game = class Game {
       for (let i = 0; i < A.tiles; i++) if (edge(cells[i]) && this._inCorr(k, cells[i])) return k;
     }
     let best = -1, bd = Infinity;
-    for (let i = 0; i < A.tiles; i++) {
-      const c = cells[i];
+    const via = A.human ? this._viaOf(A, T) : null;
+    const froms = via ? [A].concat(via.map((id) => this.P[id])) : [A];
+    for (const F of froms)
+    for (let i = 0, cs = F.cells; i < F.tiles; i++) {
+      const c = cs[i];
       if (!edge(c)) continue;
       const dx = (c % W) - fx, dy = ((c / W) | 0) - fy, d = dx * dx + dy * dy;
       if (d < bd || (d === bd && c < best)) (bd = d), (best = c);
@@ -478,8 +492,9 @@ RA.Game = class Game {
     for (let i = 0; i < h.n; i++) if (this.inHeap[h.v[i]] === att.id) this.inHeap[h.v[i]] = 0;
     h.clear();
     att.pending = 0;
-    const cells = A.cells;
-    for (let i = 0; i < A.tiles; i++) {
+    const froms = att.via ? [A].concat(att.via.map((id) => this.P[id]).filter((o) => o && o.alive)) : [A];
+    for (const F of froms)
+    for (let i = 0, cells = F.cells; i < F.tiles; i++) {
       const c = cells[i];
       const x = c % W;
       if (x > 0 && land[c - 1] && own[c - 1] === tid && this.inHeap[c - 1] !== att.id) this._push(att, c - 1, null, -1);
@@ -542,7 +557,8 @@ RA.Game = class Game {
       if (this.zone && this.zoneOut(c)) continue;
       const x = c % W;
       if (!att.boat || att.src !== c) {
-        if (!((x > 0 && own[c - 1] === att.a) || (x < W - 1 && own[c + 1] === att.a) || (c >= W && own[c - W] === att.a) || (c < N - W && own[c + W] === att.a))) continue;
+        const V = att.via, ok = (o) => o === att.a || (V !== null && V.includes(o));
+        if (!((x > 0 && ok(own[c - 1])) || (x < W - 1 && ok(own[c + 1])) || (c >= W && ok(own[c - W])) || (c < N - W && ok(own[c + W])))) continue;
       }
       // cost model
       const t = terr[c];
@@ -1247,7 +1263,7 @@ RA.Game = class Game {
     if (T && this.tick < this.peaceUntil) return { err: `Mirno doba: napadi na države počinju za ${this.peaceLeft()} s. Do tada zauzimaj slobodnu zemlju i sklapaj saveze.` };
     const troops = p.troops * ratio;
     if (troops < 1) return { err: 'Nemaš dovoljno vojske.' };
-    if (this.hasBorderWith(p, tid)) {
+    if (this.hasBorderWith(p, tid) || (T && p.human && this._viaOf(p, T))) {
       const a = this.launchAttack(pid, tid, troops, c, -1, !!dir, from);
       return a ? { ok: 'land', att: a } : { err: 'Napad nije moguć.' };
     }
@@ -1256,7 +1272,7 @@ RA.Game = class Game {
       if (typeof r === 'object') return { ok: 'boat', boat: r };
       return { err: this.boatErr(r) };
     }
-    return { err: T ? `Nemaš kopnenu granicu s tom državom (${T.name}). Pošalji brod na obalu.` : 'Nemaš pristup tom području. Pošalji brod na obalu.' };
+    return { err: T ? `Nemaš kopnenu granicu s tom državom (${T.name}), ni preko vojnog saveznika. Pošalji brod na obalu.` : 'Nemaš pristup tom području. Pošalji brod na obalu.' };
   }
   boatErr(r) {
     return ({

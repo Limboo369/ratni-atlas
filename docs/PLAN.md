@@ -139,7 +139,7 @@ Resursi i trgovina (12 + 35):
 | 34 | Zajmovi | Da, od drugih država: kad tražiš zajam, igra odmah predloži dio tvoje teritorije u zalog (označen na mapi). Ne vratiš zlato na vrijeme → taj dio ide njima. |
 | 36 | Agresivna ekspanzija | Da, s balansom: ljutnja raste s brojem napadnutih i pokorenih država, ne samo s teritorijom — jedna velika država nije isto što i pet malih iste površine. Vremenom opada; visoka ljutnja → AI koalicija. |
 | 40 | Vazali | Da: slabu državu možeš učiniti vazalom umjesto da je osvojiš — plaća danak i bori se uz tebe. |
-| 43 | Pravo prolaza | Da: napadi i desanti kroz teritoriju saveznika. Poklanjanje gradova — ne. |
+| 43 | Pravo prolaza | Gotovo za kopnene napade (25. 9.): granica vojnog saveznika s trećom državom je i tvoj front (ako saveznik nije i njen saveznik); osvojena zemlja je tvoja. Desanti preko saveznika: kasnije. Poklanjanje gradova — ne. |
 
 ## Vladari s komentarima
 

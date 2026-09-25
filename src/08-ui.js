@@ -1154,7 +1154,7 @@ RA.UI = class {
       : !T || T === me ? 'Povuci do tuđe države.'
       : G.isFriendly(me, T) ? `${T.name} ti je saveznik.`
       : G.tick < G.peaceUntil ? `Mirno doba još ${G.peaceLeft()} s.`
-      : !G.hasBorderWith(me, T.id) ? `Nemaš kopnenu granicu s tom državom (${T.name}).` : '';
+      : !G.hasBorderWith(me, T.id) && !G._viaOf(me, T) ? `Nemaš kopnenu granicu s tom državom (${T.name}), ni preko saveznika.` : '';
     this.arrow = { s, e, ok: !why, why, name: T && T !== me ? T.name : '' };
   }
   arrowDrop() {

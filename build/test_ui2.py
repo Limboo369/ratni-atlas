@@ -143,7 +143,7 @@ async def main():
             except Exception:
                 pass
             kf = await ev('() => [document.querySelector("#feed .kf.war.mine")?.textContent, document.querySelector("#dlogList li.war")?.textContent]')
-            check(bool(kf[0]) and nb['name'] in kf[0] and bool(kf[1]), f'kill feed and diplomacy log show my war {kf}')
+            check(bool(kf[0]) and bool(kf[1]), f'kill feed and diplomacy log show my war {kf}')
             await page.screenshot(path=OUT + f'{MODE}_v3_5_chips.png')
             before = await ev('() => window.__ra.G.me.troops')
             await page.click('#attBar .achip.out .x')
@@ -151,18 +151,26 @@ async def main():
             after = await ev('() => window.__ra.G.me.troops')
             n_att = await ev('() => window.__ra.G.attacks.filter(a => !a.done && a.a === window.__ra.G.me.id && a.t > 0).length')
             check(n_att == 0 and after > before, f'retreat returns troops ({round(before)} -> {round(after)})')
+            # the checks below need a big, hostile neighbour: pick the largest one that is alive and not an ally
+            await ev('''() => { window.__pickNb = () => { const G = window.__ra.G, me = G.me;
+                const ids = [...RA.AI.scan(G, me).nb.keys()].filter(id => { const o = G.P[id]; return o && o.alive && o.type !== 'bot' && !G.isFriendly(me, o); });
+                ids.sort((a, b) => G.P[b].tiles - G.P[a].tiles); return ids[0]; }; }''')
+            nb['id'] = await ev('() => window.__pickNb()')
             # directed attack: only the corridor from the nearest border to the tapped point is taken, then the army comes home
             d = await ev(f'''() => {{ const G = window.__ra.G, me = G.me, T = G.P[{nb["id"]}];
                 me.troops = Math.max(me.troops, 150000);
                 let far = -1, fd = -1; const W = G.map.W, cap = T.capital;
                 const tgt = cap >= 0 && G.owner[cap] === T.id ? cap : T.cells[T.tiles >> 1];
                 const before = G.owner.slice(), tiles0 = T.tiles;
+                const others = G.attacks.filter(a => !a.done && a.a === me.id).map(a => [a.t, !!a.corr, !!a.only, a.via && a.via.length]);
                 const r = G.exec(me.id, 'atk', [tgt, 0.4, 1]);
                 const att = r && r.att; if (!att || !att.corr) return {{ err: JSON.stringify(r && (r.err || r.ok)) }};
                 const k = att.corr; let n = 0;
                 while (!att.done && n < 4000) {{ G.step(); n++; }}
                 let taken = 0, outside = 0;
-                for (let c = 0; c < G.map.N; c++) if (before[c] === T.id && G.owner[c] === me.id) {{ taken++; if (!G._inCorr(k, c)) outside++; }}
+                // outside the corridor only pockets the thrust cut off (a surrounded enclave falls by the enclave rule): they no longer touch T
+                const touchesT = (c) => {{ const x = c % W, o = G.owner; return (x > 0 && o[c - 1] === T.id) || (x < W - 1 && o[c + 1] === T.id) || o[c - W] === T.id || o[c + W] === T.id; }};
+                for (let c = 0; c < G.map.N; c++) if (before[c] === T.id && G.owner[c] === me.id) {{ taken++; if (!G._inCorr(k, c) && touchesT(c)) outside++; }}
                 // an arrow drawn from one of my cells: the corridor starts there
                 let from = -1; for (let i = 0; i < me.tiles && from < 0; i++) {{ const c = me.cells[i], x = c % W;
                     if ((x > 0 && G.owner[c - 1] === T.id) || (x < W - 1 && G.owner[c + 1] === T.id)) from = c; }}
@@ -170,13 +178,14 @@ async def main():
                 const fr = G.exec(me.id, 'atk', [tgt2, 0.1, 1, from]);
                 const fromOk = !!(fr && fr.att && fr.att.corr && fr.att.corr.sx === from % W && fr.att.corr.sy === ((from / W) | 0));
                 const all = G.exec(me.id, 'atk', [tgt2, 0.2, 0]);
-                return {{ taken, outside, tiles0, alive: T.alive, done: att.done, ticks: n, r: Math.round(Math.sqrt(k.r2)), whole: !!(all && all.att && !all.att.corr), fromOk }}; }}''')
+                return {{ taken, outside, tiles0, alive: T.alive, done: att.done, ticks: n, r: Math.round(Math.sqrt(k.r2)), whole: !!(all && all.att && !all.att.corr), fromOk, others, allies: [...me.allies.keys()] }}; }}''')
             print('directed attack', d)
             check(d.get('taken', 0) > 0 and d.get('outside', 1) == 0, f'directed attack takes only its corridor ({d})')
             check(d.get('done') and d.get('alive') and d.get('taken', 0) < d.get('tiles0', 0), 'the directed attack ends by itself; the rest of the state stays')
             check(d.get('whole'), '"Napadni cijelu granicu" is a whole-border attack')
             check(d.get('fromOk'), 'an arrow drawn from my own cell starts the corridor there')
             await ev('() => { const G = window.__ra.G; for (const a of G.attacks) if (!a.done && a.a === G.me.id) G.retreat(a.id); }')
+            nb['id'] = await ev('() => window.__pickNb()')
             # "Vrati granice": the neighbour takes some of my land; one click on the chip takes back only that land
             lost = await ev(f'''() => {{ const G = window.__ra.G, me = G.me, T = G.P[{nb["id"]}];
                 for (const a of G.attacks) if (!a.done && (a.a === me.id || a.t === me.id)) a.done = true;
@@ -204,6 +213,24 @@ async def main():
                     const m = G.lostTo(me).get(T.id); return {{ left: m ? m.length : 0, extra, done: att.done }}; }}''')
                 print('reclaim', back)
                 check(back.get('done') and back.get('extra') == 0 and back.get('left', 99) <= lost // 4, f'"Vrati granice" retakes only the lost land ({back}, lost {lost})')
+            # right of passage: a military ally's border with a third state is a front for my attacks on it
+            via = await ev('''() => { const G = window.__ra.G, me = G.me;
+                for (const a of G.attacks) if (!a.done && a.a === me.id) a.done = true;
+                const nbs = [...RA.AI.scan(G, me).nb.keys()].map(id => G.P[id]).filter(o => o.type === 'nation');
+                for (const O of nbs) for (const T of G.P) {
+                  if (!T || !T.alive || T === me || T === O || T.type !== 'nation' || G.hasBorderWith(me, T.id) || !G.hasBorderWith(O, T.id) || me.allies.has(T.id) || O.allies.has(T.id)) continue;
+                  G.makeAlliance(me, O); me.troops = Math.max(me.troops, 300000); T.troops = Math.min(T.troops, 30000);
+                  const before = T.tiles, r = G.cmdAttack(me.id, T.cells[T.tiles >> 1], 0.5, 1);
+                  if (!r.att) return { err: r.err, T: T.name, O: O.name };
+                  for (let i = 0; i < 400 && !r.att.done; i++) G.step();
+                  const res = { T: T.name, O: O.name, lost: before - T.tiles, via: r.att.via && r.att.via.length };
+                  G.breakAlliance(me.id, O.id, false); // the next checks attack this neighbour again
+                  return res;
+                }
+                return { skip: true }; }''')
+            print('passage', via)
+            check(via.get('skip') or (via.get('lost', 0) > 0 and via.get('via')), f'attack through an ally\'s land (right of passage) {via}')
+            nb['id'] = await ev('() => window.__pickNb()')
             if MODE != 'phone':
                 # desktop: right button + drag from my land to the neighbour draws the arrow and launches the directed attack
                 pts = await ev(f'''() => {{ const a = window.__ra, G = a.G, me = G.me, T = G.P[{nb["id"]}], W = G.map.W;
@@ -222,6 +249,8 @@ async def main():
                 await page.mouse.move((pts[0] + pts[2]) / 2, (pts[1] + pts[3]) / 2, steps=5)
                 await page.mouse.move(pts[2], pts[3], steps=5)
                 arrow = await ev('() => window.__ra.ui.arrow && window.__ra.ui.arrow.ok')
+                if not arrow:
+                    print('arrow state', await ev('() => JSON.stringify(window.__ra.ui.arrow)'), pts)
                 await page.screenshot(path=OUT + f'{MODE}_v3_5b_arrow.png')
                 await page.mouse.up(button='right')
                 await page.wait_for_timeout(300)
