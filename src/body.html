@@ -2,21 +2,23 @@
   <div id="map" aria-label="Karta Evrope"></div>
 
   <header id="hud" hidden>
+    <div class="hud-identity"><span class="hud-insignia" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12 2 21 6v6c0 5-9 10-9 10S3 17 3 12V6Z"/><path d="m7 13 5-7 5 7H7Zm5-2v6"/></svg></span><div><span class="hud-eyebrow" id="hEra">TVOJA OPERACIJA</span><strong id="hNation">Komandant</strong></div></div>
     <div class="stat troops">
       <span class="lab">Vojska</span>
       <span class="val num" id="hTroops">0</span>
       <div class="tbar" id="hBar" title="Zelena zona: vojska najbrže raste (oko 42% kapaciteta)"><div class="zone"></div><div class="fill"></div><div class="mark"></div></div>
       <span class="sub" id="hTroopsSub">/ 0</span>
     </div>
-    <div class="stat">
+    <div class="stat gold">
       <span class="lab">Zlato</span>
       <span class="val num" id="hGold">0</span>
       <span class="sub" id="hGoldSub">+0/s</span>
     </div>
-    <div class="stat">
+    <div class="stat territory">
       <span class="lab">Kopno</span>
       <span class="val num" id="hLand">0%</span>
       <span class="sub" id="hRank">cilj 70%</span>
+      <div class="objective-track" aria-hidden="true"><i id="hObjective"></i></div>
     </div>
     <div class="hud-btns">
       <div>
@@ -46,21 +48,23 @@
   <div id="modeBar" hidden><span id="modeText"></span><button id="modeExtra" hidden></button><button id="modeCancel">Odustani</button></div>
 
   <footer id="dock" hidden>
+    <div class="dock-heading"><span>KOMANDNI CENTAR</span><span>Desni klik + povuci <b>Usmjereni napad</b></span></div>
     <div class="ratio-row">
-      <span class="lab">Snaga<br>napada</span>
+      <span class="lab">Snaga <br>napada</span>
       <input type="range" id="ratio" min="5" max="100" step="5" value="30" aria-label="Snaga napada u postocima">
       <span class="rv" id="ratioVal"><b>30%</b></span>
     </div>
     <div class="acts-row">
-      <button class="act" id="aArmy"><i data-ic="army"></i><span>Vojska</span></button>
-      <button class="act" id="aBuild"><i data-ic="build"></i><span>Gradi</span></button>
-      <button class="act" id="aLand"><i data-ic="boat"></i><span>Desant</span></button>
-      <button class="act" id="aStrike"><i data-ic="rocket"></i><span>Rakete</span></button>
-      <button class="act" id="aDiplo"><i data-ic="ally"></i><span>Savezi</span><b class="bdg" id="diploBdg" hidden>0</b></button>
+      <button class="act" id="aArmy" data-key="V" aria-keyshortcuts="v"><i data-ic="army"></i><span>Vojska</span></button>
+      <button class="act" id="aBuild" data-key="B" aria-keyshortcuts="b"><i data-ic="build"></i><span>Gradi</span></button>
+      <button class="act" id="aLand" data-key="D" aria-keyshortcuts="d"><i data-ic="boat"></i><span>Desant</span></button>
+      <button class="act" id="aStrike" data-key="R" aria-keyshortcuts="r"><i data-ic="rocket"></i><span>Rakete</span></button>
+      <button class="act" id="aDiplo" data-key="S" aria-keyshortcuts="s"><i data-ic="ally"></i><span>Savezi</span><b class="bdg" id="diploBdg" hidden>0</b></button>
     </div>
   </footer>
 
   <div id="spawnBar" hidden>
+    <div class="deployment-label">OPERACIJA / PRIPREMA</div>
     <h3>Odaberi početak</h3>
     <p id="spawnText">Dodirni bilo gdje na kopnu ili izaberi državu.</p>
     <select id="natSel" aria-label="Preuzmi državu"></select>
@@ -217,6 +221,7 @@
 
   <div class="screen" id="endScreen" hidden>
     <div class="card">
+      <div class="deployment-label">IZVJEŠTAJ OPERACIJE</div>
       <h2 class="end-title" id="endTitle">Pobjeda</h2>
       <p class="end-sub" id="endSub"></p>
       <div class="kv" id="endStats"></div>

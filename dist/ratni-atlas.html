@@ -863,26 +863,237 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
 #dlogList li.chat { background: rgba(62, 199, 194, .08); }
 @media (max-width: 560px) { #chatBtn { display: none; } }
 
+/* Tactical interface: the same materials as the launcher, with the map taking priority. */
+#hud, #dock, #board, #dlog { box-sizing: border-box; background: linear-gradient(145deg,#15212bf5,#0a131bf5); border: 1px solid #b8cfdd26; box-shadow: 0 8px 32px #02080c45; border-radius: 4px; }
+#hud { top: calc(14px + env(safe-area-inset-top,0px)); left: 16px; right: 16px; padding: 12px 16px; gap: 0; align-items: center; }
+.hud-identity { display: flex; gap: 12px; align-items: center; flex: 1 1 250px; min-width: 0; padding-right: 24px; }
+.hud-identity > div { min-width: 0; }
+.hud-insignia { width: 36px; height: 43px; display: grid; place-items: center; color: #e2b883; flex: none; }
+.hud-insignia svg { width: 32px; height: 38px; }
+.hud-eyebrow { display: block; color: #9daeba; font-size: 9px; letter-spacing: .15em; text-transform: uppercase; margin-bottom: 6px; }
+#hNation { display: block; font: 600 18px/1.15 var(--font-ui); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#hud .stat { box-sizing: border-box; flex: 1 1 150px; padding: 0 22px; border-left: 1px solid #ffffff14; gap: 5px; position: relative; }
+#hud .stat.troops { flex-basis: 230px; }
+#hud .stat .lab { font-size: 9px; letter-spacing: .16em; color: #a3b5c1; }
+#hud .stat .val { font: 600 27px/1 var(--font-ui); letter-spacing: -.025em; }
+#hud .stat.gold .val { color: #ecd09c; }
+#hud .stat .sub { font-size: 10px; color: #96aab8; }
+#hud .tbar { position: absolute; bottom: 14px; left: 22px; right: 22px; height: 2px; margin: 0; border-radius: 0; opacity: .9; }
+#hud .troops .val { padding-bottom: 4px; }
+.objective-track { position: absolute; left: 22px; right: 22px; bottom: -6px; height: 2px; background: #ffffff10; }
+.objective-track i { display: block; height: 100%; background: #d2b383; width: 0; transition: width .3s; }
+.hud-btns { gap: 6px; padding-left: 18px; border-left: 1px solid #ffffff14; }
+.icon-btn { border-radius: 3px; background: #ffffff05; border-color: #ffffff18; width: 44px; height: 44px; }
+.icon-btn:hover { background: #ffffff10; border-color: #ffffff35; }
+#speedBtn { font: 600 17px var(--font-ui); height: 32px; }
+#clock { font: 10px/1.5 monospace; color: #a3b4c1; margin-top: 3px; }
+#board { right: 16px; top: calc(var(--hud-h,90px) + 14px); width: 250px; max-width: 46vw; }
+#board header, #dlog header { min-height: 44px; box-sizing: border-box; padding: 0 12px; color: #afbdc5; font-size: 10px; letter-spacing: .13em; border-bottom: 1px solid #ffffff0d; }
+#boardToggle, #dlogToggle { width: 36px; min-height: 40px; font-size: 16px; color: #c4d0d7; }
+#board li { padding: 9px 12px; gap: 8px; font-size: 12px; border-bottom: 1px solid #ffffff06; }
+#board li.me { background: #497faa26; box-shadow: inset 2px 0 #88b9dc; }
+#board li .sw { width: 7px; height: 7px; border-radius: 1px; }
+#board li .pc { font-size: 11px; }
+#board.collapsed header, #dlog.collapsed header { border-bottom: 0; }
+#board.collapsed { width: auto; }
+#status { left: 16px; top: calc(var(--hud-h,90px) + 14px); gap: 6px; }
+.pill { border-radius: 3px; font-size: 11px; padding: 6px 10px; letter-spacing: .025em; }
+#feed { left: 16px; top: calc(var(--hud-h,90px) + var(--st-h,0px) + 14px); gap: 5px; }
+.kf { border-radius: 3px; padding: 7px 10px; font-size: 12px; background: #101c27e8; border-color: #a0bbd322; }
+.kf.mine { border-left: 2px solid #dfb76c; }
+#toasts { left: 16px; top: calc(var(--hud-h,90px) + var(--st-h,0px) + var(--feed-h,0px) + 14px); }
+.toast { padding: 12px; border-radius: 3px; background: #101c27f5; font-size: 12px; line-height: 1.45; border-color: #9db8ca2e; }
+.toast .acts button { min-height: 36px; border-radius: 3px; }
+#dlog { right: 16px; bottom: calc(var(--dock-h,120px) + 66px); width: 290px; }
+#dlogList { max-height: min(26vh,230px); padding-block: 8px; }
+#dlogList li { font-size: 12px; line-height: 1.5; padding: 7px 12px; border-bottom: 1px solid #ffffff05; }
+#dlogList time { font: 10px/1.8 monospace; }
+#dlog.collapsed { width: auto; }
+#dock { left: 50%; right: auto; transform: translateX(-50%); width: min(820px,calc(100% - 32px)); bottom: calc(16px + env(safe-area-inset-bottom,0px)); padding: 13px 16px; display: grid; grid-template-columns: minmax(190px, .9fr) minmax(0,1.5fr); gap: 12px 22px; border-top-color: #d2b38355; }
+.dock-heading { grid-column: 1/-1; display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 8px; line-height: 1; letter-spacing: .16em; color: #d2b383; }
+.dock-heading > span:last-child { color: #8099ab; letter-spacing: .025em; }
+.dock-heading b { font-weight: 500; color: #b5c4cf; margin-left: 8px; }
+#dock .ratio-row { display: grid; grid-template-columns: 1fr auto; gap: 0 12px; align-content: center; }
+#dock .ratio-row .lab { font-size: 9px; letter-spacing: .1em; }
+#dock .ratio-row .lab br { display: none; }
+#dock .ratio-row .rv { min-width: 0; grid-column: 2; grid-row: 1; color: #9fb0bd; font-size: 10px; }
+#dock .ratio-row .rv b { font: 600 22px/1 var(--font-ui); color: #e6c493; margin-right: 4px; }
+#dock #ratio { grid-column: 1/-1; grid-row: 2; width: 100%; min-width: 0; margin: 2px 0 0; }
+#ratio::-webkit-slider-runnable-track { height: 3px; border-radius: 0; background: linear-gradient(90deg,#d3af75 var(--p,30%),#ffffff18 var(--p,30%)); }
+#ratio::-webkit-slider-thumb { width: 15px; height: 23px; margin-top: -10px; border: 2px solid #d5b57b; border-radius: 2px; background: #e7cda5; }
+#ratio::-moz-range-track { height: 3px; border-radius: 0; background: #ffffff18; }
+#ratio::-moz-range-progress { background: #d3af75; }
+#ratio::-moz-range-thumb { width: 11px; height: 19px; border: 2px solid #d5b57b; border-radius: 2px; background: #e7cda5; }
+#dock .acts-row { gap: 6px; align-items: stretch; }
+#dock .act { height: 63px; padding: 7px 3px 4px; gap: 5px; border-radius: 3px; background: #ffffff04; color: #c1ced6; border-color: #b8cddb1f; font-size: 11px; font-weight: 500; transition: background .15s,border-color .15s; }
+#dock .act svg { width: 22px; height: 22px; }
+#dock .act::after { content: attr(data-key); position: absolute; top: 4px; right: 5px; color: #778c9a; font: 8px/1 monospace; }
+#dock .act:hover { background: #b1c8d813; border-color: #b8cddb66; color: #fff; }
+#dock .act.on { background: #c29a5028; border-color: #dbb97688; color: #f4d7a4; box-shadow: inset 0 -2px #dbb976; }
+#dock .act .bdg { top: -5px; right: -3px; border-radius: 3px; }
+#attBar { left: 50%; right: auto; transform: translateX(-50%); width: min(820px,calc(100% - 96px)); bottom: calc(var(--dock-h,120px) + 10px); padding-block: 3px; }
+.achip { height: 42px; border-radius: 3px; background: #101c27f2; border-color: #b4c6d238; font-size: 12px; }
+.achip .tr { font: 600 13px var(--font-ui); }
+.achip .x { border-radius: 2px; width: 34px; height: 34px; }
+.achip.back { background: #302615ed; border-color: #d0a55888; }
+#modeBar { bottom: calc(var(--dock-h,120px) + var(--att-h,0px) + 16px); padding: 8px 8px 8px 16px; border-radius: 4px; background: #ead0a4; color: #251d10; font-size: 13px; max-width: min(calc(100vw - 24px),640px); }
+#modeBar button { min-height: 36px; border-radius: 3px; padding: 7px 12px; }
+#meBtn { right: 16px; bottom: calc(var(--dock-h,120px) + 10px); border-radius: 4px; background: #111f2bee; }
+#spawnBar { box-sizing: border-box; border-radius: 5px; padding: 24px; bottom: calc(20px + env(safe-area-inset-bottom,0px)); width: min(490px,calc(100vw - 28px)); background: linear-gradient(140deg,#18242ef5,#0b151df5); border-top-color: #d2ae6d88; }
+.deployment-label { font: 500 9px/1.3 var(--font-ui); letter-spacing: .18em; color: #d1b588; margin-bottom: 14px; }
+#spawnBar h3 { font: 600 28px/1.1 var(--font-ui); letter-spacing: -.035em; margin-bottom: 10px; }
+#spawnBar p { line-height: 1.5; font-size: 12px; color: #abbbc6; }
+#natSel { border-radius: 3px; font-size: 14px; background: #ffffff07; }
+#spawnBar .go { border-radius: 3px; background: #e0bd85; color: #211b13; font: 600 16px var(--font-ui); letter-spacing: .12em; }
+#sheet { box-sizing: border-box; background: #101b25; border-color: #aec5d32e; border-radius: 6px 6px 0 0; padding: 14px 20px calc(20px + env(safe-area-inset-bottom,0px)); scrollbar-width: thin; scrollbar-color: #45545f #101b25; }
+#sheet .sh-head { gap: 12px; align-items: center; margin-bottom: 18px; padding-bottom: 16px; border-bottom: 1px solid #ffffff12; }
+#sheet .sh-head > div { min-width: 0; }
+#sheet .sh-head h2 { font: 600 28px/1.1 var(--font-ui); letter-spacing: -.035em; }
+#sheet .sh-head .meta { font-size: 11px; line-height: 1.5; color: #9eafbc; }
+#sheet .sh-close { width: 44px; height: 44px; border-radius: 3px; border: 1px solid #ffffff16; background: #ffffff05; }
+#sheet .sh-close svg { width: 19px; height: 19px; }
+#sheet .btn, #sheet .prow, #sheet .kv > div { border-radius: 3px; background: #ffffff04; border-color: #a5bdce26; }
+#sheet .btn { min-height: 54px; padding: 14px; font-size: 14px; transition: background .15s; }
+#sheet .btn > span { min-width: 0; }
+#sheet .btn .d { font-size: 12px; line-height: 1.4; }
+#sheet .btn .r { font: 600 19px var(--font-ui); color: #e1c18e; }
+#sheet .btn.primary { background: #dbb476; border-color: #ebcd9e; color: #231c12; }
+#sheet .btn.primary .r { color: #231c12; }
+#sheet .btn.primary .d { color: #3c3020; }
+#sheet .btn.good { background: #59b8a517; border-color: #7bc9b84a; }
+#sheet .btn:not(:disabled):hover, #sheet .prow:hover { background: #a4c1d712; border-color: #b1ccd34d; }
+#sheet .btn.primary:not(:disabled):hover { background: #eccfa3; }
+#sheet .mini { border-radius: 3px; min-height: 36px; box-sizing: border-box; }
+#sheet .sec-t { font-size: 10px; color: #a5b6c4; letter-spacing: .12em; margin-block: 24px 12px; }
+#sheet .kv .k { font-size: 9px; }
+#sheet .kv .v { font: 600 21px var(--font-ui); }
+#sheet .explain, #sheet .note { font-size: 12px; line-height: 1.5; }
+#sheet .grid2 { gap: 8px; }
+#sheet .grid2 .btn { align-items: flex-start; }
+#sheet .grab { width: 32px; height: 3px; margin-bottom: 16px; }
+#endScreen { background: #050b10e6; }
+#endScreen .card { border-radius: 5px; border-color: #c2a46e44; background: linear-gradient(150deg,#202b32,#0e1821 65%); padding: 30px; max-width: 600px; }
+#endScreen .end-title { font: 700 58px/1 var(--font-ui); letter-spacing: -.04em; margin: 10px 0; }
+#endScreen .end-title.win { color: #e4c18b; }
+#endScreen .end-sub { font-size: 13px; line-height: 1.5; }
+#endScreen .kv > div, #endScreen #chart { border-radius: 3px; background: #ffffff05; }
+#endScreen .go { font: 600 16px var(--font-ui); letter-spacing: .12em; border-radius: 3px; color: #241c12; background: #d9b680; }
+#endScreen .cont-btn { border-radius: 3px; }
+#sheet .prof-name { white-space: normal; overflow-wrap: anywhere; }
+#sheet .acc-grid > div:last-child .v { white-space: normal; font-size: 18px; }
+@media (min-width: 1100px) and (min-height: 600px) {
+  #app:has(#hud:not([hidden])) #sheet:not(:has(.dossier-marker)) { position: absolute; top: calc(var(--hud-h,90px) + 14px); right: 16px; bottom: calc(var(--dock-h,120px) + 66px); width: 440px; max-height: none; border: 1px solid #a5bdce33; border-radius: 4px; padding: 22px; box-shadow: -15px 0 60px #0005; }
+  #app:has(#hud:not([hidden])) #sheet:not(:has(.dossier-marker)) .grab { display: none; }
+}
+@media (max-width: 1099px) and (min-width: 761px) {
+  #hud { padding: 12px; left: 12px; right: 12px; }
+  .hud-identity { padding-right: 12px; flex-basis: 120px; gap: 7px; }
+  .hud-insignia { display: none; }
+  #hNation { font-size: 15px; }
+  .hud-eyebrow { font-size: 8px; letter-spacing: .04em; }
+  #hud .stat { padding-inline: 14px; flex-basis: 90px; }
+  #hud .stat.troops { flex-basis: 140px; }
+  #hud .tbar, .objective-track { left: 14px; right: 14px; }
+  #hud .stat .val { font-size: 23px; }
+  .hud-btns { padding-left: 12px; }
+}
+@media (max-width: 760px) {
+  #hud { left: 8px; right: 8px; top: calc(8px + env(safe-area-inset-top,0px)); display: grid; grid-template-columns: 1.2fr .9fr .9fr; padding: 8px 10px 10px; gap: 10px 0; }
+  .hud-identity { grid-row: 1; grid-column: 1/3; padding: 0 10px 0 0; gap: 7px; max-width: calc(100vw - 160px); min-height: 36px; }
+  .hud-insignia { width: 24px; height: 31px; }
+  .hud-insignia svg { width: 24px; height: 28px; }
+  #hNation { font-size: 13px; }
+  .hud-eyebrow { font-size: 7px; letter-spacing: .08em; margin-bottom: 4px; }
+  #hud .stat { grid-row: 2; padding: 0 10px; gap: 5px; }
+  #hud .stat.troops { border-left: 0; padding-left: 0; }
+  #hud .stat .lab { font-size: 8px; letter-spacing: .1em; }
+  #hud .stat .val { font-size: 22px; }
+  #hud .stat .sub { font-size: 8px; }
+  #hud .tbar { left: 0; right: 10px; bottom: 12px; }
+  .objective-track { left: 10px; right: 10px; bottom: -5px; }
+  .hud-btns { grid-row: 1; grid-column: 2/4; justify-self: end; border: 0; padding: 0; gap: 4px; }
+  .hud-btns .icon-btn { width: 36px; height: 36px; }
+  #speedBtn { min-width: 34px; padding: 0 4px; height: 24px; font-size: 14px; }
+  #clock { font-size: 8px; margin-top: 1px; line-height: 1.2; }
+  #board { right: 8px; width: 190px; top: calc(var(--hud-h,130px) + 8px); max-width: 48vw; }
+  #board header, #dlog header { min-height: 38px; padding-inline: 8px; font-size: 9px; letter-spacing: .055em; }
+  #boardToggle, #dlogToggle { width: 28px; min-height: 36px; }
+  #board li { padding: 7px 8px; grid-template-columns: 12px 6px minmax(0,1fr) auto; gap: 4px; font-size: 11px; }
+  #board li .pc { font-size: 10px; }
+  #status { left: 8px; top: calc(var(--hud-h,130px) + 8px); max-width: calc(100vw - 145px); }
+  .pill { padding: 5px 7px; font-size: 10px; }
+  #feed { left: 8px; top: calc(var(--hud-h,130px) + var(--st-h,0px) + 8px); max-width: calc(100vw - 145px); }
+  .kf { font-size: 10px; padding: 5px 7px; gap: 5px; max-width: 100%; box-sizing: border-box; }
+  .kf .fn { min-width: 0; }
+  #toasts { left: 8px; top: calc(var(--hud-h,130px) + var(--st-h,0px) + var(--feed-h,0px) + 8px); }
+  .toast { padding: 8px; font-size: 11px; }
+  #dock { bottom: calc(8px + env(safe-area-inset-bottom,0px)); width: calc(100% - 16px); padding: 8px; display: flex; gap: 6px; border-radius: 4px; }
+  .dock-heading { display: none; }
+  #dock .ratio-row { display: flex; gap: 8px; }
+  #dock .ratio-row .lab { font-size: 8px; max-width: 43px; }
+  #dock .ratio-row .lab br { display: initial; }
+  #dock .ratio-row .rv { min-width: 82px; font-size: 9px; }
+  #dock .ratio-row .rv b { font-size: 19px; }
+  #dock #ratio { width: 0; flex: 1; margin: 0; }
+  #dock .acts-row { gap: 5px; }
+  #dock .act { height: 50px; font-size: 10px; gap: 4px; padding-top: 5px; }
+  #dock .act svg { width: 20px; height: 20px; }
+  #dock .act::after { display: none; }
+  #attBar { left: 8px; right: 60px; transform: none; width: auto; bottom: calc(var(--dock-h,120px) + 8px); }
+  .achip { height: 40px; padding-left: 9px; font-size: 11px; }
+  #meBtn { right: 8px; bottom: calc(var(--dock-h,120px) + 8px); }
+  #dlog { right: 8px; width: min(280px,calc(100% - 16px)); bottom: calc(var(--dock-h,120px) + 61px); }
+  #dlogList { max-height: 20vh; }
+  #sheet { max-height: calc(100dvh - 28px - env(safe-area-inset-top,0px)); padding-inline: 16px; }
+  #sheet .sh-head h2 { font-size: 25px; }
+  #sheet .btn { padding: 12px; font-size: 13px; gap: 9px; }
+  #sheet .btn .r { font-size: 17px; }
+  #spawnBar { padding: 18px; bottom: calc(12px + env(safe-area-inset-bottom,0px)); }
+  #spawnBar h3 { font-size: 25px; }
+  #endScreen .card { padding: 22px 18px; }
+  #endScreen .end-title { font-size: 46px; }
+  #sheet .acc-grid > div:last-child .v { font-size: 14px; }
+}
+@media (pointer: coarse) { #dock .act::after, .dock-heading > span:last-child { display: none; } }
+@media (min-width: 561px) and (max-width: 760px) {
+  #hud:has(#chatBtn:not([hidden])) .hud-identity { max-width: calc(100vw - 202px); }
+}
+@media (max-height: 500px) and (min-width: 761px) {
+  #hud { top: 6px; padding-block: 8px; }
+  #hud .stat .val { font-size: 20px; }
+  #dock { padding-block: 8px; bottom: 6px; }
+  .dock-heading { display: none; }
+  #dock .act { height: 48px; }
+  #dlogList { max-height: 18vh; }
+  #sheet { max-height: calc(100dvh - 20px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .toast, #sheet, .kf, #joinBanner .btn { animation: none; }
+  .objective-track i, .tbar .fill { transition: none; }
+}
+
 #app{touch-action:none}#sheet,.screen{touch-action:pan-y}</style>
 <div id="app">
   <div id="map" aria-label="Karta Evrope"></div>
 
   <header id="hud" hidden>
+    <div class="hud-identity"><span class="hud-insignia" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12 2 21 6v6c0 5-9 10-9 10S3 17 3 12V6Z"/><path d="m7 13 5-7 5 7H7Zm5-2v6"/></svg></span><div><span class="hud-eyebrow" id="hEra">TVOJA OPERACIJA</span><strong id="hNation">Komandant</strong></div></div>
     <div class="stat troops">
       <span class="lab">Vojska</span>
       <span class="val num" id="hTroops">0</span>
       <div class="tbar" id="hBar" title="Zelena zona: vojska najbrže raste (oko 42% kapaciteta)"><div class="zone"></div><div class="fill"></div><div class="mark"></div></div>
       <span class="sub" id="hTroopsSub">/ 0</span>
     </div>
-    <div class="stat">
+    <div class="stat gold">
       <span class="lab">Zlato</span>
       <span class="val num" id="hGold">0</span>
       <span class="sub" id="hGoldSub">+0/s</span>
     </div>
-    <div class="stat">
+    <div class="stat territory">
       <span class="lab">Kopno</span>
       <span class="val num" id="hLand">0%</span>
       <span class="sub" id="hRank">cilj 70%</span>
+      <div class="objective-track" aria-hidden="true"><i id="hObjective"></i></div>
     </div>
     <div class="hud-btns">
       <div>
@@ -912,21 +1123,23 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
   <div id="modeBar" hidden><span id="modeText"></span><button id="modeExtra" hidden></button><button id="modeCancel">Odustani</button></div>
 
   <footer id="dock" hidden>
+    <div class="dock-heading"><span>KOMANDNI CENTAR</span><span>Desni klik + povuci <b>Usmjereni napad</b></span></div>
     <div class="ratio-row">
-      <span class="lab">Snaga<br>napada</span>
+      <span class="lab">Snaga <br>napada</span>
       <input type="range" id="ratio" min="5" max="100" step="5" value="30" aria-label="Snaga napada u postocima">
       <span class="rv" id="ratioVal"><b>30%</b></span>
     </div>
     <div class="acts-row">
-      <button class="act" id="aArmy"><i data-ic="army"></i><span>Vojska</span></button>
-      <button class="act" id="aBuild"><i data-ic="build"></i><span>Gradi</span></button>
-      <button class="act" id="aLand"><i data-ic="boat"></i><span>Desant</span></button>
-      <button class="act" id="aStrike"><i data-ic="rocket"></i><span>Rakete</span></button>
-      <button class="act" id="aDiplo"><i data-ic="ally"></i><span>Savezi</span><b class="bdg" id="diploBdg" hidden>0</b></button>
+      <button class="act" id="aArmy" data-key="V" aria-keyshortcuts="v"><i data-ic="army"></i><span>Vojska</span></button>
+      <button class="act" id="aBuild" data-key="B" aria-keyshortcuts="b"><i data-ic="build"></i><span>Gradi</span></button>
+      <button class="act" id="aLand" data-key="D" aria-keyshortcuts="d"><i data-ic="boat"></i><span>Desant</span></button>
+      <button class="act" id="aStrike" data-key="R" aria-keyshortcuts="r"><i data-ic="rocket"></i><span>Rakete</span></button>
+      <button class="act" id="aDiplo" data-key="S" aria-keyshortcuts="s"><i data-ic="ally"></i><span>Savezi</span><b class="bdg" id="diploBdg" hidden>0</b></button>
     </div>
   </footer>
 
   <div id="spawnBar" hidden>
+    <div class="deployment-label">OPERACIJA / PRIPREMA</div>
     <h3>Odaberi početak</h3>
     <p id="spawnText">Dodirni bilo gdje na kopnu ili izaberi državu.</p>
     <select id="natSel" aria-label="Preuzmi državu"></select>
@@ -1083,6 +1296,7 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
 
   <div class="screen" id="endScreen" hidden>
     <div class="card">
+      <div class="deployment-label">IZVJEŠTAJ OPERACIJE</div>
       <h2 class="end-title" id="endTitle">Pobjeda</h2>
       <p class="end-sub" id="endSub"></p>
       <div class="kv" id="endStats"></div>
@@ -7559,6 +7773,16 @@ RA.UI = class {
     $('sheetWrap').addEventListener('click', (e) => {
       if (e.target.id === 'sheetWrap') this.closeSheet();
     });
+    // Modal input owns its keys, including Escape from a text field and Tab at either end.
+    $('sheet').addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); this.closeSheet(); return; }
+      if (e.key === 'Tab') {
+        const items = [...$('sheet').querySelectorAll('button:not(:disabled), input:not(:disabled), select:not(:disabled), a[href], [tabindex="0"]')].filter((el) => el.getClientRects().length);
+        const first = items[0], last = items[items.length - 1];
+        if (e.shiftKey && (document.activeElement === first || document.activeElement === $('sheet'))) { e.preventDefault(); if (last) last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); if (first) first.focus(); }
+      }
+    }, true);
     document.addEventListener('keydown', (e) => this.onKey(e));
     if (window.innerWidth < 560) {
       $('board').classList.add('collapsed');
@@ -7566,8 +7790,8 @@ RA.UI = class {
     }
     const root = document.documentElement.style;
     const ro = new ResizeObserver(() => {
-      root.setProperty('--dock-h', ($('dock').hidden ? 0 : $('dock').offsetHeight) + 'px');
-      root.setProperty('--hud-h', ($('hud').hidden ? 0 : $('hud').offsetHeight) + 'px');
+      root.setProperty('--dock-h', ($('dock').hidden ? 0 : innerHeight - $('dock').getBoundingClientRect().top) + 'px');
+      root.setProperty('--hud-h', ($('hud').hidden ? 0 : $('hud').getBoundingClientRect().bottom) + 'px');
       root.setProperty('--st-h', ($('status').offsetHeight ? $('status').offsetHeight + 6 : 0) + 'px');
       root.setProperty('--feed-h', ($('feed').offsetHeight ? $('feed').offsetHeight + 6 : 0) + 'px');
     });
@@ -7806,8 +8030,8 @@ RA.UI = class {
       this.chips.clear();
     }
     const root = document.documentElement.style;
-    root.setProperty('--dock-h', on ? this.$('dock').offsetHeight + 'px' : '0px');
-    root.setProperty('--hud-h', on ? this.$('hud').offsetHeight + 'px' : '0px');
+    root.setProperty('--dock-h', on ? (innerHeight - this.$('dock').getBoundingClientRect().top) + 'px' : '0px');
+    root.setProperty('--hud-h', on ? this.$('hud').getBoundingClientRect().bottom + 'px' : '0px');
     root.setProperty('--att-h', '0px');
   }
   spawnUI(on) {
@@ -7942,6 +8166,10 @@ RA.UI = class {
   updateHud() {
     const G = this.G, me = G.me, $ = this.$;
     if (!me) return;
+    $('hNation').textContent = me.name;
+    $('hNation').title = me.name;
+    $('hEra').textContent = RA.ERA.short + (G.online ? ' · ONLINE' : ' · OPERACIJA');
+    $('hObjective').style.width = RA.clamp(me.area / G.landTotal() / G.winShare() * 100, 0, 100) + '%';
     $('hTroops').textContent = RA.fmt(me.troops);
     const r = me.troops / Math.max(1, me.maxT);
     const bar = $('hBar');
@@ -8547,6 +8775,7 @@ RA.UI = class {
       else this.setMode(null);
       return;
     }
+    if (!this.$('sheetWrap').hidden) return;
     if (!G || G.state !== 'play' || !G.me) return;
     const k = e.key.toLowerCase();
     if (k === ' ') {
@@ -8575,6 +8804,12 @@ RA.UI = class {
     this.redraw = redraw || null;
     const s = this.$('sheet');
     const wasOpen = !this.$('sheetWrap').hidden;
+    const focusedId = wasOpen && s.contains(document.activeElement) ? document.activeElement.id : '';
+    if (!wasOpen) {
+      this.sheetFocus = document.activeElement;
+      this.sheetInert = [...this.$('app').children].filter((el) => el !== this.$('sheetWrap')).map((el) => [el, el.inert]);
+      for (const [el] of this.sheetInert) el.inert = true;
+    }
     const top = keepScroll && wasOpen ? s.scrollTop : 0;
     s.innerHTML = '<div class="grab"></div>' + html;
     s.onclick = null; // a delegated handler belongs to one sheet only (bindDiplo)
@@ -8583,6 +8818,10 @@ RA.UI = class {
     const cl = s.querySelector('.sh-close');
     if (cl) cl.onclick = () => this.closeSheet();
     if (onBind) onBind(s);
+    s.tabIndex = -1;
+    const restore = focusedId && document.getElementById(focusedId);
+    if (restore && s.contains(restore)) restore.focus({ preventScroll: true });
+    else if (!keepScroll || !wasOpen) (cl || s).focus({ preventScroll: true });
     this.app.sheetPause(true);
   }
   closeSheet() {
@@ -8590,6 +8829,10 @@ RA.UI = class {
     this.$('sheetWrap').hidden = true;
     this.$('sheet').innerHTML = '';
     this.$('sheet').onclick = null;
+    if (this.sheetInert) for (const [el, inert] of this.sheetInert) el.inert = inert;
+    this.sheetInert = null;
+    if (this.sheetFocus && this.sheetFocus.isConnected && this.sheetFocus.getClientRects().length) this.sheetFocus.focus({ preventScroll: true });
+    this.sheetFocus = null;
     this.app.sheetPause(false);
   }
   head(title, meta, color) {
@@ -11451,7 +11694,7 @@ RA.wsRoom = function (url, creds, onCreds, onBack) {
   };
 };
 
-RA.BUILD = '017a3150';
+RA.BUILD = '38e12216';
 new RA.App().boot();
 }
 function __raFallback(){
