@@ -10,6 +10,7 @@ RA.CFG = {
   ALLY_DUR: 3000, // 5 min
   ALLY_REQ_DUR: 200,
   TRAITOR_DUR: 300,
+  RECLAIM_TICKS: 1800, // "Vrati granice": land taken from a player in the last 3 minutes can be won back in one move
   BOAT_MAX: 3,
   BOAT_SPEED: 1.15, // cells per tick
   BOAT_RANGE: 800, // longest sea voyage in cells (BFS steps): farther is 'predaleko'
@@ -173,7 +174,10 @@ RA.Game = class Game {
     if (old) {
       this._removeCell(P[old], c);
       P[old].changed = true;
+      // a human remembers what was taken from them (for "Vrati granice")
+      if (pid && P[old].human) (P[old].lost || (P[old].lost = new Map())).set(c, this.tick);
     }
+    if (pid && P[pid].lost) P[pid].lost.delete(c);
     this.owner[c] = pid;
     if (pid) {
       const np = P[pid];
@@ -324,7 +328,7 @@ RA.Game = class Game {
   /* dir: a directed attack (a player's tap on a state): it starts from the own border cell nearest to the focus and
      only takes a corridor from there to the focus plus a disc around it (width grows with the troops sent), then the
      rest of the army comes home. Without dir the whole common border is the front (the AI, "cijela granica"). */
-  launchAttack(aid, tid, troops, focusCell, sourceCell, dir, from) {
+  launchAttack(aid, tid, troops, focusCell, sourceCell, dir, from, only) {
     const A = this.P[aid];
     if (!A || !A.alive || aid === tid) return null;
     const T = tid ? this.P[tid] : null;
@@ -353,9 +357,9 @@ RA.Game = class Game {
     let corr = null;
     if (dir && T && sourceCell < 0 && focusCell >= 0) corr = this._corridor(A, T, focusCell, troops, from);
     // merge with existing land attack on same target
-    if (sourceCell < 0 && !corr) {
+    if (sourceCell < 0 && !corr && !only) {
       for (const o of this.attacks) {
-        if (!o.done && o.a === aid && o.t === tid && !o.boat && !o.corr) {
+        if (!o.done && o.a === aid && o.t === tid && !o.boat && !o.corr && !o.only) {
           o.troops += troops;
           if (focusCell >= 0) o.focus = focusCell;
           o.fresh = true;
@@ -367,6 +371,7 @@ RA.Game = class Game {
       id: this.nextId++, a: aid, t: tid, troops, start: troops, heap: new RA.Heap(512), pending: 0,
       focus: focusCell >= 0 ? focusCell : -1, done: false, boat: sourceCell >= 0, src: sourceCell, fresh: true, began: this.tick,
       corr,
+      only: only || null, // "Vrati granice": only these cells (the land tid took from aid)
     };
     this.attacks.push(att);
     if (sourceCell >= 0) {
@@ -436,6 +441,7 @@ RA.Game = class Game {
   _push(att, c, base, parent) {
     if (this.zone && this.zoneOut(c)) return;
     if (att.corr && !this._inCorr(att.corr, c)) return;
+    if (att.only && !att.only.has(c)) return;
     const own = this.owner, W = this.map.W, N = this.map.N;
     let k = 0;
     const x = c % W;
@@ -964,6 +970,7 @@ RA.Game = class Game {
     for (const p of this.P) {
       if (!p || !p.alive) continue;
       if (p.traitorUntil > this.tick - 10 && p.traitorUntil <= this.tick) this.alliancesChanged = true; // traitor stripes end
+      if (p.lost && this.tick % 50 === 0) for (const [c, t] of p.lost) if (t < this.tick - RA.CFG.RECLAIM_TICKS) p.lost.delete(c);
       for (const [oid, exp] of p.allies) {
         if (exp <= this.tick) {
           p.allies.delete(oid);
@@ -1199,6 +1206,35 @@ RA.Game = class Game {
   }
 
   /* ---------------- player commands ---------------- */
+  /* land X took from p in the last minutes and still holds: Map X -> [cells] */
+  lostTo(p) {
+    const out = new Map();
+    if (!p.lost) return out;
+    const lim = this.tick - RA.CFG.RECLAIM_TICKS, own = this.owner;
+    for (const [c, t] of p.lost) {
+      const o = own[c];
+      if (t < lim || !o || o === p.id) continue;
+      let a = out.get(o);
+      if (!a) out.set(o, (a = []));
+      a.push(c);
+    }
+    return out;
+  }
+  /* "Vrati granice": a counter-attack only on the land X recently took from p, until the old border is back */
+  cmdReclaim(pid, xid, ratio) {
+    const p = this.P[pid], X = this.P[xid];
+    if (!p || !p.alive) return 'Nisi u igri.';
+    if (!X || !X.alive || X === p) return 'Nevažeći igrač.';
+    if (this.isFriendly(p, X)) return `${X.name} ti je saveznik.`;
+    if (this.tick < this.peaceUntil) return 'Mirno doba.';
+    const cells = this.lostTo(p).get(xid);
+    if (!cells || !cells.length) return `${X.name} ti nije ništa oteo u zadnje 3 minute.`;
+    if (!this.hasBorderWith(p, xid)) return `Nemaš granicu s tom državom (${X.name}).`;
+    const troops = p.troops * ratio;
+    if (troops < 1) return 'Nemaš dovoljno vojske.';
+    const a = this.launchAttack(pid, xid, troops, cells[cells.length - 1], -1, false, -1, new Set(cells));
+    return a ? { att: a, n: cells.length } : 'Napad nije moguć.';
+  }
   cmdAttack(pid, c, ratio, dir, from) {
     const p = this.P[pid];
     if (!p || !p.alive) return { err: 'Nisi u igri.' };

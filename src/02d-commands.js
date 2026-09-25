@@ -3,7 +3,7 @@
    can replay exactly the same inputs on every device (lockstep). Args come from other players' devices:
    they are validated here and never trusted. */
 
-RA.CMD_KINDS = ['atk', 'boat', 'para', 'build', 'rec', 'mv', 'dis', 'mis', 'mob', 'ret', 'aReq', 'aRes', 'tReq', 'tRes', 'ext', 'brk', 'tEnd', 'give', 'help', 'ai', 'back'];
+RA.CMD_KINDS = ['atk', 'boat', 'para', 'build', 'rec', 'mv', 'dis', 'mis', 'mob', 'ret', 'aReq', 'aRes', 'tReq', 'tRes', 'ext', 'brk', 'tEnd', 'give', 'help', 'ai', 'back', 'rcl'];
 
 (function (P) {
   P.exec = function (pid, kind, a) {
@@ -83,6 +83,8 @@ RA.CMD_KINDS = ['atk', 'boat', 'para', 'build', 'rec', 'mv', 'dis', 'mis', 'mob'
           this.tradeReqs = this.tradeReqs.filter((r) => r.to !== pid);
         }
         return true;
+      case 'rcl':
+        return this.cmdReclaim(pid, player(a[0]), ratio(a[1]));
       case 'back':
         // that player came back to the online game: their country is theirs again
         if (p.human) p.ai = null;

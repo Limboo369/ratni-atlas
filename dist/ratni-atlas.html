@@ -221,6 +221,9 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
 .achip .x svg { width: 13px; height: 13px; }
 .achip.in { border-color: rgba(255, 93, 93, 0.65); }
 .achip.in > svg { color: var(--danger); }
+.achip.back { cursor: pointer; border-color: rgba(242, 177, 52, 0.7); background: rgba(60, 42, 8, 0.82); }
+.achip.back > svg { color: var(--signal, #f2b134); }
+.achip.back .tr { color: var(--signal, #f2b134); }
 
 /* ---------- bottom sheet ---------- */
 #sheetWrap { position: absolute; inset: 0; z-index: 1250; background: rgba(5, 8, 11, 0.35); display: flex; align-items: flex-end; justify-content: center; }
@@ -1430,6 +1433,7 @@ RA.CFG = {
   ALLY_DUR: 3000, // 5 min
   ALLY_REQ_DUR: 200,
   TRAITOR_DUR: 300,
+  RECLAIM_TICKS: 1800, // "Vrati granice": land taken from a player in the last 3 minutes can be won back in one move
   BOAT_MAX: 3,
   BOAT_SPEED: 1.15, // cells per tick
   BOAT_RANGE: 800, // longest sea voyage in cells (BFS steps): farther is 'predaleko'
@@ -1593,7 +1597,10 @@ RA.Game = class Game {
     if (old) {
       this._removeCell(P[old], c);
       P[old].changed = true;
+      // a human remembers what was taken from them (for "Vrati granice")
+      if (pid && P[old].human) (P[old].lost || (P[old].lost = new Map())).set(c, this.tick);
     }
+    if (pid && P[pid].lost) P[pid].lost.delete(c);
     this.owner[c] = pid;
     if (pid) {
       const np = P[pid];
@@ -1744,7 +1751,7 @@ RA.Game = class Game {
   /* dir: a directed attack (a player's tap on a state): it starts from the own border cell nearest to the focus and
      only takes a corridor from there to the focus plus a disc around it (width grows with the troops sent), then the
      rest of the army comes home. Without dir the whole common border is the front (the AI, "cijela granica"). */
-  launchAttack(aid, tid, troops, focusCell, sourceCell, dir, from) {
+  launchAttack(aid, tid, troops, focusCell, sourceCell, dir, from, only) {
     const A = this.P[aid];
     if (!A || !A.alive || aid === tid) return null;
     const T = tid ? this.P[tid] : null;
@@ -1773,9 +1780,9 @@ RA.Game = class Game {
     let corr = null;
     if (dir && T && sourceCell < 0 && focusCell >= 0) corr = this._corridor(A, T, focusCell, troops, from);
     // merge with existing land attack on same target
-    if (sourceCell < 0 && !corr) {
+    if (sourceCell < 0 && !corr && !only) {
       for (const o of this.attacks) {
-        if (!o.done && o.a === aid && o.t === tid && !o.boat && !o.corr) {
+        if (!o.done && o.a === aid && o.t === tid && !o.boat && !o.corr && !o.only) {
           o.troops += troops;
           if (focusCell >= 0) o.focus = focusCell;
           o.fresh = true;
@@ -1787,6 +1794,7 @@ RA.Game = class Game {
       id: this.nextId++, a: aid, t: tid, troops, start: troops, heap: new RA.Heap(512), pending: 0,
       focus: focusCell >= 0 ? focusCell : -1, done: false, boat: sourceCell >= 0, src: sourceCell, fresh: true, began: this.tick,
       corr,
+      only: only || null, // "Vrati granice": only these cells (the land tid took from aid)
     };
     this.attacks.push(att);
     if (sourceCell >= 0) {
@@ -1856,6 +1864,7 @@ RA.Game = class Game {
   _push(att, c, base, parent) {
     if (this.zone && this.zoneOut(c)) return;
     if (att.corr && !this._inCorr(att.corr, c)) return;
+    if (att.only && !att.only.has(c)) return;
     const own = this.owner, W = this.map.W, N = this.map.N;
     let k = 0;
     const x = c % W;
@@ -2384,6 +2393,7 @@ RA.Game = class Game {
     for (const p of this.P) {
       if (!p || !p.alive) continue;
       if (p.traitorUntil > this.tick - 10 && p.traitorUntil <= this.tick) this.alliancesChanged = true; // traitor stripes end
+      if (p.lost && this.tick % 50 === 0) for (const [c, t] of p.lost) if (t < this.tick - RA.CFG.RECLAIM_TICKS) p.lost.delete(c);
       for (const [oid, exp] of p.allies) {
         if (exp <= this.tick) {
           p.allies.delete(oid);
@@ -2619,6 +2629,35 @@ RA.Game = class Game {
   }
 
   /* ---------------- player commands ---------------- */
+  /* land X took from p in the last minutes and still holds: Map X -> [cells] */
+  lostTo(p) {
+    const out = new Map();
+    if (!p.lost) return out;
+    const lim = this.tick - RA.CFG.RECLAIM_TICKS, own = this.owner;
+    for (const [c, t] of p.lost) {
+      const o = own[c];
+      if (t < lim || !o || o === p.id) continue;
+      let a = out.get(o);
+      if (!a) out.set(o, (a = []));
+      a.push(c);
+    }
+    return out;
+  }
+  /* "Vrati granice": a counter-attack only on the land X recently took from p, until the old border is back */
+  cmdReclaim(pid, xid, ratio) {
+    const p = this.P[pid], X = this.P[xid];
+    if (!p || !p.alive) return 'Nisi u igri.';
+    if (!X || !X.alive || X === p) return 'Nevažeći igrač.';
+    if (this.isFriendly(p, X)) return `${X.name} ti je saveznik.`;
+    if (this.tick < this.peaceUntil) return 'Mirno doba.';
+    const cells = this.lostTo(p).get(xid);
+    if (!cells || !cells.length) return `${X.name} ti nije ništa oteo u zadnje 3 minute.`;
+    if (!this.hasBorderWith(p, xid)) return `Nemaš granicu s tom državom (${X.name}).`;
+    const troops = p.troops * ratio;
+    if (troops < 1) return 'Nemaš dovoljno vojske.';
+    const a = this.launchAttack(pid, xid, troops, cells[cells.length - 1], -1, false, -1, new Set(cells));
+    return a ? { att: a, n: cells.length } : 'Napad nije moguć.';
+  }
   cmdAttack(pid, c, ratio, dir, from) {
     const p = this.P[pid];
     if (!p || !p.alive) return { err: 'Nisi u igri.' };
@@ -3759,7 +3798,7 @@ Object.assign(RA.CFG, {
    can replay exactly the same inputs on every device (lockstep). Args come from other players' devices:
    they are validated here and never trusted. */
 
-RA.CMD_KINDS = ['atk', 'boat', 'para', 'build', 'rec', 'mv', 'dis', 'mis', 'mob', 'ret', 'aReq', 'aRes', 'tReq', 'tRes', 'ext', 'brk', 'tEnd', 'give', 'help', 'ai', 'back'];
+RA.CMD_KINDS = ['atk', 'boat', 'para', 'build', 'rec', 'mv', 'dis', 'mis', 'mob', 'ret', 'aReq', 'aRes', 'tReq', 'tRes', 'ext', 'brk', 'tEnd', 'give', 'help', 'ai', 'back', 'rcl'];
 
 (function (P) {
   P.exec = function (pid, kind, a) {
@@ -3839,6 +3878,8 @@ RA.CMD_KINDS = ['atk', 'boat', 'para', 'build', 'rec', 'mv', 'dis', 'mis', 'mob'
           this.tradeReqs = this.tradeReqs.filter((r) => r.to !== pid);
         }
         return true;
+      case 'rcl':
+        return this.cmdReclaim(pid, player(a[0]), ratio(a[1]));
       case 'back':
         // that player came back to the online game: their country is theirs again
         if (p.human) p.ai = null;
@@ -7288,6 +7329,7 @@ RA.UI = class {
       if (!chip || !chip._it) return;
       const it = chip._it;
       if (e.target.closest('.x')) this.retreatAtt(it.id);
+      else if (it.kind === 'back') this.act('rcl', [it.who, this.ratio]);
       else if (it.cell >= 0) this.flyToCell(it.cell);
     });
     $('sheetWrap').addEventListener('click', (e) => {
@@ -7823,6 +7865,14 @@ RA.UI = class {
       for (const b of G.boats) if (!b.done && b.owner === me.id) items.push({ k: 'b' + b.id, kind: 'boat', who: G.owner[b.tgt], n: b.troops, cell: b.tgt, o: 1 });
       for (const pl of G.planes) if (!pl.done && pl.owner === me.id) items.push({ k: 'p' + pl.id, kind: 'para', who: G.owner[pl.c], n: pl.troops, cell: pl.c, o: 1 });
       for (const a of G.attacks) if (!a.done && a.troops >= 1 && a.t === me.id) items.push({ k: 'i' + a.id, kind: 'in', id: a.id, who: a.a, n: a.troops, cell: a.focus, o: 2 });
+      // "Vrati granice": land a state took from me lately (counted twice a second), unless I am already taking it back
+      const now = performance.now();
+      if (!this._lost || now - this._lost.t > 500) this._lost = { t: now, m: G.lostTo(me) };
+      for (const [x, cells] of this._lost.m) {
+        const X = G.P[x];
+        if (cells.length < 3 || !X || !X.alive || G.isFriendly(me, X) || G.attacks.some((a) => !a.done && a.only && a.a === me.id && a.t === x)) continue;
+        items.push({ k: 'r' + x, kind: 'back', who: x, n: cells.length, cell: cells[cells.length - 1], o: 3 });
+      }
     }
     const show = items.slice(0, 10);
     const keep = new Set(show.map((i) => i.k));
@@ -7838,9 +7888,9 @@ RA.UI = class {
         el = document.createElement('div');
         el.className = 'achip ' + it.kind + (it.kind === 'out' ? ' can' : '');
         el.style.order = it.o;
-        const ic = it.kind === 'boat' ? 'boat' : it.kind === 'para' ? 'para' : 'attack';
+        const ic = it.kind === 'boat' ? 'boat' : it.kind === 'para' ? 'para' : it.kind === 'back' ? 'retreat' : 'attack';
         el.innerHTML = `${RA.icon(ic)}<span class="sw"></span><span class="nm"></span><span class="tr"></span>${it.kind === 'out' ? `<button class="x" aria-label="Obustavi napad">${RA.icon('close')}</button>` : ''}`;
-        el.title = it.kind === 'in' ? 'Napad na tebe' : it.kind === 'out' ? 'Tvoj napad — ✕ ga obustavlja' : 'Desant na putu';
+        el.title = it.kind === 'in' ? 'Napad na tebe' : it.kind === 'out' ? 'Tvoj napad — ✕ ga obustavlja' : it.kind === 'back' ? 'Vrati granice: kontranapad samo na zemlju koju ti je ova država nedavno otela' : 'Desant na putu';
         bar.appendChild(el);
         this.chips.set(it.k, el);
         el._sw = el.querySelector('.sw');
@@ -7851,7 +7901,7 @@ RA.UI = class {
       const O = it.who ? G.P[it.who] : null;
       const col = O ? O.hex : '#8d969c';
       const nm = O ? O.name : 'Slobodna zemlja';
-      const tr = RA.fmt(it.n);
+      const tr = it.kind === 'back' ? `Vrati ${it.n} polja` : RA.fmt(it.n);
       if (el._col !== col) el._sw.style.background = el._col = col;
       if (el._nm.textContent !== nm) el._nm.textContent = nm;
       if (el._tr.textContent !== tr) el._tr.textContent = tr;
@@ -7928,6 +7978,9 @@ RA.UI = class {
         const T = r.t ? G.P[r.t] : null;
         say('info', `Napad ${T ? 'na ' + RA.esc(T.name) : 'na slobodnu zemlju'} obustavljen — vraćeno ${RA.fmt(r.back)} vojnika${T ? ' (25% izgubljeno u povlačenju)' : ''}.`);
       }
+    } else if (kind === 'rcl') {
+      if (r && typeof r === 'object') say('good', `Vraćaš granice: ${RA.fmt(r.att.troops)} vojnika ide na ${r.n} otetih polja (${RA.esc(G.P[a[0]].name)}).`);
+      else if (err(r)) say('info', RA.esc(r));
     } else if (kind === 'aReq' || kind === 'tReq') {
       const O = G.P[a[0]];
       if (err(r)) say('info', RA.esc(r));
@@ -8846,6 +8899,7 @@ Object.assign(RA.UI.prototype, {
         <li><b>Usmjereni napad</b>: dodir na susjednu državu šalje vojsku s tvoje najbliže granice pravo do tog mjesta (strelica na karti) — osvaja se samo taj dio, pa se ostatak vojske vraća. Što više vojske pošalješ, to je koridor širi.</li>
         <li>Na računaru: <b>desnim dugmetom miša povuci strelicu</b> od svoje teritorije do cilja — napad ide baš tim pravcem.</li>
         <li>Front na cijeloj granici s državom: dugi pritisak (desni klik) na nju → <b>Napadni cijelu granicu</b>. Slobodno kopno se uvijek zauzima s cijele granice.</li>
+        <li><b>Vrati granice</b>: kad ti neka država otme zemlju, u traci napada se pojavi žuto dugme „Vrati N polja” — jedan klik šalje kontranapad samo na tu zemlju (oteto u zadnje 3 minute), bez širenja dalje.</li>
         <li>Rijeke, brda, planine i gradovi usporavaju napadača.</li>
         <li>Aktivni napadi su iznad donje trake. <b>✕</b> obustavlja napad i vraća vojsku (napad na državu: 25% se izgubi u povlačenju).</li></ul>
       <h4>Vojska i zlato</h4><ul>
@@ -11122,7 +11176,7 @@ RA.wsRoom = function (url, creds, onCreds, onBack) {
   };
 };
 
-RA.BUILD = '690bd8b7';
+RA.BUILD = '8ff878bc';
 new RA.App().boot();
 }
 function __raFallback(){

@@ -187,6 +187,7 @@ RA.UI = class {
       if (!chip || !chip._it) return;
       const it = chip._it;
       if (e.target.closest('.x')) this.retreatAtt(it.id);
+      else if (it.kind === 'back') this.act('rcl', [it.who, this.ratio]);
       else if (it.cell >= 0) this.flyToCell(it.cell);
     });
     $('sheetWrap').addEventListener('click', (e) => {
@@ -722,6 +723,14 @@ RA.UI = class {
       for (const b of G.boats) if (!b.done && b.owner === me.id) items.push({ k: 'b' + b.id, kind: 'boat', who: G.owner[b.tgt], n: b.troops, cell: b.tgt, o: 1 });
       for (const pl of G.planes) if (!pl.done && pl.owner === me.id) items.push({ k: 'p' + pl.id, kind: 'para', who: G.owner[pl.c], n: pl.troops, cell: pl.c, o: 1 });
       for (const a of G.attacks) if (!a.done && a.troops >= 1 && a.t === me.id) items.push({ k: 'i' + a.id, kind: 'in', id: a.id, who: a.a, n: a.troops, cell: a.focus, o: 2 });
+      // "Vrati granice": land a state took from me lately (counted twice a second), unless I am already taking it back
+      const now = performance.now();
+      if (!this._lost || now - this._lost.t > 500) this._lost = { t: now, m: G.lostTo(me) };
+      for (const [x, cells] of this._lost.m) {
+        const X = G.P[x];
+        if (cells.length < 3 || !X || !X.alive || G.isFriendly(me, X) || G.attacks.some((a) => !a.done && a.only && a.a === me.id && a.t === x)) continue;
+        items.push({ k: 'r' + x, kind: 'back', who: x, n: cells.length, cell: cells[cells.length - 1], o: 3 });
+      }
     }
     const show = items.slice(0, 10);
     const keep = new Set(show.map((i) => i.k));
@@ -737,9 +746,9 @@ RA.UI = class {
         el = document.createElement('div');
         el.className = 'achip ' + it.kind + (it.kind === 'out' ? ' can' : '');
         el.style.order = it.o;
-        const ic = it.kind === 'boat' ? 'boat' : it.kind === 'para' ? 'para' : 'attack';
+        const ic = it.kind === 'boat' ? 'boat' : it.kind === 'para' ? 'para' : it.kind === 'back' ? 'retreat' : 'attack';
         el.innerHTML = `${RA.icon(ic)}<span class="sw"></span><span class="nm"></span><span class="tr"></span>${it.kind === 'out' ? `<button class="x" aria-label="Obustavi napad">${RA.icon('close')}</button>` : ''}`;
-        el.title = it.kind === 'in' ? 'Napad na tebe' : it.kind === 'out' ? 'Tvoj napad — ✕ ga obustavlja' : 'Desant na putu';
+        el.title = it.kind === 'in' ? 'Napad na tebe' : it.kind === 'out' ? 'Tvoj napad — ✕ ga obustavlja' : it.kind === 'back' ? 'Vrati granice: kontranapad samo na zemlju koju ti je ova država nedavno otela' : 'Desant na putu';
         bar.appendChild(el);
         this.chips.set(it.k, el);
         el._sw = el.querySelector('.sw');
@@ -750,7 +759,7 @@ RA.UI = class {
       const O = it.who ? G.P[it.who] : null;
       const col = O ? O.hex : '#8d969c';
       const nm = O ? O.name : 'Slobodna zemlja';
-      const tr = RA.fmt(it.n);
+      const tr = it.kind === 'back' ? `Vrati ${it.n} polja` : RA.fmt(it.n);
       if (el._col !== col) el._sw.style.background = el._col = col;
       if (el._nm.textContent !== nm) el._nm.textContent = nm;
       if (el._tr.textContent !== tr) el._tr.textContent = tr;
@@ -827,6 +836,9 @@ RA.UI = class {
         const T = r.t ? G.P[r.t] : null;
         say('info', `Napad ${T ? 'na ' + RA.esc(T.name) : 'na slobodnu zemlju'} obustavljen — vraćeno ${RA.fmt(r.back)} vojnika${T ? ' (25% izgubljeno u povlačenju)' : ''}.`);
       }
+    } else if (kind === 'rcl') {
+      if (r && typeof r === 'object') say('good', `Vraćaš granice: ${RA.fmt(r.att.troops)} vojnika ide na ${r.n} otetih polja (${RA.esc(G.P[a[0]].name)}).`);
+      else if (err(r)) say('info', RA.esc(r));
     } else if (kind === 'aReq' || kind === 'tReq') {
       const O = G.P[a[0]];
       if (err(r)) say('info', RA.esc(r));

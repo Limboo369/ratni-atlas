@@ -514,6 +514,7 @@ Object.assign(RA.UI.prototype, {
         <li><b>Usmjereni napad</b>: dodir na susjednu državu šalje vojsku s tvoje najbliže granice pravo do tog mjesta (strelica na karti) — osvaja se samo taj dio, pa se ostatak vojske vraća. Što više vojske pošalješ, to je koridor širi.</li>
         <li>Na računaru: <b>desnim dugmetom miša povuci strelicu</b> od svoje teritorije do cilja — napad ide baš tim pravcem.</li>
         <li>Front na cijeloj granici s državom: dugi pritisak (desni klik) na nju → <b>Napadni cijelu granicu</b>. Slobodno kopno se uvijek zauzima s cijele granice.</li>
+        <li><b>Vrati granice</b>: kad ti neka država otme zemlju, u traci napada se pojavi žuto dugme „Vrati N polja” — jedan klik šalje kontranapad samo na tu zemlju (oteto u zadnje 3 minute), bez širenja dalje.</li>
         <li>Rijeke, brda, planine i gradovi usporavaju napadača.</li>
         <li>Aktivni napadi su iznad donje trake. <b>✕</b> obustavlja napad i vraća vojsku (napad na državu: 25% se izgubi u povlačenju).</li></ul>
       <h4>Vojska i zlato</h4><ul>

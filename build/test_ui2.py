@@ -177,6 +177,33 @@ async def main():
             check(d.get('whole'), '"Napadni cijelu granicu" is a whole-border attack')
             check(d.get('fromOk'), 'an arrow drawn from my own cell starts the corridor there')
             await ev('() => { const G = window.__ra.G; for (const a of G.attacks) if (!a.done && a.a === G.me.id) G.retreat(a.id); }')
+            # "Vrati granice": the neighbour takes some of my land; one click on the chip takes back only that land
+            lost = await ev(f'''() => {{ const G = window.__ra.G, me = G.me, T = G.P[{nb["id"]}];
+                for (const a of G.attacks) if (!a.done && (a.a === me.id || a.t === me.id)) a.done = true;
+                T.troops = Math.max(T.troops, 400000); const before = G.owner.slice();
+                const att = G.launchAttack(T.id, me.id, 300000, me.capital);
+                for (let i = 0; i < 40 && !att.done; i++) G.step();
+                G._endAttack(att, 0);
+                window.__before2 = before;
+                const m = G.lostTo(me).get(T.id); return m ? m.length : 0; }}''')
+            try:
+                await page.wait_for_selector('#attBar .achip.back', timeout=10_000)
+            except Exception:
+                pass
+            await page.screenshot(path=OUT + f'{MODE}_v3_5c_back.png')
+            has = await ev('() => !!document.querySelector("#attBar .achip.back")')
+            check(lost >= 3 and has, f'land taken from me -> "Vrati" chip ({lost} cells)')
+            if has:
+                await ev(f'() => {{ const G = window.__ra.G; G.me.troops = Math.max(G.me.troops, 300000); G.P[{nb["id"]}].troops = 20000; }}')
+                await page.click('#attBar .achip.back')
+                await page.wait_for_timeout(300)
+                back = await ev(f'''() => {{ const G = window.__ra.G, me = G.me, T = G.P[{nb["id"]}], B = window.__before2;
+                    const att = G.attacks.find(a => !a.done && a.only && a.a === me.id); if (!att) return {{ err: 'no reclaim attack' }};
+                    for (let i = 0; i < 3000 && !att.done; i++) G.step();
+                    let extra = 0; for (let c = 0; c < G.map.N; c++) if (B[c] === T.id && G.owner[c] === me.id) extra++;
+                    const m = G.lostTo(me).get(T.id); return {{ left: m ? m.length : 0, extra, done: att.done }}; }}''')
+                print('reclaim', back)
+                check(back.get('done') and back.get('extra') == 0 and back.get('left', 99) <= lost // 4, f'"Vrati granice" retakes only the lost land ({back}, lost {lost})')
             if MODE != 'phone':
                 # desktop: right button + drag from my land to the neighbour draws the arrow and launches the directed attack
                 pts = await ev(f'''() => {{ const a = window.__ra, G = a.G, me = G.me, T = G.P[{nb["id"]}], W = G.map.W;

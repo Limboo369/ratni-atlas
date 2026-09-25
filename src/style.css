@@ -216,6 +216,9 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
 .achip .x svg { width: 13px; height: 13px; }
 .achip.in { border-color: rgba(255, 93, 93, 0.65); }
 .achip.in > svg { color: var(--danger); }
+.achip.back { cursor: pointer; border-color: rgba(242, 177, 52, 0.7); background: rgba(60, 42, 8, 0.82); }
+.achip.back > svg { color: var(--signal, #f2b134); }
+.achip.back .tr { color: var(--signal, #f2b134); }
 
 /* ---------- bottom sheet ---------- */
 #sheetWrap { position: absolute; inset: 0; z-index: 1250; background: rgba(5, 8, 11, 0.35); display: flex; align-items: flex-end; justify-content: center; }

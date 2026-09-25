@@ -109,7 +109,7 @@ Sve ostaje jednostavno za igru: najviše dvije-tri nove stvari po oblasti, bez d
 | 21 | Avijacija | Da: lovac (obara avione i štiti nebo) i bombarder (gađa zgrade, jedinice i vojsku), s aerodroma; samo u dobima s avionima. |
 | 22 | Dronovi | Da, pažljivo zbog brzine igre: samo u dobu „danas", najviše nekoliko po igraču, let pravom linijom bez traženja puta, crtaju se kao grupa. Kamikaza dron (jeftin mali udar) i dron za napad na jedinice. |
 | 28 | Usmjereni napad | Gotovo (25. 9.): dodir/klik na državu šalje vojsku s najbliže granice do te tačke — osvaja se samo koridor (širina raste s vojskom) i krug oko cilja, pa se vojska vraća; strelica na karti. Napad na cijeloj granici: dugi pritisak / desni klik → „Napadni cijelu granicu". |
-| 30 | Dugme „Vrati granice" | Da, ali bez širenja prema napadaču: jednim dodirom kontranapad samo na zemlju koju ti je taj napadač nedavno oteo, dok granica ne bude kao prije. |
+| 30 | Dugme „Vrati granice" | Gotovo (25. 9.): kad ti država otme zemlju, u traci napada je žuto dugme „Vrati N polja" — kontranapad samo na zemlju otetu u zadnje 3 minute, bez širenja dalje. |
 | 37 | Nuklearke | Bez kazne tipa hitne koalicije (u multiplayeru prevelika kazna). Umjesto toga nuklearke treba pojačati — sada nisu dovoljno isplative. |
 | 50 | Gvozdena kupola i automatski uzvrat | Umjesto mrtve ruke: kupuje se; mreža od više nuklearnih postrojenja po tvojoj teritoriji. Kad neko lansira nuklearku na tebe, tvoje nuklearke automatski idu na njegovu državu — prvo glavni grad, pa dalje. |
 
