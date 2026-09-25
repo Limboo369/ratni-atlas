@@ -173,8 +173,8 @@ Ovo zavisi od servera i naloga, pa dolazi odmah poslije postavljanja servera.
 | 61 | Dostignuća | Da, čuvaju se na nalogu svakog igrača (server + domen). |
 | 63 | Snimi i nastavi | Da, za offline igru (isti sistem kao duge igre iz tačke 60). |
 | 64 | Zvuk i muzika | Gotovo (25. 9.), sintetizovano u pregledniku (bez fajlova): klik, uzbuna kad te napadnu, osvojen / izgubljen grad, raketa, eksplozija, nuklearka i sirena, poruka, pobjeda, poraz; tiha muzika po dobu (svako doba svoj akord i boja). Meni → Zvučni efekti / Muzika. Prava muzika (snimljena): kasnije, ako želiš. |
-| 66 | Interaktivni tutorijal | Da: igra te vodi kroz prvu partiju korak po korak. |
-| 67 | Sitnice | Da: dugme za revanš, izbor boje i grba, mod za daltoniste. |
+| 66 | Interaktivni tutorijal | Gotovo (25. 9.): dugme „Tutorijal" na početnom ekranu — laka partija na Balkanu, 8 koraka (izbor, traka, širenje, snaga napada, gradnja, savezi, usmjereni napad, Vrati granice); svaki korak čeka da ga stvarno uradiš, dugme na koje se odnosi svijetli. |
+| 67 | Sitnice | Gotovo (25. 9.): Revanš na kraju igre (iste postavke i država, odmah u igru); Tvoja boja (10 boja u postavkama); Mod za daltoniste (paleta Okabe-Ito, susjedi nikad iste boje; postavke i meni u igri). Grb je u profilu. Online: boja i revanš kasnije. |
 
 ## UI/UX: nove ikonice
 

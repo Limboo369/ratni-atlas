@@ -488,6 +488,7 @@ Object.assign(RA.UI.prototype, {
       <button class="btn" data-m="cities"><span class="t">Imena gradova</span><span class="r" style="font-size:14px">${app.fx.showCities ? 'Uključeno' : 'Isključeno'}</span></button>
       <button class="btn" data-m="osm" ${app.osmOK ? '' : 'disabled'}><span><span class="t">Podloga: ${app.osmOn ? 'OpenStreetMap' : 'Atlas (ugrađena)'}</span><br><span class="d">${app.osmOK ? 'Dodirni za promjenu' : 'OpenStreetMap pločice rade kad igru hostamo na vlastitoj adresi — Claude pregled blokira vanjske slike.'}</span></span></button>
       <button class="btn" data-m="tips"><span class="t">Savjeti tokom igre</span><span class="r" style="font-size:14px">${this.noTips ? 'Isključeno' : 'Uključeno'}</span></button>
+      <button class="btn" data-m="cb"><span class="t">Mod za daltoniste</span><span class="r" style="font-size:14px">${this.settings.cb ? 'Uključeno' : 'Isključeno'}</span></button>
       <button class="btn" data-m="sfx"><span class="t">Zvučni efekti</span><span class="r" style="font-size:14px">${this.audio.s.sfx ? 'Uključeno' : 'Isključeno'}</span></button>
       <button class="btn" data-m="music"><span class="t">Muzika</span><span class="r" style="font-size:14px">${this.audio.s.music ? 'Uključeno' : 'Isključeno'}</span></button>
       <button class="btn danger" data-m="new"><span><span class="t">${G.online ? 'Napusti online igru' : 'Nova igra'}</span><br><span class="d">${G.online ? 'Tvoju državu preuzima kompjuter' : 'Trenutna partija se prekida'}</span></span></button>
@@ -504,6 +505,9 @@ Object.assign(RA.UI.prototype, {
         } else if (m === 'cities') {
           app.fx.showCities = !app.fx.showCities;
           this.closeSheet();
+        } else if (m === 'cb') {
+          this.setColorblind(!this.settings.cb);
+          this.menu();
         } else if (m === 'sfx' || m === 'music') {
           this.audio.toggle(m);
           this.menu();
@@ -587,6 +591,7 @@ Object.assign(RA.UI.prototype, {
     $('watchBtn').hidden = !!(G.state === 'over');
     // single player: the winner may play on to 100% (online needs every device to agree: later)
     $('contBtn').hidden = !(won && G.state === 'over' && !G.online && !G.continued);
+    $('rematchBtn').hidden = !!G.online;
     $('endScreen').hidden = false;
     this.audio.play(won ? 'win' : 'lose', 3000);
     requestAnimationFrame(() => this.drawChart());
