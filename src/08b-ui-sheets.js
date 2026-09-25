@@ -272,6 +272,8 @@ Object.assign(RA.UI.prototype, {
     const C = RA.CFG, tk = G.tick;
     const row = (o, meta, buttons, wide) => `<div class="prow${wide ? ' wide' : ''}"><span class="sw" style="background:${o.hex}"></span><div class="pn" data-do="show:${o.id}"><div class="nm">${RA.esc(o.name)}</div><div class="d">${meta}</div></div><div class="bb">${buttons}</div></div>`;
     let h = this.head('Savezi', `Vojni ${G.allyCount(me)}/${C.ALLY_MAX} · trgovinski ${me.trade.size}/${C.TRADE_MAX} · +${RA.fmt(me.tradeRate || 0)}/s od trgovine`);
+    const ae = Math.round(me.ae || 0);
+    h += `<p class="explain">Agresivna ekspanzija: <b${ae >= C.AE_COALITION ? ' class="neg"' : ''}>${ae}/100</b>. Raste sa svakom napadnutom i pokorenom državom (broj država, ne površina), vremenom opada. Od ${C.AE_COALITION} kompjuterske države te izbjegavaju, raskidaju saveze s tobom i udružuju se protiv tebe.</p>`;
     if (G.online) h += `<div class="btns" style="margin-bottom:10px">${this.btn({ icon: 'chat', attrs: 'data-do="chat:0"', t: 'Brze poruke saveznicima', d: 'Poruke i emoji koje vide saveznici i tim (tipka T)' })}</div>`;
     // offers
     const offers = G.allyReqs.filter((r) => r.to === me.id).map((r) => ['A', r]).concat(G.tradeReqs.filter((r) => r.to === me.id).map((r) => ['T', r]));
@@ -564,6 +566,7 @@ Object.assign(RA.UI.prototype, {
         <li>Vojska raste sama, najbrže oko <b>42%</b> kapaciteta (zelena zona na traci).</li>
         <li><b>Mobilizacija</b> (Vojska): odmah +30% kapaciteta, ali rast stoji 45 s. Jednom u 4 minute.</li>
         <li>Zlato donose teritorija, gradovi, luke, vozovi ili karavani i trgovina.</li>
+        <li><b>Agresivna ekspanzija</b> (meni Savezi): svaka napadnuta i pokorena država ljuti ostale. Previše osvajanja odjednom → kompjuterske države se udružuju protiv tebe. Ljutnja vremenom opada.</li>
         <li><b>Porez</b> (klik na zlato gore ili tipka Z): viši porez daje više zlata, ali vojska sporije raste. Ušteđeno zlato donosi malu kamatu.</li></ul>
       <h4>Jedinice</h4><ul>
         <li>Tri vrste u svakom dobu (npr. legija, konjica i strijelci u Rimu; pješadija, tenkovi i artiljerija danas): prva čvrsto brani granicu, druga ubrzava i pojeftinjuje tvoje napade, treća gađa neprijatelja iz daljine.</li>

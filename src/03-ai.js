@@ -58,6 +58,10 @@ RA.AI = {
     ai.thinks++;
     if (!p.alive || p.tiles === 0) return;
     for (let i = 0; i < G.P.length; i++) p.rel[i] *= 0.985;
+    // aggressive expansion: every state grows cold towards a conqueror (the more states it swallowed, the colder)
+    if (p.type === 'nation') {
+      for (const o of G.P) if (o && o !== p && o.alive && o.ae > 25 && !p.allies.has(o.id)) p.rel[o.id] = Math.max(-100, p.rel[o.id] - (o.ae - 25) * 0.05);
+    }
     const info = RA.AI.scan(G, p);
     p.nbCache = info.nb;
     if (p.type === 'bot') return RA.AI.thinkBot(G, p, info);
@@ -591,9 +595,9 @@ RA.AI = {
       }
       if (best && bs > -10) G.requestTrade(p.id, best.id);
     }
-    const Ld = G.leader;
-    if (Ld && Ld.id !== p.id && Ld.share > 0.3 && p.allies.has(Ld.id) && G.rng() < 0.3) {
-      // nobody stays allied with a hegemon for long
+    const Ld = RA.AI.menace(G);
+    if (Ld && Ld.id !== p.id && p.allies.has(Ld.id) && G.rng() < 0.3) {
+      // nobody stays allied with a hegemon (or a runaway conqueror) for long
       G.breakAlliance(p.id, Ld.id, false);
       p.rel[Ld.id] = Math.min(p.rel[Ld.id], -20);
     }
@@ -604,7 +608,7 @@ RA.AI = {
       const o = G.P[oid];
       if (!G.isFriendly(p, o) && o.troops > p.troops * 1.4 && o.type !== 'bot') threat = o;
     }
-    if (Ld && Ld.id !== p.id && Ld.share > 0.3 && info.nb.has(Ld.id)) threat = G.P[Ld.id];
+    if (Ld && Ld.id !== p.id && info.nb.has(Ld.id)) threat = Ld;
     if (!threat && G.rng() > (peace ? 0.25 : 0.08)) return;
     let best = null, bs = -1e9;
     for (const [oid] of info.nb) {
@@ -623,12 +627,28 @@ RA.AI = {
     }
   },
 
+  /* the state the others gang up on: the hegemon (over 30% of the land) or the most aggressive conqueror */
+  menace(G) {
+    if (G._menaceT === G.tick) return G._menace;
+    const Ld = G.leader;
+    let m = Ld && Ld.share > 0.3 ? G.P[Ld.id] : null;
+    if (!m) {
+      let best = RA.CFG.AE_COALITION;
+      for (const o of G.P) if (o && o.alive && o.type !== 'bot' && o.ae >= best) {
+        best = o.ae;
+        m = o;
+      }
+    }
+    G._menaceT = G.tick;
+    G._menace = m;
+    return m;
+  },
   considerAlliance(G, me, other) {
     if (G.allyCount(me) >= RA.CFG.ALLY_MAX || G.allyCount(other) >= RA.CFG.ALLY_MAX) return false;
     if (other.traitorUntil > G.tick) return false;
-    const Ld = G.leader;
-    if (Ld && Ld.id === other.id && Ld.share > 0.3 && me.type !== 'bot') return false; // nobody helps the hegemon
-    if (Ld && Ld.id !== other.id && Ld.id !== me.id && Ld.share > 0.3) return me.rel[other.id] > -40; // coalition
+    const M = RA.AI.menace(G);
+    if (M && M.id === other.id && me.type !== 'bot') return false; // nobody helps the hegemon or the conqueror
+    if (M && M.id !== other.id && M.id !== me.id) return me.rel[other.id] > -40; // coalition
     const rel = me.rel[other.id];
     if (rel < -30) return false;
     if (me.type === 'bot') return G.rng() < 0.85;

@@ -72,6 +72,19 @@ async def main():
         t = await ev('() => { const G = window.__ra.G; G.step(); return [G.me.tax, G.me.goldRate, document.querySelector("#taxSeg button[data-v=\\"4\\"]").getAttribute("aria-pressed")]; }')
         check(t[0] == 4 and t[1] > g0 * 1.3 and t[2] == 'true', f'tax "Vrlo visok": more gold {g0:.0f} -> {t[1]:.0f}/s {t}')
         await page.keyboard.press('Escape')
+        # aggressive expansion (plan 36): a conqueror becomes the coalition's target, the AI refuses to ally with it
+        ae = await ev('''() => { const G = window.__ra.G, me = G.me, C = RA.CFG;
+          const ai = G.P.find(p => p && p.alive && p.type === 'nation' && p !== me);
+          const lead = G.leader && G.leader.share > 0.3;
+          G.addAE(me, C.AE_COALITION + 5);
+          const warned = G.events.some(e => e.kind === 'bad' && /udružuju/.test(e.text));
+          const r = [RA.AI.menace(G) === me || lead, RA.AI.considerAlliance(G, ai, me), warned];
+          for (let i = 0; i < 3000; i++) me.ae *= C.AE_DECAY;
+          G._menaceT = -1;
+          r.push(RA.AI.menace(G) !== me, Math.round(me.ae));
+          G.addAE(me, -me.ae);
+          return r; }''')
+        check(ae[0] and ae[1] is False and ae[2] and ae[3], f'aggressive expansion: coalition target, no alliance, warned, fades {ae}')
         a = await ev(PLAY, 40)
         check(a[2] >= 6 and a[3] == 'play' and a[4], f'commands recorded, still playing: {a[2:]}')
         await ev('window.__ra.autosave(true)')

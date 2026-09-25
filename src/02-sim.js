@@ -27,6 +27,12 @@ RA.CFG = {
   PEACE: 600, // opening peace: no attacks between states for the first minute
   CITY_BUILT_T: 90000,
   CITY_BUILT_G: 8,
+  // aggressive expansion (plan 36): counts states, not land; new war on a state +AE_WAR, a state conquered +AE_FALL;
+  // fades (half-life ~4.6 min); from AE_COALITION the computer's states gang up on you
+  AE_WAR: 5,
+  AE_FALL: 12,
+  AE_DECAY: 0.99975,
+  AE_COALITION: 50,
   INTEREST: 0.01 / 600, // on a player's saved gold, per tick (1% a minute), at most a quarter of the income
 };
 /* tax (plan 33): more gold ↔ slower army growth; every state starts at 'Srednji' */
@@ -129,7 +135,7 @@ RA.Game = class Game {
       cityT: 0, cityG: 0, nCity: [0, 0, 0, 0],
       n: { barracks: 0, fort: 0, port: 0, silo: 0, sam: 0, airport: 0, city: 0, factory: 0 },
       built: { barracks: 0, fort: 0, port: 0, silo: 0, sam: 0, airport: 0, city: 0, factory: 0 },
-      forts: [], bcities: [], units: [], portsOff: 0, mobReady: 0, growPause: 0, crisisUntil: 0, tax: 2, interest: 0, capCity: -1,
+      forts: [], bcities: [], units: [], portsOff: 0, mobReady: 0, growPause: 0, crisisUntil: 0, tax: 2, interest: 0, ae: 0, aeWarn: false, capCity: -1,
       goldRate: 0, growRate: 0, trade: new Set(), nbCache: null, tradeRate: 0, tradeLand: 0, allies: new Map(), traitorUntil: -1, rel: new Float32Array(256), boats: 0,
       lastAttackedBy: 0, attackedAt: -9999, changed: true, peak: 0, capital: -1,
       stats: { conquered: 0, citiesTaken: 0, nukes: 0, kills: 0 }, deathTick: -1, labelCell: -1, ai: null,
@@ -295,6 +301,13 @@ RA.Game = class Game {
     if (p.growPause > tk && add > 0) add = 0;
     if (p.troops > maxT) add = -(p.troops - maxT) * (p.growPause > tk ? 0.0025 : 0.01);
     p.troops = Math.max(0, p.troops + add);
+    if (p.ae > 0.05) {
+      p.ae *= RA.CFG.AE_DECAY;
+      if (p.aeWarn && p.ae < RA.CFG.AE_COALITION * 0.75) {
+        p.aeWarn = false;
+        this.tell(p, 'good', 'Svijet se smirio: koalicija protiv tebe se raspada.', p.id);
+      }
+    } else p.ae = 0;
     let g = 70 + Math.sqrt(p.tiles) * 1.2 + p.cityG + (p.n.port - p.portsOff) * RA.CFG.PORT_G + p.n.city * RA.CFG.CITY_BUILT_G;
     if (p.type === 'bot') g *= 0.4;
     if (p.crisisUntil > tk) g *= 0.5;
@@ -410,6 +423,7 @@ RA.Game = class Game {
       // news: a new war (not every thrust): once per pair per minute
       const wk = aid + ':' + tid, last = this._warAt.get(wk);
       if (last === undefined || this.tick - last > 600) this.news('war', aid, tid);
+      if (T.type === 'nation' && A.type !== 'bot' && (last === undefined || this.tick - last > 3000)) this.addAE(A, RA.CFG.AE_WAR);
       this._warAt.set(wk, this.tick);
     }
     return att;
@@ -1161,6 +1175,7 @@ RA.Game = class Game {
     for (const id of [...p.trade]) this.cancelTrade(p.id, id, 'država je pala');
     const killer = p.lastAttackedBy ? this.P[p.lastAttackedBy] : null;
     if (killer) killer.stats.kills++;
+    if (killer && killer.alive && p.type === 'nation' && killer.type !== 'bot') this.addAE(killer, RA.CFG.AE_FALL);
     if (p.human) {
       this.tell(p, 'bad', 'Tvoja država je pala.', p.id);
       this.tell(p, 'lost', 'Poražen si.', p.id);
@@ -1169,6 +1184,13 @@ RA.Game = class Game {
     this.news('fall', killer ? killer.id : p.id, killer ? p.id : 0); // shown in the kill feed (no toast for others)
   }
 
+  addAE(p, v) {
+    p.ae = Math.min(100, p.ae + v);
+    if (!p.aeWarn && p.ae >= RA.CFG.AE_COALITION) {
+      p.aeWarn = true;
+      this.tell(p, 'bad', 'Tvoje širenje plaši svijet: države se udružuju protiv tebe. Ljutnja vremenom opada.', p.id);
+    }
+  }
   _updateLeader() {
     let best = null;
     for (const p of this.P) if (p && p.alive && p.spawned && (!best || p.area > best.area)) best = p;
