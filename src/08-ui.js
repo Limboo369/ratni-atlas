@@ -86,13 +86,9 @@ RA.UI = class {
     if (this.settings.gm !== 'br') this.settings.gm = 'klasik';
     $('nameIn').value = this.settings.name || '';
     // the map: Europe is always there; the world only on our own server (probed at boot, see mapsChanged)
-    $('mapSeg').innerHTML = RA.MAPS.map((m) => `<button data-v="${m.id}" aria-pressed="false"${m.id === 'evropa' ? '' : ' hidden'}>${RA.esc(m.name)}<small>${RA.esc(m.sub)}</small></button>`).join('');
-    this._seg('mapSeg', this.settings.map, (v) => {
-      this.settings.map = v;
-      this.fixRegion();
-      this.startNotes();
-      this.app.useMap(v);
-    });
+    // where to play: Evropa and the parts of the world in one list (world ones appear once the world map is there)
+    $('mapSeg').innerHTML = RA.THEATRES.map((t) => `<button data-v="${t.id}" aria-pressed="false"${t.map === 'evropa' ? '' : ' hidden'}>${RA.esc(t.name)}<small></small></button>`).join('');
+    this._seg('mapSeg', RA.theatreOf(this.settings), (v) => this.pickTheatre(v));
     $('eraSeg').innerHTML = RA.ERAS.map((e) => `<button data-v="${e.id}" aria-pressed="false">${RA.esc(e.short)}<small>${RA.esc(e.sub)}</small></button>`).join('');
     this._seg('eraSeg', this.settings.era, (v) => {
       this.settings.era = v;
@@ -108,6 +104,7 @@ RA.UI = class {
     });
     this._seg('regSeg', this.settings.region, (v) => {
       this.settings.region = v;
+      if (this.settings.map === 'evropa') this.settings.euRegion = v; // remembered when coming back to Evropa
       this.previewRegion(v);
     });
     this.startNotes();
@@ -200,11 +197,23 @@ RA.UI = class {
   /* start screen buttons after the lobby changed the settings (and the map shown behind it) */
   syncStart() {
     const s = this.settings;
-    for (const [id, v] of [['mapSeg', s.map], ['eraSeg', s.era], ['startSeg', s.start], ['gmSeg', s.gm], ['diffSeg', s.difficulty], ['peaceSeg', String(s.peace)]]) this._press(id, v);
+    for (const [id, v] of [['mapSeg', RA.theatreOf(s)], ['eraSeg', s.era], ['startSeg', s.start], ['gmSeg', s.gm], ['diffSeg', s.difficulty], ['peaceSeg', String(s.peace)]]) this._press(id, v);
     this.startNotes();
     if (this.app.map.id !== s.map && this.app.mapOK && this.app.mapOK[s.map]) this.app.useMap(s.map);
   }
   /* the region must belong to the chosen map (else: all of that map) */
+  /* start screen: a part of the world was picked */
+  pickTheatre(v) {
+    const T = RA.THEATRES.find((t) => t.id === v);
+    if (!T) return;
+    const s = this.settings, was = s.map;
+    s.map = T.map;
+    s.region = T.region || s.euRegion || 'evropa';
+    this.fixRegion();
+    this.startNotes();
+    if (was !== s.map || this.app.map.id !== s.map) this.app.useMap(s.map);
+    else this.previewRegion(s.region);
+  }
   fixRegion() {
     const s = this.settings;
     if (!RA.regionsOf(s.map).some((r) => r.id === s.region)) s.region = RA.regionsOf(s.map)[0].id;
@@ -217,8 +226,39 @@ RA.UI = class {
     const ready = !!m && RA.eraReady(m, E.id);
     // a world era not downloaded yet: '…' until it is
     if (m && !ready) RA.loadEra(m, E.id).then(() => this.startNotes(), () => {});
-    // eras the map does not have yet (the world: only today's borders for now)
-    for (const b of $('eraSeg').querySelectorAll('button')) b.disabled = !!(m && m.eraOK && !m.eraOK[b.dataset.v]);
+    // eras: the map must have them, and a part of the world needs at least 2 states in that era (world eras are
+    // small files: all of them are fetched for the counts)
+    const th = RA.theatreOf(s), few = {};
+    if (m && m.lazyEras) this.eraCounts(m);
+    for (const b of $('eraSeg').querySelectorAll('button')) {
+      const e = b.dataset.v;
+      const n = m && s.map !== 'evropa' ? this.regionCount(m, s.region, e, s.start, true) : null;
+      few[e] = n !== null && n < 2;
+      b.disabled = !!(m && m.eraOK && !m.eraOK[e]) || few[e];
+      b.title = few[e] ? `${RA.THEATRES.find((t) => t.id === th).name} u ovom dobu nema dovoljno država` : '';
+    }
+    if (few[E.id]) {
+      // the chosen era has (almost) no states here: the nearest era that has (later first)
+      const i0 = RA.ERAS.findIndex((x) => x.id === E.id), ok = (x) => x && !few[x.id] && (!m.eraOK || m.eraOK[x.id]);
+      let alt = null;
+      for (let d = 1; d < RA.ERAS.length && !alt; d++) alt = [RA.ERAS[i0 + d], RA.ERAS[i0 - d]].find(ok) || null;
+      if (alt && alt.id !== s.era) {
+        s.era = alt.id;
+        this._press('eraSeg', alt.id);
+        this._save();
+        return this.startNotes();
+      }
+    }
+    // the part-of-world buttons show how many states they have in the chosen era
+    for (const b of $('mapSeg').querySelectorAll('button')) {
+      const T = RA.THEATRES.find((t) => t.id === b.dataset.v), M = this.app.maps && this.app.maps[T.map];
+      const n = M ? this.regionCount(M, T.region || T.map, E.id, s.start, true) : null;
+      // always clickable: picking a part without states in this era moves the era (below)
+      b.querySelector('small').textContent = n == null ? '' : n ? `${n} država` : 'nema u ovom dobu';
+    }
+    this._press('mapSeg', th);
+    // the "part of Evropa" field (Balkan, Zapadna…) only for Evropa: a world part is already the region
+    $('regField').hidden = s.map !== 'evropa';
     $('regSeg').innerHTML = RA.regionsOf(s.map).map((r) => {
       const n = ready ? this.regionCount(m, r.id, s.era, s.start) : null;
       return `<button data-v="${r.id}" aria-pressed="${r.id === s.region}"${n === 0 ? ' disabled' : ''}>${RA.esc(r.name)}<small>${n == null ? '…' : n} država</small></button>`;
@@ -231,11 +271,40 @@ RA.UI = class {
       + (s.gm === 'br' ? 'Battle royale: radioaktivna zona se sužava prema nasumičnoj tački — sve izvan kruga propada.' : '');
     if (this.command) this.command.refresh();
   }
-  regionCount(m, reg, era, start) {
+  /* number of states of a region in an era (cached); known=true: only if counted already or the era is decoded */
+  regionCount(m, reg, era, start, known) {
     const key = `${m.id}|${reg}|${era}|${start}`;
     this._rc = this._rc || {};
-    if (this._rc[key] == null) this._rc[key] = RA.regionNations(RA.eraMap(m, era, start), reg).length;
+    if (this._rc[key] == null) {
+      if (known && !RA.eraReady(m, era)) return null;
+      this._rc[key] = RA.regionNations(RA.eraMap(m, era, start), reg).length;
+    }
     return this._rc[key];
+  }
+  /* a lazily loaded map (the world) keeps only ~2 decoded eras: to count states per region in every era, fetch them
+     one at a time, count all regions, and drop each again unless it is the chosen one */
+  eraCounts(m) {
+    const start = this.settings.start;
+    this._rc = this._rc || {};
+    const todo = RA.ERAS.map((e) => e.id).filter((e) => (!m.eraOK || m.eraOK[e]) && this._rc[`${m.id}|${m.id}|${e}|${start}`] == null);
+    if (!todo.length || this._counting) return;
+    this._counting = true;
+    const next = () => {
+      const e = todo.shift();
+      if (!e) {
+        this._counting = false;
+        this.startNotes();
+        return;
+      }
+      const had = !!m.eras[e];
+      RA.loadEra(m, e)
+        .then(() => {
+          for (const r of RA.regionsOf(m.id)) this.regionCount(m, r.id, e, start);
+          if (!had && e !== this.settings.era) delete m.eras[e];
+        }, () => {})
+        .then(next);
+    };
+    next();
   }
   /* boot probe: a map our server has shows up on the start screen (and in the lobby) */
   mapsChanged(id) {
@@ -287,10 +356,9 @@ RA.UI = class {
   }
   /* a map's button on the start screen and in the lobby; the "Karta" fields show only when there is a choice */
   showMap(id, ok) {
-    for (const seg of ['mapSeg', 'lMapSeg']) {
-      const b = this.$(seg).querySelector(`[data-v="${id}"]`);
-      if (b) b.hidden = !ok;
-    }
+    for (const b of this.$('mapSeg').querySelectorAll('button')) if (RA.THEATRES.find((t) => t.id === b.dataset.v).map === id) b.hidden = !ok;
+    const lb = this.$('lMapSeg').querySelector(`[data-v="${id}"]`);
+    if (lb) lb.hidden = !ok;
     const many = RA.MAPS.some((m) => m.id !== 'evropa' && this.app.mapOK && this.app.mapOK[m.id]);
     this.$('mapField').hidden = !many && this.$('mapNote').hidden;
     this.$('lMapField').hidden = !many;

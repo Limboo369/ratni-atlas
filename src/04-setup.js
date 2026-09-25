@@ -116,6 +116,19 @@ for (const r of RA.REGIONS) {
   r.box = [Math.min(...lons), Math.min(...lats), Math.max(...lons), Math.max(...lats)]; // the cell range is clamped to the grid in regionMask
 }
 RA.regionsOf = (mapId) => RA.REGIONS.filter((r) => r.map === mapId);
+/* the start screen's "part of the world": Evropa is its own detailed map (with its own parts), the rest are regions
+   of the world map. Settings keep map + region as before (saves, online lobby). */
+RA.THEATRES = [
+  { id: 'svijet', map: 'svijet', region: 'svijet', name: 'Cijeli svijet' },
+  { id: 'evropa', map: 'evropa', region: null, name: 'Evropa' },
+  { id: 'bliski', map: 'svijet', region: 'bliski', name: 'Bliski istok i Mediteran' },
+  { id: 'afrika', map: 'svijet', region: 'afrika', name: 'Afrika' },
+  { id: 'azija', map: 'svijet', region: 'azija', name: 'Azija' },
+  { id: 'sam', map: 'svijet', region: 'sam', name: 'Sjeverna Amerika' },
+  { id: 'jam', map: 'svijet', region: 'jam', name: 'Južna Amerika' },
+  { id: 'okeanija', map: 'svijet', region: 'okeanija', name: 'Okeanija' },
+];
+RA.theatreOf = (s) => (s.map === 'evropa' ? 'evropa' : s.region);
 RA.regionOf = (base, id) => RA.REGIONS.find((r) => r.id === id && r.map === base.id);
 RA.pointInPoly = function (x, y, P) {
   let inside = false;

@@ -99,7 +99,7 @@ RA.CommandScreen = class {
   refresh() {
     const s = this.ui.settings;
     // Lobby settings can change while the launcher is hidden. Reflect them on return.
-    for (const [id, value] of [['mapSeg', s.map], ['eraSeg', s.era], ['startSeg', s.start], ['gmSeg', s.gm], ['diffSeg', s.difficulty], ['peaceSeg', String(s.peace)], ['csSeg', String(s.cityStates)]]) {
+    for (const [id, value] of [['mapSeg', RA.theatreOf(s)], ['eraSeg', s.era], ['startSeg', s.start], ['gmSeg', s.gm], ['diffSeg', s.difficulty], ['peaceSeg', String(s.peace)], ['csSeg', String(s.cityStates)]]) {
       this.$(id).querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === value)));
     }
     const reg = RA.regionsOf(s.map).find((r) => r.id === s.region);

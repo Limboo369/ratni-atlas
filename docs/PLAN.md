@@ -223,7 +223,8 @@ Svijet dolazi prije ekonomije, vojske i kampanje: resursi, moreuzi, mornarica i 
 | --- | --- | --- |
 | Nastavi igru poslije pobjede | Pobjednik se proglasi na 70% (kao sada), a na prozoru pobjede je i „Nastavi igru" — igra dalje do kraja (dok ne ostane sam na karti); pobjeda ostaje zapisana | gotovo za igru protiv kompjutera; online treba zajedničku komandu za sve uređaje |
 | Profil igrača | Na početnom ekranu, poslije prijave: ime, ikonica (grb ili Google slika), čin, statistike, uspješnost, dostignuća, historija partija, ljestvica | gotovo |
-| Izbornik karte | Evropa nije posebna karta u izborniku nego jedna od regija: Cijeli svijet, Evropa, Bliski istok i Mediteran, Afrika, Azija, Amerike, Okeanija; ispod se bira doba. Doba za sve kontinente i cijeli svijet | sljedeće |
+| Izbornik karte | Evropa nije posebna karta u izborniku nego jedna od regija: Cijeli svijet, Evropa, Bliski istok i Mediteran, Afrika, Azija, Amerike, Okeanija; ispod se bira doba. Doba za sve kontinente i cijeli svijet | izbornik gotov (uz svaki dio broj država u izabranom dobu; doba bez bar 2 države se isključi, a izbor pređe na najbliže doba). Dijelovi Evrope (Balkan…) su u postavkama. Slijedi: dopuniti stara doba država (Rim: Amerike i Okeanija 0, Afrika 5; 1400.: Okeanija 0, Amerike 4 i 2) i isti izbornik u online lobiju |
+| Mikrodržave | Svijet danas ima 168 država na karti: 29 najmanjih (Malta, Singapur, Bahrein, Monako, San Marino, Vatikan, Andora, Lihtenštajn, Maldivi, Mauricijus, Sejšeli, karipska i pacifička ostrva…) manje su od 8 polja mreže (polje ≈ 25 × 25 km), pa su slobodna zemlja; Grenland i Tajvan su posebno | ako želiš svih 195: dodati ih kao male države (gradove-države) na njihovom polju |
 
 ## Otvorena pitanja
 

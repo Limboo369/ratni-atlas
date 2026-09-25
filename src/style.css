@@ -611,24 +611,26 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
 
 /* The map switch stays beside the eras so loading a map never sits behind the settings dialog. */
 #startScreen .command-description .tagline { margin: 0; font: inherit; color: inherit; letter-spacing: normal; }
-.command-section-head:has(#mapField:not([hidden])) > span { display: none; }
-.command-maps { max-width: 320px; margin-left: auto; }
-#startScreen #mapSeg { gap: 3px; padding: 3px; border: 1px solid var(--launch-line); border-radius: 3px; background: #0b141b; }
-#startScreen #mapSeg button { min-width: 78px; min-height: 38px; padding: 8px 14px; border-radius: 1px; font-size: 11px; font-weight: 500; color: #b0bec4; }
+/* where to play (Evropa is one of the parts of the world): a grid above the eras */
+.command-theatres { margin-bottom: 18px; }
+#startScreen #mapSeg { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 3px; padding: 3px; border: 1px solid var(--launch-line); border-radius: 3px; background: #0b141b; }
+#startScreen #mapSeg button { min-height: 44px; padding: 7px 10px; border-radius: 1px; font-size: 11.5px; font-weight: 600; color: #b0bec4; text-align: left; }
 #startScreen #mapSeg button[aria-pressed=true] { color: #fff1e9; background: #28333a; box-shadow: inset 0 -2px var(--danger); }
-#startScreen #mapSeg small { display: none; }
-#startScreen #mapNote { margin: 8px 0 0; font-size: 11px; line-height: 1.4; }
+#startScreen #mapSeg small { display: block; font-size: 10px; font-weight: 500; color: #84939c; margin-top: 2px; }
+#startScreen #mapSeg button:disabled { opacity: .4; }
+#startScreen #mapNote { margin: -8px 0 14px; font-size: 11px; line-height: 1.4; }
 #startScreen #eraSeg button:disabled { opacity: .4; cursor: default; transform: none; }
 .command-world .atlas-scene { width: min(88vw, 1560px); height: auto; aspect-ratio: var(--atlas-aspect); top: 5%; left: 32%; }
 .command-world .atlas-table { transform: rotateX(28deg) rotateZ(-14deg) scale(.94); }
 @media (max-width: 760px) {
   .command-section-head { flex-wrap: wrap; }
   .command-world .atlas-scene { width: 850px; left: calc(64% - 425px); top: 50px; }
-  #startScreen #mapSeg button { min-height: 40px; min-width: 62px; padding: 7px 10px; }
+  #startScreen #mapSeg { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #startScreen #mapSeg button { min-height: 40px; padding: 6px 10px; }
 }
 @media (max-width: 480px) {
   .command-world .atlas-scene { width: 680px; left: calc(64% - 340px); top: 45px; }
-  #startScreen #mapSeg button { font-size: 10px; }
+  #startScreen #mapSeg button { font-size: 11px; }
 }
 
 /* account (08e-account.js): signed-in dot on the launcher button, Google button slot, name row */
