@@ -171,7 +171,11 @@ async def main():
             anchor = await ev('() => window.__ra.G.me.units[0].anchor')
             check(anchor == cap or anchor >= 0, 'unit got a new position')
         # 7. diplomacy: alliance offer and trade offer are separate
-        offer = await ev('''() => { const G = window.__ra.G, me = G.me; const os = G.P.filter(p => p && p.alive && p.type === 'nation' && p !== me && !me.allies.has(p.id) && !me.trade.has(p.id)); const a = os[0], t = os[1] || os[0]; G.allyReqs.push({from: a.id, to: me.id, exp: G.tick + 300}); G.tradeReqs.push({from: t.id, to: me.id, exp: G.tick + 300}); return {a: a.id, t: t.id}; }''')
+        # Keep the two injected offers stable while the UI responds on a slow renderer.
+        offer = await ev('''() => { const app = window.__ra, G = app.G, me = G.me; app.paused = true;
+            G.allyReqs = G.allyReqs.filter(r => r.to !== me.id); G.tradeReqs = G.tradeReqs.filter(r => r.to !== me.id);
+            const os = G.P.filter(p => p && p.alive && p.type === 'nation' && p !== me && !me.allies.has(p.id) && !me.trade.has(p.id));
+            const a = os[0], t = os[1] || os[0]; G.allyReqs.push({from: a.id, to: me.id, exp: G.tick + 300}); G.tradeReqs.push({from: t.id, to: me.id, exp: G.tick + 300}); return {a: a.id, t: t.id}; }''')
         try:
             await page.wait_for_function('document.getElementById("diploBdg").textContent === "2"', timeout=10000)
         except Exception:
@@ -197,6 +201,7 @@ async def main():
         check(await ev(f'() => window.__ra.G.me.allies.has({offer["a"]})'), 'military alliance accepted')
         await page.screenshot(path=OUT + f'{MODE}_v3_10_diplo2.png')
         await ev('window.__ra.ui.closeSheet()')
+        await ev('() => { window.__ra.paused = false; }')
 
         # 8. missiles: aim shows the blast radius, "Lansiraj" fires
         tgt = await ev('''() => { const G = window.__ra.G, me = G.me; me.gold = 3e7;
