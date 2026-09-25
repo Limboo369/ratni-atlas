@@ -419,6 +419,43 @@ RA.FxLayer = L.Layer.extend({
       for (const a of G.attacks) {
         if (a.done || a.a !== G.me.id || a.focus < 0) continue;
         const x = gx((a.focus % W) + 0.5), y = gy(((a.focus / W) | 0) + 0.5);
+        const k = a.corr;
+        if (k) {
+          // a directed attack: a translucent band as wide as its corridor and an arrow from the border to the target
+          const sx = gx(k.sx + 0.5), sy = gy(k.sy + 0.5);
+          const cw = Math.abs(gx(k.sx + 1) - gx(k.sx)), bw = Math.max(6, Math.sqrt(k.r2) * 2 * cw);
+          const ang = Math.atan2(y - sy, x - sx), len = Math.hypot(x - sx, y - sy);
+          if (len > 4 && (inView(sx, sy, bw) || inView(x, y, bw))) {
+            ctx.save();
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = 'rgba(255,255,255,0.10)';
+            ctx.lineWidth = bw;
+            ctx.beginPath();
+            ctx.moveTo(sx, sy);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+            const head = Math.min(18, Math.max(9, len * 0.3));
+            const ex = x - Math.cos(ang) * head * 0.6, ey = y - Math.sin(ang) * head * 0.6;
+            ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+            ctx.lineWidth = 3;
+            ctx.setLineDash([7, 5]);
+            ctx.lineDashOffset = -((now / 40) % 12);
+            ctx.beginPath();
+            ctx.moveTo(sx, sy);
+            ctx.lineTo(ex, ey);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.fillStyle = 'rgba(255,255,255,0.95)';
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x - Math.cos(ang - 0.45) * head, y - Math.sin(ang - 0.45) * head);
+            ctx.lineTo(x - Math.cos(ang + 0.45) * head, y - Math.sin(ang + 0.45) * head);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+          }
+          continue;
+        }
         if (!inView(x, y, 20)) continue;
         const ph = (now / 600) % 1;
         ctx.beginPath();

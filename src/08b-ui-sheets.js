@@ -395,7 +395,11 @@ Object.assign(RA.UI.prototype, {
       if (!ally) {
         acts.push(this.btn({
           icon: 'attack', cls: 'primary', attrs: 'data-act="attack"', dis: peace,
-          t: 'Napadni', d: peace ? `Mirno doba — napadi za ${G.peaceLeft()} s` : `${Math.round(this.ratio * 100)}% vojske, fokus na ovu tačku`, r: troopsTxt,
+          t: O ? 'Napadni ovaj dio' : 'Zauzmi', d: peace && O ? `Mirno doba — napadi za ${G.peaceLeft()} s` : O ? `${Math.round(this.ratio * 100)}% vojske · s najbliže granice do ove tačke` : `${Math.round(this.ratio * 100)}% vojske, širenje prema ovoj tački`, r: troopsTxt,
+        }));
+        if (O) acts.push(this.btn({
+          icon: 'attack', attrs: 'data-act="attackAll"', dis: peace,
+          t: 'Napadni cijelu granicu', d: `${Math.round(this.ratio * 100)}% vojske · front na svakom dodiru s ovom državom`, r: troopsTxt,
         }));
       }
     }
@@ -428,7 +432,11 @@ Object.assign(RA.UI.prototype, {
       };
       on('[data-act=attack]', () => {
         this.closeSheet();
-        this.act('atk', [c, this.ratio]);
+        this.act('atk', [c, this.ratio, O ? 1 : 0]);
+      });
+      on('[data-act=attackAll]', () => {
+        this.closeSheet();
+        this.act('atk', [c, this.ratio, 0]);
       });
       on('[data-act=retreat]', () => {
         this.closeSheet();
@@ -503,7 +511,9 @@ Object.assign(RA.UI.prototype, {
       <h4>Battle royale</h4><p>Poslije mirnog doba i još 90 s radioaktivna zona počinje da se sužava prema nasumičnoj tački (${C.BR_PHASES} krugova). Bijeli isprekidani krug pokazuje kuda ide. Sve izvan crvenog kruga propada — i zemlja i vojska na njoj. Pobjeđuje ko ostane.</p>
       <h4>Širenje i napad</h4><ul>
         <li><b>Dodirni</b> slobodno kopno ili susjeda — šalješ onoliko vojske koliko pokazuje klizač <b>Snaga napada</b>.</li>
-        <li>Front ide prema mjestu koje dodirneš. Rijeke, brda, planine i gradovi usporavaju napadača.</li>
+        <li><b>Usmjereni napad</b>: dodir na susjednu državu šalje vojsku s tvoje najbliže granice pravo do tog mjesta (strelica na karti) — osvaja se samo taj dio, pa se ostatak vojske vraća. Što više vojske pošalješ, to je koridor širi.</li>
+        <li>Front na cijeloj granici s državom: dugi pritisak na nju → <b>Napadni cijelu granicu</b>. Slobodno kopno se uvijek zauzima s cijele granice.</li>
+        <li>Rijeke, brda, planine i gradovi usporavaju napadača.</li>
         <li>Aktivni napadi su iznad donje trake. <b>✕</b> obustavlja napad i vraća vojsku (napad na državu: 25% se izgubi u povlačenju).</li></ul>
       <h4>Vojska i zlato</h4><ul>
         <li>Vojska raste sama, najbrže oko <b>42%</b> kapaciteta (zelena zona na traci).</li>

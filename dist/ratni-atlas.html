@@ -1706,7 +1706,10 @@ RA.Game = class Game {
     return false;
   }
 
-  launchAttack(aid, tid, troops, focusCell, sourceCell) {
+  /* dir: a directed attack (a player's tap on a state): it starts from the own border cell nearest to the focus and
+     only takes a corridor from there to the focus plus a disc around it (width grows with the troops sent), then the
+     rest of the army comes home. Without dir the whole common border is the front (the AI, "cijela granica"). */
+  launchAttack(aid, tid, troops, focusCell, sourceCell, dir) {
     const A = this.P[aid];
     if (!A || !A.alive || aid === tid) return null;
     const T = tid ? this.P[tid] : null;
@@ -1731,10 +1734,13 @@ RA.Game = class Game {
       }
       if (troops < 1) return null;
     }
+    // a directed attack: its own corridor (never merged: two taps are two thrusts)
+    let corr = null;
+    if (dir && T && sourceCell < 0 && focusCell >= 0) corr = this._corridor(A, T, focusCell, troops);
     // merge with existing land attack on same target
-    if (sourceCell < 0) {
+    if (sourceCell < 0 && !corr) {
       for (const o of this.attacks) {
-        if (!o.done && o.a === aid && o.t === tid && !o.boat) {
+        if (!o.done && o.a === aid && o.t === tid && !o.boat && !o.corr) {
           o.troops += troops;
           if (focusCell >= 0) o.focus = focusCell;
           o.fresh = true;
@@ -1745,6 +1751,7 @@ RA.Game = class Game {
     const att = {
       id: this.nextId++, a: aid, t: tid, troops, start: troops, heap: new RA.Heap(512), pending: 0,
       focus: focusCell >= 0 ? focusCell : -1, done: false, boat: sourceCell >= 0, src: sourceCell, fresh: true, began: this.tick,
+      corr,
     };
     this.attacks.push(att);
     if (sourceCell >= 0) {
@@ -1765,11 +1772,41 @@ RA.Game = class Game {
     return att;
   }
 
+  /* the corridor of a directed attack: from the own border cell (next to T) nearest to the focus to the focus */
+  _corridor(A, T, focus, troops) {
+    const own = this.owner, W = this.map.W, N = this.map.N, cells = A.cells;
+    const fx = focus % W, fy = (focus / W) | 0;
+    let best = -1, bd = Infinity;
+    for (let i = 0; i < A.tiles; i++) {
+      const c = cells[i], x = c % W;
+      if (!((x > 0 && own[c - 1] === T.id) || (x < W - 1 && own[c + 1] === T.id) || (c >= W && own[c - W] === T.id) || (c < N - W && own[c + W] === T.id))) continue;
+      const dx = x - fx, dy = ((c / W) | 0) - fy, d = dx * dx + dy * dy;
+      if (d < bd || (d === bd && c < best)) (bd = d), (best = c);
+    }
+    if (best < 0) return null;
+    // width: how many of T's cells the troops are worth (T's army spread over its land)
+    const dens = Math.max(1, T.troops / Math.max(1, T.tiles));
+    const r = RA.clamp(Math.sqrt(troops / dens) * 0.45, 3, 14);
+    return { sx: best % W, sy: (best / W) | 0, fx, fy, r2: r * r, e2: r * r * 2.56 };
+  }
+  /* is a cell inside a directed attack's corridor (segment start-focus within r, or within 1.6 r of the focus) */
+  _inCorr(k, c) {
+    const W = this.map.W, x = c % W, y = (c / W) | 0;
+    const ex = x - k.fx, ey = y - k.fy;
+    if (ex * ex + ey * ey <= k.e2) return true;
+    const vx = k.fx - k.sx, vy = k.fy - k.sy, L = vx * vx + vy * vy;
+    let t = L > 0 ? ((x - k.sx) * vx + (y - k.sy) * vy) / L : 0;
+    t = t < 0 ? 0 : t > 1 ? 1 : t;
+    const dx = x - (k.sx + t * vx), dy = y - (k.sy + t * vy);
+    return dx * dx + dy * dy <= k.r2;
+  }
+
   /* Frontier priority = arrival time (Dijkstra-like): parent's time + travel cost of this cell.
      Plains are quick, hills/mountains/rivers slow, a smooth noise field makes fronts organic,
      and the focus point pulls the front towards where the player tapped. */
   _push(att, c, base, parent) {
     if (this.zone && this.zoneOut(c)) return;
+    if (att.corr && !this._inCorr(att.corr, c)) return;
     const own = this.owner, W = this.map.W, N = this.map.N;
     let k = 0;
     const x = c % W;
@@ -2529,7 +2566,7 @@ RA.Game = class Game {
   }
 
   /* ---------------- player commands ---------------- */
-  cmdAttack(pid, c, ratio) {
+  cmdAttack(pid, c, ratio, dir) {
     const p = this.P[pid];
     if (!p || !p.alive) return { err: 'Nisi u igri.' };
     if (c < 0 || !this.map.land[c]) return { err: 'To je voda. Dodirni kopno ili obalu.' };
@@ -2542,7 +2579,7 @@ RA.Game = class Game {
     const troops = p.troops * ratio;
     if (troops < 1) return { err: 'Nemaš dovoljno vojske.' };
     if (this.hasBorderWith(p, tid)) {
-      const a = this.launchAttack(pid, tid, troops, c);
+      const a = this.launchAttack(pid, tid, troops, c, -1, !!dir);
       return a ? { ok: 'land', att: a } : { err: 'Napad nije moguć.' };
     }
     if (this.map.coast[c]) {
@@ -3682,7 +3719,7 @@ RA.CMD_KINDS = ['atk', 'boat', 'para', 'build', 'rec', 'mv', 'dis', 'mis', 'mob'
     const id = (v) => (Number.isInteger(v) ? v : -1);
     switch (kind) {
       case 'atk':
-        return this.cmdAttack(pid, cell(a[0]), ratio(a[1]));
+        return this.cmdAttack(pid, cell(a[0]), ratio(a[1]), a[2] === 1); // a[2] 1: directed (a corridor to the cell)
       case 'boat': {
         const r = this.launchBoat(pid, cell(a[0]), p.troops * ratio(a[1]));
         return typeof r === 'object' ? r : this.boatErr(r);
@@ -6290,6 +6327,43 @@ RA.FxLayer = L.Layer.extend({
       for (const a of G.attacks) {
         if (a.done || a.a !== G.me.id || a.focus < 0) continue;
         const x = gx((a.focus % W) + 0.5), y = gy(((a.focus / W) | 0) + 0.5);
+        const k = a.corr;
+        if (k) {
+          // a directed attack: a translucent band as wide as its corridor and an arrow from the border to the target
+          const sx = gx(k.sx + 0.5), sy = gy(k.sy + 0.5);
+          const cw = Math.abs(gx(k.sx + 1) - gx(k.sx)), bw = Math.max(6, Math.sqrt(k.r2) * 2 * cw);
+          const ang = Math.atan2(y - sy, x - sx), len = Math.hypot(x - sx, y - sy);
+          if (len > 4 && (inView(sx, sy, bw) || inView(x, y, bw))) {
+            ctx.save();
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = 'rgba(255,255,255,0.10)';
+            ctx.lineWidth = bw;
+            ctx.beginPath();
+            ctx.moveTo(sx, sy);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+            const head = Math.min(18, Math.max(9, len * 0.3));
+            const ex = x - Math.cos(ang) * head * 0.6, ey = y - Math.sin(ang) * head * 0.6;
+            ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+            ctx.lineWidth = 3;
+            ctx.setLineDash([7, 5]);
+            ctx.lineDashOffset = -((now / 40) % 12);
+            ctx.beginPath();
+            ctx.moveTo(sx, sy);
+            ctx.lineTo(ex, ey);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.fillStyle = 'rgba(255,255,255,0.95)';
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x - Math.cos(ang - 0.45) * head, y - Math.sin(ang - 0.45) * head);
+            ctx.lineTo(x - Math.cos(ang + 0.45) * head, y - Math.sin(ang + 0.45) * head);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+          }
+          continue;
+        }
         if (!inView(x, y, 20)) continue;
         const ph = (now / 600) % 1;
         ctx.beginPath();
@@ -7810,7 +7884,7 @@ RA.UI = class {
     const U = RA.UNIT, S = RA.STRUCT;
     const T = [
       [1, G.borders
-        ? (peace > 0 ? `Mirno doba (${Math.round(peace)} s): niko ne smije napadati države. Gradi, sklapaj saveze (dugme „Savezi”) i spremi vojsku uz granicu.` : 'Dodirni susjednu državu da je napadneš. Front kreće prema mjestu koje dodirneš.')
+        ? (peace > 0 ? `Mirno doba (${Math.round(peace)} s): niko ne smije napadati države. Gradi, sklapaj saveze (dugme „Savezi”) i spremi vojsku uz granicu.` : 'Dodirni dio susjedne države koji hoćeš: vojska ide s najbliže granice pravo tamo (strelica) i osvaja samo taj dio. Za napad na cijeloj granici: dugi pritisak → „Napadni cijelu granicu”.')
         : peace > 0
         ? `Mirno doba (${Math.round(peace)} s): niko ne smije napadati države. Zauzmi što više slobodne (sive) zemlje i sklopi vojne i trgovinske saveze (dugme „Savezi”).`
         : 'Dodirni sivo, slobodno kopno da se širiš. Front kreće prema mjestu koje dodirneš.'],
@@ -7994,7 +8068,8 @@ RA.UI = class {
       return;
     }
     this.ping(cp, false);
-    this.act('atk', [c, this.ratio]);
+    // a state: a directed thrust from the nearest border to this point; free land: the whole border expands
+    this.act('atk', [c, this.ratio, G.owner[c] ? 1 : 0]);
   }
   modeTap(m, c, cp) {
     const G = this.G, me = G.me;
@@ -8520,7 +8595,11 @@ Object.assign(RA.UI.prototype, {
       if (!ally) {
         acts.push(this.btn({
           icon: 'attack', cls: 'primary', attrs: 'data-act="attack"', dis: peace,
-          t: 'Napadni', d: peace ? `Mirno doba — napadi za ${G.peaceLeft()} s` : `${Math.round(this.ratio * 100)}% vojske, fokus na ovu tačku`, r: troopsTxt,
+          t: O ? 'Napadni ovaj dio' : 'Zauzmi', d: peace && O ? `Mirno doba — napadi za ${G.peaceLeft()} s` : O ? `${Math.round(this.ratio * 100)}% vojske · s najbliže granice do ove tačke` : `${Math.round(this.ratio * 100)}% vojske, širenje prema ovoj tački`, r: troopsTxt,
+        }));
+        if (O) acts.push(this.btn({
+          icon: 'attack', attrs: 'data-act="attackAll"', dis: peace,
+          t: 'Napadni cijelu granicu', d: `${Math.round(this.ratio * 100)}% vojske · front na svakom dodiru s ovom državom`, r: troopsTxt,
         }));
       }
     }
@@ -8553,7 +8632,11 @@ Object.assign(RA.UI.prototype, {
       };
       on('[data-act=attack]', () => {
         this.closeSheet();
-        this.act('atk', [c, this.ratio]);
+        this.act('atk', [c, this.ratio, O ? 1 : 0]);
+      });
+      on('[data-act=attackAll]', () => {
+        this.closeSheet();
+        this.act('atk', [c, this.ratio, 0]);
       });
       on('[data-act=retreat]', () => {
         this.closeSheet();
@@ -8628,7 +8711,9 @@ Object.assign(RA.UI.prototype, {
       <h4>Battle royale</h4><p>Poslije mirnog doba i još 90 s radioaktivna zona počinje da se sužava prema nasumičnoj tački (${C.BR_PHASES} krugova). Bijeli isprekidani krug pokazuje kuda ide. Sve izvan crvenog kruga propada — i zemlja i vojska na njoj. Pobjeđuje ko ostane.</p>
       <h4>Širenje i napad</h4><ul>
         <li><b>Dodirni</b> slobodno kopno ili susjeda — šalješ onoliko vojske koliko pokazuje klizač <b>Snaga napada</b>.</li>
-        <li>Front ide prema mjestu koje dodirneš. Rijeke, brda, planine i gradovi usporavaju napadača.</li>
+        <li><b>Usmjereni napad</b>: dodir na susjednu državu šalje vojsku s tvoje najbliže granice pravo do tog mjesta (strelica na karti) — osvaja se samo taj dio, pa se ostatak vojske vraća. Što više vojske pošalješ, to je koridor širi.</li>
+        <li>Front na cijeloj granici s državom: dugi pritisak na nju → <b>Napadni cijelu granicu</b>. Slobodno kopno se uvijek zauzima s cijele granice.</li>
+        <li>Rijeke, brda, planine i gradovi usporavaju napadača.</li>
         <li>Aktivni napadi su iznad donje trake. <b>✕</b> obustavlja napad i vraća vojsku (napad na državu: 25% se izgubi u povlačenju).</li></ul>
       <h4>Vojska i zlato</h4><ul>
         <li>Vojska raste sama, najbrže oko <b>42%</b> kapaciteta (zelena zona na traci).</li>
@@ -10795,7 +10880,7 @@ RA.wsRoom = function (url, creds, onCreds, onBack) {
   };
 };
 
-RA.BUILD = '83b168a8';
+RA.BUILD = '98f50528';
 new RA.App().boot();
 }
 function __raFallback(){

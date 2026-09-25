@@ -145,6 +145,25 @@ async def main():
             after = await ev('() => window.__ra.G.me.troops')
             n_att = await ev('() => window.__ra.G.attacks.filter(a => !a.done && a.a === window.__ra.G.me.id && a.t > 0).length')
             check(n_att == 0 and after > before, f'retreat returns troops ({round(before)} -> {round(after)})')
+            # directed attack: only the corridor from the nearest border to the tapped point is taken, then the army comes home
+            d = await ev(f'''() => {{ const G = window.__ra.G, me = G.me, T = G.P[{nb["id"]}];
+                me.troops = Math.max(me.troops, 150000);
+                let far = -1, fd = -1; const W = G.map.W, cap = T.capital;
+                const tgt = cap >= 0 && G.owner[cap] === T.id ? cap : T.cells[T.tiles >> 1];
+                const before = G.owner.slice(), tiles0 = T.tiles;
+                const r = G.exec(me.id, 'atk', [tgt, 0.4, 1]);
+                const att = r && r.att; if (!att || !att.corr) return {{ err: JSON.stringify(r && (r.err || r.ok)) }};
+                const k = att.corr; let n = 0;
+                while (!att.done && n < 4000) {{ G.step(); n++; }}
+                let taken = 0, outside = 0;
+                for (let c = 0; c < G.map.N; c++) if (before[c] === T.id && G.owner[c] === me.id) {{ taken++; if (!G._inCorr(k, c)) outside++; }}
+                const all = G.exec(me.id, 'atk', [tgt, 0.2, 0]);
+                return {{ taken, outside, tiles0, alive: T.alive, done: att.done, ticks: n, r: Math.round(Math.sqrt(k.r2)), whole: !!(all && all.att && !all.att.corr) }}; }}''')
+            print('directed attack', d)
+            check(d.get('taken', 0) > 0 and d.get('outside', 1) == 0, f'directed attack takes only its corridor ({d})')
+            check(d.get('done') and d.get('alive') and d.get('taken', 0) < d.get('tiles0', 0), 'the directed attack ends by itself; the rest of the state stays')
+            check(d.get('whole'), '"Napadni cijelu granicu" is a whole-border attack')
+            await ev('() => { const G = window.__ra.G; for (const a of G.attacks) if (!a.done && a.a === G.me.id) G.retreat(a.id); }')
             await ev('() => { window.__ra.paused = false; }')
 
         # 6. units: recruit infantry at the border, select it by tapping, move it

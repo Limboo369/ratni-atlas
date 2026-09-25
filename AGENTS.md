@@ -3,7 +3,8 @@
 Browser territory-conquest strategy game (OpenFront.io-style, made better) on a real map of Europe.
 Game name **Overtake** (logo: "Over" in the text color, "take" in red `var(--danger)`); the repository stays `ratni-atlas`.
 Owner: **Darko** (Bosnia). Talk to him in **Bosnian, ijekavica**, short and concrete. All in-game text is Bosnian (ijekavica).
-He plays and tests mostly on an **Android phone** — every screen must work at phone width (375 px).
+The game is played **mostly on a computer** (desktop browser, mouse and keyboard): design and polish for that first.
+It must still work well on an **Android phone** — every screen must also work at phone width (375 px).
 
 Who does what: **Codex** — visuals and graphics (UI look, CSS, icons, illustrations, map styling).
 **Claude Code** — game logic, AI, online play, server and deploy. Either may touch any file; git keeps it in sync.

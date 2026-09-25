@@ -872,7 +872,7 @@ RA.UI = class {
     const U = RA.UNIT, S = RA.STRUCT;
     const T = [
       [1, G.borders
-        ? (peace > 0 ? `Mirno doba (${Math.round(peace)} s): niko ne smije napadati države. Gradi, sklapaj saveze (dugme „Savezi”) i spremi vojsku uz granicu.` : 'Dodirni susjednu državu da je napadneš. Front kreće prema mjestu koje dodirneš.')
+        ? (peace > 0 ? `Mirno doba (${Math.round(peace)} s): niko ne smije napadati države. Gradi, sklapaj saveze (dugme „Savezi”) i spremi vojsku uz granicu.` : 'Dodirni dio susjedne države koji hoćeš: vojska ide s najbliže granice pravo tamo (strelica) i osvaja samo taj dio. Za napad na cijeloj granici: dugi pritisak → „Napadni cijelu granicu”.')
         : peace > 0
         ? `Mirno doba (${Math.round(peace)} s): niko ne smije napadati države. Zauzmi što više slobodne (sive) zemlje i sklopi vojne i trgovinske saveze (dugme „Savezi”).`
         : 'Dodirni sivo, slobodno kopno da se širiš. Front kreće prema mjestu koje dodirneš.'],
@@ -1056,7 +1056,8 @@ RA.UI = class {
       return;
     }
     this.ping(cp, false);
-    this.act('atk', [c, this.ratio]);
+    // a state: a directed thrust from the nearest border to this point; free land: the whole border expands
+    this.act('atk', [c, this.ratio, G.owner[c] ? 1 : 0]);
   }
   modeTap(m, c, cp) {
     const G = this.G, me = G.me;

@@ -108,7 +108,7 @@ Sve ostaje jednostavno za igru: najviše dvije-tri nove stvari po oblasti, bez d
 | 20 | Ratna mornarica | Da, ali malo opcija: dvije vrste broda po dobu (npr. ratni brod i podmornica; u Rimu galije). Napadaju desantne i trgovačke brodove, blokiraju luke, gađaju obalu. |
 | 21 | Avijacija | Da: lovac (obara avione i štiti nebo) i bombarder (gađa zgrade, jedinice i vojsku), s aerodroma; samo u dobima s avionima. |
 | 22 | Dronovi | Da, pažljivo zbog brzine igre: samo u dobu „danas", najviše nekoliko po igraču, let pravom linijom bez traženja puta, crtaju se kao grupa. Kamikaza dron (jeftin mali udar) i dron za napad na jedinice. |
-| 28 | Usmjereni napad | Da: povučeš strelicu prstom od granice do cilja i napad ide uskim koridorom prema cilju, umjesto širenja po cijeloj granici. |
+| 28 | Usmjereni napad | Gotovo (25. 9.): dodir/klik na državu šalje vojsku s najbliže granice do te tačke — osvaja se samo koridor (širina raste s vojskom) i krug oko cilja, pa se vojska vraća; strelica na karti. Napad na cijeloj granici: dugi pritisak / desni klik → „Napadni cijelu granicu". |
 | 30 | Dugme „Vrati granice" | Da, ali bez širenja prema napadaču: jednim dodirom kontranapad samo na zemlju koju ti je taj napadač nedavno oteo, dok granica ne bude kao prije. |
 | 37 | Nuklearke | Bez kazne tipa hitne koalicije (u multiplayeru prevelika kazna). Umjesto toga nuklearke treba pojačati — sada nisu dovoljno isplative. |
 | 50 | Gvozdena kupola i automatski uzvrat | Umjesto mrtve ruke: kupuje se; mreža od više nuklearnih postrojenja po tvojoj teritoriji. Kad neko lansira nuklearku na tebe, tvoje nuklearke automatski idu na njegovu državu — prvo glavni grad, pa dalje. |
@@ -198,6 +198,8 @@ Ovo ne ulazi u igru (brojevi iz liste ideja):
 1 Sat sudnjeg dana · 3 Zombi mod · 4 Kralj brda · 7 Timovi AI država · 8 Nasumični modifikatori · 9 Bodovi i dnevni izazov · 10 Više načina pobjede · 11 Regionalni bonusi · 13 Teren · 14 Godišnja doba i vrijeme · 15 Prirodne katastrofe · 16 Magla rata · 18 Znamenitosti · 23 Veteranstvo · 24 General · 25 Moći komandanta · 26 Doktrine · 27 Nacionalne posebnosti · 29 Opkoljavanje · 31 Plaćenici · 38 Moral i ustanci · 39 Mirovni ugovor · 41 Kongres Evrope · 42 Sankcije i embargo · 44 Špijuni · 47 Sat Armagedona · 49 Nuklearna zima · 51 Cunami · 52 Događaji s odlukom · 53 Ratne novine · 54 Kartice · 55 Tajne misije · 62 Timelapse · 65 Atmosfera (kamera, dan i noć).
 
 Zamijenjeno nečim drugim: 32 tehnologije kao in-game vještine (umjesto toga otključavanje po dobu) · 35 berza (cijene u trgovini) · 37 hitne koalicije (jače nuklearke) · 43 poklanjanje gradova (samo pravo prolaza) · 46 pisanje s AI vođama (samo komentari) · 50 mrtva ruka (gvozdena kupola).
+
+Platforma (25. 9.): igra se prvenstveno na računaru — sve se prvo pravi i dotjeruje za računar (miš, tastatura, širok ekran), a telefon mora i dalje dobro raditi.
 
 ## Redoslijed rada
 
