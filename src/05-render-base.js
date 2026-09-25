@@ -5,14 +5,14 @@
    The territory overlay sits between them, so real coastlines clip territory colours exactly. */
 
 RA.MAPSTYLE = {
-  sea: '#8db6ca',
-  seaGlow: 'rgba(226,242,247,0.55)',
-  lake: '#98c1d3',
+  sea: '#284653',
+  seaGlow: 'rgba(135,183,189,0.3)',
+  lake: '#3e606a',
   river1: '#5f93b3',
   river2: '#7aa8c3',
   coast: 'rgba(33,72,95,0.55)',
   border: 'rgba(62,52,84,0.42)',
-  oobLand: '#cfcfc6',
+  oobLand: '#919b91',
   veil: 'rgba(23,33,43,0.30)',
 };
 

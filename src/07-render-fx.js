@@ -119,7 +119,7 @@ RA.FxLayer = L.Layer.extend({
       const fs = s.rank === 1 ? 13 : 11.5;
       ctx.font = `italic 500 ${fs}px ${RA.FONT_UI}`;
       const txt = s.name.toUpperCase().split('').join(' ');
-      ctx.fillStyle = 'rgba(28,66,92,0.62)';
+      ctx.fillStyle = 'rgba(176,207,209,0.72)';
       ctx.fillText(txt, x, y);
       const tw = ctx.measureText(txt).width;
       placed.push([x - tw / 2, y - fs / 2, tw, fs]);
@@ -133,27 +133,27 @@ RA.FxLayer = L.Layer.extend({
       if (!p || !p.alive) continue;
       const span = Math.sqrt(p.tiles) * cell; // rough territory width in px
       const isMe = p.type === 'me';
-      let fs = Math.min(36, span * 0.22);
+      let fs = Math.min(25, span * 0.18);
       if (isMe) fs = Math.max(fs, 11);
       if (fs < 9) continue;
       const x = gx(L0.x + 0.5), y = gy(L0.y + 0.5);
       if (!inView(x, y, 160)) continue;
       const name = p.name;
-      ctx.font = `700 ${fs}px ${RA.FONT_D}`;
+      ctx.font = `600 ${fs}px ${RA.FONT_UI}`;
       let tw = ctx.measureText(name).width;
       if (tw > span * 1.1 && !(isMe && fs <= 12)) {
         fs = Math.max(isMe ? 11 : 0, (fs * span * 1.1) / tw);
         if (fs < 9) continue;
-        ctx.font = `700 ${fs}px ${RA.FONT_D}`;
+        ctx.font = `600 ${fs}px ${RA.FONT_UI}`;
         tw = ctx.measureText(name).width;
       }
       if (!free(x - tw / 2, y - fs * 0.6, tw, fs * 1.75)) continue;
-      ctx.lineWidth = Math.max(2, fs * 0.16);
-      ctx.strokeStyle = 'rgba(248,250,246,0.78)';
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = 'rgba(228,236,223,0.72)';
       ctx.fillStyle = p.type === 'me' ? '#0a3a9e' : '#141a20';
       ctx.strokeText(name, x, y);
       ctx.fillText(name, x, y);
-      const fs2 = Math.max(9, fs * 0.52);
+      const fs2 = Math.max(9, fs * 0.46);
       ctx.font = `600 ${fs2}px ${RA.FONT_UI}`;
       const tt = RA.fmt(p.troops);
       ctx.lineWidth = 2.5;
@@ -236,32 +236,12 @@ RA.FxLayer = L.Layer.extend({
         const x = gx(tr.sx + (tr.tx - tr.sx) * t), y = gy(tr.sy + (tr.ty - tr.sy) * t);
         if (!inView(x, y, 20)) continue;
         const ang = Math.atan2(tr.ty - tr.sy, tr.tx - tr.sx);
-        ctx.save();
-        ctx.translate(x, y);
-        ctx.rotate(ang);
-        const k = RA.clamp(cell * 0.8, 4, 8);
-        if (road) {
-          // caravan / carts
-          ctx.fillStyle = '#5a3d22';
-          ctx.fillRect(-k * 1.1, -k * 0.4, k * 0.9, k * 0.8);
-          ctx.fillRect(k * 0.1, -k * 0.4, k * 0.9, k * 0.8);
-          ctx.fillStyle = G.P[tr.owner].hex;
-          ctx.fillRect(-k * 0.95, -k * 0.25, k * 0.6, k * 0.5);
-          ctx.fillRect(k * 0.25, -k * 0.25, k * 0.6, k * 0.5);
-          ctx.restore();
-          continue;
-        }
-        ctx.fillStyle = '#1b1d20';
-        ctx.fillRect(-k * 1.6, -k * 0.45, k * 3.2, k * 0.9);
-        ctx.fillStyle = G.P[tr.owner].hex;
-        ctx.fillRect(-k * 1.3, -k * 0.28, k * 1.1, k * 0.56);
-        ctx.fillRect(k * 0.1, -k * 0.28, k * 1.1, k * 0.56);
-        ctx.restore();
+        RA.Models.draw(ctx, road ? 'cart' : 'train', x, y, RA.clamp(cell * 2.2, 18, 32), G.P[tr.owner].hex, ang);
       }
     }
 
     // structures ----------------------------------------------------------------
-    const ss = RA.clamp(cell * 1.5, 8, 20);
+    const ss = RA.clamp(cell * 1.8, 12, 25);
     for (const s of G.structs) {
       if (s.dead) continue;
       const x = gx(s.x + 0.5), y = gy(s.y + 0.5);
@@ -385,9 +365,9 @@ RA.FxLayer = L.Layer.extend({
       ctx.setLineDash([]);
     }
 
-    // military units (NATO map symbols) ------------------------------------------
+    // military units (era-aware battlefield miniatures) ------------------------------------------
     const me = G.me;
-    const uw = RA.clamp(cell * 3.4, 15, 30);
+    const uw = RA.unitSize(cell);
     const selId = ui.mode && ui.mode.kind === 'unit' ? ui.mode.id : -1;
     for (const u of G.units) {
       if (u.dead) continue;
@@ -411,7 +391,15 @@ RA.FxLayer = L.Layer.extend({
           ctx.stroke();
         }
       }
-      RA.drawUnit(ctx, U.sym || u.type, x, y, uw, G.P[u.owner].hex, mine, u.hp / U.hp, u.ready > G.tick, u.empUntil > G.tick, u.id === selId, now);
+      const moving = u.path && u.pi < u.path.length;
+      const next = moving ? u.path[u.pi] : -1;
+      const angle = moving ? Math.atan2(((next / W) | 0) + .5 - u.y, (next % W) + .5 - u.x) : -.35;
+      if (u.id === selId && moving) {
+        ctx.save();ctx.beginPath();ctx.moveTo(x,y);
+        for(let i=u.pi;i<u.path.length;i++) ctx.lineTo(gx((u.path[i]%W)+.5),gy(((u.path[i]/W)|0)+.5));
+        ctx.strokeStyle='rgba(238,213,156,.75)';ctx.lineWidth=1.5;ctx.setLineDash([4,6]);ctx.stroke();ctx.restore();
+      }
+      RA.drawUnit(ctx, U.sym || u.type, x, y, uw, G.P[u.owner].hex, mine, u.hp / U.hp, u.ready > G.tick, u.empUntil > G.tick, u.id === selId, now, angle, moving, G.tick-u.lastHit<15);
     }
 
     // my pledged land (loans): hatched in the lender's colour ------------------------------------------------
@@ -571,23 +559,8 @@ RA.FxLayer = L.Layer.extend({
       if (!inView(x, y, 30)) continue;
       const ang = Math.atan2(y1 - y0, x1 - x0);
       const o = G.P[b.owner];
-      ctx.save();
-      ctx.translate(x, y);
-      ctx.rotate(ang);
-      const k = RA.clamp(cell * 0.9, 5, 11);
-      ctx.beginPath();
-      ctx.moveTo(k * 1.3, 0);
-      ctx.lineTo(k * 0.5, -k * 0.55);
-      ctx.lineTo(-k, -k * 0.55);
-      ctx.lineTo(-k, k * 0.55);
-      ctx.lineTo(k * 0.5, k * 0.55);
-      ctx.closePath();
-      ctx.fillStyle = o.hex;
-      ctx.fill();
-      ctx.lineWidth = 1.5;
-      ctx.strokeStyle = '#fff';
-      ctx.stroke();
-      ctx.restore();
+      const k = RA.clamp(cell * 1.2, 8, 15);
+      RA.drawShip(ctx, 'boat', x, y, k * 2.4, o.hex, ang, now);
       if (cell > 2.5 || b.owner === (G.me && G.me.id)) {
         ctx.font = `600 10px ${RA.FONT_UI}`;
         ctx.textAlign = 'center';
@@ -609,25 +582,7 @@ RA.FxLayer = L.Layer.extend({
       const x0 = (c0 % W) + 0.5, y0 = ((c0 / W) | 0) + 0.5, x1 = (c1 % W) + 0.5, y1 = ((c1 / W) | 0) + 0.5;
       const x = gx(x0 + (x1 - x0) * f), y = gy(y0 + (y1 - y0) * f);
       if (!inView(x, y, 20)) continue;
-      const k = RA.clamp(cell * 0.7, 3.5, 7);
-      ctx.save();
-      ctx.translate(x, y);
-      ctx.rotate(Math.atan2(y1 - y0, x1 - x0));
-      ctx.beginPath();
-      ctx.moveTo(k * 1.4, 0);
-      ctx.lineTo(k * 0.6, -k * 0.5);
-      ctx.lineTo(-k, -k * 0.5);
-      ctx.lineTo(-k, k * 0.5);
-      ctx.lineTo(k * 0.6, k * 0.5);
-      ctx.closePath();
-      ctx.fillStyle = '#f6f3ea';
-      ctx.fill();
-      ctx.lineWidth = 1;
-      ctx.strokeStyle = G.P[sh.owner].hex;
-      ctx.stroke();
-      ctx.fillStyle = G.P[sh.owner].hex;
-      ctx.fillRect(-k * 0.6, -k * 0.25, k * 0.9, k * 0.5);
-      ctx.restore();
+      RA.drawShip(ctx, 'trade', x, y, RA.clamp(cell * 2.5, 18, 30), G.P[sh.owner].hex, Math.atan2(y1-y0,x1-x0), now);
     }
 
     // paratrooper planes ----------------------------------------------------------
@@ -691,19 +646,7 @@ RA.FxLayer = L.Layer.extend({
           ctx.stroke();
         } else {
           const zp = [sx + (tx - sx) * t, sy + (ty - sy) * t - Math.min(30, dist * 0.08)];
-          ctx.save();
-          ctx.translate(zp[0], zp[1]);
-          ctx.rotate(Math.atan2(ty - sy, tx - sx));
-          ctx.beginPath();
-          ctx.ellipse(0, 0, 11, 4.2, 0, 0, Math.PI * 2);
-          ctx.fillStyle = '#c9c3b6';
-          ctx.fill();
-          ctx.lineWidth = 1.4;
-          ctx.strokeStyle = G.P[m.owner].hex;
-          ctx.stroke();
-          ctx.fillStyle = G.P[m.owner].hex;
-          ctx.fillRect(-2, 3.4, 5, 2.4);
-          ctx.restore();
+          RA.Models.draw(ctx,'zeppelin',zp[0],zp[1],32,G.P[m.owner].hex,Math.atan2(ty-sy,tx-sx));
         }
         continue;
       }
@@ -725,6 +668,8 @@ RA.FxLayer = L.Layer.extend({
       ctx.beginPath();
       ctx.arc(h[0], h[1], hr, 0, Math.PI * 2);
       ctx.fill();
+      const tail = P(Math.max(0,t-.01));
+      RA.Models.draw(ctx,'missile',h[0],h[1],m.kind==='mirv'?22:16,G.P[m.owner].hex,Math.atan2(h[1]-tail[1],h[0]-tail[0]));
     }
 
     // blasts & interceptions ------------------------------------------------------
@@ -754,16 +699,7 @@ RA.FxLayer = L.Layer.extend({
         }
       } else if (e.kind === 'conv') {
         const x = gx(e.x), y = gy(e.y), R = Math.max(10, e.r * cell);
-        const k = Math.min(1, age / 0.9);
-        ctx.beginPath();
-        ctx.arc(x, y, R * (0.4 + 0.8 * k), 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255,${Math.round(200 - 90 * k)},80,${0.75 * (1 - k)})`;
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(x, y, R * (0.9 + 0.6 * k), 0, Math.PI * 2);
-        ctx.strokeStyle = `rgba(80,70,60,${0.6 * (1 - k)})`;
-        ctx.lineWidth = 3;
-        ctx.stroke();
+        RA.drawImpact(ctx,x,y,R,age);
       } else if (e.kind === 'emp') {
         const x = gx(e.x), y = gy(e.y), R = e.r * cell;
         const k = Math.min(1, age / 1.6);
@@ -797,19 +733,11 @@ RA.FxLayer = L.Layer.extend({
           ctx.fillStyle = '#2a2622';
           ctx.fill();
         } else if (age < 1.1) {
-          const q = (age - 0.55) / 0.55;
-          ctx.beginPath();
-          ctx.arc(x1, y1, 3 + 7 * q, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(255,150,60,${0.8 * (1 - q)})`;
-          ctx.fill();
+          RA.drawImpact(ctx,x1,y1,13,age-.55);
         }
       } else if (e.kind === 'unitdead') {
         const x = gx(e.x), y = gy(e.y);
-        const k = Math.min(1, age / 1.2);
-        ctx.beginPath();
-        ctx.arc(x, y, 6 + 16 * k, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(70,60,55,${0.55 * (1 - k)})`;
-        ctx.fill();
+        RA.drawImpact(ctx,x,y,20,age);
       } else if (e.kind === 'para') {
         const x = gx(e.x), y = gy(e.y);
         const k = Math.min(1, age / 1.4);
@@ -902,199 +830,6 @@ RA.FxLayer = L.Layer.extend({
   },
 });
 
-RA.drawStructIcon = function (ctx, type, x, y, s, color) {
-  const r = s / 2;
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.beginPath();
-  if (type === 'city') {
-    // little skyline
-    ctx.moveTo(-r, r * 0.8);
-    ctx.lineTo(-r, -r * 0.1);
-    ctx.lineTo(-r * 0.45, -r * 0.1);
-    ctx.lineTo(-r * 0.45, -r * 0.8);
-    ctx.lineTo(r * 0.15, -r * 0.8);
-    ctx.lineTo(r * 0.15, -r * 0.35);
-    ctx.lineTo(r, -r * 0.35);
-    ctx.lineTo(r, r * 0.8);
-    ctx.closePath();
-  } else if (type === 'factory') {
-    ctx.moveTo(-r, r * 0.8);
-    ctx.lineTo(-r, -r * 0.2);
-    ctx.lineTo(-r * 0.35, r * 0.1);
-    ctx.lineTo(-r * 0.35, -r * 0.2);
-    ctx.lineTo(r * 0.3, r * 0.1);
-    ctx.lineTo(r * 0.3, -r * 0.95);
-    ctx.lineTo(r, -r * 0.95);
-    ctx.lineTo(r, r * 0.8);
-    ctx.closePath();
-  } else if (type === 'airport') {
-    ctx.arc(0, 0, r * 0.9, 0, Math.PI * 2);
-  } else if (type === 'barracks') {
-    ctx.rect(-r * 0.8, -r * 0.8, r * 1.6, r * 1.6);
-  } else if (type === 'fort') {
-    ctx.moveTo(0, -r);
-    ctx.lineTo(r * 0.9, -r * 0.45);
-    ctx.lineTo(r * 0.7, r * 0.55);
-    ctx.lineTo(0, r);
-    ctx.lineTo(-r * 0.7, r * 0.55);
-    ctx.lineTo(-r * 0.9, -r * 0.45);
-    ctx.closePath();
-  } else if (type === 'port') {
-    ctx.arc(0, 0, r * 0.85, 0, Math.PI * 2);
-  } else if (type === 'silo') {
-    ctx.moveTo(0, -r);
-    ctx.lineTo(r * 0.9, r * 0.75);
-    ctx.lineTo(-r * 0.9, r * 0.75);
-    ctx.closePath();
-  } else if (type === 'sam') {
-    ctx.moveTo(0, -r);
-    ctx.lineTo(r, 0);
-    ctx.lineTo(0, r);
-    ctx.lineTo(-r, 0);
-    ctx.closePath();
-  } else if (type === 'market') {
-    // stall with a pointed roof
-    ctx.moveTo(-r, r * 0.8);
-    ctx.lineTo(-r, -r * 0.1);
-    ctx.lineTo(0, -r);
-    ctx.lineTo(r, -r * 0.1);
-    ctx.lineTo(r, r * 0.8);
-    ctx.closePath();
-  } else if (type === 'siege') {
-    ctx.rect(-r * 0.9, -r * 0.7, r * 1.8, r * 1.5);
-  } else if (type === 'hangar') {
-    ctx.moveTo(-r, r * 0.8);
-    ctx.lineTo(-r, 0);
-    ctx.arc(0, 0, r, Math.PI, 0);
-    ctx.lineTo(r, r * 0.8);
-    ctx.closePath();
-  }
-  ctx.fillStyle = color;
-  ctx.fill();
-  ctx.lineWidth = 1.6;
-  ctx.strokeStyle = '#0d1115';
-  ctx.stroke();
-  // glyph
-  ctx.strokeStyle = '#ffffff';
-  ctx.fillStyle = '#ffffff';
-  ctx.lineWidth = Math.max(1.2, s * 0.09);
-  ctx.beginPath();
-  if (type === 'barracks') {
-    ctx.moveTo(-r * 0.4, r * 0.1); ctx.lineTo(0, -r * 0.3); ctx.lineTo(r * 0.4, r * 0.1);
-    ctx.moveTo(-r * 0.4, r * 0.45); ctx.lineTo(0, r * 0.05); ctx.lineTo(r * 0.4, r * 0.45);
-    ctx.stroke();
-  } else if (type === 'fort') {
-    ctx.moveTo(-r * 0.3, 0); ctx.lineTo(-r * 0.05, r * 0.3); ctx.lineTo(r * 0.35, -r * 0.25);
-    ctx.stroke();
-  } else if (type === 'port') {
-    ctx.moveTo(0, -r * 0.5); ctx.lineTo(0, r * 0.45);
-    ctx.moveTo(-r * 0.35, -r * 0.22); ctx.lineTo(r * 0.35, -r * 0.22);
-    ctx.moveTo(-r * 0.45, r * 0.12); ctx.quadraticCurveTo(0, r * 0.75, r * 0.45, r * 0.12);
-    ctx.stroke();
-  } else if (type === 'silo') {
-    ctx.arc(0, r * 0.2, r * 0.22, 0, Math.PI * 2);
-    ctx.fill();
-  } else if (type === 'sam') {
-    ctx.moveTo(-r * 0.4, 0); ctx.lineTo(r * 0.4, 0); ctx.moveTo(0, -r * 0.4); ctx.lineTo(0, r * 0.4);
-    ctx.stroke();
-  } else if (type === 'city') {
-    ctx.fillRect(-r * 0.75, r * 0.1, r * 0.2, r * 0.2);
-    ctx.fillRect(-r * 0.2, -r * 0.55, r * 0.2, r * 0.2);
-    ctx.fillRect(r * 0.45, -r * 0.05, r * 0.2, r * 0.2);
-  } else if (type === 'factory') {
-    ctx.fillRect(-r * 0.7, r * 0.3, r * 0.3, r * 0.25);
-    ctx.fillRect(-r * 0.05, r * 0.3, r * 0.3, r * 0.25);
-  } else if (type === 'market') {
-    ctx.fillRect(-r * 0.25, r * 0.15, r * 0.5, r * 0.65);
-  } else if (type === 'siege') {
-    // catapult: frame and throwing arm
-    ctx.moveTo(-r * 0.6, r * 0.5); ctx.lineTo(r * 0.6, r * 0.5);
-    ctx.moveTo(-r * 0.3, r * 0.5); ctx.lineTo(r * 0.45, -r * 0.45);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.arc(r * 0.5, -r * 0.5, r * 0.16, 0, Math.PI * 2);
-    ctx.fill();
-  } else if (type === 'hangar') {
-    ctx.moveTo(-r * 0.45, r * 0.8); ctx.lineTo(-r * 0.45, r * 0.05); ctx.lineTo(r * 0.45, r * 0.05); ctx.lineTo(r * 0.45, r * 0.8);
-    ctx.stroke();
-  } else if (type === 'airport') {
-    // plane glyph
-    ctx.moveTo(0, -r * 0.62); ctx.lineTo(0, r * 0.62);
-    ctx.moveTo(-r * 0.6, r * 0.05); ctx.lineTo(0, -r * 0.2); ctx.lineTo(r * 0.6, r * 0.05);
-    ctx.moveTo(-r * 0.25, r * 0.55); ctx.lineTo(0, r * 0.42); ctx.lineTo(r * 0.25, r * 0.55);
-    ctx.stroke();
-  }
-  ctx.restore();
-};
-
-/* NATO-style unit symbol: frame in owner colour, branch glyph inside, strength bar below */
-RA.drawUnit = function (ctx, type, x, y, w, color, mine, hpf, deploying, emp, selected, now) {
-  const h = Math.round(w * 0.66);
-  const x0 = x - w / 2, y0 = y - h / 2;
-  ctx.save();
-  if (deploying) ctx.globalAlpha = 0.55;
-  if (selected) {
-    const ph = (now / 500) % 1;
-    ctx.strokeStyle = `rgba(242,177,52,${1 - ph})`;
-    ctx.lineWidth = 3;
-    ctx.strokeRect(x0 - 3 - ph * 5, y0 - 3 - ph * 5, w + 6 + ph * 10, h + 6 + ph * 10);
-  }
-  ctx.fillStyle = color;
-  ctx.fillRect(x0, y0, w, h);
-  ctx.fillStyle = 'rgba(255,255,255,0.35)';
-  ctx.fillRect(x0, y0, w, h);
-  ctx.lineWidth = mine ? 2.2 : 1.5;
-  ctx.strokeStyle = mine ? '#ffffff' : '#101418';
-  ctx.strokeRect(x0, y0, w, h);
-  if (mine) {
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = '#101418';
-    ctx.strokeRect(x0 - 1.6, y0 - 1.6, w + 3.2, h + 3.2);
-  }
-  ctx.strokeStyle = '#101418';
-  ctx.fillStyle = '#101418';
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  if (type === 'inf') {
-    ctx.moveTo(x0, y0); ctx.lineTo(x0 + w, y0 + h);
-    ctx.moveTo(x0 + w, y0); ctx.lineTo(x0, y0 + h);
-    ctx.stroke();
-  } else if (type === 'cav') {
-    ctx.moveTo(x0, y0 + h); ctx.lineTo(x0 + w, y0);
-    ctx.stroke();
-  } else if (type === 'tank') {
-    const rx = w * 0.3, ry = h * 0.26;
-    ctx.moveTo(x - rx + ry, y - ry);
-    ctx.lineTo(x + rx - ry, y - ry);
-    ctx.arc(x + rx - ry, y, ry, -Math.PI / 2, Math.PI / 2);
-    ctx.lineTo(x - rx + ry, y + ry);
-    ctx.arc(x - rx + ry, y, ry, Math.PI / 2, Math.PI * 1.5);
-    ctx.closePath();
-    ctx.stroke();
-  } else if (type === 'art') {
-    ctx.arc(x, y, h * 0.17, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  // echelon mark (division) above the frame
-  ctx.font = `700 ${Math.max(8, h * 0.42)}px ${RA.FONT_UI}`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'bottom';
-  ctx.lineWidth = 2.5;
-  ctx.strokeStyle = 'rgba(255,255,255,0.8)';
-  ctx.strokeText('XX', x, y0 - 1);
-  ctx.fillText('XX', x, y0 - 1);
-  ctx.textBaseline = 'middle';
-  // strength bar
-  const bw = w, by = y0 + h + 3;
-  ctx.fillStyle = 'rgba(0,0,0,0.55)';
-  ctx.fillRect(x0, by, bw, 3.5);
-  ctx.fillStyle = hpf > 0.6 ? '#3fcf8e' : hpf > 0.3 ? '#f2b134' : '#ff5d5d';
-  ctx.fillRect(x0, by, bw * RA.clamp(hpf, 0, 1), 3.5);
-  ctx.restore();
-  if (emp) RA.drawZap(ctx, x, y, w * 0.8, now);
-};
-
 /* blast area of a missile type at screen point (x,y): filled zone, outer/inner rings, pulse, crosshair.
    secs >= 0 adds a countdown label (in flight); secs < 0 = aiming preview */
 RA.drawBlast = function (ctx, M, x, y, cell, now, secs) {
@@ -1158,36 +893,6 @@ RA.drawZap = function (ctx, x, y, s, now) {
   ctx.lineTo(x + s * 0.1, y - s * 0.1);
   ctx.lineTo(x - s * 0.1, y - s * 0.05);
   ctx.lineTo(x + s * 0.15, y + s * 0.55);
-  ctx.stroke();
-  ctx.restore();
-};
-
-RA.drawPlane = function (ctx, x, y, ang, color) {
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.rotate(ang);
-  ctx.beginPath();
-  ctx.moveTo(11, 0);
-  ctx.lineTo(3, -2);
-  ctx.lineTo(-2, -10);
-  ctx.lineTo(-5, -10);
-  ctx.lineTo(-3, -2);
-  ctx.lineTo(-9, -2);
-  ctx.lineTo(-11, -5);
-  ctx.lineTo(-12, -5);
-  ctx.lineTo(-11, 0);
-  ctx.lineTo(-12, 5);
-  ctx.lineTo(-11, 5);
-  ctx.lineTo(-9, 2);
-  ctx.lineTo(-3, 2);
-  ctx.lineTo(-5, 10);
-  ctx.lineTo(-2, 10);
-  ctx.lineTo(3, 2);
-  ctx.closePath();
-  ctx.fillStyle = color;
-  ctx.fill();
-  ctx.lineWidth = 1.4;
-  ctx.strokeStyle = '#ffffff';
   ctx.stroke();
   ctx.restore();
 };
