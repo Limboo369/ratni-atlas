@@ -256,6 +256,7 @@ RA.App = class {
   /* the game being shown (and its era's names and city list for the renderer) */
   setGame(G) {
     this.G = G;
+    this.ui.audio.setEra(G.era || 'danas');
     this.ui.feedReset();
     RA.applyEra(G.era);
     this.ui.citiesSorted = G.cities.slice().sort((a, b) => b.tier - a.tier || b.pop - a.pop);
