@@ -25,7 +25,7 @@ RA.CommandScreen = class {
       this.$('onlineToggle').setAttribute('aria-expanded', String(!box.hidden));
       if (!box.hidden) box.scrollIntoView({ block: 'nearest', behavior: this.motion ? 'smooth' : 'instant' });
     };
-    this.$('creditsBtn').onclick = () => ui.openSheet(ui.head('O igri i izvori karte') + '<div class="howto"><p><strong>Overtake</strong> — strateška igra osvajanja Evrope kroz sedam historijskih doba.</p><p>Karta: Natural Earth (javno vlasništvo). Historijske granice: historical-basemaps, A. Ourednik (GPL-3.0). Reljef: NASA. Motor karte: Leaflet.</p><p>Verzija 0.5 · doba i battle royale.</p></div>');
+    this.$('creditsBtn').onclick = () => ui.openSheet(ui.head('O igri i izvori karte') + '<div class="howto"><p><strong>Overtake</strong> — strateška igra osvajanja Evrope i svijeta kroz sedam historijskih doba.</p><p>Karta: Natural Earth (javno vlasništvo). Historijske granice: historical-basemaps, A. Ourednik (GPL-3.0). Reljef: NASA. Motor karte: Leaflet.</p><p>Verzija 0.5 · doba i battle royale.</p></div>');
     this.$('motionBtn').onclick = () => {
       this.motion = !this.motion;
       try { localStorage.setItem('ra_menu_motion', this.motion ? 'on' : 'off'); } catch (_) {}
@@ -99,15 +99,16 @@ RA.CommandScreen = class {
   refresh() {
     const s = this.ui.settings;
     // Lobby settings can change while the launcher is hidden. Reflect them on return.
-    this.ui.startNotes();
-    for (const [id, value] of [['eraSeg', s.era], ['startSeg', s.start], ['gmSeg', s.gm], ['diffSeg', s.difficulty], ['peaceSeg', String(s.peace)], ['csSeg', String(s.cityStates)]]) {
+    for (const [id, value] of [['mapSeg', s.map], ['eraSeg', s.era], ['startSeg', s.start], ['gmSeg', s.gm], ['diffSeg', s.difficulty], ['peaceSeg', String(s.peace)], ['csSeg', String(s.cityStates)]]) {
       this.$(id).querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === value)));
     }
-    const reg = RA.REGIONS.find((r) => r.id === s.region);
-    const region = s.region === 'evropa' ? 'Evropa' : reg.name;
+    const reg = RA.regionsOf(s.map).find((r) => r.id === s.region);
+    const region = s.region === s.map || !reg ? RA.mapInfo(s.map).name : reg.name;
     this.$('operationSummary').textContent = `${region} · ${s.gm === 'br' ? 'Battle royale' : 'Klasično'} · ${{lako:'Lako',srednje:'Srednje',tesko:'Teško'}[s.difficulty] || 'Srednje'}`;
     this.$('atlasRegion').textContent = region.toUpperCase();
-    const key = s.era + '|' + s.region;
+    const map = this.ui.app.maps[s.map];
+    if (!map) return; // The map loader calls startNotes/refresh again when the data arrives.
+    const key = map.id + '|' + s.era + '|' + s.region + '|' + !!map.eras[s.era];
     if (key !== this.atlasKey) {
       this.atlasKey = key;
       cancelAnimationFrame(this.drawRequest);
@@ -116,10 +117,18 @@ RA.CommandScreen = class {
   }
 
   drawAtlas() {
-    const map = this.ui.app.map, canvas = this.$('atlasCanvas');
+    const map = this.ui.app.maps[this.ui.settings.map], canvas = this.$('atlasCanvas');
+    if (!map) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return; // the CSS backdrop remains usable without canvas
+    const world = map.id === 'svijet';
+    this.screen.classList.toggle('command-world', world);
+    this.screen.style.setProperty('--atlas-aspect', String(map.W / map.H));
+    canvas.width = world ? 1536 : 960;
+    canvas.height = Math.round(canvas.width * map.H / map.W);
     const w = canvas.width, h = canvas.height;
+    this.$('atlasSignals').setAttribute('viewBox', `0 0 ${w} ${h}`);
+    this.$('atlasCoordinate').innerHTML = world ? 'N 00° 00′ &nbsp; E 00° 00′<span>02 / SVIJET</span>' : 'N 48° 51′ &nbsp; E 02° 21′<span>01 / EVROPA</span>';
     const px = (x) => (x - map.X0) / (map.X1 - map.X0) * w;
     const py = (y) => (y - map.Y0) / (map.Y1 - map.Y0) * h;
     const pathFor = (layer, close) => {
@@ -146,7 +155,7 @@ RA.CommandScreen = class {
     ctx.fillStyle = 'rgba(10,30,40,.4)';
     ctx.fillRect(0, 0, w, h);
 
-    const era = RA.ERA_DATA[this.ui.settings.era];
+    const era = map.eras[this.ui.settings.era];
     const reg = RA.REGIONS.find((r) => r.id === this.ui.settings.region);
     if (era) {
       // Real era ownership outlines. The red wash is a visual accent, never a player selection.
@@ -187,7 +196,7 @@ RA.CommandScreen = class {
     ctx.globalCompositeOperation = 'source-over';
 
     const at = (lon,lat) => [px(RA.lonToX(lon)), py(RA.latToY(lat))];
-    const cities = [[2.35,48.85], [13.4,52.52], [12.5,41.9], [18.42,43.85], [28.98,41.01], [21.01,52.23]];
+    const cities = world ? [[-74,40.71], [-46.63,-23.55], [18.42,-33.93], [18.42,43.85], [77.2,28.61], [139.69,35.68]] : [[2.35,48.85], [13.4,52.52], [12.5,41.9], [18.42,43.85], [28.98,41.01], [21.01,52.23]];
     const points = cities.map(([lon,lat]) => at(lon,lat));
     const [sx,sy] = points[3];
     const route = points.filter((_,i) => i !== 3).map(([x,y]) => `<path class="atlas-route" d="M${sx},${sy} Q${(sx+x)/2},${Math.min(sy,y)-100} ${x},${y}" stroke="#e49075" stroke-width="1.4" opacity=".45"/>`).join('');

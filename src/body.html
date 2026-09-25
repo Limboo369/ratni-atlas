@@ -96,7 +96,7 @@
           <div class="command-kicker"><span></span> SEDAM DOBA. TVOJA HISTORIJA.</div>
           <h1 class="brand command-title" id="commandTitle">Over<em>take</em></h1>
           <p class="command-headline">Granice se mijenjaju.<br><strong>Ti odlučuješ kako.</strong></p>
-          <p class="command-description">Izgradi carstvo. Sklopi saveze. Preuzmi kontrolu.<br> Evropa čeka tvoj prvi potez.</p>
+          <p class="command-description">Izgradi carstvo. Sklopi saveze. Preuzmi kontrolu.<br> <span class="tagline">Evropa čeka tvoj prvi potez.</span></p>
           <div id="joinBanner" class="btns" hidden></div>
 
           <div class="command-player field">
@@ -113,11 +113,11 @@
           </div>
         </section>
         <div class="atlas-caption" aria-hidden="true"><span class="atlas-cross">+</span><div><span>POZORNICA OSVAJANJA</span><strong id="atlasRegion">EVROPA</strong><small>STVARNA KARTA · TVOJA STRATEGIJA</small></div></div>
-        <div class="atlas-coordinate" aria-hidden="true">N 48° 51′ &nbsp; E 02° 21′<span>01 / EVROPA</span></div>
+        <div class="atlas-coordinate" id="atlasCoordinate" aria-hidden="true">N 48° 51′ &nbsp; E 02° 21′<span>01 / EVROPA</span></div>
       </main>
 
       <section class="command-eras" aria-labelledby="eraHeading">
-        <div class="command-section-head"><h2 id="eraHeading">IZABERI SVOJE DOBA</h2><span>OD LEGIJA DO MODERNOG RATOVANJA</span></div>
+        <div class="command-section-head"><h2 id="eraHeading">IZABERI SVOJE DOBA</h2><span>OD LEGIJA DO MODERNOG RATOVANJA</span><div class="command-maps" id="mapField" hidden><div class="seg" id="mapSeg" role="group" aria-label="Karta"></div><p class="note era-note" id="mapNote" aria-live="polite" hidden></p></div></div>
         <div class="seg wrap era" id="eraSeg" role="group" aria-label="Historijsko doba"></div>
         <div class="command-era-detail"><span class="command-live-dot" aria-hidden="true"></span><p id="eraNote"></p></div>
       </section>
@@ -150,6 +150,10 @@
         <select id="lobbyNat" class="sel"></select>
       </div>
       <div id="lobbyHost">
+        <div class="field" id="lMapField" hidden>
+          <span class="lab">Karta</span>
+          <div class="seg wrap" id="lMapSeg"></div>
+        </div>
         <div class="field">
           <span class="lab">Način igre</span>
           <div class="seg" id="modeSeg">

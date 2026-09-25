@@ -26,6 +26,7 @@ RA.ERAS = [
   {
     id: 'rim', name: 'Antički Rim', sub: '100. godina', short: 'Rim',
     blurb: 'Rimsko carstvo protiv germanskih, sarmatskih i keltskih plemena. Legije, konjica, strijelci i opsadne sprave — bez baruta, aviona i bombi.',
+    blurbW: 'Svijet oko 100. godine: Rim, Partija, kineska dinastija Han, Kušani i plemena oko njih. Legije, konjica, strijelci i opsadne sprave — bez baruta, aviona i bombi.',
     strikeTab: 'Opsada', strikeIcon: 'siege', road: true, para: false,
     units: {
       inf: { name: 'Legija', desc: 'Čvrsta odbrana granice u krugu od 6 polja.' },
@@ -47,6 +48,7 @@ RA.ERAS = [
   {
     id: 'srednji', name: 'Srednji vijek', sub: '1400. godina', short: 'Srednji vijek',
     blurb: 'Kraljevina Bosna, Srpska despotovina, Ugarska, Venecija, Osmanlije, Sveto Rimsko Carstvo… Vitezovi, strijelci, trebušei i prve bombarde.',
+    blurbW: 'Svijet oko 1400: Timuridi, Ming Kina, Mameluci, Osmanlije, evropska kraljevstva, Asteci i Inke. Vitezovi, strijelci, trebušei i prve bombarde.',
     strikeTab: 'Opsada', strikeIcon: 'siege', road: true, para: false,
     units: {
       inf: { name: 'Pješaci', pl: true, desc: 'Kopljanici čvrsto drže granicu u krugu od 6 polja.' },
@@ -69,6 +71,7 @@ RA.ERAS = [
   {
     id: 'napoleon', name: 'Napoleonovo doba', sub: '1815. godina', short: 'Napoleon',
     blurb: 'Carstva i kraljevine poslije Napoleona, desetine njemačkih i italijanskih država. Mušketari, konjica, topovi i Kongreveove rakete.',
+    blurbW: 'Svijet poslije Napoleona: Britanija, Rusija, Osmanlije, Kina dinastije Ćing, mlade američke republike. Mušketari, konjica, topovi i Kongreveove rakete.',
     strikeTab: 'Rakete', strikeIcon: 'rocket', road: true, para: false,
     units: {
       inf: { name: 'Pješadija', desc: 'Mušketari čvrsto drže granicu u krugu od 6 polja.' },
@@ -89,6 +92,7 @@ RA.ERAS = [
   {
     id: 'ww1', name: 'Prvi svjetski rat', sub: '1914. godina', short: '1914.',
     blurb: 'Antanta protiv Centralnih sila: Austro-Ugarska, Njemačko i Rusko carstvo, Srbija, Osmanlije… Rovovi, teška artiljerija, prvi tenkovi i cepelini.',
+    blurbW: 'Svijet 1914: kolonijalna carstva Britanije, Francuske i Njemačke, Rusko i Osmansko carstvo, SAD, Japan, Kina… Rovovi, teška artiljerija, prvi tenkovi i cepelini.',
     strikeTab: 'Udari', strikeIcon: 'zeppelin', road: false, para: false,
     units: {
       tank: { name: 'Tenkovi', desc: 'Prvi tenkovi (od 1916.): tvoji napadi pored njih su jeftiniji i brži. Traže fabriku.' },
@@ -109,6 +113,7 @@ RA.ERAS = [
   {
     id: 'ww2', name: 'Drugi svjetski rat', sub: '1938. godina', short: '1938.',
     blurb: 'Evropa uoči rata: Njemačka, SSSR, Italija, Kraljevina Jugoslavija… Tenkovi, avioni i padobranci, V-2 rakete — a atomska bomba stiže tek od 10. minute.',
+    blurbW: 'Svijet uoči rata: Njemačka, SSSR, Japan, SAD, Britansko i Francusko carstvo… Tenkovi, avioni i padobranci, V-2 rakete — a atomska bomba stiže tek od 10. minute.',
     strikeTab: 'Rakete', strikeIcon: 'rocket', road: false, para: true,
     units: {},
     structs: {
@@ -124,6 +129,7 @@ RA.ERAS = [
   {
     id: 'hladni', name: 'Hladni rat', sub: '1960. godina', short: 'Hladni rat',
     blurb: 'NATO i Varšavski pakt: dvije Njemačke, SSSR, Jugoslavija između blokova. Tenkovi, padobranci, balističke rakete i hidrogenske bombe.',
+    blurbW: 'SAD i SSSR dijele svijet: NATO, Varšavski pakt, Kina, nesvrstani i kolonije pred nezavisnošću. Tenkovi, padobranci, balističke rakete i hidrogenske bombe.',
     strikeTab: 'Rakete', strikeIcon: 'rocket', road: false, para: true,
     units: {},
     structs: {},
@@ -132,11 +138,14 @@ RA.ERAS = [
   {
     id: 'danas', name: 'Danas', sub: 'današnje granice', short: 'Danas',
     blurb: 'Današnja Evropa. Sve jedinice i oružje: rakete, EMP, atomske i hidrogenske bombe, MIRV.',
+    blurbW: 'Današnji svijet. Sve jedinice i oružje: rakete, EMP, atomske i hidrogenske bombe, MIRV.',
     strikeTab: 'Rakete', strikeIcon: 'rocket', road: false, para: true,
     units: {}, structs: {}, missiles: {},
   },
 ];
 RA.eraById = (id) => RA.ERAS.find((e) => e.id === id) || RA.ERAS[RA.ERAS.length - 1];
+/* the era's short description on a map: blurb is written for Europe, blurbW for the world */
+RA.eraBlurb = (E, mapId) => (mapId === 'svijet' && E.blurbW) || E.blurb;
 
 RA.applyEra = function (id) {
   const E = RA.eraById(id);
@@ -172,26 +181,47 @@ RA.missileIcon = (t) => {
   return M.icon || (M.kind === 'emp' ? 'emp' : M.kind === 'conv' ? 'rocket' : 'nuke');
 };
 
-/* ---------------- era borders (decoded once at boot) ---------------- */
-RA.ERA_DATA = {};
-RA.loadEras = async function () {
-  const D = window.ERADATA || {};
-  for (const id of Object.keys(D)) {
-    const e = D[id];
-    RA.ERA_DATA[id] = { pol: e.pol, own: await RA.inflate(e.own), ren: e.ren || {} };
-  }
+/* ---------------- era borders ---------------- */
+/* Europe: all eras are embedded and decoded at boot (map.eras = RA.loadEras()).
+   Other maps (map.lazyEras): era_<id>.json is fetched and decoded when that era is chosen; two stay decoded. */
+const eraOf = async (e, N) => {
+  const own = await RA.inflate(e.own);
+  if (own.length !== N) throw new Error('era/grid mismatch');
+  return { pol: e.pol, own, ren: e.ren || {} };
+};
+RA.loadEras = async function (D, N) {
+  const out = {};
+  for (const id of Object.keys(D || {})) out[id] = await eraOf(D[id], N);
+  return out;
+};
+RA.eraReady = (map, id) => !map.lazyEras || !!map.eras[id];
+RA.loadEra = function (map, id) {
+  if (RA.eraReady(map, id)) return Promise.resolve();
+  if (map.eraOK && !map.eraOK[id]) return Promise.reject(new Error('no-era'));
+  const L = (map._eraLoads = map._eraLoads || {});
+  return (L[id] = L[id] || RA.fetchJSON(RA.DATA_URL + map.id + '/era_' + id + '.json')
+    .then((e) => eraOf(e, map.N))
+    .then((E) => {
+      map.eras[id] = E;
+      const ks = Object.keys(map.eras);
+      if (ks.length > 2) delete map.eras[ks[0]]; // ~1 MB per decoded world era
+    })
+    .finally(() => delete L[id]));
 };
 
 /* The map of one era: its polities as nations, renamed cities (+ historical capitals that are not modern cities),
-   capital-tier cities where that era had its capitals. The modern game with a free start is the plain base map. */
+   capital-tier cities where that era had its capitals. The modern game with a free start is the plain base map
+   (except on maps whose nations always come from the era rasters). */
 RA._eraMaps = new Map();
 RA.eraMap = function (base, id, start) {
-  const E = RA.ERA_DATA[id];
-  if (!E || (id === 'danas' && start !== 'granice')) return base;
-  // cached per era (maps are read-only; a game resets its cities' owners when it starts)
-  const key = id + '|' + (id === 'danas' ? 'granice' : 'x');
+  const E = (base.eras || {})[id];
+  if (!E || (id === 'danas' && start !== 'granice' && !base.eraNations)) return base;
+  // cached per map and era (maps are read-only; a game resets its cities' owners when it starts)
+  const key = base.id + '|' + id;
   const hit = RA._eraMaps.get(key);
-  if (hit && hit.__base === base) return hit;
+  if (hit && hit.__base === base && hit.eraOwn === E.own) return hit;
+  // only this map's era maps stay (a world era map holds ~5 MB), and of a lazily loaded map only one
+  for (const [k, v] of RA._eraMaps) if (v.__base !== base || base.lazyEras) RA._eraMaps.delete(k);
   const m = Object.create(base);
   m.__base = base;
   RA._eraMaps.set(key, m);
@@ -246,12 +276,13 @@ RA.eraMap = function (base, id, start) {
   return m;
 };
 
-/* nations of an era map that play inside a region polygon (enough land there), capitals moved inside if needed */
-RA.eraRegionNations = function (base, inside, minCells) {
-  const own = base.eraOwn, N = base.N, W = base.W;
+/* nations of an era map that play inside a region polygon (enough land there), capitals moved inside if needed.
+   c0..c1: the cell range that holds the region (its bounding rows), so small regions of a big map scan less */
+RA.eraRegionNations = function (base, inside, minCells, c0 = 0, c1 = base.N) {
+  const own = base.eraOwn, W = base.W;
   const K = base.nations.length + 1;
   const cnt = new Int32Array(K), sx = new Float64Array(K), sy = new Float64Array(K);
-  for (let c = 0; c < N; c++) {
+  for (let c = c0; c < c1; c++) {
     if (!inside(c)) continue;
     const k = own[c];
     if (!k) continue;
@@ -278,7 +309,7 @@ RA.eraRegionNations = function (base, inside, minCells) {
     }
     const mx = sx[n.k] / cnt[n.k], my = sy[n.k] / cnt[n.k];
     let bc = -1, bd = 1e18;
-    for (let c = 0; c < N; c++) {
+    for (let c = c0; c < c1; c++) {
       if (own[c] !== n.k || !inside(c)) continue;
       const dx = (c % W) - mx, dy = ((c / W) | 0) - my;
       const d = dx * dx + dy * dy;

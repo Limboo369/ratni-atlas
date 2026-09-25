@@ -326,6 +326,7 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
 .pill.zone { background: rgba(120, 18, 38, 0.92); color: #ffd9de; border-color: rgba(255, 110, 110, 0.55); }
 .pill.zone.soon { background: rgba(60, 20, 28, 0.9); }
 .seg button[aria-pressed=true] { background: var(--text); color: var(--ink); }
+.seg button:disabled { opacity: 0.4; }
 .go {
   width: 100%; height: 54px; border-radius: 14px; background: var(--signal); color: var(--signal-ink);
   font-family: var(--font-d); font-weight: 900; font-size: 26px; letter-spacing: 0.08em; text-transform: uppercase; margin-top: 4px;
@@ -607,3 +608,25 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
 /* Keep room errors and reconnect notices visible above the launcher. */
 #app:has(#startScreen:not([hidden])) #toasts { z-index: 1251; top: calc(76px + env(safe-area-inset-top, 0px)); width: min(340px, calc(100vw - 32px)); left: 16px; }
 .command-tool:disabled { opacity: .45; cursor: default; }
+
+/* The map switch stays beside the eras so loading a map never sits behind the settings dialog. */
+#startScreen .command-description .tagline { margin: 0; font: inherit; color: inherit; letter-spacing: normal; }
+.command-section-head:has(#mapField:not([hidden])) > span { display: none; }
+.command-maps { max-width: 320px; margin-left: auto; }
+#startScreen #mapSeg { gap: 3px; padding: 3px; border: 1px solid var(--launch-line); border-radius: 3px; background: #0b141b; }
+#startScreen #mapSeg button { min-width: 78px; min-height: 38px; padding: 8px 14px; border-radius: 1px; font-size: 11px; font-weight: 500; color: #b0bec4; }
+#startScreen #mapSeg button[aria-pressed=true] { color: #fff1e9; background: #28333a; box-shadow: inset 0 -2px var(--danger); }
+#startScreen #mapSeg small { display: none; }
+#startScreen #mapNote { margin: 8px 0 0; font-size: 11px; line-height: 1.4; }
+#startScreen #eraSeg button:disabled { opacity: .4; cursor: default; transform: none; }
+.command-world .atlas-scene { width: min(88vw, 1560px); height: auto; aspect-ratio: var(--atlas-aspect); top: 5%; left: 32%; }
+.command-world .atlas-table { transform: rotateX(28deg) rotateZ(-14deg) scale(.94); }
+@media (max-width: 760px) {
+  .command-section-head { flex-wrap: wrap; }
+  .command-world .atlas-scene { width: 850px; left: calc(64% - 425px); top: 50px; }
+  #startScreen #mapSeg button { min-height: 40px; min-width: 62px; padding: 7px 10px; }
+}
+@media (max-width: 480px) {
+  .command-world .atlas-scene { width: 680px; left: calc(64% - 340px); top: 45px; }
+  #startScreen #mapSeg button { font-size: 10px; }
+}

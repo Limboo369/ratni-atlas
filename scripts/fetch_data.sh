@@ -6,7 +6,8 @@ cd "$(dirname "$0")/.."
 mkdir -p data/hist
 NE=https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson
 for f in ne_10m_land ne_10m_minor_islands ne_10m_lakes ne_10m_rivers_lake_centerlines ne_10m_rivers_europe \
-         ne_10m_admin_0_boundary_lines_land ne_10m_populated_places_simple ne_10m_geography_marine_polys ne_50m_admin_0_countries; do
+         ne_10m_admin_0_boundary_lines_land ne_10m_populated_places_simple ne_10m_geography_marine_polys ne_50m_admin_0_countries \
+         ne_10m_admin_0_disputed_areas; do
   [ -s "data/$f.geojson" ] || curl -fsSL -o "data/$f.geojson" "$NE/$f.geojson"
 done
 HB=https://raw.githubusercontent.com/aourednik/historical-basemaps/master/geojson

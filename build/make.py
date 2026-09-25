@@ -1,5 +1,6 @@
-"""Assemble dist/ratni-atlas.html (artifact body) and dist/test.html (standalone wrapper for local tests)."""
-import re, os
+"""Assemble dist/ratni-atlas.html (artifact body) and dist/test.html (standalone wrapper for local tests).
+Europe is inlined; the world map (build/svijet/map.json, era_<id>.json) is copied to dist/data/svijet/ (served as /data/svijet/)."""
+import re, os, glob, shutil
 import os
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + '/'  # repository root
 
@@ -15,7 +16,9 @@ js_files = sorted(f for f in os.listdir(R + 'src') if f.endswith('.js'))
 js = '\n'.join(open(R + 'src/' + f).read().replace("'use strict';", '') for f in js_files)
 
 import hashlib
-BUILD = hashlib.sha1((css + body + mapdata + eradata + js).encode()).hexdigest()[:8]  # online: only the same build plays together
+world = sorted(glob.glob(R + 'build/svijet/map.json') + glob.glob(R + 'build/svijet/era_*.json'))
+wbytes = b''.join(open(f, 'rb').read() for f in world)
+BUILD = hashlib.sha1((css + body + mapdata + eradata + js).encode() + wbytes).hexdigest()[:8]  # online: only the same build (and world data) plays together
 
 LEAFLET_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js'
 LEAFLET_ALT = 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js'
@@ -51,4 +54,7 @@ os.makedirs(R + 'dist', exist_ok=True)
 open(R + 'dist/ratni-atlas.html', 'w').write(page)
 test = '<!doctype html><html lang="bs"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"></head><body>' + page + '</body></html>'
 open(R + 'dist/test.html', 'w').write(test)
+os.makedirs(R + 'dist/data/svijet', exist_ok=True)
+for f in world:
+    shutil.copyfile(f, R + 'dist/data/svijet/' + os.path.basename(f))
 print('page bytes', len(page.encode()), 'js bytes', len(js.encode()))

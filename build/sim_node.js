@@ -17,10 +17,22 @@ const files = ['00-util', '01-data', '02-sim', '02b-military', '02c-diplomacy', 
 new Function(files.map((f) => fs.readFileSync(R + 'src/' + f + '.js', 'utf8').replace("'use strict';", '')).join('\n'))();
 
 (async () => {
-  const map = await RA.loadMap();
-  await RA.loadEras();
+  const europe = await RA.loadMap();
+  europe.eras = await RA.loadEras(window.ERADATA, europe.N);
+  // the world (build/svijet/): used when the region is a world region (svijet, afrika, azija, …)
+  let world = null;
+  const worldMap = async () => {
+    if (world) return world;
+    world = await RA.loadMap(JSON.parse(fs.readFileSync(R + 'build/svijet/map.json', 'utf8')));
+    const E = {};
+    for (const f of fs.readdirSync(R + 'build/svijet')) if (/^era_\w+\.json$/.test(f)) E[f.slice(4, -5)] = JSON.parse(fs.readFileSync(R + 'build/svijet/' + f, 'utf8'));
+    world.eras = await RA.loadEras(E, world.N);
+    return world;
+  };
   for (const r of process.argv.slice(2)) {
     const [era, start, gm, region, maxMin, seed, diff, pick] = r.split(':');
+    const reg = RA.REGIONS.find((x) => x.id === region);
+    const map = reg && reg.map === 'svijet' ? await worldMap() : europe;
     const G = RA.newGame(RA.regionMap(RA.eraMap(map, era, start), region), { seed: +seed, difficulty: diff || 'srednje', cityStates: 50, peace: 60, era, start, gm });
     const n = G.P.find((p) => p && p.type === 'nation' && p.iso === pick) || G.P.find((p) => p && p.type === 'nation');
     RA.placeHuman(G, n.nation.c, 'Test');
@@ -34,8 +46,8 @@ new Function(files.map((f) => fs.readFileSync(R + 'src/' + f + '.js', 'utf8').re
       G.step();
       if (G.tick === 2400) at4 = G.alivePlayers().length;
       if (G.tick % 1800 === 0) {
-        const al = G.alivePlayers().sort((x, y) => y.tiles - x.tiles);
-        lead.push(`${G.tick / 600}m:${al[0].iso || al[0].name.slice(0, 8)} ${((al[0].tiles / G.landTotal()) * 100).toFixed(0)}%/${al.length}`);
+        const al = G.alivePlayers().sort((x, y) => y.area - x.area);
+        lead.push(`${G.tick / 600}m:${al[0].iso || al[0].name.slice(0, 8)} ${((al[0].area / G.landTotal()) * 100).toFixed(0)}%/${al.length}`);
       }
     }
     const w = G.winner ? G.winner.iso || G.winner.name : '-';

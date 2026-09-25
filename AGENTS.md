@@ -46,8 +46,10 @@ New app (any repo): a `compose.yml` publishing only `127.0.0.1:<free port>` (deo
 because Docker bypasses ufw), the three secrets above, a deploy workflow that rsyncs to `/srv/apps/<app>/` and runs `deovilab-deploy`, and a DNS A record `<sub>.deovilab.com → server IP` (Darko, Porkbun).
 Add the row to the table.
 
-Online play (`src/09a-net.js`) still uses the claude.ai room, so it does not work on the domain until our own game server
-(Node + WebSocket in the `war` compose project) exists — next step.
+Online play: `deploy/game/server.js` (Node + `ws`, service `game` in the `war` compose project, behind `/ws`) relays
+presence per private room; `src/09a-net.js` keeps the lockstep protocol. Every game has its own link `/game-<code>`
+(invite + come back to the same seat after a reload; the server keeps a player's presence and the game's command log
+for 10 min). Spectators replay the server's log. Presence from other players is untrusted (`RA.Net.str`, `G.exec`).
 
 ## Layout
 
@@ -58,8 +60,11 @@ Online play (`src/09a-net.js`) still uses the claude.ai room, so it does not wor
 | `build/make.py` | Builds `dist/ratni-atlas.html` (artifact body) and `dist/test.html` (standalone page; published as `index.html`). |
 | `build/prep.py`, `build/world.py` | Map data from Natural Earth → `build/mapdata_core.json`, `build/mapdata.js` (grid 480×632, lon −11…41, lat 33…71.3). |
 | `build/eras.py` | Historical borders per era → `build/eradata.js` (polities, capitals, city renames, owner raster). |
+| `build/svijet/` | World map (`prep.py svijet`, `world.py svijet`, `eras.py --map svijet --era <id>` or `--era all`; Bosnian names in `build/names_bs.py`): `map.json` + `era_<id>.json`, served from `/data/svijet/` and loaded only when the player picks Svijet. |
+| `build/eras_world/` | One table per world era (`<id>.py`: polities, capitals, paints, renames); format and workflow in its `README.md`. |
 | `scripts/fetch_data.sh` | Downloads the raw GeoJSON sources into `data/` (not in git). |
 | `build/test_*.py`, `build/sim_eras.py` | Playwright tests and AI balance runs (Leaflet served from `package/dist/leaflet.js`). |
+| `build/sim_node.js` | Fast AI-only balance runs in node: `node build/sim_node.js era:start:gm:region:maxMin:seed:diff[:pick]`. |
 | `deploy/` | Docker Compose project of the game on the server (`public/` is filled by the deploy workflow). |
 | `server/` | Server setup and the `deovilab-deploy` helper. |
 
@@ -75,22 +80,24 @@ Rebuild era data: `scripts/fetch_data.sh && python3 build/eras.py`.
 - **Eras** (`src/04b-eras.js`): `RA.applyEra(id)` swaps `RA.UNIT` / `RA.STRUCT` / `RA.MISSILE`. Unavailable entries are
   flagged **`na: true`** — never `off` (`off` is the units' offense multiplier).
 - Battle royale ring: `src/02e-zone.js` (`G.zone`, `G.zoneOut(c)`).
+- Land shares (win, leader, army cap) use real area: `p.area` / `G.landTotal()`, cell weights `map.aw` (1 in Europe; on the
+  Mercator world `meta.areaWeight` ∝ cos² lat). Win/leader thresholds scale with `meta.winShare` (`G.shareK()`); regions use the defaults.
 - Borders start: `RA.eraMap` + `RA.regionMap` + `RA.newGame(..., {start: 'granice'})`; the human takes a whole country
   with `RA.takeBorders`.
 - Internal names stay as they are (`RA` namespace, storage keys, room ids, file names) — renaming them breaks saves and online play.
 
-## Tests (CI runs `make.py`, `test_ui2.py` and `test_mp.py` before every publish; a failed check blocks it)
+## Tests (CI runs `make.py`, `test_ui2.py`, `test_mp.py` and `test_world.py` before every publish; a failed check blocks it)
 
 ```
 python3 build/make.py
 python3 build/test_ui2.py phone balkan     # single player, end to end
-python3 build/test_mp.py                   # two browsers, online lockstep (mock room)
+python3 build/test_mp.py                   # three browsers + the real relay: lockstep, spectator, come-back
+python3 build/test_world.py                # world map over http: switch, regions, play, online on the world
 python3 build/test_eras.py 1200            # every era + battle royale
 python3 build/sim_eras.py rim:granice:klasik:evropa:DAC:30:11:srednje   # AI balance run
 ```
 
 ## Open work (v0.5)
 
-- Balance: Rome (AI) wins in ~5 min; small states die in the first minutes of a borders game; 1914 games last ~10 min.
 - Online test of eras + battle royale (`test_mp.py` with era settings).
-- Own game server for online play on war.deovilab.com.
+- World eras: sparse datasets (Americas/Siberia in 100 and 1400) leave free land; keep NEAR_MAX small there (see build/eras_world/srednji.py).

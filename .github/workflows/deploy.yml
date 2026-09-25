@@ -30,6 +30,7 @@ jobs:
       - run: python3 build/make.py
       - run: python3 build/test_ui2.py phone balkan || python3 build/test_ui2.py phone balkan  # 1 ponovni pokušaj (spori CI)
       - run: python3 build/test_mp.py
+      - run: python3 build/test_world.py
       - if: failure()
         uses: actions/upload-artifact@v4
         with: { name: shots, path: build/shots/ }
@@ -40,7 +41,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: python3 build/make.py && mkdir -p deploy/public && cp dist/test.html deploy/public/index.html
+      - run: python3 build/make.py && mkdir -p deploy/public && cp dist/test.html deploy/public/index.html && cp -r dist/data deploy/public/
       - name: Slanje na server
         env:
           IP: ${{ secrets.SERVER_IP }}

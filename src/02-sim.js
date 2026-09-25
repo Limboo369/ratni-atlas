@@ -6,13 +6,15 @@ RA.CFG = {
   K: 3.2, // one cell ~ several "classic" pixels: scales per-cell attack costs
   NEUTRAL_SLOW: 3.0,
   WIN_SHARE: 0.7,
-  OVERTIME_MIN: 12, // after this many minutes the share needed to win drops 2%/min (floor 50%)
+  OVERTIME_MIN: 12, // after this many minutes the share needed to win drops 2%/min to 50%, then 1%/min to 40%
   ALLY_MAX: 2,
   ALLY_DUR: 3000, // 5 min
   ALLY_REQ_DUR: 200,
   TRAITOR_DUR: 300,
   BOAT_MAX: 3,
   BOAT_SPEED: 1.15, // cells per tick
+  BOAT_RANGE: 800, // longest sea voyage in cells (BFS steps): farther is 'predaleko'
+  SEA_CELLS: 300000, // a sea search (boats, trade routes) gives up after this many water cells (big maps)
   FORT_R: 8,
   SAM_R: 28,
   SILO_CD: 100,
@@ -110,7 +112,7 @@ RA.Game = class Game {
     if (id > 250) return null;
     const p = {
       id, name: o.name, type: o.type, human: o.type === 'human', team: 0, nick: '', hex: o.color, rgb: RA.hexToRgb(o.color), iso: o.iso || null,
-      alive: true, spawned: false, troops: 0, gold: 0, tiles: 0, cells: new Int32Array(256), maxT: 1,
+      alive: true, spawned: false, troops: 0, gold: 0, tiles: 0, area: 0, cells: new Int32Array(256), maxT: 1,
       cityT: 0, cityG: 0, nCity: [0, 0, 0, 0],
       n: { barracks: 0, fort: 0, port: 0, silo: 0, sam: 0, airport: 0, city: 0, factory: 0 },
       built: { barracks: 0, fort: 0, port: 0, silo: 0, sam: 0, airport: 0, city: 0, factory: 0 },
@@ -153,6 +155,7 @@ RA.Game = class Game {
     }
     this.cellPos[c] = p.tiles;
     p.cells[p.tiles++] = c;
+    p.area += this.map.aw[c];
   }
   _removeCell(p, c) {
     const i = this.cellPos[c];
@@ -160,6 +163,7 @@ RA.Game = class Game {
     p.cells[i] = last;
     this.cellPos[last] = i;
     this.cellPos[c] = -1;
+    p.area -= this.map.aw[c];
   }
   setOwner(c, pid) {
     const old = this.owner[c];
@@ -173,7 +177,7 @@ RA.Game = class Game {
     if (pid) {
       const np = P[pid];
       this._addCell(np, c);
-      if (np.tiles > np.peak) np.peak = np.tiles;
+      if (np.area > np.peak) np.peak = np.area;
     }
     this.capTick[c] = this.tick & 255;
     if (!this.dirtyFlag[c]) {
@@ -244,8 +248,18 @@ RA.Game = class Game {
   }
 
   /* ---------------- economy ---------------- */
+  /* a player's land in average cells: its real area (map.aw) scaled so the whole map keeps its cell count */
+  landCells(p) {
+    return (p.area * this.map.landCount) / this.map.landArea;
+  }
+  /* shares of the map are measured against the win target: on a map won with less land (meta.winShare) a share
+     counts for more, so the rules against a giant (start army, attack cost from 35%, AI coalitions) start earlier */
+  shareK() {
+    const M = this.map.region ? {} : this.map.meta || {};
+    return M.winShare > 0 ? RA.CFG.WIN_SHARE / M.winShare : 1;
+  }
   computeMax(p) {
-    const land = 2 * (RA.dpow(p.tiles * 3, 0.56) * 1100 + 50000);
+    const land = 2 * (RA.dpow(this.landCells(p) * 3, 0.56) * 1100 + 50000);
     // cities add at most half of the land-based army, so a city-rich empire cannot snowball
     const base = land + Math.min(p.cityT, land * 0.5) + p.n.barracks * RA.CFG.BARRACKS_T + p.n.city * RA.CFG.CITY_BUILT_T;
     if (p.type === 'bot') return base / 3;
@@ -518,6 +532,9 @@ RA.Game = class Game {
         const dens = T.troops / Math.max(1, T.tiles);
         let lm = traitor ? 0.5 : 1;
         if (T.type === 'bot' && A.type !== 'bot') lm *= 0.7;
+        // whoever holds more than 35% of the map pays more for every further conquest (no runaway winner)
+        const L = this.leader;
+        if (L && L.id === A.id && L.share > 0.35) lm *= 1 + (L.share - 0.35) * 2;
         lossA = mag * RA.clamp(ratio, 0.7, 2) * (0.463 * RA.CFG.K * this.densScale + 0.0078 * dens) * lm;
         lossD = dens;
         frac = (((RA.clamp(ratio, 0.82, 7.5) * Math.max(1, ratio / 20)) / 8.5) * spd * (traitor ? 0.8 : 1) * this.pace) / front;
@@ -569,10 +586,11 @@ RA.Game = class Game {
 
   /* ---------------- boats ---------------- */
   findBoatPath(pid, tgt) {
-    // BFS over water from target coast towards any water cell next to pid's land
+    // BFS over water from target coast towards any water cell next to pid's land (null: no way, 'far': too far)
     const map = this.map, W = map.W, H = map.H, N = map.N, land = map.land, own = this.owner, block = map.block;
     const seen = this.stamp, gen = ++this.stampGen, prev = this.bfsPrev, q = this.queue;
-    let qh = 0, qt = 0;
+    const maxD = RA.CFG.BOAT_RANGE, maxN = RA.CFG.SEA_CELLS;
+    let qh = 0, qt = 0, depth = 0, layer = 0;
     const tx = tgt % W, ty = (tgt / W) | 0;
     for (let dy = -1; dy <= 1; dy++)
       for (let dx = -1; dx <= 1; dx++) {
@@ -584,7 +602,14 @@ RA.Game = class Game {
         prev[c] = -1;
         q[qt++] = c;
       }
+    // a coast on another sea (lake, closed basin) cannot be reached: skip the search (on a big map it floods an ocean)
+    if (!this._sharesWater(pid, q, qt)) return null;
+    layer = qt;
     while (qh < qt) {
+      if (qh === layer) {
+        if (++depth > maxD || qt > maxN) return 'far';
+        layer = qt;
+      }
       const c = q[qh++];
       const x = c % W, y = (c / W) | 0;
       // departure check
@@ -617,6 +642,20 @@ RA.Game = class Game {
     }
     return null;
   }
+  /* does player pid own land next to one of the water components of these start cells? (4-connected components:
+     the boat search never crosses between them either) */
+  _sharesWater(pid, cells, n) {
+    const map = this.map, W = map.W, H = map.H, wc = map.wcomp, land = map.land;
+    const want = new Set();
+    for (let i = 0; i < n; i++) want.add(wc[cells[i]]);
+    const p = this.P[pid];
+    for (let i = 0; i < p.tiles; i++) {
+      const c = p.cells[i];
+      const x = c % W, y = (c / W) | 0;
+      if ((x > 0 && !land[c - 1] && want.has(wc[c - 1])) || (x < W - 1 && !land[c + 1] && want.has(wc[c + 1])) || (y > 0 && !land[c - W] && want.has(wc[c - W])) || (y < H - 1 && !land[c + W] && want.has(wc[c + W]))) return true;
+    }
+    return false;
+  }
 
   launchBoat(pid, tgtCell, troops) {
     const p = this.P[pid];
@@ -633,6 +672,7 @@ RA.Game = class Game {
     if (troops < 50) return 'troops';
     const r = this.findBoatPath(pid, tgtCell);
     if (!r) return 'nopath';
+    if (r === 'far') return 'far';
     p.troops -= troops;
     p.boats++;
     const path = r.path;
@@ -694,12 +734,15 @@ RA.Game = class Game {
       if (ok === false) return 'Luka mora biti na obali.';
       c = ok;
     }
-    const W = map.W, x = c % W, y = (c / W) | 0, R = RA.CFG.STRUCT_MIN_DIST;
-    for (const s of this.structs) {
-      if (s.dead) continue;
-      const dx = s.x - x, dy = s.y - y;
-      if (dx * dx + dy * dy < R * R) return 'Preblizu drugoj zgradi.';
-    }
+    const W = map.W, H = map.H, x = c % W, y = (c / W) | 0, R = RA.CFG.STRUCT_MIN_DIST;
+    // spacing: look at the cells around (structAt), not at every building on the map
+    for (let dy = 1 - R; dy < R; dy++)
+      for (let dx = 1 - R; dx < R; dx++) {
+        const sx = x + dx, sy = y + dy;
+        if (sx < 0 || sy < 0 || sx >= W || sy >= H || dx * dx + dy * dy >= R * R) continue;
+        const si = this.structAt[sy * W + sx];
+        if (si >= 0 && !this.structs[si].dead) return 'Preblizu drugoj zgradi.';
+      }
     if (type === 'city') {
       for (const ct of this.cities) if ((ct.x - x) * (ct.x - x) + (ct.y - y) * (ct.y - y) < 25) return 'Preblizu postojećem gradu.';
     }
@@ -767,7 +810,7 @@ RA.Game = class Game {
       const v = f[c] - 5;
       if (v <= 0) {
         f[c] = 0;
-        this.falloutCount--;
+        this.falloutCount -= this.map.aw[c];
       } else {
         f[c] = v;
         L.a[w++] = c;
@@ -1024,19 +1067,26 @@ RA.Game = class Game {
 
   _updateLeader() {
     let best = null;
-    for (const p of this.P) if (p && p.alive && p.spawned && (!best || p.tiles > best.tiles)) best = p;
-    this.leader = best ? { id: best.id, share: best.tiles / this.landTotal() } : null;
+    for (const p of this.P) if (p && p.alive && p.spawned && (!best || p.area > best.area)) best = p;
+    this.leader = best ? { id: best.id, share: (best.area / this.landTotal()) * this.shareK() } : null;
   }
+  /* land still in play, as area (map.aw); shares are p.area / landTotal() */
   landTotal() {
-    return this.map.landCount - this.falloutCount - (this.zone ? this.zone.deadLand : 0);
+    return this.map.landArea - this.falloutCount - (this.zone ? this.zone.deadLand : 0);
   }
+  /* share of the land needed to win: per map (meta.winShare / meta.overtimeMin, every share scaled by shareK());
+     Europe and regions use the defaults */
   winShare() {
-    const m = this.tick / 600;
-    return Math.max(0.5, RA.CFG.WIN_SHARE - Math.max(0, Math.floor(m - RA.CFG.OVERTIME_MIN)) * 0.02);
+    const m = this.tick / 600, M = this.map.region ? {} : this.map.meta || {};
+    const base = RA.CFG.WIN_SHARE, ot = M.overtimeMin > 0 ? M.overtimeMin : RA.CFG.OVERTIME_MIN;
+    const over = Math.max(0, Math.floor(m - ot));
+    // -2%/min down to 50%, then -1%/min down to 40%: a long stalemate still ends
+    const fast = Math.round(Math.max(0, base - 0.5) * 50);
+    return (over <= fast ? Math.max(0.5, base - over * 0.02) : Math.max(0.4, Math.min(0.5, base) - (over - fast) * 0.01)) / this.shareK();
   }
   _history() {
     const snap = { t: this.tick, v: {} };
-    for (const p of this.P) if (p && p.spawned && (p.alive || p.deathTick > this.tick - 60)) snap.v[p.id] = p.tiles;
+    for (const p of this.P) if (p && p.spawned && (p.alive || p.deathTick > this.tick - 60)) snap.v[p.id] = p.area;
     this.hist.push(snap);
   }
   _checkWin() {
@@ -1048,18 +1098,18 @@ RA.Game = class Game {
       if (!p || !p.alive || !p.spawned) continue;
       const k = p.team ? -p.team : p.id;
       let sd = sides.get(k);
-      if (!sd) sides.set(k, (sd = { tiles: 0, best: null, real: false }));
-      sd.tiles += p.tiles;
-      if (!sd.best || p.tiles > sd.best.tiles) sd.best = p;
+      if (!sd) sides.set(k, (sd = { area: 0, best: null, real: false }));
+      sd.area += p.area;
+      if (!sd.best || p.area > sd.best.area) sd.best = p;
       if (p.type !== 'bot') sd.real = true;
     }
     let best = null, realSides = 0;
     for (const sd of sides.values()) {
       if (sd.real) realSides++;
-      if (!best || sd.tiles > best.tiles) best = sd;
+      if (!best || sd.area > best.area) best = sd;
     }
     if (!best) return;
-    if (best.tiles / tot >= this.winShare() || (realSides === 1 && best.real)) {
+    if (best.area / tot >= this.winShare() || (realSides === 1 && best.real)) {
       this.winner = best.best;
       this.state = 'over';
       this._history();
@@ -1109,6 +1159,7 @@ RA.Game = class Game {
     return ({
       max: `Najviše ${RA.CFG.BOAT_MAX} broda istovremeno.`,
       nopath: 'Nema morskog puta do te obale.',
+      far: `Predaleko — brod plovi najviše ${RA.CFG.BOAT_RANGE} polja.`,
       nocoast: 'Brod može pristati samo na obalu.',
       water: 'Dodirni obalu, ne more.',
       own: 'To je tvoja obala.',

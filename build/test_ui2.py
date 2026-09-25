@@ -199,7 +199,12 @@ async def main():
         await ev('window.__ra.ui.closeSheet()')
 
         # 8. missiles: aim shows the blast radius, "Lansiraj" fires
-        tgt = await ev('''() => { const G = window.__ra.G, me = G.me; me.gold = 3e7; const c = me.cells[Math.floor(me.tiles / 2)]; const s = G.build(me.id, 'silo', c); if (typeof s === 'object') s.doneAt = G.tick + 1; G.step(); G.step();
+        tgt = await ev('''() => { const G = window.__ra.G, me = G.me; me.gold = 3e7;
+             const c = me.cells.find(c => typeof G.canBuild(me, 'silo', c) === 'number');
+             if (c === undefined) throw new Error('No buildable silo cell in the test fixture');
+             const s = G.build(me.id, 'silo', c);
+             if (!s || typeof s !== 'object') throw new Error('Silo fixture failed: ' + s);
+             s.doneAt = G.tick + 1; G.step(); G.step();
              const o = G.P.find(p => p && p.alive && p !== me && p.type === 'nation' && !me.allies.has(p.id) && p.tiles > 30); return o.cells[Math.floor(o.tiles / 2)]; }''')
         await ev('window.__ra.ui.strikeSheet()')
         await page.wait_for_timeout(300)
