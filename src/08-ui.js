@@ -1073,6 +1073,7 @@ RA.UI = class {
     const wasOpen = !this.$('sheetWrap').hidden;
     const top = keepScroll && wasOpen ? s.scrollTop : 0;
     s.innerHTML = '<div class="grab"></div>' + html;
+    s.onclick = null; // a delegated handler belongs to one sheet only (bindDiplo)
     this.$('sheetWrap').hidden = false;
     s.scrollTop = top;
     const cl = s.querySelector('.sh-close');
@@ -1084,6 +1085,7 @@ RA.UI = class {
     this.redraw = null;
     this.$('sheetWrap').hidden = true;
     this.$('sheet').innerHTML = '';
+    this.$('sheet').onclick = null;
     this.app.sheetPause(false);
   }
   head(title, meta, color) {

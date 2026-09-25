@@ -257,12 +257,13 @@ Object.assign(RA.UI.prototype, {
     if (map[act]) this.act(map[act][0], map[act][1]);
   },
   bindDiplo(s) {
-    s.addEventListener('click', (e) => {
+    // onclick, not addEventListener: #sheet outlives every redraw, and stacked listeners doubled each click
+    s.onclick = (e) => {
       const b = e.target.closest('[data-do]');
       if (!b || b.disabled) return;
       const [act, id] = b.dataset.do.split(':');
       this.diploAct(act, +id);
-    });
+    };
   },
   diploSheet(keep) {
     const G = this.G, me = G && G.me;

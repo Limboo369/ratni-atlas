@@ -200,6 +200,12 @@ async def main():
             pass
         check(await ev(f'() => window.__ra.G.me.allies.has({offer["a"]})'), 'military alliance accepted')
         await page.screenshot(path=OUT + f'{MODE}_v3_10_diplo2.png')
+        # reopening/redrawing the sheet must not stack click handlers (they doubled per click and froze the browser)
+        calls = await ev('''() => { const ui = window.__ra.ui;
+            for (let i = 0; i < 6; i++) { ui.closeSheet(); ui.diploSheet(); ui.diploSheet(true); }
+            let n = 0; ui.diploAct = () => { n++; };
+            document.querySelector('#sheet [data-do^="show:"]').click(); delete ui.diploAct; return n; }''')
+        check(calls == 1, f'one click on the diplomacy sheet runs one action (got {calls})')
         await ev('window.__ra.ui.closeSheet()')
         await ev('() => { window.__ra.paused = false; }')
 
