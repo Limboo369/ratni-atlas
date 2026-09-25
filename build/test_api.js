@@ -158,8 +158,11 @@ async function main() {
     check(r.status === 200, 'a long game (12000 commands, above the normal body limit) is saved');
     r = await call('GET', '/api/save', null, { cookie: cookieAna });
     check(r.j.save && r.j.save.rec.cmds.length === 12000 && r.j.save.tick === 480 && r.j.save.meta.where === 'Balkan', 'the saved game comes back');
-    r = await call('POST', '/api/save', sv({ cmds: Array.from({ length: 60000 }, (_, i) => [i, 'atk', [123456, 0.25, 1, 654321]]) }), { cookie: cookieAna });
-    check(r.status === 413, 'a save over 1 MB is refused');
+    // the server answers 413 and closes before the client has sent it all: the client sees either (EPIPE/reset)
+    r = await call('POST', '/api/save', sv({ cmds: Array.from({ length: 60000 }, (_, i) => [i, 'atk', [123456, 0.25, 1, 654321]]) }), { cookie: cookieAna }).catch((e) => ({ status: 'reset', e }));
+    check(r.status === 413 || r.status === 'reset', 'a save over 1 MB is refused');
+    r = await call('GET', '/api/save', null, { cookie: cookieAna });
+    check(r.j.save && r.j.save.rec.cmds.length === 12000, 'the refused save left the old one alone');
     r = await call('GET', '/api/save');
     check(r.j.save === null, "another player does not see Ana's save");
     r = await call('POST', '/api/save/delete', { gid: 'sother' }, { cookie: cookieAna });
