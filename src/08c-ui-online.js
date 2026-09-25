@@ -87,11 +87,6 @@ Object.assign(RA.UI.prototype, {
         return;
       }
       if (b.dataset.on === 'close') return net.closeRoom();
-      if (b.dataset.on === 'long') {
-        this.settings.name = this.$('nameIn').value.trim().slice(0, 18);
-        this._save();
-        return this.confirmLong();
-      }
       if (b.dataset.on === 'host') {
         this.lobbySet.map = this.settings.map;
         this.lobbyRegs();
@@ -150,7 +145,6 @@ Object.assign(RA.UI.prototype, {
     if (!net.code) {
       txt = 'Napravi igru i pošalji link prijatelju. Svaka igra ima svoj link: preko njega se prijatelj priključuje, a ti se vraćaš u igru ako zatvoriš stranicu.';
       h = `<button class="btn" data-on="host">${RA.icon('flag')}<span><span class="t">Napravi igru</span><br><span class="d">Ti si domaćin: biraš kartu i način igre</span></span></button>`
-        + `<button class="btn" data-on="long">${RA.icon('clock')}<span><span class="t">Duga igra (danima)</span><br><span class="d">Igra teče na serveru i kad nisi tu — 1 potez svakih 5 s, do 8 igrača</span></span></button>`
         + `<div class="code-row"><input id="codeIn" aria-label="Kod ili link igre" class="sel" maxlength="60" placeholder="kod ili link igre" autocomplete="off" autocapitalize="off"><button class="btn good" data-on="code">Uđi</button></div>`;
     } else if (net.status !== 'ready') {
       txt = 'Povezujem se s igrom…';
@@ -217,7 +211,8 @@ Object.assign(RA.UI.prototype, {
   /* a long game with the start screen's settings (the map, part, era, mode and difficulty) */
   confirmLong() {
     const s = this.settings, reg = RA.REGIONS.find((r) => r.id === s.region && r.map === s.map);
-    this.confirm('Napraviti dugu igru?', `${reg ? reg.name : RA.mapInfo(s.map).all} · ${RA.eraById(s.era).name}${s.gm === 'defcon' ? ' · DEFCON' : ''}. Igra traje danima: server okreće jedan potez svakih 5 sekundi i igra teče i dok nisi tu (tada kompjuter vodi tvoju državu). Dobićeš link — pošalji ga prijateljima, preko njega se i ti vraćaš.`, 'Napravi', () => this.app.long.create());
+    const d = [1, 3, 7].includes(s.days) ? s.days : 1;
+    this.confirm('Napraviti Focus igru?', `${reg ? reg.name : RA.mapInfo(s.map).all} · ${RA.eraById(s.era).name}${s.gm === 'defcon' ? ' · DEFCON' : ''} · ~${d} ${d === 1 ? 'dan' : 'dana'}. Igra teče na serveru i dok nisi tu (tada kompjuter vodi tvoju državu): jedan potez svakih ${5 * d} sekundi. Dobićeš link — pošalji ga prijateljima (do 8 igrača), preko njega se i ti vraćaš.`, 'Napravi', () => this.app.long.create());
   },
   renderLobby() {
     const net = this.app.net, $ = this.$;

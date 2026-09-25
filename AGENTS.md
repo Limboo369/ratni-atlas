@@ -56,6 +56,8 @@ Campaign: `src/08k-campaign.js` (screen, missions, goals; progress in localStora
 `src/09d-campaign-app.js` (starting a mission), `src/02j-campaign.js` (sim: `opts.camp` sets the mission up and applies
 the dynasty's tree bonuses `p.bGold`, `p.bGrow`, `p.bCost`).
 
+Blitz / Focus (start screen `#paceSeg`, `settings.pace`): Blitz is the normal game; Focus creates a long game with the same
+settings and a length of ~1/3/7 days (`settings.days` → `set.days`, the clock is `LONG_TICK_MS × days`).
 Long games (days): `deploy/game/long.js` (same server, `/ws?long=<code>`, link `/long-<code>`) is only the clock (one tick
 every `LONG_TICK_MS`, 5 s) and the archive (settings, seed, every command with its tick; files in the `longgames`
 volume); `src/09c-long.js` replays the record to the server's tick and follows it. A player takes over a computer state

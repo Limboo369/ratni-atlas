@@ -1134,3 +1134,15 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
 .prow .sw.u .model-preview{width:50px;height:48px}
 .prow .sw.u img{width:62px;height:62px}
 @media(max-width:600px){#sheet .btn.model-btn{gap:9px;min-height:102px;padding:9px 10px 9px 0}.btn.model-btn>.model-preview{width:63px;height:72px}.btn.model-btn>.model-preview img{width:84px;height:84px}#sheet .btn.model-btn>.r{font-size:14px;max-width:82px}.prow.hasu{grid-template-columns:50px minmax(0,1fr)}.prow.hasu>.bb{grid-column:2;justify-content:flex-start}.prow.hasu>.sw{grid-row:1 / 3}}
+
+/* Blitz / Focus: the game's pace, the selected one red */
+.pace-seg { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: min(100%, 378px); margin: 0 0 12px; }
+.pace-seg button { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 9px 12px; border: 1px solid rgba(255,255,255,.18); border-radius: 2px; background: rgba(10,16,20,.55); color: var(--launch-text, #e8eef0); font-family: inherit; text-align: left; cursor: pointer; transition: background .2s, border-color .2s; }
+.pace-seg button b { font-size: 15px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+.pace-seg button small { font-size: 11px; opacity: .75; }
+.pace-seg button:hover { border-color: rgba(255,93,93,.6); }
+.pace-seg button[aria-pressed="true"] { background: var(--danger); border-color: var(--danger); color: #fff; }
+.pace-seg button[aria-pressed="true"] small { opacity: .9; }
+.pace-days { display: flex; align-items: center; gap: 10px; width: min(100%, 378px); margin: -4px 0 12px; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: #9eacb4; }
+.pace-days[hidden] { display: none; }
+.pace-days .seg { flex: 1; }

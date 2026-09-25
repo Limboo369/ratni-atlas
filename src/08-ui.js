@@ -123,10 +123,18 @@ RA.UI = class {
     this._seg('colorSeg', RA.PLAYER_COLORS.includes(this.settings.color) ? this.settings.color : RA.PLAYER_COLORS[0], (v) => (this.settings.color = v));
     this._seg('cbSeg', this.settings.cb ? '1' : '0', (v) => this.setColorblind(v === '1'));
 
+    // Blitz (the quick game) or Focus (a game of days on the server, see 09c-long.js); the settings below apply to both
+    this._seg('paceSeg', this.settings.pace === 'focus' ? 'focus' : 'blitz', (v) => {
+      this.settings.pace = v;
+      this.paceShow();
+    });
+    this._seg('daysSeg', String([1, 3, 7].includes(this.settings.days) ? this.settings.days : 1), (v) => (this.settings.days = +v));
+    this.paceShow();
     $('goBtn').onclick = () => {
       this.settings.name = $('nameIn').value.trim().slice(0, 18);
       this._save();
-      app.newGame();
+      if (this.settings.pace === 'focus') this.confirmLong();
+      else app.newGame();
     };
     $('resumeBtn').onclick = () => {
       if (!this.resumeSv) return;
@@ -438,6 +446,11 @@ RA.UI = class {
   applyEraUI() {
     const E = RA.ERA;
     this.$('aStrike').innerHTML = `${RA.icon(E.strikeIcon)}<span>${RA.esc(E.strikeTab)}</span>`;
+  }
+  paceShow() {
+    const f = this.settings.pace === 'focus';
+    this.$('paceDays').hidden = !f;
+    this.$('goBtn').firstElementChild.textContent = f ? 'Započni Focus igru' : 'Započni osvajanje';
   }
   _save() {
     if (this.command) this.command.refresh();
@@ -959,7 +972,7 @@ RA.UI = class {
     const T = (t) => RA.fmtTime(Math.ceil(Math.max(0, t) / 10));
     if (me && me.alive && G.state === 'play') {
       if (G.opts.camp && G.opts.camp.type !== 'free' && this.campProg) pills.push(['goal', `🎯 ${this.campProg}`]);
-      if (G.long && this.app.long.rec) pills.push(['calm', `Duga igra · potez svakih ${Math.round(this.app.long.rec.tickMs / 1000)} s · igrača ${G.humans.filter((p) => p.alive).length}`]);
+      if (G.long && this.app.long.rec) pills.push(['calm', `Focus · potez svakih ${Math.round(this.app.long.rec.tickMs / 1000)} s · igrača ${G.humans.filter((p) => p.alive).length}`]);
       const dc = G.defcon();
       if (dc) {
         const next = (6 - dc) * C.DEFCON_STEP;

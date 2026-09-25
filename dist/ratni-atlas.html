@@ -1140,6 +1140,18 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
 .prow .sw.u img{width:62px;height:62px}
 @media(max-width:600px){#sheet .btn.model-btn{gap:9px;min-height:102px;padding:9px 10px 9px 0}.btn.model-btn>.model-preview{width:63px;height:72px}.btn.model-btn>.model-preview img{width:84px;height:84px}#sheet .btn.model-btn>.r{font-size:14px;max-width:82px}.prow.hasu{grid-template-columns:50px minmax(0,1fr)}.prow.hasu>.bb{grid-column:2;justify-content:flex-start}.prow.hasu>.sw{grid-row:1 / 3}}
 
+/* Blitz / Focus: the game's pace, the selected one red */
+.pace-seg { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: min(100%, 378px); margin: 0 0 12px; }
+.pace-seg button { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 9px 12px; border: 1px solid rgba(255,255,255,.18); border-radius: 2px; background: rgba(10,16,20,.55); color: var(--launch-text, #e8eef0); font-family: inherit; text-align: left; cursor: pointer; transition: background .2s, border-color .2s; }
+.pace-seg button b { font-size: 15px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+.pace-seg button small { font-size: 11px; opacity: .75; }
+.pace-seg button:hover { border-color: rgba(255,93,93,.6); }
+.pace-seg button[aria-pressed="true"] { background: var(--danger); border-color: var(--danger); color: #fff; }
+.pace-seg button[aria-pressed="true"] small { opacity: .9; }
+.pace-days { display: flex; align-items: center; gap: 10px; width: min(100%, 378px); margin: -4px 0 12px; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: #9eacb4; }
+.pace-days[hidden] { display: none; }
+.pace-days .seg { flex: 1; }
+
 #app{touch-action:none}#sheet,.screen{touch-action:pan-y}</style>
 <div id="app">
   <div id="map" aria-label="Karta Evrope"></div>
@@ -1251,6 +1263,8 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
           <p class="command-headline">Granice se mijenjaju.<br><strong>Ti odlučuješ kako.</strong></p>
           <p class="command-description">Izgradi carstvo. Sklopi saveze. Preuzmi kontrolu.<br> <span class="tagline">Evropa čeka tvoj prvi potez.</span></p>
           <div id="joinBanner" class="btns" hidden></div>
+          <div class="pace-seg" id="paceSeg" role="group" aria-label="Tempo igre"><button data-v="blitz" aria-pressed="true"><b>Blitz</b><small>brza partija · 20–40 min</small></button><button data-v="focus" aria-pressed="false"><b>Focus</b><small>igra danima, teče i bez tebe</small></button></div>
+          <div class="pace-days" id="paceDays" hidden><span>Trajanje</span><div class="seg" id="daysSeg" role="group" aria-label="Trajanje Focus igre"><button data-v="1" aria-pressed="true">~1 dan</button><button data-v="3" aria-pressed="false">~3 dana</button><button data-v="7" aria-pressed="false">~7 dana</button></div></div>
 
           <div class="command-player field">
             <div class="command-identity"><label for="nameIn">TVOJE IME</label><button id="profileBtn" class="profile-btn" hidden aria-haspopup="dialog"></button></div>
@@ -9148,10 +9162,18 @@ RA.UI = class {
     this._seg('colorSeg', RA.PLAYER_COLORS.includes(this.settings.color) ? this.settings.color : RA.PLAYER_COLORS[0], (v) => (this.settings.color = v));
     this._seg('cbSeg', this.settings.cb ? '1' : '0', (v) => this.setColorblind(v === '1'));
 
+    // Blitz (the quick game) or Focus (a game of days on the server, see 09c-long.js); the settings below apply to both
+    this._seg('paceSeg', this.settings.pace === 'focus' ? 'focus' : 'blitz', (v) => {
+      this.settings.pace = v;
+      this.paceShow();
+    });
+    this._seg('daysSeg', String([1, 3, 7].includes(this.settings.days) ? this.settings.days : 1), (v) => (this.settings.days = +v));
+    this.paceShow();
     $('goBtn').onclick = () => {
       this.settings.name = $('nameIn').value.trim().slice(0, 18);
       this._save();
-      app.newGame();
+      if (this.settings.pace === 'focus') this.confirmLong();
+      else app.newGame();
     };
     $('resumeBtn').onclick = () => {
       if (!this.resumeSv) return;
@@ -9463,6 +9485,11 @@ RA.UI = class {
   applyEraUI() {
     const E = RA.ERA;
     this.$('aStrike').innerHTML = `${RA.icon(E.strikeIcon)}<span>${RA.esc(E.strikeTab)}</span>`;
+  }
+  paceShow() {
+    const f = this.settings.pace === 'focus';
+    this.$('paceDays').hidden = !f;
+    this.$('goBtn').firstElementChild.textContent = f ? 'Započni Focus igru' : 'Započni osvajanje';
   }
   _save() {
     if (this.command) this.command.refresh();
@@ -9984,7 +10011,7 @@ RA.UI = class {
     const T = (t) => RA.fmtTime(Math.ceil(Math.max(0, t) / 10));
     if (me && me.alive && G.state === 'play') {
       if (G.opts.camp && G.opts.camp.type !== 'free' && this.campProg) pills.push(['goal', `🎯 ${this.campProg}`]);
-      if (G.long && this.app.long.rec) pills.push(['calm', `Duga igra · potez svakih ${Math.round(this.app.long.rec.tickMs / 1000)} s · igrača ${G.humans.filter((p) => p.alive).length}`]);
+      if (G.long && this.app.long.rec) pills.push(['calm', `Focus · potez svakih ${Math.round(this.app.long.rec.tickMs / 1000)} s · igrača ${G.humans.filter((p) => p.alive).length}`]);
       const dc = G.defcon();
       if (dc) {
         const next = (6 - dc) * C.DEFCON_STEP;
@@ -11314,11 +11341,6 @@ Object.assign(RA.UI.prototype, {
         return;
       }
       if (b.dataset.on === 'close') return net.closeRoom();
-      if (b.dataset.on === 'long') {
-        this.settings.name = this.$('nameIn').value.trim().slice(0, 18);
-        this._save();
-        return this.confirmLong();
-      }
       if (b.dataset.on === 'host') {
         this.lobbySet.map = this.settings.map;
         this.lobbyRegs();
@@ -11377,7 +11399,6 @@ Object.assign(RA.UI.prototype, {
     if (!net.code) {
       txt = 'Napravi igru i pošalji link prijatelju. Svaka igra ima svoj link: preko njega se prijatelj priključuje, a ti se vraćaš u igru ako zatvoriš stranicu.';
       h = `<button class="btn" data-on="host">${RA.icon('flag')}<span><span class="t">Napravi igru</span><br><span class="d">Ti si domaćin: biraš kartu i način igre</span></span></button>`
-        + `<button class="btn" data-on="long">${RA.icon('clock')}<span><span class="t">Duga igra (danima)</span><br><span class="d">Igra teče na serveru i kad nisi tu — 1 potez svakih 5 s, do 8 igrača</span></span></button>`
         + `<div class="code-row"><input id="codeIn" aria-label="Kod ili link igre" class="sel" maxlength="60" placeholder="kod ili link igre" autocomplete="off" autocapitalize="off"><button class="btn good" data-on="code">Uđi</button></div>`;
     } else if (net.status !== 'ready') {
       txt = 'Povezujem se s igrom…';
@@ -11444,7 +11465,8 @@ Object.assign(RA.UI.prototype, {
   /* a long game with the start screen's settings (the map, part, era, mode and difficulty) */
   confirmLong() {
     const s = this.settings, reg = RA.REGIONS.find((r) => r.id === s.region && r.map === s.map);
-    this.confirm('Napraviti dugu igru?', `${reg ? reg.name : RA.mapInfo(s.map).all} · ${RA.eraById(s.era).name}${s.gm === 'defcon' ? ' · DEFCON' : ''}. Igra traje danima: server okreće jedan potez svakih 5 sekundi i igra teče i dok nisi tu (tada kompjuter vodi tvoju državu). Dobićeš link — pošalji ga prijateljima, preko njega se i ti vraćaš.`, 'Napravi', () => this.app.long.create());
+    const d = [1, 3, 7].includes(s.days) ? s.days : 1;
+    this.confirm('Napraviti Focus igru?', `${reg ? reg.name : RA.mapInfo(s.map).all} · ${RA.eraById(s.era).name}${s.gm === 'defcon' ? ' · DEFCON' : ''} · ~${d} ${d === 1 ? 'dan' : 'dana'}. Igra teče na serveru i dok nisi tu (tada kompjuter vodi tvoju državu): jedan potez svakih ${5 * d} sekundi. Dobićeš link — pošalji ga prijateljima (do 8 igrača), preko njega se i ti vraćaš.`, 'Napravi', () => this.app.long.create());
   },
   renderLobby() {
     const net = this.app.net, $ = this.$;
@@ -14750,14 +14772,14 @@ RA.Long = class {
   /* a new long game with the start screen's settings */
   create() {
     const s = this.app.ui.settings;
-    const set = { map: s.map, reg: s.region, era: s.era, gm: s.gm === 'br' ? 'klasik' : s.gm, dif: s.difficulty, cs: s.cityStates, peace: s.peace, res: s.res ? 1 : 0 };
+    const set = { map: s.map, reg: s.region, era: s.era, gm: s.gm === 'br' ? 'klasik' : s.gm, dif: s.difficulty, cs: s.cityStates, peace: s.peace, res: s.res ? 1 : 0, days: [1, 3, 7].includes(s.days) ? s.days : 1 };
     this.connect('new', { create: { set, name: this.name(), uid: this.uid() } });
   }
   open(code) {
     this.connect(code, { hello: { name: this.name(), uid: this.uid() } });
   }
   connect(code, first) {
-    if (!this.url) return this.app.ui.toast('bad', 'Duga igra radi samo na war.deovilab.com.', { ms: 5000 });
+    if (!this.url) return this.app.ui.toast('bad', 'Focus igra radi samo na war.deovilab.com.', { ms: 5000 });
     this.close();
     this.code = code === 'new' ? '' : code;
     this.first = first;
@@ -14783,7 +14805,7 @@ RA.Long = class {
     ws.onclose = () => {
       if (this.ws !== ws || this.closed) return;
       // the connection dropped: try again (the game goes on on the server)
-      if (++this.tries > 20) return this.app.ui.toast('bad', 'Veza sa serverom duge igre je prekinuta.', { ms: 6000 });
+      if (++this.tries > 20) return this.app.ui.toast('bad', 'Veza sa serverom Focus igre je prekinuta.', { ms: 6000 });
       setTimeout(() => this.ws === ws && !this.closed && this.dial(this.code), Math.min(15000, 1000 * this.tries));
     };
   }
@@ -14809,7 +14831,7 @@ RA.Long = class {
   onMsg(m) {
     const ui = this.app.ui;
     if (m.t === 'err') {
-      ui.toast('bad', RA.esc(String(m.e || 'Greška duge igre.')), { ms: 6000 });
+      ui.toast('bad', RA.esc(String(m.e || 'Greška Focus igre.')), { ms: 6000 });
       if (!this.rec) this.app.showStart();
       return;
     }
@@ -14925,7 +14947,7 @@ Object.assign(RA.App.prototype, {
         if (!LG.applyDue(G)) return;
         G.step();
       }
-      msg.textContent = `Duga igra: sustižem server… ${Math.round((G.tick / Math.max(1, LG.T - 1)) * 100)}%`;
+      msg.textContent = `Focus: sustižem server… ${Math.round((G.tick / Math.max(1, LG.T - 1)) * 100)}%`;
       setTimeout(slice, 0);
     };
     const done = () => {
@@ -14947,7 +14969,7 @@ Object.assign(RA.App.prototype, {
       const mine = G.P[G.slotPid[LG.you]];
       if (mine && mine.alive) this.longJoined(mine);
       else ui.longPick();
-      ui.toast('info', `Duga igra: 1 potez svakih ${Math.round(r.tickMs / 1000)} s — igra teče i kad nisi tu. Link: <b>${RA.esc(location.origin + '/long-' + r.code)}</b>`, { ms: 9000 });
+      ui.toast('info', `Focus: 1 potez svakih ${Math.round(r.tickMs / 1000)} s — igra teče i kad nisi tu. Link: <b>${RA.esc(location.origin + '/long-' + r.code)}</b>`, { ms: 9000 });
     };
     slice();
   },
@@ -14971,7 +14993,7 @@ Object.assign(RA.UI.prototype, {
     if (!G || !G.long) return;
     const nats = G.P.filter((p) => p && p.alive && p.type === 'nation' && !p.human).sort((a, b) => b.area - a.area);
     const humans = G.P.filter((p) => p && p.alive && p.human);
-    let h = this.head('Duga igra', `Potez svakih ${Math.round(L.rec.tickMs / 1000)} s · igrača ${humans.length} · tik ${G.tick}`);
+    let h = this.head('Focus igra', `Potez svakih ${Math.round(L.rec.tickMs / 1000)} s · igrača ${humans.length} · tik ${G.tick}`);
     h += `<p class="explain">Izaberi državu kojom upravlja kompjuter i preuzmi je. Kad zatvoriš igru, kompjuter igra za tebe dok se ne vratiš (preko istog linka).</p>`;
     h += `<div class="btns"><button class="btn" data-copy><span class="t">Kopiraj link igre</span><br><span class="d">${RA.esc(location.origin + '/long-' + L.code)}</span></button></div><div class="list">`;
     for (const p of nats.slice(0, 40)) h += `<div class="prow wide"><span class="sw" style="background:${p.hex}"></span><div class="pn"><div class="nm">${RA.esc(p.name)}</div><div class="d">${((p.area / G.landTotal()) * 100).toFixed(1).replace('.', ',')}% kopna · vojska ${RA.fmt(p.troops)}</div></div><div class="bb">${this.mini('Preuzmi', `data-take="${p.id}"`, 'ok')}</div></div>`;
@@ -15047,7 +15069,7 @@ Object.assign(RA.App.prototype, {
   },
 });
 
-RA.BUILD = '717ea4c4';
+RA.BUILD = 'f6d76f57';
 new RA.App().boot();
 }
 function __raFallback(){

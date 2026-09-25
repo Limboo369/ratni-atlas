@@ -40,14 +40,14 @@ RA.Long = class {
   /* a new long game with the start screen's settings */
   create() {
     const s = this.app.ui.settings;
-    const set = { map: s.map, reg: s.region, era: s.era, gm: s.gm === 'br' ? 'klasik' : s.gm, dif: s.difficulty, cs: s.cityStates, peace: s.peace, res: s.res ? 1 : 0 };
+    const set = { map: s.map, reg: s.region, era: s.era, gm: s.gm === 'br' ? 'klasik' : s.gm, dif: s.difficulty, cs: s.cityStates, peace: s.peace, res: s.res ? 1 : 0, days: [1, 3, 7].includes(s.days) ? s.days : 1 };
     this.connect('new', { create: { set, name: this.name(), uid: this.uid() } });
   }
   open(code) {
     this.connect(code, { hello: { name: this.name(), uid: this.uid() } });
   }
   connect(code, first) {
-    if (!this.url) return this.app.ui.toast('bad', 'Duga igra radi samo na war.deovilab.com.', { ms: 5000 });
+    if (!this.url) return this.app.ui.toast('bad', 'Focus igra radi samo na war.deovilab.com.', { ms: 5000 });
     this.close();
     this.code = code === 'new' ? '' : code;
     this.first = first;
@@ -73,7 +73,7 @@ RA.Long = class {
     ws.onclose = () => {
       if (this.ws !== ws || this.closed) return;
       // the connection dropped: try again (the game goes on on the server)
-      if (++this.tries > 20) return this.app.ui.toast('bad', 'Veza sa serverom duge igre je prekinuta.', { ms: 6000 });
+      if (++this.tries > 20) return this.app.ui.toast('bad', 'Veza sa serverom Focus igre je prekinuta.', { ms: 6000 });
       setTimeout(() => this.ws === ws && !this.closed && this.dial(this.code), Math.min(15000, 1000 * this.tries));
     };
   }
@@ -99,7 +99,7 @@ RA.Long = class {
   onMsg(m) {
     const ui = this.app.ui;
     if (m.t === 'err') {
-      ui.toast('bad', RA.esc(String(m.e || 'Greška duge igre.')), { ms: 6000 });
+      ui.toast('bad', RA.esc(String(m.e || 'Greška Focus igre.')), { ms: 6000 });
       if (!this.rec) this.app.showStart();
       return;
     }
@@ -215,7 +215,7 @@ Object.assign(RA.App.prototype, {
         if (!LG.applyDue(G)) return;
         G.step();
       }
-      msg.textContent = `Duga igra: sustižem server… ${Math.round((G.tick / Math.max(1, LG.T - 1)) * 100)}%`;
+      msg.textContent = `Focus: sustižem server… ${Math.round((G.tick / Math.max(1, LG.T - 1)) * 100)}%`;
       setTimeout(slice, 0);
     };
     const done = () => {
@@ -237,7 +237,7 @@ Object.assign(RA.App.prototype, {
       const mine = G.P[G.slotPid[LG.you]];
       if (mine && mine.alive) this.longJoined(mine);
       else ui.longPick();
-      ui.toast('info', `Duga igra: 1 potez svakih ${Math.round(r.tickMs / 1000)} s — igra teče i kad nisi tu. Link: <b>${RA.esc(location.origin + '/long-' + r.code)}</b>`, { ms: 9000 });
+      ui.toast('info', `Focus: 1 potez svakih ${Math.round(r.tickMs / 1000)} s — igra teče i kad nisi tu. Link: <b>${RA.esc(location.origin + '/long-' + r.code)}</b>`, { ms: 9000 });
     };
     slice();
   },
@@ -261,7 +261,7 @@ Object.assign(RA.UI.prototype, {
     if (!G || !G.long) return;
     const nats = G.P.filter((p) => p && p.alive && p.type === 'nation' && !p.human).sort((a, b) => b.area - a.area);
     const humans = G.P.filter((p) => p && p.alive && p.human);
-    let h = this.head('Duga igra', `Potez svakih ${Math.round(L.rec.tickMs / 1000)} s · igrača ${humans.length} · tik ${G.tick}`);
+    let h = this.head('Focus igra', `Potez svakih ${Math.round(L.rec.tickMs / 1000)} s · igrača ${humans.length} · tik ${G.tick}`);
     h += `<p class="explain">Izaberi državu kojom upravlja kompjuter i preuzmi je. Kad zatvoriš igru, kompjuter igra za tebe dok se ne vratiš (preko istog linka).</p>`;
     h += `<div class="btns"><button class="btn" data-copy><span class="t">Kopiraj link igre</span><br><span class="d">${RA.esc(location.origin + '/long-' + L.code)}</span></button></div><div class="list">`;
     for (const p of nats.slice(0, 40)) h += `<div class="prow wide"><span class="sw" style="background:${p.hex}"></span><div class="pn"><div class="nm">${RA.esc(p.name)}</div><div class="d">${((p.area / G.landTotal()) * 100).toFixed(1).replace('.', ',')}% kopna · vojska ${RA.fmt(p.troops)}</div></div><div class="bb">${this.mini('Preuzmi', `data-take="${p.id}"`, 'ok')}</div></div>`;

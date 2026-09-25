@@ -78,6 +78,7 @@ function cleanSet(s) {
   out.cs = Math.max(0, Math.min(50, s.cs | 0));
   out.peace = Math.max(0, Math.min(600, s.peace | 0));
   out.res = s.res === 1 ? 1 : 0;
+  out.days = [1, 3, 7].includes(s.days) ? s.days : 1; // Focus: ~1, 3 or 7 days (the clock turns slower)
   return out;
 }
 
@@ -122,17 +123,17 @@ function handle(ws, q) {
       if (m.create && want === 'new') {
         const set = cleanSet(m.create.set);
         if (!set) return send({ t: 'err', e: 'Nevažeće postavke.' });
-        if (games.size >= MAX_GAMES) return send({ t: 'err', e: 'Server ima previše dugih igara — pokušaj kasnije.' });
+        if (games.size >= MAX_GAMES) return send({ t: 'err', e: 'Server ima previše Focus igara — pokušaj kasnije.' });
         let code;
         do code = crypto.randomBytes(6).toString('base64').replace(/[^a-z0-9]/gi, '').toLowerCase().slice(0, 6);
         while (code.length < 6 || games.has(code));
-        const rec = { code, set, seed: crypto.randomInt(1, 1e9), tickMs: TICK_MS, start: Date.now(), slots: [], cmds: [], created: Date.now(), seen: Date.now() };
+        const rec = { code, set, seed: crypto.randomInt(1, 1e9), tickMs: TICK_MS * set.days, start: Date.now(), slots: [], cmds: [], created: Date.now(), seen: Date.now() };
         const g = { rec, socks: new Set(), bytes: 2, dirty: false };
         games.set(code, g);
         return enter(g, name);
       }
       const g = /^[a-z0-9]{6}$/.test(want || '') && games.get(want);
-      if (!g) return send({ t: 'err', e: 'Ta duga igra ne postoji (ili je istekla).' });
+      if (!g) return send({ t: 'err', e: 'Ta Focus igra ne postoji (ili je istekla).' });
       return enter(g, name);
     }
     if (Array.isArray(m.join)) {
