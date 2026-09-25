@@ -33,6 +33,7 @@ RA.CFG = {
   AE_FALL: 12,
   AE_DECAY: 0.99975,
   AE_COALITION: 50,
+  NUKE_CRISIS: 300, // a nuclear hit: 30 s of economic crisis for the target (a minute made games drag on)
   INTEREST: 0.01 / 600, // on a player's saved gold, per tick (1% a minute), at most a quarter of the income
 };
 /* tax (plan 33): more gold ↔ slower army growth; every state starts at 'Srednji' */
@@ -136,8 +137,8 @@ RA.Game = class Game {
       id, name: o.name, type: o.type, human: o.type === 'human', team: 0, nick: '', hex: o.color, rgb: RA.hexToRgb(o.color), iso: o.iso || null,
       alive: true, spawned: false, troops: 0, gold: 0, tiles: 0, area: 0, cells: new Int32Array(256), maxT: 1,
       cityT: 0, cityG: 0, nCity: [0, 0, 0, 0],
-      n: { barracks: 0, fort: 0, port: 0, silo: 0, sam: 0, airport: 0, city: 0, factory: 0 },
-      built: { barracks: 0, fort: 0, port: 0, silo: 0, sam: 0, airport: 0, city: 0, factory: 0 },
+      n: { barracks: 0, fort: 0, port: 0, silo: 0, sam: 0, airport: 0, city: 0, factory: 0, dome: 0 },
+      built: { barracks: 0, fort: 0, port: 0, silo: 0, sam: 0, airport: 0, city: 0, factory: 0, dome: 0 },
       forts: [], bcities: [], units: [], portsOff: 0, mobReady: 0, growPause: 0, crisisUntil: 0, tax: 2, interest: 0, ae: 0, aeWarn: false, lord: 0, tribute: 0, capCity: -1,
       goldRate: 0, growRate: 0, trade: new Set(), nbCache: null, tradeRate: 0, tradeLand: 0, allies: new Map(), traitorUntil: -1, rel: new Float32Array(256), boats: 0,
       lastAttackedBy: 0, attackedAt: -9999, changed: true, peak: 0, capital: -1,
@@ -614,7 +615,7 @@ RA.Game = class Game {
         spd *= 1.35;
       }
       if (fall[c]) {
-        const f = 1 + (fall[c] / 255) * 2;
+        const f = 1 + (fall[c] / 255) * 3;
         mag *= f;
         spd *= f;
       }
@@ -935,7 +936,7 @@ RA.Game = class Game {
     let w = 0;
     for (let i = 0; i < L.n; i++) {
       const c = L.a[i];
-      const v = f[c] - 5;
+      const v = f[c] - 3; // ~85 s from the core of a blast
       if (v <= 0) {
         f[c] = 0;
         this.falloutCount -= this.map.aw[c];

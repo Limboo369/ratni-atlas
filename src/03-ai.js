@@ -377,6 +377,10 @@ RA.AI = {
         if (place('silo', (c) => nearFront(c) && RA.AI.interior(G, p, c))) return;
       }
     }
+    // an iron dome once nuclear weapons are about (the richer and the more threatened, the more likely)
+    if (!S.dome.na && !RA.MISSILE.atom.na && p.built.silo && p.built.dome < (p.tiles > 2500 ? 2 : 1) && G.tick > G.diff.nukeAfter && p.gold >= cost('dome') * 1.3 && G.rng() < 0.2 * pers.nuke) {
+      if (place('dome', (c) => RA.AI.interior(G, p, c))) return;
+    }
     // missile defence once somebody has silos
     const enemySilos = !S.sam.na && G.structs.some((s) => !s.dead && s.type === 'silo' && s.owner !== p.id);
     if (enemySilos && p.built.sam < 2 && p.gold >= cost('sam') && p.tiles > 500 && G.rng() < 0.45) {
@@ -521,6 +525,7 @@ RA.AI = {
       }
     }
     if (!tgt || ts < 1.1) return;
+    if (tgt.n.dome && G.rng() < 0.6) return; // deterrence: its iron dome would answer
     if (!MI.mirv.na && p.gold >= G.missileCost('mirv', p) * 1.05 && G.tick > G.diff.nukeAfter * 2 && G.leader && G.leader.id === tgt.id) {
       const c = tgt.cells[Math.floor(G.rng() * tgt.tiles)];
       const r = G.launchMissile(p.id, 'mirv', c);

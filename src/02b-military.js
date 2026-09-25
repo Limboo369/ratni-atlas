@@ -30,7 +30,14 @@ RA.STRUCT.factory = {
   name: 'Fabrika', short: 'Fabrika', cost: (n) => Math.min(2e6, 200000 * RA.dpow(2, n)), time: 60,
   desc: 'Pruge do tvojih gradova (18 polja) — vozovi donose zlato. Potrebna za tenkove i artiljeriju.',
 };
-RA.STRUCT_ORDER = ['city', 'factory', 'barracks', 'port', 'fort', 'sam', 'silo', 'airport'];
+/* the iron dome (plan 50): automatic retaliation — when somebody launches a nuclear weapon at you, every ready dome
+   fires an atomic bomb at their country (the capital first, then their biggest cities) */
+RA.STRUCT.dome = {
+  name: 'Gvozdena kupola', short: 'Kupola', icon: 'sam', cost: (n) => Math.min(7.5e6, 2500000 * (n + 1)), time: 90,
+  desc: 'Automatski uzvrat: kad neko lansira nuklearku na tebe, svaka spremna kupola ispali atomsku bombu na njegovu prijestolnicu i gradove. Puni se 60 s.',
+};
+RA.CFG.DOME_CD = 600;
+RA.STRUCT_ORDER = ['city', 'factory', 'barracks', 'port', 'fort', 'sam', 'silo', 'dome', 'airport'];
 RA.CITY_NAMES = ['Novigrad', 'Zlatograd', 'Belograd', 'Kamengrad', 'Svetigrad', 'Jezerograd', 'Brdovac', 'Orlovac', 'Hrastovac',
   'Bukovac', 'Javorje', 'Vidikovac', 'Zorograd', 'Sunčanik', 'Gorograd', 'Riječac', 'Mirograd', 'Slavograd', 'Dubravac', 'Lipovac',
   'Borovo Polje', 'Srebrnik', 'Kosovac', 'Vjetrograd', 'Plavnica', 'Zelengrad', 'Tvrđavac', 'Stijena', 'Dolina', 'Sokolac Novi'];
@@ -462,6 +469,7 @@ RA.NUKE = RA.MISSILE;
     this.missiles.push(m);
     if (M.kind === 'nuke' || M.kind === 'mirv') p.stats.nukes++;
     const victim = victimId ? this.P[victimId] : null;
+    if (victim && (M.kind === 'nuke' || M.kind === 'mirv') && !this.isFriendly(victim, p)) this._retaliate(victim, p);
     if (victim && victim.human) {
       const msg = { conv: `💥 ${M.name} — udar na tvoju teritoriju (${p.name})!`, emp: `⚡ EMP leti na tebe (${p.name})!`, nuke: `☢ ${M.name} leti na tebe (${p.name})! Krug udara je označen crveno.`, mirv: `☢☢ MIRV leti na tebe (${p.name})!` }[M.kind];
       this.tell(victim, 'bad', msg, pid, c);
@@ -471,6 +479,29 @@ RA.NUKE = RA.MISSILE;
     return m;
   };
   P.launchNuke = P.launchMissile;
+  /* the victim's iron domes answer a nuclear launch: one atomic bomb per ready dome, at the attacker's capital first */
+  P._retaliate = function (V, A) {
+    const M = RA.MISSILE.atom, tk = this.tick;
+    if (M.na || (M.from && tk < M.from) || !A.alive) return;
+    const domes = this.structs.filter((s) => !s.dead && s.ready && s.type === 'dome' && s.owner === V.id && s.cd <= tk && s.empUntil <= tk);
+    if (!domes.length) return;
+    const W = this.map.W;
+    const cities = this.cities.filter((ct) => ct.owner === A.id && ct.c !== A.capital).sort((a, b) => b.tier - a.tier || b.pop - a.pop || a.c - b.c);
+    const targets = [A.capital, ...cities.map((ct) => ct.c)].filter((c) => c >= 0 && this.owner[c] === A.id);
+    if (!targets.length) return;
+    domes.forEach((d, i) => {
+      const c = targets[i % targets.length], tx = c % W, ty = (c / W) | 0;
+      const dist = RA.dist(tx - d.x, ty - d.y);
+      const m = { id: this.nextId++, owner: V.id, type: 'atom', kind: 'nuke', sx: d.x + 0.5, sy: d.y + 0.5, tx: tx + 0.5, ty: ty + 0.5, c, t: 0, dur: Math.max(18, Math.round(dist / M.speed)), sam: null, samAt: 2, done: false, victim: A.id, auto: true };
+      this._assignSam(m, V);
+      this.missiles.push(m);
+      d.cd = tk + RA.CFG.DOME_CD;
+      V.stats.nukes++;
+    });
+    this.tell(V, 'good', `Gvozdena kupola uzvraća: ${domes.length} ${domes.length === 1 ? 'atomska bomba leti' : 'atomske bombe lete'} na ${A.name}!`, A.id, A.capital);
+    this.tell(A, 'bad', `☢ ${V.name} automatski uzvraća (gvozdena kupola): ${domes.length} ${domes.length === 1 ? 'atomska bomba leti' : 'atomske bombe lete'} na tebe!`, V.id, A.capital);
+    this.news('dome', V.id, A.id);
+  };
   P._assignSam = function (m, p) {
     const tk = this.tick;
     const tx = m.tx - 0.5, ty = m.ty - 0.5;
@@ -553,6 +584,21 @@ RA.NUKE = RA.MISSILE;
     const only = m.kind === 'warhead' ? m.victim : 0;
     const lost = new Map();
     const attacker = this.P[m.owner];
+    // cities in the core of the blast drop a level (their owner loses that much army room and gold)
+    const C = RA.CFG, P = this.P;
+    let razed = 0;
+    for (const ct of this.cities) {
+      if (ct.tier < 1 || (only && ct.owner !== only) || RA.dist(ct.x - cx, ct.y - cy) > nk.r1 + 0.5) continue;
+      const o = ct.owner, t = ct.tier;
+      if (o) {
+        P[o].cityT -= C.CITY_T[t] - C.CITY_T[t - 1];
+        P[o].cityG -= C.CITY_G[t] - C.CITY_G[t - 1];
+        P[o].nCity[t]--;
+        P[o].nCity[t - 1]++;
+      }
+      ct.tier = t - 1;
+      razed++;
+    }
     for (let dy = -nk.r2; dy <= nk.r2; dy++)
       for (let dx = -nk.r2; dx <= nk.r2; dx++) {
         const x = cx + dx, y = cy + dy;
@@ -588,14 +634,16 @@ RA.NUKE = RA.MISSILE;
       let kill = 0;
       if (o !== m.owner && (n || a.structs || a.units)) {
         const dens = v.troops / Math.max(1, v.tiles + n);
-        kill = Math.min(v.troops * 0.65, n * dens * nk.kill + v.troops * nk.shock);
+        kill = Math.min(v.troops * 0.75, n * dens * nk.kill + v.troops * nk.shock * 1.5);
         v.troops = Math.max(0, v.troops - kill);
+        // an economic blow: 30 s of crisis (half the gold, slower army growth)
+        if (m.kind !== 'warhead' && n >= 4) v.crisisUntil = Math.max(v.crisisUntil, this.tick + RA.CFG.NUKE_CRISIS);
       }
       const rep = { v, n, kill, structs: a.structs, units: a.units };
       if (o !== m.owner && (!main || n > main.n)) main = rep;
       if (o !== m.owner && this.isFriendly(attacker, v) && (n >= 5 || a.structs || a.units)) this.breakAlliance(m.owner, o, true);
       if (m.kind === 'warhead') this._mirvAcc(m, rep);
-      else if (o !== m.owner) this.tell(v, 'bad', `☢ Nuklearni udar! Izgubio si ${n} polja, ${RA.fmt(kill)} vojske${rep.structs ? ', ' + rep.structs + ' zgrada' : ''}${rep.units ? ', ' + rep.units + ' jedinica' : ''}.`, m.owner, m.c);
+      else if (o !== m.owner) this.tell(v, 'bad', `☢ Nuklearni udar! Izgubio si ${n} polja, ${RA.fmt(kill)} vojske${rep.structs ? ', ' + rep.structs + ' zgrada' : ''}${rep.units ? ', ' + rep.units + ' jedinica' : ''}${razed && o === this.owner[m.c] ? ', gradovi su razoreni' : ''}${n >= 4 ? ' — privreda u krizi 30 s' : ''}.`, m.owner, m.c);
     }
     if (m.kind === 'warhead') this._mirvHead(m, true);
     else if (attacker.human) {

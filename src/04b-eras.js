@@ -38,7 +38,7 @@ RA.ERAS = [
       barracks: { name: 'Vojni logor', short: 'Logor', desc: '+160k kapaciteta vojske i +2 mjesta za jedinice. Potreban za konjicu.' },
       fort: { name: 'Kastrum', short: 'Kastrum', desc: 'Utvrđeni logor: napadači u krugu od 8 polja gube 3× više vojske i sporiji su.' },
       silo: { name: 'Opsadna radionica', short: 'Opsada', icon: 'siege', cost: () => 180000, time: 45, desc: 'Gradi onagre: kamenje na neprijatelja do 16 polja daleko.' },
-      sam: false, airport: false,
+      sam: false, airport: false, dome: false,
     },
     missiles: {
       rocket: { name: 'Onager', icon: 'siege', r: 2, range: 16, cost: 45000, speed: 1.2, cd: 50, desc: 'Kamenje do 16 polja od radionice: ruši zgrade, ranjava jedinice i vojsku.' },
@@ -60,7 +60,7 @@ RA.ERAS = [
       barracks: { name: 'Kasarna', desc: '+160k kapaciteta vojske i +2 mjesta za jedinice. Potrebna za vitezove.' },
       fort: { name: 'Tvrđava', short: 'Tvrđava', desc: 'Zamak: napadači u krugu od 8 polja gube 3× više vojske i sporiji su.' },
       silo: { name: 'Opsadna radionica', short: 'Opsada', icon: 'siege', cost: () => 220000, time: 50, desc: 'Trebušei i bombarde: udari na neprijatelja do 24 polja daleko.' },
-      sam: false, airport: false,
+      sam: false, airport: false, dome: false,
     },
     missiles: {
       rocket: { name: 'Trebušet', icon: 'siege', r: 2, range: 18, cost: 50000, speed: 1.3, cd: 50, desc: 'Teško kamenje do 18 polja: ruši zgrade, ranjava jedinice i vojsku.' },
@@ -82,7 +82,7 @@ RA.ERAS = [
       factory: { name: 'Manufaktura', short: 'Manufaktura', desc: 'Kočije do tvojih gradova (18 polja) donose zlato. Potrebna za topove.' },
       barracks: { desc: '+160k kapaciteta vojske i +2 mjesta za jedinice. Potrebna za konjicu.' },
       silo: { name: 'Raketna baterija', short: 'Baterija', cost: () => 350000, time: 60, desc: 'Kongreveove rakete: udar do 40 polja daleko.' },
-      sam: false, airport: false,
+      sam: false, airport: false, dome: false,
     },
     missiles: {
       rocket: { name: 'Kongreveova raketa', r: 3, range: 40, cost: 80000, speed: 2.4, cd: 45, desc: 'Neprecizna ali strašna: udar u krugu 3 polja, do 40 polja od baterije.' },
@@ -102,7 +102,7 @@ RA.ERAS = [
       fort: { name: 'Rovovi i utvrde', short: 'Rovovi' },
       silo: { name: 'Hangar za cepeline', short: 'Hangar', icon: 'hangar', cost: () => 500000, time: 70, desc: 'Cepelini i teški topovi: udari do 120 polja daleko.' },
       sam: { name: 'Protivavionski topovi', short: 'PA topovi', desc: 'Obaraju cepeline koji ciljaju u krugu od 28 polja.' },
-      airport: false,
+      airport: false, dome: false,
     },
     missiles: {
       rocket: { name: 'Debela Berta', icon: 'rocket', r: 3, range: 30, cost: 110000, speed: 2.6, cd: 40, desc: 'Najveći top rata: udar u krugu 3 polja do 30 polja daleko.' },

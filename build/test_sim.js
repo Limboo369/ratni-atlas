@@ -128,6 +128,31 @@ const check = (ok, msg) => {
     return H.hash();
   };
   check(runR() === runR(), 'resources keep the game deterministic');
+
+  // stronger nukes + the iron dome (plan 37, 50)
+  const NG = RA.newGame(RA.eraMap(m, 'danas', 'granice'), { seed: 21, difficulty: 'srednje', cityStates: 0, peace: 0, era: 'danas', start: 'granice', gm: 'klasik' });
+  const FRA = NG.P.find((p) => p && p.iso === 'FRA'), DEU = NG.P.find((p) => p && p.iso === 'DEU');
+  RA.placeHuman(NG, FRA.nation.c, 'Test');
+  RA.startGame(NG);
+  const A = NG.me, V = DEU;
+  const spot = (p) => { for (let i = 0; i < p.tiles; i++) { const c = p.cells[(i * 7919) % p.tiles]; if (typeof NG.canBuild(p, 'silo', c) === 'number') return c; } return -1; };
+  A.gold = V.gold = 5e7;
+  NG.build(A.id, 'silo', spot(A));
+  const dc = (() => { for (let i = 0; i < V.tiles; i++) { const c = V.cells[(i * 7919) % V.tiles]; if (typeof NG.canBuild(V, 'dome', c) === 'number') return c; } return -1; })();
+  const ds = NG.build(V.id, 'dome', dc);
+  check(ds && ds.type === 'dome', 'Germany builds an iron dome');
+  for (let i = 0; i < 100; i++) NG.step();
+  for (const s of NG.structs) if (s.type === 'sam') s.dead = true; // no air defence in the way
+  const at0 = A.troops, vt0 = V.troops, capC = NG.cities.find((ct) => ct.owner === V.id && ct.tier >= 2);
+  const tier0 = capC ? capC.tier : -1;
+  const before = NG.missiles.length;
+  const mm = NG.exec(A.id, 'mis', ['atom', capC ? capC.c : V.capital]);
+  const auto = NG.missiles.filter((x) => x.auto && x.owner === V.id);
+  check(mm && typeof mm === 'object' && auto.length === 1 && auto[0].c === A.capital, `the dome answers at once: an atomic bomb flies at ${A.name}'s capital`);
+  for (let i = 0; i < 200 && NG.missiles.some((x) => !x.done); i++) NG.step();
+  check(V.troops < vt0 * 0.8 && V.crisisUntil > NG.tick, `a nuke hurts more: −${Math.round((1 - V.troops / vt0) * 100)}% army and an economic crisis`);
+  if (capC) check(capC.tier < tier0, `a city in the core drops a level (${capC.name} ${tier0} → ${capC.tier})`);
+  check(A.troops < at0 * 0.85 && A.crisisUntil > 0, `the retaliation lands on the attacker (−${Math.round((1 - A.troops / at0) * 100)}% army)`);
   console.log('FAILS:', fails.length ? fails : 'none');
   process.exit(fails.length ? 1 : 0);
 })();
