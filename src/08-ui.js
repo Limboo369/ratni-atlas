@@ -41,6 +41,7 @@ RA.ICONS = {
   send: '<path d="M4 12h14M13 6l6 6-6 6"/>',
   eye: '<path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.8"/>',
   edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>',
+  skull: '<path d="M12 3a7.5 7.5 0 0 0-7.5 7.5c0 2.6 1.3 4.3 3 5.3V19h9v-3.2c1.7-1 3-2.7 3-5.3A7.5 7.5 0 0 0 12 3z"/><circle cx="9" cy="11" r="1.6" fill="currentColor"/><circle cx="15" cy="11" r="1.6" fill="currentColor"/><path d="M10.5 19v2M13.5 19v2"/>',
   user: '<circle cx="12" cy="8" r="3.6"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/>',
 };
 RA.icon = (n, cls) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"${cls ? ` class="${cls}"` : ''} aria-hidden="true">${RA.ICONS[n] || ''}</svg>`;
@@ -159,6 +160,20 @@ RA.UI = class {
     $('aDiplo').onclick = () => this.diploSheet();
     $('modeCancel').onclick = () => this.setMode(null);
     $('modeExtra').onclick = () => this.modeExtra();
+    $('dlogToggle').onclick = () => {
+      const d = $('dlog');
+      d.classList.toggle('collapsed');
+      $('dlogToggle').textContent = d.classList.contains('collapsed') ? '▸' : '▾';
+      if (!d.classList.contains('collapsed')) {
+        $('dlogNew').hidden = true;
+        $('dlogNew').textContent = '0';
+        $('dlogList').scrollTop = $('dlogList').scrollHeight;
+      }
+    };
+    if (window.innerWidth < 760) {
+      $('dlog').classList.add('collapsed');
+      $('dlogToggle').textContent = '▸';
+    }
     $('boardToggle').onclick = () => {
       $('board').classList.toggle('collapsed');
       $('boardToggle').textContent = $('board').classList.contains('collapsed') ? '▸' : '▾';
@@ -187,7 +202,9 @@ RA.UI = class {
       root.setProperty('--dock-h', ($('dock').hidden ? 0 : $('dock').offsetHeight) + 'px');
       root.setProperty('--hud-h', ($('hud').hidden ? 0 : $('hud').offsetHeight) + 'px');
       root.setProperty('--st-h', ($('status').offsetHeight ? $('status').offsetHeight + 6 : 0) + 'px');
+      root.setProperty('--feed-h', ($('feed').offsetHeight ? $('feed').offsetHeight + 6 : 0) + 'px');
     });
+    ro.observe($('feed'));
     ro.observe($('dock'));
     ro.observe($('hud'));
     ro.observe($('status'));
@@ -411,6 +428,8 @@ RA.UI = class {
   showPlayUI(on) {
     ['hud', 'dock', 'board', 'meBtn'].forEach((id) => (this.$(id).hidden = !on));
     if (!on) {
+      this.$('dlog').hidden = true;
+      this.$('feed').innerHTML = '';
       this.$('modeBar').hidden = true;
       this.$('attBar').hidden = true;
       this.$('status').innerHTML = '';
@@ -494,6 +513,7 @@ RA.UI = class {
       for (const e of G.events) this.onEvent(e);
       G.events.length = 0;
     }
+    this.feedUpdate(now);
     if (G.fx.length) {
       for (const f of G.fx) if (!f.pid || (G.me && f.pid === G.me.id)) this.fxList.push(Object.assign({ t0: now }, f));
       G.fx.length = 0;

@@ -84,6 +84,8 @@ RA.Game = class Game {
     this.wLevel = 0;
     this.cityNameIdx = 0;
     this.events = [];
+    this.feed = []; // world news for the UI (kill feed + diplomacy log): {t, a, b, tick}; never read by the sim
+    this._warAt = new Map(); // 'a:b' -> tick of the last "war" news between them
     this.fx = []; // visual events for renderer (explosions etc.)
     this.allyReqs = []; // {from,to,exp}
     this.tradeReqs = [];
@@ -295,6 +297,13 @@ RA.Game = class Game {
   tellAll(kind, text, pid, cell) {
     this.event(kind, text, pid, cell, 0);
   }
+  /* world news between two states (city-states left out): war, fall, ally, break, ally-end, trade */
+  news(t, a, b) {
+    const A = this.P[a], B = b ? this.P[b] : null;
+    if (!A || A.type === 'bot' || (B && B.type === 'bot')) return;
+    if (this.feed.length > 200) this.feed.splice(0, 100);
+    this.feed.push({ t, a, b: b || 0, tick: this.tick });
+  }
 
   /* ---------------- attacks ---------------- */
   hasBorderWith(p, tid) {
@@ -374,6 +383,10 @@ RA.Game = class Game {
       // cancel pending alliance requests between them
       this.allyReqs = this.allyReqs.filter((r) => !((r.from === aid && r.to === tid) || (r.from === tid && r.to === aid)));
       if (!att.boat) this.tell(T, 'bad', `${A.name} te napada!`, aid, focusCell);
+      // news: a new war (not every thrust): once per pair per minute
+      const wk = aid + ':' + tid, last = this._warAt.get(wk);
+      if (last === undefined || this.tick - last > 600) this.news('war', aid, tid);
+      this._warAt.set(wk, this.tick);
     }
     return att;
   }
@@ -916,6 +929,7 @@ RA.Game = class Game {
       if ((att.a === a.id && att.t === b.id) || (att.a === b.id && att.t === a.id)) this._endAttack(att, 0);
     }
     this.allyReqs = this.allyReqs.filter((r) => !((r.from === a.id && r.to === b.id) || (r.from === b.id && r.to === a.id)));
+    this.news('ally', a.id, b.id);
     this.tell(a, 'good', `Vojni savez sklopljen: ${b.name} (5 min).`, b.id, b.capital);
     this.tell(b, 'good', `Vojni savez sklopljen: ${a.name} (5 min).`, a.id, a.capital);
     this.alliancesChanged = true;
@@ -927,6 +941,7 @@ RA.Game = class Game {
     b.allies.delete(aid);
     this.alliancesChanged = true;
     if (betrayal !== false) {
+      this.news('break', aid, bid);
       if (!(b.traitorUntil > this.tick)) a.traitorUntil = this.tick + RA.CFG.TRAITOR_DUR;
       b.rel[aid] = -100;
       for (const o of this.P) if (o && o.alive && o !== a && o !== b && !o.human) o.rel[aid] = Math.max(-100, o.rel[aid] - 35);
@@ -954,6 +969,7 @@ RA.Game = class Game {
           p.allies.delete(oid);
           this.P[oid].allies.delete(p.id);
           this.alliancesChanged = true;
+          if (p.id < oid) this.news('allyEnd', p.id, oid);
           this.tell(p, 'info', `Vojni savez je istekao: ${this.P[oid].name}.`, oid);
           this.tell(this.P[oid], 'info', `Vojni savez je istekao: ${p.name}.`, p.id);
         }
@@ -1108,7 +1124,8 @@ RA.Game = class Game {
       this.tell(p, 'bad', 'Tvoja država je pala.', p.id);
       this.tell(p, 'lost', 'Poražen si.', p.id);
       for (const h of this.P) if (h && h.human && h !== p && h.alive) this.tell(h, 'bad', `Pao je igrač ${p.nick || p.name}${killer ? ' (osvajač: ' + killer.name + ')' : ''}.`, p.id);
-    } else if (p.type === 'nation') this.tellAll('info', `Država je pala: ${p.name}${killer ? ' (osvajač: ' + killer.name + ')' : ''}.`, p.id);
+    }
+    this.news('fall', killer ? killer.id : p.id, killer ? p.id : 0); // shown in the kill feed (no toast for others)
   }
 
   _updateLeader() {

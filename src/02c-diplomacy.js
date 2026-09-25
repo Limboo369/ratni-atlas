@@ -54,6 +54,7 @@ Object.assign(RA.CFG, {
   P.makeTrade = function (a, b) {
     a.trade.add(b.id);
     b.trade.add(a.id);
+    this.news('trade', a.id, b.id);
     a.rel[b.id] = Math.min(100, a.rel[b.id] + 12);
     b.rel[a.id] = Math.min(100, b.rel[a.id] + 12);
     this.tradeReqs = this.tradeReqs.filter((r) => !((r.from === a.id && r.to === b.id) || (r.from === b.id && r.to === a.id)));

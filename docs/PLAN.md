@@ -229,8 +229,8 @@ Svijet dolazi prije ekonomije, vojske i kampanje: resursi, moreuzi, mornarica i 
 | Pobjeda na 70% | Na svakoj karti i dijelu karte pobjeda je na 70% kopna, bez spuštanja praga s vremenom (svijet je imao 55% i pad do 40%) | gotovo; „Nastavi igru" radi protiv kompjutera, online slijedi |
 | Stara doba na svim kontinentima | Rim i 1400. imaju države i plemena u Americi, Africi i Okeaniji (Maje, Teotihuakan, Moče, Hopvel, Kongo, Mali, Maori, Aboridžini po oblastima…) | gotovo za Rim i 1400.; 1815. Okeanija (2) i Amerike (9 i 6) se mogu dopuniti |
 | Traka resursa dolje | Gornja traka (zlato, vojska, zemlja…) ide dolje i uklapa se s donjim dugmadima | izgled: Codex; Claude pomaže s rasporedom |
-| Traka događaja (kao u Counter-Strikeu) | Gore lijevo kratki redovi „Srbija (ikonica) Albanija": samo pad države i napad na državu, ne osvajanje gradova | logika događaja: Claude; izgled ikonica: Codex |
-| Dnevnik diplomatije | Desno, kao chat: ko je kome objavio rat, ko je s kim sklopio ili raskinuo savez | logika: Claude; izgled: Codex |
+| Traka događaja (kao u Counter-Strikeu) | Gore lijevo kratki redovi „Srbija (ikonica) Albanija": samo pad države i napad na državu, ne osvajanje gradova | gotovo (Claude, 08f-feed.js); Codex može dotjerati izgled |
+| Dnevnik diplomatije | Desno, kao chat: ko je kome objavio rat, ko je s kim sklopio ili raskinuo savez | gotovo (dole desno, klik na red vodi do države; na telefonu skupljen) |
 | Mikrodržave | Svijet danas ima 168 država na karti: 29 najmanjih (Malta, Singapur, Bahrein, Monako, San Marino, Vatikan, Andora, Lihtenštajn, Maldivi, Mauricijus, Sejšeli, karipska i pacifička ostrva…) manje su od 8 polja mreže (polje ≈ 25 × 25 km), pa su slobodna zemlja; Grenland i Tajvan su posebno | ako želiš svih 195: dodati ih kao male države (gradove-države) na njihovom polju |
 
 ## Otvorena pitanja

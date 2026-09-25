@@ -138,6 +138,12 @@ async def main():
                 pass
             chips = await ev('() => document.querySelectorAll("#attBar .achip.out").length')
             check(chips >= 1, f'attack chip shown ({chips})')
+            try:
+                await page.wait_for_function('document.querySelector("#feed .kf.war.mine") && document.querySelector("#dlogList li.war")', timeout=10_000)
+            except Exception:
+                pass
+            kf = await ev('() => [document.querySelector("#feed .kf.war.mine")?.textContent, document.querySelector("#dlogList li.war")?.textContent]')
+            check(bool(kf[0]) and nb['name'] in kf[0] and bool(kf[1]), f'kill feed and diplomacy log show my war {kf}')
             await page.screenshot(path=OUT + f'{MODE}_v3_5_chips.png')
             before = await ev('() => window.__ra.G.me.troops')
             await page.click('#attBar .achip.out .x')

@@ -101,7 +101,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 
 /* ---------- toasts ---------- */
 #toasts {
-  position: absolute; left: 8px; z-index: 1150; top: calc(var(--hud-h, 70px) + var(--st-h, 0px) + 8px);
+  position: absolute; left: 8px; z-index: 1150; top: calc(var(--hud-h, 70px) + var(--st-h, 0px) + var(--feed-h, 0px) + 8px);
   display: flex; flex-direction: column; gap: 6px; width: min(calc(100vw - 150px), 330px); pointer-events: none;
 }
 .toast {
@@ -695,3 +695,27 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
 .hist .num small { display: block; }
 .top-list .emb { align-self: center; }
 .acc-name { margin-top: 12px; }
+
+/* kill feed (08f-feed.js): top left, one short row per war / fallen state, as in Counter-Strike */
+#feed { position: absolute; left: 8px; z-index: 1140; top: calc(var(--hud-h, 70px) + var(--st-h, 0px) + 8px); display: flex; flex-direction: column; align-items: flex-start; gap: 4px; pointer-events: none; max-width: min(calc(100vw - 150px), 420px); }
+#feed:empty { display: none; }
+.kf { pointer-events: auto; cursor: pointer; display: flex; align-items: center; gap: 7px; padding: 4px 10px; border-radius: 6px; background: rgba(8, 14, 20, .78); border: 1px solid rgba(255, 255, 255, .08); font-size: 13px; font-weight: 600; white-space: nowrap; animation: tin .22s ease-out; }
+.kf svg { width: 16px; height: 16px; flex: none; color: #e9edf0; }
+.kf.fall svg { color: var(--danger, #ff5d5d); }
+.kf.mine { border-color: rgba(242, 177, 52, .6); background: rgba(40, 28, 6, .82); }
+.kf.out { opacity: 0; transition: opacity .4s; }
+.fn { color: color-mix(in srgb, var(--c) 70%, #fff); text-shadow: 0 1px 2px rgba(0, 0, 0, .6); overflow: hidden; text-overflow: ellipsis; max-width: 12em; }
+.fn.me { text-decoration: underline; text-underline-offset: 2px; }
+/* diplomacy log: bottom right, like a chat */
+#dlog { position: absolute; right: 8px; bottom: calc(var(--dock-h, 90px) + 64px); z-index: 890; width: 290px; max-width: calc(100vw - 16px); background: var(--ink-glass); border: 1px solid var(--line); border-radius: 12px; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); overflow: hidden; }
+#dlog header { display: flex; align-items: center; gap: 8px; padding: 6px 10px; font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+#dlog header span { flex: 1; }
+#dlog header b { background: var(--danger, #ff5d5d); color: #fff; border-radius: 999px; padding: 0 6px; font-size: 10.5px; letter-spacing: 0; }
+#dlogList { list-style: none; margin: 0; padding: 0 0 6px; max-height: min(34vh, 260px); overflow-y: auto; }
+#dlogList li { display: flex; gap: 8px; padding: 3px 10px; font-size: 12.5px; line-height: 1.35; cursor: pointer; }
+#dlogList li:hover { background: rgba(255, 255, 255, .05); }
+#dlogList li.mine { background: rgba(242, 177, 52, .10); }
+#dlogList time { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 11px; flex: none; padding-top: 1px; }
+#dlog.collapsed #dlogList { display: none; }
+#dlog.collapsed { width: auto; }
+@media (max-width: 760px) { #dlog { bottom: calc(var(--dock-h, 90px) + 64px); } .kf { font-size: 12px; } }
