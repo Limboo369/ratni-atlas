@@ -81,7 +81,10 @@ async function startApi(origins, log) {
     stdio: ['ignore', log || 'inherit', 'pipe'],
   });
   const f = { port, base: `http://127.0.0.1:${port}`, stderr: '', token, evil, CLIENT_ID };
-  api.stderr.on('data', (b) => (f.stderr += b));
+  api.stderr.on('data', (b) => {
+    f.stderr += b;
+    if (log === 'ignore') process.stderr.write(b); // serve mode: the browser test shows API errors
+  });
   for (let i = 0; i < 150; i++) {
     try {
       if ((await fetch(f.base + '/api/health')).ok) break;

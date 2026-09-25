@@ -9,8 +9,10 @@
    POST /api/login   {credential}  → {user}      (sets the session cookie)
    POST /api/logout  → {ok}                     (clears it)
    POST /api/name    {name} → {user}
+   POST /api/icon    {icon} → {user}            (one of ICONS)
    POST /api/delete  → {ok}                     (deletes the account and everything on it)
    GET  /api/health  → {ok}
+   Results, statistics, achievements and the leaderboard: stats.js.
    Every POST must be JSON from an allowed origin (ORIGINS), which together with SameSite=Lax stops CSRF. */
 const http = require('http');
 const crypto = require('crypto');
@@ -44,7 +46,10 @@ const SCHEMA = [
      created timestamptz not null default now(),
      seen timestamptz not null default now())`,
   'create index if not exists sessions_user on sessions(user_id)',
+  'alter table users add column if not exists icon text',
 ];
+// profile emblems the page can draw (src/08e-account.js RA.EMBLEMS); 'google' = the Google profile picture
+const ICONS = new Set(['google', 'stit', 'mac', 'kruna', 'orao', 'tvrdjava', 'sidro', 'tenk', 'raketa', 'zastava', 'zvijezda', 'kaciga', 'avion', 'atom']);
 
 /* ---------------- Google ID token ---------------- */
 let certs = null, certsAt = 0;
@@ -82,7 +87,7 @@ async function verifyGoogle(tok) {
 /* ---------------- helpers ---------------- */
 const clean = (s, n) => String(s || '').replace(/[\u0000-\u001f\u007f<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, n);
 const sha = (s) => crypto.createHash('sha256').update(s).digest();
-const pub = (u) => u && { id: String(u.id), name: u.name, email: u.email || '', pic: u.pic || '' };
+const pub = (u) => u && { id: String(u.id), name: u.name, email: u.email || '', pic: u.pic || '', icon: u.icon || (u.pic ? 'google' : 'stit'), since: u.created };
 
 function send(res, code, body, headers) {
   const s = JSON.stringify(body);
@@ -183,6 +188,13 @@ const routes = {
     const r = await db.query('update users set name = $1 where id = $2 returning *', [name, u.id]);
     return { user: pub(r.rows[0]) };
   },
+  'POST /api/icon': async (req, b) => {
+    const u = await sessionUser(req);
+    if (!u) return [401, { e: 'Nisi prijavljen.' }];
+    if (typeof b.icon !== 'string' || !ICONS.has(b.icon) || (b.icon === 'google' && !u.pic)) return [400, { e: 'Nepoznata ikonica.' }];
+    const r = await db.query('update users set icon = $1 where id = $2 returning *', [b.icon, u.id]);
+    return { user: pub(r.rows[0]) };
+  },
   'POST /api/delete': async (req, b, res) => {
     const u = await sessionUser(req);
     if (!u) return [401, { e: 'Nisi prijavljen.' }];
@@ -191,6 +203,10 @@ const routes = {
     return { ok: true };
   },
 };
+
+const stats = require('./stats')(db, sessionUser);
+SCHEMA.push(...stats.SCHEMA);
+Object.assign(routes, stats.routes);
 
 const server = http.createServer(async (req, res) => {
   const ip = String(req.headers['x-real-ip'] || req.socket.remoteAddress || '');

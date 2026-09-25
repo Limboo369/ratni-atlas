@@ -210,12 +210,20 @@ Svijet dolazi prije ekonomije, vojske i kampanje: resursi, moreuzi, mornarica i 
 | 3 | Vlastiti online server (Node + WebSocket u Dockeru): online na war.deovilab.com, gledaoci; svaka igra ima svoj link (war.deovilab.com/game-k3x9pq) za poziv prijatelja i povratak u igru nakon zatvaranja stranice ili pada veze | u toku |
 | 4 | Cijeli svijet: karta, doba, dijelovi svijeta, učitavanje sa servera | gotovo: 168 država danas, svih 7 doba na svijetu (Rim 26 · 1400. 78 · 1815. 76 · 1914. 60 · 1938. 69 · 1960. 109 država), 7 regija, balans po stvarnoj površini, online |
 | 5 | Brze stvari: usmjereni napad, vrati granice, pravo prolaza, ping i brze poruke, zvuk i muzika, sitnice, tutorijal | |
-| 6 | Nalozi i baza (PostgreSQL): prijava preko Google-a (rezerva: e-mail), tvoje igre vezane za nalog (nastavi igru s bilo kojeg uređaja), statistike i ljestvica, dostignuća, snimi i nastavi | u toku: baza, Google prijava i nalog (ime, odjava, brisanje) gotovi; slijede statistike, ljestvica, dostignuća, snimi i nastavi |
+| 6 | Nalozi i baza (PostgreSQL): prijava preko Google-a (rezerva: e-mail), tvoje igre vezane za nalog (nastavi igru s bilo kojeg uređaja), statistike i ljestvica, dostignuća, snimi i nastavi | u toku: gotovi baza, Google prijava, profil (ime, ikonica, čin po pobjedama, statistike, uspješnost, 18 dostignuća, historija zadnjih 20 partija), ljestvica; slijede snimi i nastavi, igre vezane za nalog |
 | 7 | Ekonomija i diplomatija: resursi i trgovina (opcija), porez i kamata, zajmovi sa zalogom, agresivna ekspanzija, vazali, moreuzi i kanali | |
 | 8 | Vojska: mornarica, avijacija, dronovi, jače nuklearke, gvozdena kupola | |
 | 9 | Vladari s komentarima (portreti: Codex) | |
 | 10 | DEFCON mod, duge igre kroz dane | |
 | 11 | Kampanja (~100 h, cijeli svijet) | |
+
+## Dodano 25. 9.
+
+| Šta | Odluka | Stanje |
+| --- | --- | --- |
+| Nastavi igru poslije pobjede | Pobjednik se proglasi na 70% (kao sada), a na prozoru pobjede je i „Nastavi igru" — igra dalje do kraja (dok ne ostane sam na karti); pobjeda ostaje zapisana | gotovo za igru protiv kompjutera; online treba zajedničku komandu za sve uređaje |
+| Profil igrača | Na početnom ekranu, poslije prijave: ime, ikonica (grb ili Google slika), čin, statistike, uspješnost, dostignuća, historija partija, ljestvica | gotovo |
+| Izbornik karte | Evropa nije posebna karta u izborniku nego jedna od regija: Cijeli svijet, Evropa, Bliski istok i Mediteran, Afrika, Azija, Amerike, Okeanija; ispod se bira doba. Doba za sve kontinente i cijeli svijet | sljedeće |
 
 ## Otvorena pitanja
 

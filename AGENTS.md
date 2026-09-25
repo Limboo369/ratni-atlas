@@ -58,6 +58,9 @@ the API checks it against Google's keys (RS256, `aud` = `GOOGLE_CLIENT_ID` in `d
 session cookie `ot` (90 days). The Google Cloud client must list `https://war.deovilab.com` as an authorized JavaScript
 origin. The database password lives only in `/srv/apps/war/db.env` on the server (made by the deploy workflow once).
 Without `/api/` (file://, tests) the account button stays hidden and the game works as before.
+Profile, results, achievements and leaderboard: `deploy/api/stats.js` (the page reports each finished game once, by
+`G.gid`; achievements and rank are derived on the server from the results; results are self-reported, so only sanity
+limits apply). Emblem ids are shared by `RA.EMBLEMS` (`src/08e-account.js`) and `ICONS` (`deploy/api/server.js`).
 
 ## Layout
 

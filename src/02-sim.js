@@ -1090,7 +1090,7 @@ RA.Game = class Game {
     this.hist.push(snap);
   }
   _checkWin() {
-    if (this.winner) return;
+    if (this.winner && !this.continued) return;
     const tot = this.landTotal();
     // sides: a co-op team plays as one side
     const sides = new Map();
@@ -1109,6 +1109,15 @@ RA.Game = class Game {
       if (!best || sd.area > best.area) best = sd;
     }
     if (!best) return;
+    // the winner chose "Nastavi igru": the game ends for good when one side is left
+    if (this.continued) {
+      if (sides.size === 1) {
+        this.state = 'over';
+        this._history();
+        this.tellAll('over', `Osvojeno sve: ${best.best.name}`, best.best.id);
+      }
+      return;
+    }
     if (best.area / tot >= this.winShare() || (realSides === 1 && best.real)) {
       this.winner = best.best;
       this.state = 'over';

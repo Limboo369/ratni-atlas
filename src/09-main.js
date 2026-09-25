@@ -266,6 +266,7 @@ RA.App = class {
     document.getElementById('startScreen').hidden = true;
     const gm = RA.regionMap(RA.eraMap(this.map, s.era, s.start), s.region);
     const G = RA.newGame(gm, { seed: (Math.random() * 1e9) | 0, difficulty: s.difficulty, cityStates: s.cityStates, peace: s.peace, era: s.era, start: s.start, gm: s.gm });
+    G.gid = 's' + Math.random().toString(36).slice(2, 12); // this game on the player's account (results)
     this.setGame(G);
     this.attractMode = false;
     this.speed = 1;
@@ -316,6 +317,7 @@ RA.App = class {
     }
     this.setMap(this.maps[id]);
     const G = RA.setupOnline(this.map, st, mySlot);
+    G.gid = 'o' + (this.net.gid || Math.random().toString(36).slice(2, 10));
     this.setGame(G);
     this.attractMode = false;
     this.speed = 1;
@@ -346,6 +348,7 @@ RA.App = class {
       this.attract();
       return;
     }
+    this.ui.account.report(this.G, kind);
     if (kind === 'lost' && this.ui.watching) return;
     this.ui.closeSheet();
     this.ui.setMode(null);

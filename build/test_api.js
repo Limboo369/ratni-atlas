@@ -78,6 +78,13 @@ async function main() {
     // name
     r = await call('POST', '/api/name', { name: '  Vojvoda <b>Darko</b>  ' });
     check(r.status === 200 && r.j.user.name === 'Vojvoda bDarko/b', 'rename, cleaned: ' + (r.j.user && r.j.user.name));
+    check(r.j.user && r.j.user.icon === 'stit' && r.j.user.since, 'default emblem without a Google picture; member since');
+    r = await call('POST', '/api/icon', { icon: 'kruna' });
+    check(r.status === 200 && r.j.user.icon === 'kruna', 'emblem changed');
+    r = await call('POST', '/api/icon', { icon: 'google' });
+    check(r.status === 400, 'Google picture as emblem refused when there is none');
+    r = await call('POST', '/api/icon', { icon: '<svg>' });
+    check(r.status === 400, 'unknown emblem refused');
     r = await call('POST', '/api/name', { name: 'x' });
     check(r.status === 400, 'one-letter name refused');
     r = await call('POST', '/api/name', { name: 'Tuđin' }, { cookie: '' });
@@ -100,6 +107,44 @@ async function main() {
     // another person
     r = await call('POST', '/api/login', { credential: token({ sub: '2002', given_name: 'Ana', email: 'ana@example.com' }) });
     check(r.j.user && r.j.user.id !== id && r.j.user.name === 'Ana', 'another Google account is another user');
+    const cookieAna = jar;
+
+    // results, statistics, achievements, leaderboard
+    const game = (o) => ({ gid: 'g' + Math.random().toString(36).slice(2, 10), online: false, mode: 'solo', map: 'evropa', region: 'balkan', era: 'danas', gm: 'klasik', start: 'granice', difficulty: 'srednje', won: false, secs: 900, peak: 20, cities: 3, kills: 1, conquered: 2, nukes: 0, players: 1, ...o });
+    jar = cookie1;
+    r = await call('POST', '/api/result', game(), { cookie: '' });
+    check(r.status === 401, 'result without a session refused');
+    r = await call('POST', '/api/result', game({ era: 'marsovci' }));
+    check(r.status === 400, 'result with an unknown era refused');
+    r = await call('POST', '/api/result', game({ won: true, secs: 20 }));
+    check(r.status === 400, 'a 20-second win refused');
+    r = await call('POST', '/api/result', game({ region: 'x y' }));
+    check(r.status === 400, 'result with a bad region name refused');
+    r = await call('POST', '/api/result', game());
+    check(r.status === 200 && r.j.stats.games === 1 && r.j.stats.wins === 0 && r.j.fresh.length === 0, 'a lost game is counted, no achievement');
+    const win = game({ won: true, secs: 500, difficulty: 'tesko', nukes: 1, peak: 72.46, cities: 25 });
+    r = await call('POST', '/api/result', win);
+    const got = (r.j.fresh || []).map((a) => a.id).sort().join(',');
+    check(r.status === 200 && r.j.stats.wins === 1 && got === 'carstvo,dugme,munja,opsada,prva,tesko', 'a win unlocks the right achievements: ' + got);
+    r = await call('POST', '/api/result', win);
+    check(r.status === 200 && r.j.dup && r.j.stats.games === 2 && r.j.fresh.length === 0, 'the same game reported twice counts once');
+    r = await call('POST', '/api/result', game({ won: true, online: true, mode: 'coop', map: 'svijet', region: 'svijet', gm: 'br', players: 2 }));
+    check(r.j.fresh && r.j.fresh.map((a) => a.id).sort().join(',') === 'online,rame,royale,svijet', 'online co-op battle royale win on the world: ' + (r.j.fresh || []).map((a) => a.id));
+    r = await call('GET', '/api/stats');
+    const st = r.j.stats || {};
+    check(st.games === 3 && st.wins === 2 && st.onlineWins === 1 && st.fastest === 500 && st.peak === 72.5 && st.nukes === 1, 'totals: ' + JSON.stringify(st));
+    check(st.rank && st.rank.title === 'Vojnik' && st.rank.next.title === 'Kaplar' && st.rank.next.wins === 3, 'status from wins: ' + JSON.stringify(st.rank));
+    check(r.j.achievements.length >= 15 && r.j.achievements.filter((a) => a.at).length === 10 && r.j.achievements.every((a) => a.name && a.desc), 'achievement list with names and unlock dates');
+    check(r.j.recent.length === 3 && r.j.recent[0].online === true, 'recent games, newest first');
+    // Ana: one plain win
+    r = await call('POST', '/api/result', game({ won: true }), { cookie: cookieAna });
+    r = await call('GET', '/api/top');
+    const top = r.j.rows || [];
+    check(top.length === 2 && top[0].name === 'Vojvoda bDarko/b' && top[0].icon === 'kruna' && top[0].wins === 2 && top[0].me && top[1].name === 'Ana' && top[1].rank === 2 && !top[1].me, 'leaderboard by wins, my row marked');
+    r = await call('GET', '/api/top?by=online', null, { cookie: cookieAna });
+    check(r.j.rows.length === 1 && r.j.rows[0].online === 1 && r.j.me === null, 'online leaderboard lists only online winners');
+    r = await call('GET', '/api/top', null, { cookie: '' });
+    check(r.status === 200 && r.j.rows.length === 2 && r.j.me === null, 'leaderboard is public');
 
     // delete account
     jar = cookie1;

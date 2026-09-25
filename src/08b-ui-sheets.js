@@ -548,6 +548,8 @@ Object.assign(RA.UI.prototype, {
     $('endStats').innerHTML = `<div><div class="k">Vrhunac</div><div class="v">${peak}%</div></div><div><div class="k">Gradova osvojeno</div><div class="v">${me ? me.stats.citiesTaken : 0}</div></div><div><div class="k">Uništeno država</div><div class="v">${me ? me.stats.kills : 0}</div></div>`;
     $('endTime').textContent = RA.fmtTime(G.tick / 10);
     $('watchBtn').hidden = !!(G.state === 'over');
+    // single player: the winner may play on to 100% (online needs every device to agree: later)
+    $('contBtn').hidden = !(won && G.state === 'over' && !G.online && !G.continued);
     $('endScreen').hidden = false;
     requestAnimationFrame(() => this.drawChart());
   },

@@ -40,6 +40,7 @@ RA.ICONS = {
   retreat: '<path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/>',
   send: '<path d="M4 12h14M13 6l6 6-6 6"/>',
   eye: '<path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.8"/>',
+  edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>',
   user: '<circle cx="12" cy="8" r="3.6"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/>',
 };
 RA.icon = (n, cls) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"${cls ? ` class="${cls}"` : ''} aria-hidden="true">${RA.ICONS[n] || ''}</svg>`;
@@ -125,6 +126,14 @@ RA.UI = class {
     $('againBtn').onclick = () => {
       $('endScreen').hidden = true;
       app.showStart();
+    };
+    $('contBtn').onclick = () => {
+      const G = this.G;
+      if (!G || G.online || G.state !== 'over') return;
+      G.continued = true;
+      G.state = 'play';
+      $('endScreen').hidden = true;
+      this.toast('good', 'Igra se nastavlja. Kad ostaneš sam na karti, igra je gotova.', { ms: 5000 });
     };
     $('watchBtn').onclick = () => {
       $('endScreen').hidden = true;
