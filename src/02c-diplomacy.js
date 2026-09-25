@@ -13,6 +13,12 @@ Object.assign(RA.CFG, {
   VASSAL_TROOPS: 0.4, // a vassal-to-be has at most this share of your army…
   VASSAL_AREA: 0.5, // …and of your land
   TRIBUTE: 0.3, // share of a vassal's gold income that goes to its lord
+  // loans (plan 34): from a computer state; sizes = seconds of your income; collateral = share of your land
+  LOAN_SECS: [60, 120, 240],
+  LOAN_PLEDGE: [0.08, 0.15, 0.25],
+  LOAN_RATE: 0.2, // to repay: the amount + 20%
+  LOAN_DUE: 3000, // 5 min
+  LOAN_MAX: 2,
 });
 
 (function (P) {
@@ -326,6 +332,96 @@ Object.assign(RA.CFG, {
       const a = this.P[b.lord];
       if (!a || !a.alive) this.freeVassal(b);
       else if (a.troops < b.troops * 1.1 && b.area * 1.2 > a.area * RA.CFG.VASSAL_AREA) this.freeVassal(b, 'rebel');
+    }
+  };
+
+  /* ---------------- loans with collateral (plan 34) ----------------
+     A computer state lends you gold; part of your land nearest to it is the pledge (marked on the map). Repay the
+     amount + LOAN_RATE within LOAN_DUE (it is taken automatically when due, if you have the gold) — otherwise the
+     pledged land still yours goes to the lender. */
+  P.loanOffer = function (p, L, size) {
+    const C = RA.CFG, secs = C.LOAN_SECS[size];
+    const amount = Math.round(Math.max(20000, ((p.goldRate || 0) - (p.tributeRate || 0)) * secs) / 1000) * 1000;
+    return { amount, owed: Math.round(amount * (1 + C.LOAN_RATE)), cells: Math.max(1, Math.round(p.tiles * C.LOAN_PLEDGE[size])) };
+  };
+  P.loanErr = function (p, L, size) {
+    const C = RA.CFG;
+    if (!p || !L || !p.alive || !L.alive || p === L) return 'Nevažeći igrač.';
+    if (!Number.isInteger(size) || size < 0 || size >= C.LOAN_SECS.length) return 'Nevažeći zajam.';
+    if (L.human && !L.ai) return 'Zajam daju samo države kompjutera.';
+    if (L.type === 'bot') return 'Grad-država nema toliko zlata.';
+    const mine = this.loans.filter((l) => l.to === p.id);
+    if (mine.some((l) => l.from === L.id)) return `Već duguješ državi ${L.name}.`;
+    if (mine.length >= C.LOAN_MAX) return `Najviše ${C.LOAN_MAX} zajma odjednom.`;
+    if (this.atWar(p, L)) return 'Ne daju zajam dok ratujete.';
+    if (p.tiles < 12) return 'Nemaš dovoljno zemlje za zalog.';
+    const o = this.loanOffer(p, L, size);
+    if (L.gold < o.amount * 1.2) return `${L.name} nema toliko zlata.`;
+    return '';
+  };
+  P.requestLoan = function (pid, lid, size) {
+    const p = this.P[pid], L = this.P[lid];
+    const err = this.loanErr(p, L, size);
+    if (err) return err;
+    const o = this.loanOffer(p, L, size);
+    // the lender trusts friends and trade partners; a trader likes to lend
+    const trust = L.rel[pid] / 100 + (L.trade.has(pid) ? 0.25 : 0) + (L.allies.has(pid) ? 0.3 : 0) + (L.ai && L.ai.pers === 'trgovac' ? 0.2 : 0);
+    if (L.rel[pid] < -15 || this.rng() > 0.6 + trust) {
+      this.tell(p, 'info', `${L.name} ti ne želi dati zajam.`, lid, L.capital);
+      return 'declined';
+    }
+    // the pledge: your land nearest to the lender (never your capital)
+    const W = this.map.W, lx = L.capital % W, ly = (L.capital / W) | 0;
+    const cand = [];
+    for (let i = 0; i < p.tiles; i++) {
+      const c = p.cells[i];
+      if (c === p.capital) continue;
+      const dx = (c % W) - lx, dy = ((c / W) | 0) - ly;
+      cand.push([dx * dx + dy * dy, c]);
+    }
+    cand.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+    const cells = Int32Array.from(cand.slice(0, o.cells), (x) => x[1]);
+    L.gold -= o.amount;
+    p.gold += o.amount;
+    const loan = { id: ++this.loanSeq, from: lid, to: pid, amount: o.amount, owed: o.owed, due: this.tick + RA.CFG.LOAN_DUE, cells };
+    this.loans.push(loan);
+    this.tell(p, 'good', `Zajam od ${L.name}: +${RA.fmt(o.amount)} zlata. Vrati ${RA.fmt(o.owed)} za ${Math.round(RA.CFG.LOAN_DUE / 600)} min, inače ${L.name} uzima založenu zemlju (${cells.length} polja).`, lid, L.capital);
+    return { loan: loan.id, amount: o.amount };
+  };
+  P.repayLoan = function (pid, id, auto) {
+    const i = this.loans.findIndex((l) => l.id === id && l.to === pid);
+    if (i < 0) return 'Nema tog zajma.';
+    const l = this.loans[i], p = this.P[pid], L = this.P[l.from];
+    if (p.gold < l.owed) return `Treba ti ${RA.fmt(l.owed)} zlata.`;
+    p.gold -= l.owed;
+    if (L && L.alive) {
+      L.gold += l.owed;
+      L.rel[pid] = Math.min(100, L.rel[pid] + 10);
+    }
+    this.loans.splice(i, 1);
+    this.tell(p, 'good', `${auto ? 'Rok je stigao: z' : 'Z'}ajam vraćen (${L ? L.name : ''}, ${RA.fmt(l.owed)} zlata). Zalog je slobodan.`, l.from);
+    return true;
+  };
+  P._loans = function () {
+    for (let i = this.loans.length - 1; i >= 0; i--) {
+      const l = this.loans[i], p = this.P[l.to], L = this.P[l.from];
+      if (!p.alive || !L || !L.alive) {
+        this.loans.splice(i, 1);
+        if (p.alive) this.tell(p, 'info', `Dug je nestao: ${L ? L.name : 'država'} je pala.`, l.from);
+        continue;
+      }
+      if (l.due > this.tick) continue;
+      if (this.repayLoan(p.id, l.id, true) === true) continue;
+      // not paid: the pledged land that is still yours goes to the lender
+      let n = 0;
+      for (const c of l.cells) if (this.owner[c] === p.id && c !== p.capital) {
+        this.setOwner(c, L.id);
+        n++;
+      }
+      this.loans.splice(i, 1);
+      L.rel[p.id] = Math.max(-100, L.rel[p.id] - 25);
+      this.news('pledge', L.id, p.id);
+      this.tell(p, 'bad', `Nisi vratio zajam: ${L.name} uzima založenu zemlju (${n} polja).`, L.id, L.capital);
     }
   };
 

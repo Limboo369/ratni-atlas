@@ -149,6 +149,44 @@ async def main():
             f = await ev(f'() => {{ const G = window.__ra.G, me = G.me, o = G.P[{vid}]; return [o.lord, me.allies.has(o.id), me.traitorUntil > G.tick]; }}')
             check(f[0] == 0 and not f[1] and not f[2], f'"Oslobodi" frees the vassal without betrayal {f}')
             await page.keyboard.press('Escape')
+        # loans with collateral (plan 34): borrow, repay; an unpaid loan hands the pledge to the lender
+        lid = await ev('''() => { const G = window.__ra.G, me = G.me;
+          const nb = G.P.filter(o => o && o.alive && o !== me && o.type === 'nation' && o.ai && !G.atWar(me, o) && !me.allies.has(o.id));
+          for (const o of nb) { o.gold = Math.max(o.gold, 5e7); o.rel[me.id] = 90; }
+          return nb.length ? nb[0].id : -1; }''')
+        if lid < 0:
+            check(False, 'a state to borrow from')
+        else:
+            await ev(f'() => {{ const me = window.__ra.G.me, o = window.__ra.G.P[{lid}]; if (!me.nbCache || !me.nbCache.has(o.id)) me.trade.add(o.id), o.trade.add(me.id); }}')
+            await page.keyboard.press('z')
+            await page.wait_for_selector(f'[data-loan="{lid}:0"]')
+            g0 = await ev('window.__ra.G.me.gold')
+            await page.click(f'[data-loan="{lid}:0"]')
+            for _ in range(8):
+                if await ev('window.__ra.G.loans.length'):
+                    break
+                await ev(f'window.__ra.ui.act("loan", [{lid}, 0])')
+            ln = await ev('() => { const G = window.__ra.G, l = G.loans[0]; return l ? [l.amount, l.owed, l.cells.length, G.me.gold] : null; }')
+            check(ln and ln[3] >= g0 + ln[0] - 1 and ln[1] > ln[0] and ln[2] > 0, f'loan taken: gold {g0:.0f} -> {ln and ln[3]:.0f}, {ln}')
+            await ev('window.__ra.ui.econSheet(true)')
+            txt = await ev('document.getElementById("sheet").textContent')
+            check('duguješ' in txt and 'Vrati' in txt, 'Ekonomija lists the loan with "Vrati"')
+            await ev('window.__ra.G.me.gold = Math.max(window.__ra.G.me.gold, window.__ra.G.loans[0].owed + 1)')
+            await page.click('[data-pay]')
+            check(await ev('window.__ra.G.loans.length') == 0, 'the loan is repaid')
+            # a second loan, left unpaid: the pledge goes to the lender when it is due
+            for _ in range(8):
+                if await ev('window.__ra.G.loans.length'):
+                    break
+                await ev(f'window.__ra.ui.act("loan", [{lid}, 1])')
+            q = await ev('''() => { const G = window.__ra.G, me = G.me, l = G.loans[0];
+              if (!l) return null;
+              const mine = Array.from(l.cells).filter(c => G.owner[c] === me.id).length;
+              for (let i = 0; i < RA.CFG.LOAN_DUE + 20 && G.state === 'play'; i++) { me.gold = 0; G.step(); }
+              const theirs = Array.from(l.cells).filter(c => G.owner[c] === l.from).length;
+              return [mine, theirs, G.loans.length]; }''')
+            check(q and q[2] == 0 and q[1] >= q[0] * 0.8 and q[1] > 0, f'unpaid: the pledged land goes to the lender {q}')
+            await page.keyboard.press('Escape')
         await ev('window.__ra.autosave(true)')
         t2 = await ev('JSON.parse(localStorage.getItem("ra_save")).tick')
         check(t2 == await ev('window.__ra.G.tick') and t2 >= d[0], 'the save follows the continued game')

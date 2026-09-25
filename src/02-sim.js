@@ -101,6 +101,8 @@ RA.Game = class Game {
     this.cityNameIdx = 0;
     this.events = [];
     this.feed = []; // world news for the UI (kill feed + diplomacy log): {t, a, b, tick}; never read by the sim
+    this.loans = []; // {id, from, to, amount, owed, due, cells} (02c-diplomacy.js)
+    this.loanSeq = 0;
     this._warAt = new Map(); // 'a:b' -> tick of the last "war" news between them
     this.fx = []; // visual events for renderer (explosions etc.)
     this.pings = []; // map pings for allies {pid, c, k, tick} (k: RA.PINGS index); the UI shows those of friends
@@ -1145,6 +1147,7 @@ RA.Game = class Game {
     if (this.tick % 10 === 0) {
       this._expireAlliances();
       this._vassals();
+      this._loans();
       this._decayFallout();
     }
     // enclave check: one player per tick

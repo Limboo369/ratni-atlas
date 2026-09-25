@@ -485,11 +485,51 @@ Object.assign(RA.UI.prototype, {
     const h = this.head('Ekonomija', `Zlato ${RA.fmt(me.gold)} · +${RA.fmt(me.goldRate || 0)}/s · vojska ${me.growRate >= 0 ? '+' : '−'}${RA.fmt(Math.abs(me.growRate || 0))}/s`) +
       `<div class="field"><span class="lab">Porez: ${RA.esc(cur.name)}</span><div class="seg wrap" id="taxSeg" role="group" aria-label="Porez">${T.map((t, i) => `<button data-v="${i}" aria-pressed="${i === me.tax}">${RA.esc(t.name)}</button>`).join('')}</div>
       <p class="note">Viši porez: više zlata, ali vojska sporije raste. Niži: vojska brže raste, zlata manje.<br>Sada: zlato ${cur.g === 1 ? 'normalno' : pct(cur.g)}, rast vojske ${cur.grow === 1 ? 'normalan' : pct(cur.grow)}.</p></div>
-      <div class="field"><span class="lab">Kamata</span><p class="note">Ušteđeno zlato donosi 1% u minuti, najviše četvrtinu tvog prihoda. Sada: <b>+${RA.fmt(me.interest || 0)}/s</b>.</p></div>`;
-    this.openSheet(h, (s) => s.querySelectorAll('#taxSeg button').forEach((b) => (b.onclick = () => {
-      this.act('tax', [+b.dataset.v]);
-      if (G.online) setTimeout(() => this.econSheet(true), 400); // offline: afterAct redraws
-    })), keep, () => this.econSheet(true));
+      <div class="field"><span class="lab">Kamata</span><p class="note">Ušteđeno zlato donosi 1% u minuti, najviše četvrtinu tvog prihoda. Sada: <b>+${RA.fmt(me.interest || 0)}/s</b>.</p></div>` +
+      this.loanHtml();
+    this.openSheet(h, (s) => {
+      s.querySelectorAll('#taxSeg button').forEach((b) => (b.onclick = () => {
+        this.act('tax', [+b.dataset.v]);
+        if (G.online) setTimeout(() => this.econSheet(true), 400); // offline: afterAct redraws
+      }));
+      s.querySelectorAll('[data-loan]').forEach((b) => (b.onclick = () => {
+        const [lid, size] = b.dataset.loan.split(':').map(Number);
+        this.act('loan', [lid, size]);
+        if (G.online) setTimeout(() => this.econSheet(true), 400);
+      }));
+      s.querySelectorAll('[data-pay]').forEach((b) => (b.onclick = () => {
+        this.act('pay', [+b.dataset.pay]);
+        if (G.online) setTimeout(() => this.econSheet(true), 400);
+      }));
+    }, keep, () => this.econSheet(true));
+  },
+  /* loans: the open ones (repay) and who would lend (neighbours and partners with gold) */
+  loanHtml() {
+    const G = this.G, me = G.me, C = RA.CFG;
+    let h = `<div class="sec-t">Zajmovi</div><p class="explain">Država kompjutera ti posudi zlato; dio tvoje zemlje najbliži njoj je zalog (šrafirano na karti). Vraćaš iznos + ${Math.round(C.LOAN_RATE * 100)}% za ${Math.round(C.LOAN_DUE / 600)} min — kad dođe rok, uzima se samo ako imaš zlata. Ne vratiš → zalog je njen.</p>`;
+    const mine = G.loans.filter((l) => l.to === me.id);
+    if (mine.length) {
+      h += '<div class="list">';
+      for (const l of mine) {
+        const L = G.P[l.from];
+        h += `<div class="prow wide"><span class="sw" style="background:${L.hex}"></span><div class="pn"><div class="nm">${RA.esc(L.name)}</div><div class="d">duguješ <b>${RA.fmt(l.owed)}</b> · rok ${RA.fmtTime(Math.max(0, (l.due - G.tick) / 10))} · zalog ${l.cells.length} polja</div></div><div class="bb">${this.mini('Vrati', `data-pay="${l.id}"`, 'ok', me.gold < l.owed)}</div></div>`;
+      }
+      h += '</div>';
+    }
+    if (mine.length >= C.LOAN_MAX) return h;
+    const nb = me.nbCache || new Map();
+    const lenders = G.P.filter((o) => o && o.alive && o !== me && o.type === 'nation' && o.ai && (nb.has(o.id) || me.trade.has(o.id) || me.allies.has(o.id)) && !mine.some((l) => l.from === o.id))
+      .sort((a, b) => b.gold - a.gold).slice(0, 5);
+    if (!lenders.length) return h + '<p class="note">Nema ko da ti posudi: zajam daju susjedi, trgovinski partneri i saveznici.</p>';
+    h += '<div class="list">';
+    for (const L of lenders) {
+      const bs = C.LOAN_SECS.map((_, k) => {
+        const o = G.loanOffer(me, L, k), err = G.loanErr(me, L, k);
+        return this.mini(`${RA.fmt(o.amount)}`, `data-loan="${L.id}:${k}" title="${RA.esc(err || `Vraćaš ${RA.fmt(o.owed)}; zalog ${o.cells} polja`)}"`, '', !!err);
+      }).join('');
+      h += `<div class="prow wide"><span class="sw" style="background:${L.hex}"></span><div class="pn"><div class="nm">${RA.esc(L.name)}</div><div class="d">${this.relLabel(L.rel[me.id])} · zlato ${RA.fmt(L.gold)}${G.atWar(me, L) ? ' · u ratu' : ''}</div></div><div class="bb">${bs}</div></div>`;
+    }
+    return h + '</div><p class="note">Zalog: ' + C.LOAN_PLEDGE.map((v) => Math.round(v * 100) + '%').join(' / ') + ' tvoje zemlje za mali / srednji / veliki zajam.</p>';
   },
   quickSheet() {
     const G = this.G;
@@ -575,6 +615,7 @@ Object.assign(RA.UI.prototype, {
         <li>Vojska raste sama, najbrže oko <b>42%</b> kapaciteta (zelena zona na traci).</li>
         <li><b>Mobilizacija</b> (Vojska): odmah +30% kapaciteta, ali rast stoji 45 s. Jednom u 4 minute.</li>
         <li>Zlato donose teritorija, gradovi, luke, vozovi ili karavani i trgovina.</li>
+        <li><b>Zajam</b> (Ekonomija: klik na zlato ili Z): država kompjutera ti posudi zlato, dio tvoje zemlje je zalog (šrafirano). Ne vratiš na vrijeme → zalog je njen.</li>
         <li><b>Vazal</b> (meni Savezi): slabu susjednu državu možeš učiniti vazalom umjesto da je osvojiš — plaća ti danak i bori se uz tebe. Ako oslabiš, oslobodi se.</li>
         <li><b>Agresivna ekspanzija</b> (meni Savezi): svaka napadnuta i pokorena država ljuti ostale. Previše osvajanja odjednom → kompjuterske države se udružuju protiv tebe. Ljutnja vremenom opada.</li>
         <li><b>Porez</b> (klik na zlato gore ili tipka Z): viši porez daje više zlata, ali vojska sporije raste. Ušteđeno zlato donosi malu kamatu.</li></ul>

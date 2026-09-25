@@ -414,6 +414,27 @@ RA.FxLayer = L.Layer.extend({
       RA.drawUnit(ctx, U.sym || u.type, x, y, uw, G.P[u.owner].hex, mine, u.hp / U.hp, u.ready > G.tick, u.empUntil > G.tick, u.id === selId, now);
     }
 
+    // my pledged land (loans): hatched in the lender's colour ------------------------------------------------
+    if (G.me && G.loans.length) {
+      ctx.save();
+      ctx.lineWidth = Math.max(1, cell * 0.12);
+      for (const l of G.loans) {
+        if (l.to !== G.me.id) continue;
+        ctx.strokeStyle = G.P[l.from].hex;
+        ctx.globalAlpha = 0.75;
+        ctx.beginPath();
+        for (const c of l.cells) {
+          if (G.owner[c] !== G.me.id) continue;
+          const x = gx(c % W), y = gy((c / W) | 0);
+          if (!inView(x, y, cell)) continue;
+          ctx.moveTo(x, y + cell);
+          ctx.lineTo(x + cell, y);
+        }
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
     // pings of me and my allies (6 s) ------------------------------------------------------------------------
     if (G.me && G.pings.length) {
       for (const g of G.pings) {
