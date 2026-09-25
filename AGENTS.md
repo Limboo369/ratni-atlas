@@ -52,6 +52,11 @@ presence per private room; `src/09a-net.js` keeps the lockstep protocol. Every g
 (invite + come back to the same seat after a reload; the server keeps a player's presence and the game's command log
 for 10 min). Spectators replay the server's log. Presence from other players is untrusted (`RA.Net.str`, `G.exec`).
 
+Long games (days): `deploy/game/long.js` (same server, `/ws?long=<code>`, link `/long-<code>`) is only the clock (one tick
+every `LONG_TICK_MS`, 5 s) and the archive (settings, seed, every command with its tick; files in the `longgames`
+volume); `src/09c-long.js` replays the record to the server's tick and follows it. A player takes over a computer state
+('join'); their last tab closing hands it to the computer ('ai'), coming back returns it ('back').
+
 Accounts: `deploy/api/server.js` (Node + `pg`, service `api`, behind `/api/`) with PostgreSQL (service `db`, volume
 `pgdata`; daily `pg_dump` by service `backup` into `/srv/backups/war`, kept 14 days). Sign-in with Google only: the page
 (`src/08e-account.js`) loads Google Identity Services when the account sheet opens and posts the ID token to `/api/login`;
@@ -115,6 +120,7 @@ Rebuild era data: `scripts/fetch_data.sh && python3 build/eras.py`.
 python3 build/make.py
 python3 build/test_ui2.py phone balkan     # single player, end to end (also `desktop balkan`: the right-drag attack arrow)
 python3 build/test_mp.py                   # three browsers + the real relay: lockstep, spectator, come-back
+python3 build/test_long.py                 # long games (days): real server with a fast clock, join, leave, come back, restart
 python3 build/test_world.py                # world map over http: switch, regions, play, online on the world
 node build/test_sim.js                     # sim rules without a browser: straits and canals, determinism
 python3 build/test_save.py klasik          # save + reload + "Nastavi igru": the replayed game is identical (also `granice`)

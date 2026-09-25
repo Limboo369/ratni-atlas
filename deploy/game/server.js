@@ -13,6 +13,7 @@
    A peer is announced gone only after GRACE ms without a socket. */
 const { WebSocketServer } = require('ws');
 const crypto = require('crypto');
+const long = require('./long'); // long games (days): /ws?long=<code>
 
 const PORT = +process.env.PORT || 8080;
 const SECRET = process.env.WS_SECRET || crypto.randomBytes(16).toString('hex');
@@ -79,6 +80,16 @@ wss.on('connection', (ws, req) => {
   if (wss.clients.size > MAX_SOCKETS || (perIp.get(ip) || 0) >= PER_IP) return ws.close(1013, 'busy');
   perIp.set(ip, (perIp.get(ip) || 0) + 1);
   const q = new URL(req.url, 'http://x').searchParams;
+  if (q.has('long')) {
+    ws.alive = true;
+    ws.on('pong', () => (ws.alive = true));
+    ws.on('close', () => {
+      const c = (perIp.get(ip) || 1) - 1;
+      if (c > 0) perIp.set(ip, c);
+      else perIp.delete(ip);
+    });
+    return long.handle(ws, q);
+  }
   const name = /^[a-z0-9]{4,16}$/.test(q.get('room') || '') ? q.get('room') : '';
   let id = '', me = null, room = null;
   const helloTimer = setTimeout(() => ws.terminate(), 5000);
@@ -178,5 +189,10 @@ setInterval(() => {
   }
 }, 5000);
 
-process.on('SIGTERM', () => wss.close(() => process.exit(0)));
+process.on('SIGTERM', () => {
+  long.flush(); // long games are on disk before we go
+  wss.close(() => process.exit(0));
+  for (const ws of wss.clients) ws.terminate();
+  setTimeout(() => process.exit(0), 2000).unref();
+});
 console.log(`relay on :${PORT}/ws`);

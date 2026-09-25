@@ -2,6 +2,9 @@ FROM node:22-alpine
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
-COPY server.js ./
+COPY server.js long.js ./
+# long games are kept here (a volume in compose.yml)
+RUN mkdir -p /data && chown node:node /data
+ENV LONG_DIR=/data
 USER node
 CMD ["node", "server.js"]

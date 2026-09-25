@@ -3,6 +3,7 @@
    The sheets (army, build, landing, missiles, diplomacy, map-cell menu, how-to, end screen) live in 08b-ui-sheets.js */
 
 RA.ICONS = {
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
   check: '<path d="m5 12 4 4L19 6"/>',
   lock: '<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/>',
   star: '<path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9Z"/>',
@@ -845,6 +846,10 @@ RA.UI = class {
     const G = this.G, me = G && G.me;
     if (!me || G.state !== 'play') return;
     const net = this.app.net;
+    if (G.long) {
+      this.app.long.send(kind, JSON.parse(JSON.stringify(args || []))); // the server stamps it with its tick
+      return;
+    }
     if (G.online && net) {
       net.issue(kind, args || []);
       return;
@@ -944,6 +949,7 @@ RA.UI = class {
     const pills = [];
     const T = (t) => RA.fmtTime(Math.ceil(Math.max(0, t) / 10));
     if (me && me.alive && G.state === 'play') {
+      if (G.long && this.app.long.rec) pills.push(['calm', `Duga igra · potez svakih ${Math.round(this.app.long.rec.tickMs / 1000)} s · igrača ${G.humans.filter((p) => p.alive).length}`]);
       const dc = G.defcon();
       if (dc) {
         const next = (6 - dc) * C.DEFCON_STEP;

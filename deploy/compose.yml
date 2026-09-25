@@ -16,6 +16,8 @@ services:
     env_file:
       - path: ./secret.env
         required: true
+    # duge igre (danima): zapis svake igre, preživi restart i novu objavu
+    volumes: ["longgames:/data"]
   # nalozi (Google prijava), statistike i sačuvane igre; /api/ u nginx.conf
   api:
     build: ./api
@@ -77,3 +79,4 @@ services:
         done
 volumes:
   pgdata:
+  longgames:

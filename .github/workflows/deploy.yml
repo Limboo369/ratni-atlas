@@ -39,6 +39,7 @@ jobs:
       - run: python3 build/test_ui2.py phone balkan || python3 build/test_ui2.py phone balkan  # 1 ponovni pokušaj (spori CI)
       - run: python3 build/test_ui2.py desktop balkan || python3 build/test_ui2.py desktop balkan  # računar je glavna platforma
       - run: python3 build/test_mp.py
+      - run: python3 build/test_long.py  # duga igra: pravi server, brzi sat
       - run: python3 build/test_tutorial.py desktop && python3 build/test_tutorial.py phone
       - run: python3 build/test_save.py klasik && python3 build/test_save.py granice
       - run: python3 build/test_world.py

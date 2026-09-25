@@ -28,6 +28,9 @@ RA.App = class {
     this.net = new RA.Net(this);
     this.ui.initOnline();
     this.net.init();
+    this.long = new RA.Long(this); // long games (09c-long.js)
+    const lm = /^\/long-([a-z0-9]{6})\/?$/.exec(location.pathname);
+    if (lm) setTimeout(() => this.long.open(lm[1]), 0);
     this.attract();
     this.showStart();
     document.getElementById('loading').hidden = true;
@@ -279,6 +282,10 @@ RA.App = class {
   }
   showStart() {
     const ui = this.ui;
+    if (this.long && this.long.rec) {
+      this.long.close();
+      if (/^\/long-/.test(location.pathname)) history.replaceState(null, '', '/');
+    }
     this.autosave(true); // leaving a game: keep it for "Nastavi igru"
     if (ui.tut) ui.tut.end(false);
     if (this.net && (this.net.inGame || this.net.role)) this.net.endGame();
@@ -418,6 +425,10 @@ RA.App = class {
   /* in an online game only the host controls time */
   guestLocked() {
     const net = this.net;
+    if (this.G && this.G.long) {
+      this.ui.toast('info', 'U dugoj igri vrijeme teče na serveru: jedan potez svakih nekoliko sekundi.');
+      return true;
+    }
     if (this.G && this.G.online && net && net.inGame && net.role !== 'host') {
       this.ui.toast('info', 'Brzinu i pauzu kontroliše domaćin igre.');
       return true;
@@ -465,7 +476,11 @@ RA.App = class {
       this.acc = 0;
       return;
     }
-    if (G && G.online && net && net.inGame) {
+    if (G && G.long) {
+      // a long game: the server's clock (09c-long.js)
+      this.long.frame();
+      this.ui.alpha = 0;
+    } else if (G && G.online && net && net.inGame) {
       // online: lockstep — the host is the clock, guests replay up to the host's tick
       const t0 = performance.now();
       if (net.role === 'host' && net.catchUp > G.tick) {

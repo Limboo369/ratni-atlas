@@ -13,3 +13,4 @@ build/relief_preview.jpg
 build/svijet/core.json
 build/svijet/cities_raw.json
 __pycache__/
+deploy/game/long-data/
