@@ -126,6 +126,12 @@ RA.UI = class {
       this._save();
       app.newGame();
     };
+    $('resumeBtn').onclick = () => {
+      if (!this.resumeSv) return;
+      this.settings.name = $('nameIn').value.trim().slice(0, 18);
+      this._save();
+      app.resumeSave(this.resumeSv);
+    };
     $('howBtn').onclick = () => this.howTo();
     $('tutBtn').onclick = () => this.startTutorial();
     try {
@@ -142,6 +148,7 @@ RA.UI = class {
       if (!G || G.online || G.state !== 'over') return;
       G.continued = true;
       G.state = 'play';
+      if (G.rec) G.rec.cont = G.tick;
       $('endScreen').hidden = true;
       this.toast('good', 'Igra se nastavlja. Kad ostaneš sam na karti, igra je gotova.', { ms: 5000 });
     };
@@ -833,6 +840,7 @@ RA.UI = class {
       net.issue(kind, args || []);
       return;
     }
+    if (G.rec) G.rec.cmds.push([G.tick, kind, JSON.parse(JSON.stringify(args || []))]); // for "Nastavi igru"
     this.afterAct(kind, args || [], G.exec(me.id, kind, args || []));
   }
   afterAct(kind, a, r) {

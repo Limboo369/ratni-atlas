@@ -34,6 +34,10 @@ RA.App = class {
     requestAnimationFrame(this.frame);
     window.__ra = this; // debug handle
     this.probeMaps();
+    // "Nastavi igru": save the single-player game now and then, and whenever the page is hidden or closed
+    setInterval(() => this.autosave(), 20000);
+    document.addEventListener('visibilitychange', () => document.hidden && this.autosave(true));
+    window.addEventListener('pagehide', () => this.autosave(true));
   }
 
   /* ---------------- maps ---------------- */
@@ -274,6 +278,7 @@ RA.App = class {
   }
   showStart() {
     const ui = this.ui;
+    this.autosave(true); // leaving a game: keep it for "Nastavi igru"
     if (ui.tut) ui.tut.end(false);
     if (this.net && (this.net.inGame || this.net.role)) this.net.endGame();
     document.getElementById('lobbyScreen').hidden = true;
@@ -296,6 +301,7 @@ RA.App = class {
     }
     this.paused = false;
     ui.syncStart();
+    ui.resumeOffer();
     document.getElementById('startScreen').hidden = false;
   }
   newGame() {
@@ -305,8 +311,11 @@ RA.App = class {
     document.getElementById('startScreen').hidden = true;
     const gm = RA.regionMap(RA.eraMap(this.map, s.era, s.start), s.region);
     RA.ME_COLOR = RA.PLAYER_COLORS.includes(s.color) ? s.color : RA.PLAYER_COLORS[0];
-    const G = RA.newGame(gm, { seed: (Math.random() * 1e9) | 0, difficulty: s.difficulty, cityStates: s.cityStates, peace: s.peace, era: s.era, start: s.start, gm: s.gm });
+    const seed = (Math.random() * 1e9) | 0;
+    const G = RA.newGame(gm, { seed, difficulty: s.difficulty, cityStates: s.cityStates, peace: s.peace, era: s.era, start: s.start, gm: s.gm });
     G.gid = 's' + Math.random().toString(36).slice(2, 12); // this game on the player's account (results)
+    // the record of this game for "Nastavi igru": settings + seed + spawn + every command at its tick (09b-save.js)
+    G.rec = { v: 1, build: RA.BUILD, gid: G.gid, set: { map: s.map, region: s.region, era: s.era, start: s.start, gm: s.gm, difficulty: s.difficulty, cityStates: s.cityStates, peace: s.peace, seed, color: RA.ME_COLOR }, picks: [], name: '', cmds: [] };
     this.setGame(G);
     this.attractMode = false;
     this.speed = 1;
@@ -331,6 +340,10 @@ RA.App = class {
   start() {
     const G = this.G;
     if (!G.me || !G.me.spawned) return;
+    if (G.rec) {
+      G.rec.picks = (G.picks || []).slice();
+      G.rec.name = this.ui.settings.name || 'Ti';
+    }
     RA.startGame(G);
     if (this.ui.settings.cb) RA.applyColorblind(G, true); // the player's own colour too
     this.terr.updatePalette();
@@ -390,6 +403,7 @@ RA.App = class {
       return;
     }
     this.ui.account.report(this.G, kind);
+    this.autosave(); // lost, or won without playing on: the save goes
     if (kind === 'lost' && this.ui.watching) return;
     this.ui.closeSheet();
     this.ui.setMode(null);
@@ -446,7 +460,7 @@ RA.App = class {
     const net = this.net;
     // The opaque launcher has its own atlas. Do not run or draw the hidden demo
     // behind it; the real single-player / online loop below is unchanged.
-    if (this.attractMode && !document.getElementById('startScreen').hidden) {
+    if (this.replaying || (this.attractMode && !document.getElementById('startScreen').hidden)) {
       this.acc = 0;
       return;
     }

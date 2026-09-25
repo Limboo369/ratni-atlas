@@ -7,7 +7,12 @@
    POST /api/result {gid, online, mode, map, region, era, gm, start, difficulty, won, secs, peak, cities, kills, conquered, nukes, players}
                     → {stats, fresh: [achievement]}   (fresh = unlocked by this game)
    GET  /api/stats  → {stats (with rank: {title, level, next}), achievements: [{id, name, desc, at}], recent: [last 20 results]}
-   GET  /api/top?by=wins|online → {rows: [{rank, name, wins, games, online}], me: row | null} */
+   GET  /api/top?by=wins|online → {rows: [{rank, name, wins, games, online}], me: row | null}
+
+   "Nastavi igru" on any computer: one saved single-player game per account (the page's record: settings, seed, spawn
+   picks and every command; src/09b-save.js). The server only stores it for its owner.
+   POST /api/save {rec: {gid, …}, tick, at, meta} → {ok}      GET /api/save → {save: … | null}
+   POST /api/save/delete {gid} → {ok}   (only when that game is still the saved one) */
 
 const ERAS = ['rim', 'srednji', 'napoleon', 'ww1', 'ww2', 'hladni', 'danas'];
 const PER_DAY = 60;
@@ -36,6 +41,11 @@ const SCHEMA = [
      players integer not null,
      unique (user_id, gid))`,
   'create index if not exists results_user_at on results(user_id, at desc)',
+  `create table if not exists saves (
+     user_id bigint primary key references users(id) on delete cascade,
+     at timestamptz not null default now(),
+     gid text not null,
+     data text not null)`,
   `create table if not exists achievements (
      user_id bigint not null references users(id) on delete cascade,
      id text not null,
@@ -146,6 +156,32 @@ module.exports = function statsRoutes(db, sessionUser) {
         }
         topCache = new Map();
         return { stats: pubStats(s), fresh };
+      },
+      'POST /api/save': async (req, b) => {
+        const u = await sessionUser(req);
+        if (!u) return [401, { e: 'Nisi prijavljen.' }];
+        const r = b.rec, gid = r && r.gid;
+        if (typeof gid !== 'string' || !/^s[a-z0-9]{1,40}$/.test(gid) || !Array.isArray(r.cmds) || !Array.isArray(r.picks) || !r.set || typeof r.set !== 'object') return [400, { e: 'Neispravna igra.' }];
+        if (!Number.isInteger(b.tick) || b.tick < 0 || b.tick > 1e8 || !Number.isFinite(b.at)) return [400, { e: 'Neispravna igra.' }];
+        const m = b.meta && typeof b.meta === 'object' ? b.meta : {};
+        const meta = { where: String(m.where || '').slice(0, 60), era: String(m.era || '').slice(0, 30), who: String(m.who || '').slice(0, 30), secs: Math.max(0, Math.min(1e7, +m.secs || 0)), land: Math.max(0, Math.min(100, +m.land || 0)) };
+        const data = JSON.stringify({ rec: r, tick: b.tick, at: b.at, meta });
+        await db.query(
+          `insert into saves (user_id, gid, data) values ($1, $2, $3)
+           on conflict (user_id) do update set gid = excluded.gid, data = excluded.data, at = now()`, [u.id, gid, data]);
+        return { ok: true };
+      },
+      'GET /api/save': async (req) => {
+        const u = await sessionUser(req);
+        if (!u) return [401, { e: 'Nisi prijavljen.' }];
+        const q = await db.query('select data from saves where user_id = $1', [u.id]);
+        return { save: q.rows.length ? JSON.parse(q.rows[0].data) : null };
+      },
+      'POST /api/save/delete': async (req, b) => {
+        const u = await sessionUser(req);
+        if (!u) return [401, { e: 'Nisi prijavljen.' }];
+        await db.query('delete from saves where user_id = $1 and gid = $2', [u.id, String(b.gid || '')]);
+        return { ok: true };
       },
       'GET /api/stats': async (req) => {
         const u = await sessionUser(req);

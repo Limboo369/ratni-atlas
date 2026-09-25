@@ -59,6 +59,9 @@ the API checks it against Google's keys (RS256, `aud` = `GOOGLE_CLIENT_ID` in `d
 session cookie `ot` (90 days). The Google Cloud client must list `https://war.deovilab.com` as an authorized JavaScript
 origin. The database password lives only in `/srv/apps/war/db.env` on the server (made by the deploy workflow once).
 Without `/api/` (file://, tests) the account button stays hidden and the game works as before.
+Save and continue (`src/09b-save.js`): a single-player game is kept as its record (`G.rec`: settings, seed, spawn picks,
+every `ui.act` command with its tick) in localStorage `ra_save` and, signed in, `/api/save`; resuming replays it, so the
+sim must stay deterministic and every player action must go through `ui.act`.
 Profile, results, achievements and leaderboard: `deploy/api/stats.js` (the page reports each finished game once, by
 `G.gid`; achievements and rank are derived on the server from the results; results are self-reported, so only sanity
 limits apply). Emblem ids are shared by `RA.EMBLEMS` (`src/08e-account.js`) and `ICONS` (`deploy/api/server.js`).
@@ -108,6 +111,7 @@ python3 build/make.py
 python3 build/test_ui2.py phone balkan     # single player, end to end (also `desktop balkan`: the right-drag attack arrow)
 python3 build/test_mp.py                   # three browsers + the real relay: lockstep, spectator, come-back
 python3 build/test_world.py                # world map over http: switch, regions, play, online on the world
+python3 build/test_save.py klasik          # save + reload + "Nastavi igru": the replayed game is identical (also `granice`)
 node build/test_api.js                     # accounts API: Google token checks, sessions, rename, delete (real PostgreSQL)
 python3 build/test_account.py              # sign-in on the start screen (fake Google), reload keeps the session, logout
 python3 build/test_tutorial.py desktop     # the guided tutorial, step by step (also `phone`)

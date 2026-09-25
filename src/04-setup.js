@@ -316,8 +316,9 @@ RA.newGame = function (map, opts) {
 };
 
 /* Place (or move) the human. Tapping near a nation's capital takes that nation over. */
-RA.placeHuman = function (G, cell, name) {
+RA.placeHuman = function (G, cell, name, inner) {
   const map = G.map, W = map.W;
+  if (!inner) (G.picks || (G.picks = [])).push(cell); // a saved game repeats every pick (09b-save.js)
   if (cell >= 0 && map.block[cell]) return { err: 'To je izvan odabrane regije — izaberi mjesto unutar žutog okvira.' };
   if (cell < 0 || !map.land[cell]) return { err: G.borders ? 'Dodirni državu na kopnu.' : 'Izaberi kopno.' };
   if (G.borders) {
@@ -378,7 +379,7 @@ RA.placeHuman = function (G, cell, name) {
     }
     // must not sit on top of a nation's start
     if (G.owner[cell] && G.P[G.owner[cell]].type === 'nation') {
-      return RA.placeHuman(G, G.P[G.owner[cell]].nation.c, name);
+      return RA.placeHuman(G, G.P[G.owner[cell]].nation.c, name, true);
     }
   }
   const n = G.spawnDisk(me, center, 3);

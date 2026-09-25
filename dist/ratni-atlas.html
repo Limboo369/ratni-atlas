@@ -440,6 +440,11 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
 .command-player.field input[type=text] { background: transparent; border: 0; height: 38px; padding: 0 4px; border-radius: 0; color: var(--launch-text); }
 .command-player.field input::placeholder { color: #9ca9b0; }
 #startScreen .command-play { display: flex; align-items: center; justify-content: space-between; width: min(100%, 378px); height: 62px; margin: 0; padding: 0 23px; border-radius: 2px; background: var(--danger); color: #fff8f2; font-family: inherit; font-size: 17px; font-weight: 600; letter-spacing: .08em; box-shadow: 0 8px 36px rgba(219,62,50,.16); transition: background .2s, transform .2s, box-shadow .2s; }
+.command-resume { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; width: min(100%, 378px); margin: 10px 0 0; padding: 11px 16px; border: 1px solid var(--danger); border-radius: 2px; background: rgba(241,81,72,.08); color: var(--launch-text, #fff); text-align: left; font-family: inherit; cursor: pointer; }
+.command-resume[hidden] { display: none; }
+.command-resume .t { font-size: 14px; font-weight: 600; letter-spacing: .06em; }
+.command-resume .d { font-size: 11px; color: #aeb9bf; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.command-resume:hover { background: rgba(241,81,72,.16); }
 .command-play > span:last-child { font: 300 29px/1 system-ui, sans-serif; }
 .command-config { width: min(100%, 378px); display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 3px; text-align: left; border-bottom: 1px solid var(--launch-line); }
 .command-config-label { display: block; color: #8e9da6; font-size: 9px; font-weight: 500; letter-spacing: .15em; margin-bottom: 5px; }
@@ -1211,6 +1216,7 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
             <div class="command-input"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 21v-2a7 7 0 0 1 14 0v2"/></svg><input type="text" id="nameIn" maxlength="18" placeholder="Komandant" autocomplete="nickname" spellcheck="false"></div>
           </div>
           <button class="go command-play" id="goBtn"><span>Započni osvajanje</span><span aria-hidden="true">↗</span></button>
+          <button class="command-resume" id="resumeBtn" hidden></button>
           <button class="command-config" id="configBtn" aria-haspopup="dialog" aria-controls="operationDialog"><span><span class="command-config-label">POSTAVKE OPERACIJE</span><span id="operationSummary">Evropa · Klasično · Srednje</span></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16M9 3v6M15 9v6M8 15v6"/></svg></button>
           <div class="command-secondary"><button id="onlineToggle" aria-expanded="false" aria-controls="onlineBox"><i data-ic="ally"></i>S prijateljem<span aria-hidden="true">↗</span></button><button id="howBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 .5c0 1.5-2.5 1.5-2.5 3.5M12 16v1"/></svg>Kako se igra</button><button id="tutBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3 9l9-5 9 5-9 5-9-5z"/><path d="M7 11.5V16c0 1.5 2.2 3 5 3s5-1.5 5-3v-4.5M21 9v6"/></svg>Tutorijal</button><button id="leaderboardBtn" hidden aria-haspopup="dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 4h8v6a4 4 0 0 1-8 0V4ZM8 6H4v3a4 4 0 0 0 4 4m8-7h4v3a4 4 0 0 1-4 4M12 14v6m-4 0h8"/></svg>Ljestvica</button></div>
           <div class="online-box command-online" id="onlineBox" hidden>
@@ -5425,8 +5431,9 @@ RA.newGame = function (map, opts) {
 };
 
 /* Place (or move) the human. Tapping near a nation's capital takes that nation over. */
-RA.placeHuman = function (G, cell, name) {
+RA.placeHuman = function (G, cell, name, inner) {
   const map = G.map, W = map.W;
+  if (!inner) (G.picks || (G.picks = [])).push(cell); // a saved game repeats every pick (09b-save.js)
   if (cell >= 0 && map.block[cell]) return { err: 'To je izvan odabrane regije — izaberi mjesto unutar žutog okvira.' };
   if (cell < 0 || !map.land[cell]) return { err: G.borders ? 'Dodirni državu na kopnu.' : 'Izaberi kopno.' };
   if (G.borders) {
@@ -5487,7 +5494,7 @@ RA.placeHuman = function (G, cell, name) {
     }
     // must not sit on top of a nation's start
     if (G.owner[cell] && G.P[G.owner[cell]].type === 'nation') {
-      return RA.placeHuman(G, G.P[G.owner[cell]].nation.c, name);
+      return RA.placeHuman(G, G.P[G.owner[cell]].nation.c, name, true);
     }
   }
   const n = G.spawnDisk(me, center, 3);
@@ -7726,6 +7733,12 @@ RA.UI = class {
       this._save();
       app.newGame();
     };
+    $('resumeBtn').onclick = () => {
+      if (!this.resumeSv) return;
+      this.settings.name = $('nameIn').value.trim().slice(0, 18);
+      this._save();
+      app.resumeSave(this.resumeSv);
+    };
     $('howBtn').onclick = () => this.howTo();
     $('tutBtn').onclick = () => this.startTutorial();
     try {
@@ -7742,6 +7755,7 @@ RA.UI = class {
       if (!G || G.online || G.state !== 'over') return;
       G.continued = true;
       G.state = 'play';
+      if (G.rec) G.rec.cont = G.tick;
       $('endScreen').hidden = true;
       this.toast('good', 'Igra se nastavlja. Kad ostaneš sam na karti, igra je gotova.', { ms: 5000 });
     };
@@ -8433,6 +8447,7 @@ RA.UI = class {
       net.issue(kind, args || []);
       return;
     }
+    if (G.rec) G.rec.cmds.push([G.tick, kind, JSON.parse(JSON.stringify(args || []))]); // for "Nastavi igru"
     this.afterAct(kind, args || [], G.exec(me.id, kind, args || []));
   }
   afterAct(kind, a, r) {
@@ -10146,6 +10161,7 @@ RA.Account = class {
       ui._save();
     }
     if (this.open()) this.sheet(true);
+    if (ui.resumeOffer) ui.resumeOffer(); // the account may hold a saved game
   }
 
   open() {
@@ -10849,6 +10865,10 @@ RA.App = class {
     requestAnimationFrame(this.frame);
     window.__ra = this; // debug handle
     this.probeMaps();
+    // "Nastavi igru": save the single-player game now and then, and whenever the page is hidden or closed
+    setInterval(() => this.autosave(), 20000);
+    document.addEventListener('visibilitychange', () => document.hidden && this.autosave(true));
+    window.addEventListener('pagehide', () => this.autosave(true));
   }
 
   /* ---------------- maps ---------------- */
@@ -11089,6 +11109,7 @@ RA.App = class {
   }
   showStart() {
     const ui = this.ui;
+    this.autosave(true); // leaving a game: keep it for "Nastavi igru"
     if (ui.tut) ui.tut.end(false);
     if (this.net && (this.net.inGame || this.net.role)) this.net.endGame();
     document.getElementById('lobbyScreen').hidden = true;
@@ -11111,6 +11132,7 @@ RA.App = class {
     }
     this.paused = false;
     ui.syncStart();
+    ui.resumeOffer();
     document.getElementById('startScreen').hidden = false;
   }
   newGame() {
@@ -11120,8 +11142,11 @@ RA.App = class {
     document.getElementById('startScreen').hidden = true;
     const gm = RA.regionMap(RA.eraMap(this.map, s.era, s.start), s.region);
     RA.ME_COLOR = RA.PLAYER_COLORS.includes(s.color) ? s.color : RA.PLAYER_COLORS[0];
-    const G = RA.newGame(gm, { seed: (Math.random() * 1e9) | 0, difficulty: s.difficulty, cityStates: s.cityStates, peace: s.peace, era: s.era, start: s.start, gm: s.gm });
+    const seed = (Math.random() * 1e9) | 0;
+    const G = RA.newGame(gm, { seed, difficulty: s.difficulty, cityStates: s.cityStates, peace: s.peace, era: s.era, start: s.start, gm: s.gm });
     G.gid = 's' + Math.random().toString(36).slice(2, 12); // this game on the player's account (results)
+    // the record of this game for "Nastavi igru": settings + seed + spawn + every command at its tick (09b-save.js)
+    G.rec = { v: 1, build: RA.BUILD, gid: G.gid, set: { map: s.map, region: s.region, era: s.era, start: s.start, gm: s.gm, difficulty: s.difficulty, cityStates: s.cityStates, peace: s.peace, seed, color: RA.ME_COLOR }, picks: [], name: '', cmds: [] };
     this.setGame(G);
     this.attractMode = false;
     this.speed = 1;
@@ -11146,6 +11171,10 @@ RA.App = class {
   start() {
     const G = this.G;
     if (!G.me || !G.me.spawned) return;
+    if (G.rec) {
+      G.rec.picks = (G.picks || []).slice();
+      G.rec.name = this.ui.settings.name || 'Ti';
+    }
     RA.startGame(G);
     if (this.ui.settings.cb) RA.applyColorblind(G, true); // the player's own colour too
     this.terr.updatePalette();
@@ -11205,6 +11234,7 @@ RA.App = class {
       return;
     }
     this.ui.account.report(this.G, kind);
+    this.autosave(); // lost, or won without playing on: the save goes
     if (kind === 'lost' && this.ui.watching) return;
     this.ui.closeSheet();
     this.ui.setMode(null);
@@ -11261,7 +11291,7 @@ RA.App = class {
     const net = this.net;
     // The opaque launcher has its own atlas. Do not run or draw the hidden demo
     // behind it; the real single-player / online loop below is unchanged.
-    if (this.attractMode && !document.getElementById('startScreen').hidden) {
+    if (this.replaying || (this.attractMode && !document.getElementById('startScreen').hidden)) {
       this.acc = 0;
       return;
     }
@@ -12072,7 +12102,174 @@ RA.wsRoom = function (url, creds, onCreds, onBack) {
   };
 };
 
-RA.BUILD = 'f685bbe7';
+
+/* "Snimi i nastavi" (plan phase 6): a single-player game is saved as its record — settings, seed, spawn and every
+   command with its tick (G.rec, filled by app.newGame / app.start / ui.act). The simulation is deterministic (online
+   play relies on it), so replaying the record rebuilds the game exactly; that takes seconds, not a snapshot of MBs.
+   The save lives in this browser (localStorage 'ra_save') and, when signed in, on the account (/api/save), so a game
+   started on one computer continues on another. One save: the latest single-player game. */
+RA.SAVE_KEY = 'ra_save';
+Object.assign(RA.App.prototype, {
+  /* the current game as a save, or null when there is nothing to keep */
+  saveData() {
+    const G = this.G, me = G && G.me;
+    if (!G || !G.rec || G.online || this.attractMode || this.ui.tut || this.replaying || !me || !G.rec.picks.length || G.state === 'spawn') return null;
+    if (!me.alive || (G.state === 'over' && !G.continued)) return null;
+    const s = G.rec.set, reg = RA.REGIONS.find((r) => r.id === s.region && r.map === s.map);
+    return {
+      rec: G.rec,
+      tick: G.tick,
+      at: Date.now(),
+      meta: {
+        where: s.region === s.map || !reg ? RA.mapInfo(s.map).all || RA.mapInfo(s.map).name : reg.name,
+        era: RA.eraById(s.era).short,
+        who: me.name,
+        secs: Math.round(G.tick / 10),
+        land: Math.round((me.area / G.landTotal()) * 1000) / 10,
+      },
+    };
+  },
+  /* every 20 s in a game, and when the page is hidden or closed; the account copy at most once a minute */
+  autosave(force) {
+    const sv = this.saveData(), G = this.G;
+    if (!sv) {
+      // a finished single-player game (lost, or won without playing on) needs no "Nastavi"
+      if (G && G.rec && !G.online && !this.attractMode && G.me && (!G.me.alive || (G.state === 'over' && !G.continued))) this.dropSave(G.rec.gid);
+      return;
+    }
+    try {
+      localStorage.setItem(RA.SAVE_KEY, JSON.stringify(sv));
+    } catch (_) {}
+    const acc = this.ui.account;
+    if (acc && acc.user && (force || !this._upAt || Date.now() - this._upAt > 60000)) {
+      this._upAt = Date.now();
+      const body = JSON.stringify(sv);
+      // keepalive (survives closing the tab) only allows small bodies; a long game goes as a normal request
+      fetch('/api/save', { method: 'POST', credentials: 'same-origin', keepalive: body.length < 60000, headers: { 'Content-Type': 'application/json' }, body }).catch(() => {});
+    }
+  },
+  dropSave(gid) {
+    try {
+      const old = JSON.parse(localStorage.getItem(RA.SAVE_KEY) || 'null');
+      if (old && (!gid || old.rec.gid === gid)) localStorage.removeItem(RA.SAVE_KEY);
+    } catch (_) {}
+    const acc = this.ui.account;
+    if (acc && acc.user && this._dropped !== gid) {
+      this._dropped = gid;
+      fetch('/api/save/delete', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ gid }) }).catch(() => {});
+    }
+    this.ui.resumeOffer && this.ui.resumeOffer();
+  },
+  /* the newest save: this browser's or the account's */
+  async findSave() {
+    let local = null, remote = null;
+    try {
+      local = JSON.parse(localStorage.getItem(RA.SAVE_KEY) || 'null');
+    } catch (_) {}
+    const acc = this.ui.account;
+    if (acc && acc.user) {
+      try {
+        const r = await fetch('/api/save', { credentials: 'same-origin' });
+        if (r.ok) remote = (await r.json()).save;
+      } catch (_) {}
+    }
+    const ok = (s) => s && s.rec && s.rec.v === 1 && Array.isArray(s.rec.cmds) && Array.isArray(s.rec.picks) && s.rec.picks.length && s.rec.set;
+    if (!ok(local)) local = null;
+    if (!ok(remote)) remote = null;
+    return !local ? remote : !remote ? local : remote.at > local.at ? remote : local;
+  },
+  /* rebuild a saved game: same map, seed and spawn, then replay the commands up to the saved tick (with progress) */
+  resumeSave(sv) {
+    const r = sv.rec, s = r.set, ui = this.ui;
+    if (!this.mapReady(s.map, s.era)) return this.withMap(s.map, s.era, () => this.resumeSave(sv));
+    this.setMap(this.maps[s.map]);
+    document.getElementById('startScreen').hidden = true;
+    const gm = RA.regionMap(RA.eraMap(this.map, s.era, s.start), s.region);
+    RA.ME_COLOR = s.color || RA.PLAYER_COLORS[0];
+    const G = RA.newGame(gm, { seed: s.seed, difficulty: s.difficulty, cityStates: s.cityStates, peace: s.peace, era: s.era, start: s.start, gm: s.gm });
+    G.gid = r.gid;
+    G.rec = r; // the game goes on recording into the same record
+    this.setGame(G);
+    this.attractMode = false;
+    this.speed = 1;
+    this.paused = false;
+    this.acc = 0;
+    ui.watching = false;
+    ui.fxList = [];
+    for (const c of r.picks) RA.placeHuman(G, c, r.name);
+    if (!G.me || !G.me.spawned) {
+      ui.toast('bad', 'Sačuvana igra se ne može obnoviti.', { ms: 6000 });
+      this.dropSave(r.gid);
+      return this.showStart();
+    }
+    RA.startGame(G);
+    if (ui.settings.cb) RA.applyColorblind(G, true);
+    if (r.build !== RA.BUILD) ui.toast('info', 'Igra je u međuvremenu ažurirana — nastavak može malo odstupati od onoga što si ostavio.', { ms: 7000 });
+    // replay in slices so the page stays alive; the loading screen shows how far it is
+    const ov = document.getElementById('loading'), msg = document.getElementById('loadMsg');
+    ov.hidden = false;
+    this.replaying = true;
+    const cmds = r.cmds, target = sv.tick, me = G.me;
+    let ci = 0;
+    while (ci < cmds.length && cmds[ci][0] < G.tick) ci++;
+    const slice = () => {
+      const t0 = performance.now();
+      while (performance.now() - t0 < 60) {
+        if (r.cont === G.tick && G.state === 'over') {
+          G.continued = true;
+          G.state = 'play';
+        }
+        while (ci < cmds.length && cmds[ci][0] === G.tick) {
+          const c = cmds[ci++];
+          G.exec(me.id, c[1], c[2]);
+        }
+        if (G.tick >= target || G.state !== 'play') return done();
+        G.step();
+      }
+      msg.textContent = `Nastavljam sačuvanu igru… ${Math.round((G.tick / Math.max(1, target)) * 100)}%`;
+      setTimeout(slice, 0);
+    };
+    const done = () => {
+      this.replaying = false;
+      G.events.length = 0;
+      G.fx.length = 0;
+      ui.feedReset();
+      ui.feedSeen = G.feed.length;
+      ui.chatSeen = G.chat.length;
+      ui.pingSeen = G.pings.length;
+      this.terr.reset(G);
+      this.terr.updatePalette();
+      ov.hidden = true;
+      ui.spawnUI(false);
+      ui.showPlayUI(true);
+      this.updateSpeedBtn();
+      this.paused = true; // wait for the player: nothing happens behind their back
+      this.updatePauseBtn();
+      if (gm.region) {
+        const bx = gm.region.box;
+        this.lmap.setMaxBounds(L.latLngBounds([[bx[1], bx[0]], [bx[3], bx[2]]]).pad(0.7));
+      } else this.lmap.setMaxBounds(this.defBounds);
+      if (me.alive && me.capital >= 0) this.lmap.setView(this.map.latLngOfCell(me.capital), this.zoomAt(4.9), { animate: false });
+      ui.toast('good', `Igra nastavljena (${RA.fmtTime(G.tick / 10)}). Pauzirano — pritisni ▶ ili razmak kad budeš spreman.`, { ms: 7000 });
+    };
+    slice();
+  },
+});
+
+Object.assign(RA.UI.prototype, {
+  /* the start screen's "Nastavi igru" button (a save in this browser or on the account) */
+  async resumeOffer() {
+    const b = this.$('resumeBtn');
+    const sv = await this.app.findSave();
+    this.resumeSv = sv;
+    b.hidden = !sv;
+    if (!sv) return;
+    const m = sv.meta || {};
+    b.innerHTML = `<span class="t">Nastavi igru</span><span class="d">${RA.esc(m.who || '')} · ${RA.esc(m.where || '')} · ${RA.esc(m.era || '')} · ${RA.fmtTime(m.secs || 0)} · ${String(m.land || 0).replace('.', ',')}%</span>`;
+  },
+});
+
+RA.BUILD = '47222697';
 new RA.App().boot();
 }
 function __raFallback(){

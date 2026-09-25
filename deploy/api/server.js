@@ -26,6 +26,7 @@ const SECURE = process.env.COOKIE_SECURE !== '0';
 const COOKIE = 'ot';
 const SESSION_DAYS = 90;
 const MAX_BODY = 64 * 1024;
+const BIG_BODY = { '/api/save': 1024 * 1024 }; // a saved game: its settings and every command
 const ISSUERS = new Set(['accounts.google.com', 'https://accounts.google.com']);
 
 const db = new Pool({ max: 8, idleTimeoutMillis: 30000 });
@@ -101,19 +102,20 @@ function readToken(req) {
   const m = new RegExp('(?:^|;\\s*)' + COOKIE + '=([A-Za-z0-9_-]{20,64})').exec(req.headers.cookie || '');
   return m ? m[1] : '';
 }
-function body(req) {
+function body(req, max) {
+  const MAX = max || MAX_BODY;
   return new Promise((ok, fail) => {
     let n = 0;
     const chunks = [];
     const big = () => Object.assign(new Error('big'), { code: 413 });
-    if (+req.headers['content-length'] > MAX_BODY) return fail(big());
+    if (+req.headers['content-length'] > MAX) return fail(big());
     req.on('data', (b) => {
       n += b.length;
-      if (n > 4 * MAX_BODY) req.destroy(); // still streaming long after the limit: drop it
-      else if (n <= MAX_BODY) chunks.push(b);
+      if (n > 4 * MAX) req.destroy(); // still streaming long after the limit: drop it
+      else if (n <= MAX) chunks.push(b);
     });
     req.on('end', () => {
-      if (n > MAX_BODY) return fail(big());
+      if (n > MAX) return fail(big());
       try {
         ok(chunks.length ? JSON.parse(Buffer.concat(chunks)) : {});
       } catch {
@@ -220,7 +222,7 @@ const server = http.createServer(async (req, res) => {
       const origin = req.headers.origin || '';
       if (ORIGINS.length && !ORIGINS.includes(origin)) return send(res, 403, { e: 'origin' });
       if (!/^application\/json\b/.test(req.headers['content-type'] || '')) return send(res, 415, { e: 'json' });
-      b = await body(req);
+      b = await body(req, BIG_BODY[path]);
       if (!b || typeof b !== 'object' || Array.isArray(b)) return send(res, 400, { e: 'json' });
     }
     const out = await fn(req, b, res);

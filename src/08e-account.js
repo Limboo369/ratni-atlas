@@ -92,6 +92,7 @@ RA.Account = class {
       ui._save();
     }
     if (this.open()) this.sheet(true);
+    if (ui.resumeOffer) ui.resumeOffer(); // the account may hold a saved game
   }
 
   open() {

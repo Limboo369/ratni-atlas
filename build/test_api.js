@@ -146,6 +146,29 @@ async function main() {
     r = await call('GET', '/api/top', null, { cookie: '' });
     check(r.status === 200 && r.j.rows.length === 2 && r.j.me === null, 'leaderboard is public');
 
+    // "Nastavi igru" on another computer: one saved game per account
+    const sv = (o = {}) => ({ rec: { v: 1, gid: 'sabc123', set: { map: 'evropa' }, picks: [5], cmds: [[3, 'atk', [7, 0.2, 0]]], ...o }, tick: 480, at: Date.now(), meta: { where: 'Balkan', who: '<b>x</b>', land: 12.5, secs: 48 } });
+    r = await call('GET', '/api/save', null, { cookie: cookieAna });
+    check(r.status === 200 && r.j.save === null, 'no saved game yet');
+    r = await call('POST', '/api/save', sv(), { cookie: '' });
+    check(r.status === 401, 'saving needs sign-in');
+    r = await call('POST', '/api/save', sv({ gid: 'x; drop' }), { cookie: cookieAna });
+    check(r.status === 400, 'a bad save is refused');
+    r = await call('POST', '/api/save', sv({ cmds: Array.from({ length: 12000 }, (_, i) => [i, 'atk', [123456, 0.25, 1, 654321]]) }), { cookie: cookieAna });
+    check(r.status === 200, 'a long game (12000 commands, above the normal body limit) is saved');
+    r = await call('GET', '/api/save', null, { cookie: cookieAna });
+    check(r.j.save && r.j.save.rec.cmds.length === 12000 && r.j.save.tick === 480 && r.j.save.meta.where === 'Balkan', 'the saved game comes back');
+    r = await call('POST', '/api/save', sv({ cmds: Array.from({ length: 60000 }, (_, i) => [i, 'atk', [123456, 0.25, 1, 654321]]) }), { cookie: cookieAna });
+    check(r.status === 413, 'a save over 1 MB is refused');
+    r = await call('GET', '/api/save');
+    check(r.j.save === null, "another player does not see Ana's save");
+    r = await call('POST', '/api/save/delete', { gid: 'sother' }, { cookie: cookieAna });
+    r = await call('GET', '/api/save', null, { cookie: cookieAna });
+    check(!!r.j.save, 'deleting another game id keeps the save');
+    r = await call('POST', '/api/save/delete', { gid: 'sabc123' }, { cookie: cookieAna });
+    r = await call('GET', '/api/save', null, { cookie: cookieAna });
+    check(r.status === 200 && r.j.save === null, 'the finished game is deleted');
+
     // delete account
     jar = cookie1;
     r = await call('POST', '/api/delete', {});
