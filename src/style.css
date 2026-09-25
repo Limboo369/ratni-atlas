@@ -208,6 +208,15 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
   font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; white-space: nowrap;
   background: var(--ink-glass); border: 1px solid var(--line); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
 }
+/* campaign rows (08k-campaign.js) */
+.camp-row { display: flex; gap: 10px; align-items: center; justify-content: space-between; padding: 9px 12px; margin-bottom: 6px; border: 1px solid var(--line, #ffffff1f); border-radius: 8px; background: rgba(255, 255, 255, .03); }
+.camp-row > div:first-child { min-width: 0; flex: 1; }
+.camp-row .cr-t { font-weight: 600; font-size: 14px; }
+.camp-row .cr-d { font-size: 12px; color: var(--muted, #9aa7b0); margin-top: 2px; }
+.camp-row .cr-s { color: #f2c14e; letter-spacing: 1px; }
+.camp-row .cr-b { flex: none; }
+.camp-row.locked { opacity: .55; }
+.pill.goal { border-color: rgba(120, 220, 140, 0.7); color: #b8f0c4; }
 .pill.calm { border-color: rgba(242, 177, 52, 0.6); color: #ffd98a; }
 .pill.winter { background: rgba(214, 236, 255, 0.94); color: #0c2537; border-color: #fff; }
 .pill.winter.soon { background: var(--ink-glass); color: #cfe6ff; border-color: rgba(200, 228, 255, 0.6); }

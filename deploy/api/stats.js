@@ -41,6 +41,10 @@ const SCHEMA = [
      players integer not null,
      unique (user_id, gid))`,
   'create index if not exists results_user_at on results(user_id, at desc)',
+  `create table if not exists campaigns (
+     user_id bigint primary key references users(id) on delete cascade,
+     at timestamptz not null default now(),
+     data text not null)`,
   `create table if not exists saves (
      user_id bigint primary key references users(id) on delete cascade,
      at timestamptz not null default now(),
@@ -170,6 +174,22 @@ module.exports = function statsRoutes(db, sessionUser) {
           `insert into saves (user_id, gid, data) values ($1, $2, $3)
            on conflict (user_id) do update set gid = excluded.gid, data = excluded.data, at = now()`, [u.id, gid, data]);
         return { ok: true };
+      },
+      // the campaign's progress (dynasty, home, XP, tech tree, missions done): one per account
+      'POST /api/campaign': async (req, b) => {
+        const u = await sessionUser(req);
+        if (!u) return [401, { e: 'Nisi prijavljen.' }];
+        if (typeof b.home !== 'string' || !/^[a-z]{2,16}$/.test(b.home) || !b.tree || typeof b.tree !== 'object' || !b.done || typeof b.done !== 'object') return [400, { e: 'Nevažeća kampanja.' }];
+        const data = JSON.stringify({ v: 1, home: b.home, name: String(b.name || '').slice(0, 18), xp: Math.max(0, Math.min(1e7, b.xp | 0)), tree: b.tree, done: b.done, at: +b.at || Date.now() });
+        if (data.length > 20000) return [400, { e: 'Prevelika kampanja.' }];
+        await db.query('insert into campaigns (user_id, data) values ($1, $2) on conflict (user_id) do update set data = excluded.data, at = now()', [u.id, data]);
+        return { ok: true };
+      },
+      'GET /api/campaign': async (req) => {
+        const u = await sessionUser(req);
+        if (!u) return [401, { e: 'Nisi prijavljen.' }];
+        const q = await db.query('select data from campaigns where user_id = $1', [u.id]);
+        return { campaign: q.rows.length ? JSON.parse(q.rows[0].data) : null };
       },
       'GET /api/save': async (req) => {
         const u = await sessionUser(req);

@@ -411,6 +411,8 @@ RA.App = class {
       return;
     }
     this.ui.account.report(this.G, kind);
+    const C = this.G.opts.camp;
+    if (C && C.type !== 'free' && !this.ui.campOver) return void this.ui.campTick(); // a campaign mission ends in its own window
     this.autosave(); // lost, or won without playing on: the save goes
     if (kind === 'lost' && this.ui.watching) return;
     this.ui.closeSheet();

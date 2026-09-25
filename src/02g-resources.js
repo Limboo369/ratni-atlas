@@ -78,8 +78,8 @@ RA.resKind = function (slot, era) {
     return 0.06 + 0.12 / Math.max(1, seller.res[s]);
   };
   P.unitCost = function (p, type) {
-    const g = RA.UNIT[type].gold;
-    return p && !this.hasRes(p, 1) ? Math.round(g * RA.CFG.RES_DEAR) : g;
+    const g = RA.UNIT[type].gold * ((p && p.bCost) || 1);
+    return Math.round(p && !this.hasRes(p, 1) ? g * RA.CFG.RES_DEAR : g);
   };
   P.buyRes = function (pid, s, sid) {
     const p = this.P[pid];

@@ -102,7 +102,8 @@ RA.NUKE = RA.MISSILE;
   P.missileCost = function (type, p) {
     const M = RA.MISSILE[type];
     const c = type === 'mirv' ? M.cost + 4000000 * (this.mirvCount || 0) : M.cost;
-    return p && this.deps && !this.hasRes(p, 2) ? Math.round(c * RA.CFG.RES_DEAR) : c; // no fuel
+    const k = (p && p.bCost) || 1;
+    return Math.round((p && this.deps && !this.hasRes(p, 2) ? c * RA.CFG.RES_DEAR : c) * k); // no fuel: dearer
   };
   P.winterLevel = function () {
     const C = RA.CFG;

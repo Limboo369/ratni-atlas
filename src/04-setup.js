@@ -421,6 +421,7 @@ RA.startGame = function (G) {
   G.humans = G.P.filter((p) => p && p.human);
   if (G.opts.gm === 'br') G.zoneInit();
   if (G.opts.res) G.resInit(); // resources and trade (02g-resources.js)
+  if (G.opts.camp) G.campSetup(); // a campaign mission (02j-campaign.js)
   G.state = 'play';
   G._history();
 };

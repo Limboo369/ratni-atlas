@@ -52,6 +52,10 @@ presence per private room; `src/09a-net.js` keeps the lockstep protocol. Every g
 (invite + come back to the same seat after a reload; the server keeps a player's presence and the game's command log
 for 10 min). Spectators replay the server's log. Presence from other players is untrusted (`RA.Net.str`, `G.exec`).
 
+Campaign: `src/08k-campaign.js` (screen, missions, goals; progress in localStorage `ra_campaign` and `/api/campaign`),
+`src/09d-campaign-app.js` (starting a mission), `src/02j-campaign.js` (sim: `opts.camp` sets the mission up and applies
+the dynasty's tree bonuses `p.bGold`, `p.bGrow`, `p.bCost`).
+
 Long games (days): `deploy/game/long.js` (same server, `/ws?long=<code>`, link `/long-<code>`) is only the clock (one tick
 every `LONG_TICK_MS`, 5 s) and the archive (settings, seed, every command with its tick; files in the `longgames`
 volume); `src/09c-long.js` replays the record to the server's tick and follows it. A player takes over a computer state
@@ -121,6 +125,7 @@ python3 build/make.py
 python3 build/test_ui2.py phone balkan     # single player, end to end (also `desktop balkan`: the right-drag attack arrow)
 python3 build/test_mp.py                   # three browsers + the real relay: lockstep, spectator, come-back
 python3 build/test_long.py                 # long games (days): real server with a fast clock, join, leave, come back, restart
+python3 build/test_campaign.py desktop     # campaign: dynasty, mission, XP, tech tree, failure, survive (also `phone`)
 python3 build/test_world.py                # world map over http: switch, regions, play, online on the world
 node build/test_sim.js                     # sim rules without a browser: straits and canals, determinism
 python3 build/test_save.py klasik          # save + reload + "Nastavi igru": the replayed game is identical (also `granice`)

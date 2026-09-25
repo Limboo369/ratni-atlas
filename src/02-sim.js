@@ -302,7 +302,7 @@ RA.Game = class Game {
     else if (p.type === 'nation') add *= this.diff.grow;
     if (p.crisisUntil > tk) add *= 0.7;
     const tax = RA.TAX[p.tax] || RA.TAX[2];
-    if (add > 0) add *= tax.grow;
+    if (add > 0) add *= tax.grow * (p.bGrow || 1);
     if (add > 0 && this.deps && !this.hasRes(p, 0)) add *= RA.CFG.RES_FOOD; // no grain
     if (p.growPause > tk && add > 0) add = 0;
     if (p.troops > maxT) add = -(p.troops - maxT) * (p.growPause > tk ? 0.0025 : 0.01);
@@ -317,7 +317,7 @@ RA.Game = class Game {
     let g = 70 + Math.sqrt(p.tiles) * 1.2 + p.cityG + (p.n.port - p.portsOff) * RA.CFG.PORT_G + p.n.city * RA.CFG.CITY_BUILT_G;
     if (p.type === 'bot') g *= 0.4;
     if (p.crisisUntil > tk) g *= 0.5;
-    g *= tax.g;
+    g *= tax.g * (p.bGold || 1);
     if (p.imp && (p.imp[0] || p.imp[1] || p.imp[2])) g = this._payRes(p, g); // bought resources
     // interest on a player's saved gold, capped at a quarter of the income (saving helps, never beats owning land);
     // the computer spends as it goes, and interest made its wars drag on
@@ -850,7 +850,8 @@ RA.Game = class Game {
   /* ---------------- structures ---------------- */
   structCost(p, type) {
     const c = RA.STRUCT[type].cost(p.built[type]);
-    return this.deps && !this.hasRes(p, 2) ? Math.round(c * RA.CFG.RES_DEAR) : c; // no fuel
+    const k = p.bCost || 1; // the campaign's science
+    return Math.round((this.deps && !this.hasRes(p, 2) ? c * RA.CFG.RES_DEAR : c) * k); // no fuel: dearer
   }
   canBuild(p, type, c) {
     const map = this.map;

@@ -136,6 +136,11 @@ RA.UI = class {
     };
     $('howBtn').onclick = () => this.howTo();
     $('tutBtn').onclick = () => this.startTutorial();
+    $('campBtn').onclick = () => {
+      this.settings.name = $('nameIn').value.trim().slice(0, 18);
+      this._save();
+      this.campaignSheet();
+    };
     try {
       if (!localStorage.getItem('ra_tut_done')) $('tutBtn').classList.add('fresh');
     } catch (_) {}
@@ -559,6 +564,10 @@ RA.UI = class {
     }
     this.feedUpdate(now);
     this.rulerTick(now);
+    if (now - (this.campAt || 0) > 1000) {
+      this.campAt = now;
+      this.campTick();
+    }
     if (this.tut) this.tut.update();
     if (G.fx.length) {
       for (const f of G.fx) if (!f.pid || (G.me && f.pid === G.me.id)) this.fxList.push(Object.assign({ t0: now }, f));
@@ -949,6 +958,7 @@ RA.UI = class {
     const pills = [];
     const T = (t) => RA.fmtTime(Math.ceil(Math.max(0, t) / 10));
     if (me && me.alive && G.state === 'play') {
+      if (G.opts.camp && G.opts.camp.type !== 'free' && this.campProg) pills.push(['goal', `🎯 ${this.campProg}`]);
       if (G.long && this.app.long.rec) pills.push(['calm', `Duga igra · potez svakih ${Math.round(this.app.long.rec.tickMs / 1000)} s · igrača ${G.humans.filter((p) => p.alive).length}`]);
       const dc = G.defcon();
       if (dc) {

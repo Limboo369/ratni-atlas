@@ -172,6 +172,14 @@ async function main() {
     r = await call('GET', '/api/save', null, { cookie: cookieAna });
     check(r.status === 200 && r.j.save === null, 'the finished game is deleted');
 
+    // the campaign's progress follows the account
+    r = await call('POST', '/api/campaign', { home: 'sarajevo', name: 'Kotromanić', xp: 320, tree: { mil: 1 }, done: { 0: 3, 1: 2 }, at: 5 }, { cookie: cookieAna });
+    check(r.status === 200, 'campaign progress saved');
+    r = await call('GET', '/api/campaign', null, { cookie: cookieAna });
+    check(r.j.campaign && r.j.campaign.home === 'sarajevo' && r.j.campaign.xp === 320 && r.j.campaign.done[0] === 3, 'campaign progress comes back');
+    r = await call('POST', '/api/campaign', { home: '../x', tree: {}, done: {} }, { cookie: cookieAna });
+    check(r.status === 400, 'a bad campaign is refused');
+
     // delete account
     jar = cookie1;
     r = await call('POST', '/api/delete', {});
