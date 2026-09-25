@@ -13,7 +13,7 @@ global.Image = class {
 };
 (0, eval)(fs.readFileSync(R + 'build/mapdata.js', 'utf8'));
 (0, eval)(fs.readFileSync(R + 'build/eradata.js', 'utf8'));
-const files = ['00-util', '01-data', '02-sim', '02b-military', '02c-diplomacy', '02d-commands', '02e-zone', '03-ai', '04-setup', '04b-eras'];
+const files = ['00-util', '01-data', '02-sim', '02b-military', '02c-diplomacy', '02d-commands', '02e-zone', '02f-straits', '03-ai', '04-setup', '04b-eras'];
 new Function(files.map((f) => fs.readFileSync(R + 'src/' + f + '.js', 'utf8').replace("'use strict';", '')).join('\n'))();
 
 (async () => {

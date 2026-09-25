@@ -486,8 +486,17 @@ Object.assign(RA.UI.prototype, {
       `<div class="field"><span class="lab">Porez: ${RA.esc(cur.name)}</span><div class="seg wrap" id="taxSeg" role="group" aria-label="Porez">${T.map((t, i) => `<button data-v="${i}" aria-pressed="${i === me.tax}">${RA.esc(t.name)}</button>`).join('')}</div>
       <p class="note">Viši porez: više zlata, ali vojska sporije raste. Niži: vojska brže raste, zlata manje.<br>Sada: zlato ${cur.g === 1 ? 'normalno' : pct(cur.g)}, rast vojske ${cur.grow === 1 ? 'normalan' : pct(cur.grow)}.</p></div>
       <div class="field"><span class="lab">Kamata</span><p class="note">Ušteđeno zlato donosi 1% u minuti, najviše četvrtinu tvog prihoda. Sada: <b>+${RA.fmt(me.interest || 0)}/s</b>.</p></div>` +
-      this.loanHtml();
+      this.loanHtml() + this.straitHtml();
     this.openSheet(h, (s) => {
+      s.querySelectorAll('[data-str]').forEach((b) => (b.onclick = () => {
+        const [i, v] = b.dataset.str.split(':').map(Number);
+        const go = () => {
+          this.act('str', [i, v]);
+          if (G.online) setTimeout(() => this.econSheet(true), 400);
+        };
+        if (v) this.confirm(`Zatvoriti ${G.straits[i].name}?`, 'Prolaze samo tvoji i savezniči brodovi. Svi koji plove tim morima se ljute (sve više što duže traje), a to je i agresija: sam protiv svih — koalicija; s jakim saveznicima možeš izdržati.', 'Zatvori', go);
+        else go();
+      }));
       s.querySelectorAll('#taxSeg button').forEach((b) => (b.onclick = () => {
         this.act('tax', [+b.dataset.v]);
         if (G.online) setTimeout(() => this.econSheet(true), 400); // offline: afterAct redraws
@@ -502,6 +511,19 @@ Object.assign(RA.UI.prototype, {
         if (G.online) setTimeout(() => this.econSheet(true), 400);
       }));
     }, keep, () => this.econSheet(true));
+  },
+  /* straits: who holds them; the holder of both shores may close one for foreign ships */
+  straitHtml() {
+    const G = this.G, me = G.me;
+    if (!G.straits.length) return '';
+    let h = '<div class="sec-t">Moreuzi</div><p class="explain">Ko drži obje obale moreuza može ga zatvoriti za tuđe brodove (desanti i trgovina). Prolaze samo njegovi i savezniči brodovi.</p><div class="list">';
+    for (const st of G.straits) {
+      const H = G.P[st.holder], C = G.P[st.closed];
+      const d = C ? `<span class="neg">zatvoren</span> · ${RA.esc(C.name)}` : H ? `otvoren · obje obale drži ${RA.esc(H.name)}` : 'otvoren · obale drže različite države';
+      const btn = st.holder === me.id ? this.mini(st.closed ? 'Otvori' : 'Zatvori', `data-str="${st.i}:${st.closed ? 0 : 1}"`, st.closed ? 'ok' : 'warn') : '';
+      h += `<div class="prow wide"><span class="sw" style="background:${C ? C.hex : H ? H.hex : '#6f8190'}"></span><div class="pn"><div class="nm">${RA.esc(st.name)}</div><div class="d">${d}</div></div><div class="bb">${btn}</div></div>`;
+    }
+    return h + '</div>';
   },
   /* loans: the open ones (repay) and who would lend (neighbours and partners with gold) */
   loanHtml() {
@@ -615,6 +637,7 @@ Object.assign(RA.UI.prototype, {
         <li>Vojska raste sama, najbrže oko <b>42%</b> kapaciteta (zelena zona na traci).</li>
         <li><b>Mobilizacija</b> (Vojska): odmah +30% kapaciteta, ali rast stoji 45 s. Jednom u 4 minute.</li>
         <li>Zlato donose teritorija, gradovi, luke, vozovi ili karavani i trgovina.</li>
+        <li><b>Moreuzi</b> (Ekonomija): ko drži obje obale može zatvoriti moreuz za tuđe brodove. Svi koji tuda plove se ljute — zatvaranje je agresija.</li>
         <li><b>Zajam</b> (Ekonomija: klik na zlato ili Z): država kompjutera ti posudi zlato, dio tvoje zemlje je zalog (šrafirano). Ne vratiš na vrijeme → zalog je njen.</li>
         <li><b>Vazal</b> (meni Savezi): slabu susjednu državu možeš učiniti vazalom umjesto da je osvojiš — plaća ti danak i bori se uz tebe. Ako oslabiš, oslobodi se.</li>
         <li><b>Agresivna ekspanzija</b> (meni Savezi): svaka napadnuta i pokorena država ljuti ostale. Previše osvajanja odjednom → kompjuterske države se udružuju protiv tebe. Ljutnja vremenom opada.</li>

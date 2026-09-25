@@ -71,6 +71,8 @@ Object.assign(RA.UI.prototype, {
       allyEnd: `Istekao savez: ${A} i ${B}`,
       trade: `${A} i ${B} trguju`,
       vassal: `${B} postaje vazal: ${A}`,
+      strait: `${A} zatvara ${RA.esc(n.x || 'moreuz')} za tuđe brodove`,
+      straitOpen: `${A} otvara ${RA.esc(n.x || 'moreuz')}`,
       pledge: `${A} uzima zalog od ${B} (nevraćen zajam)`,
       rebel: `${A} se oslobađa vlasti: ${B}`,
     }[n.t];

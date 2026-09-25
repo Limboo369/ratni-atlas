@@ -95,6 +95,8 @@ Rebuild era data: `scripts/fetch_data.sh && python3 build/eras.py`.
 - **Eras** (`src/04b-eras.js`): `RA.applyEra(id)` swaps `RA.UNIT` / `RA.STRUCT` / `RA.MISSILE`. Unavailable entries are
   flagged **`na: true`** — never `off` (`off` is the units' offense multiplier).
 - Battle royale ring: `src/02e-zone.js` (`G.zone`, `G.zoneOut(c)`).
+- Straits and canals: `src/02f-straits.js` (`RA.STRAITS[mapId]`, lines in grid cells; ships cross them even where the grid
+  shows land; `G.seaFor(c, pid)` in every sea search; seas joined by straits share `G.wroot`).
 - Land shares (win, leader, army cap) use real area: `p.area` / `G.landTotal()`, cell weights `map.aw` (1 in Europe; on the
   Mercator world `meta.areaWeight` ∝ cos² lat). Winning is always 70% of the land (`G.winShare()`, no overtime drop; the
   winner may play on, `G.continued`); only the anti-giant rules scale with `meta.winShare` (`G.shareK()`).
@@ -111,6 +113,7 @@ python3 build/make.py
 python3 build/test_ui2.py phone balkan     # single player, end to end (also `desktop balkan`: the right-drag attack arrow)
 python3 build/test_mp.py                   # three browsers + the real relay: lockstep, spectator, come-back
 python3 build/test_world.py                # world map over http: switch, regions, play, online on the world
+node build/test_sim.js                     # sim rules without a browser: straits and canals, determinism
 python3 build/test_save.py klasik          # save + reload + "Nastavi igru": the replayed game is identical (also `granice`)
 node build/test_api.js                     # accounts API: Google token checks, sessions, rename, delete (real PostgreSQL)
 python3 build/test_account.py              # sign-in on the start screen (fake Google), reload keeps the session, logout

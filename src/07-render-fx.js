@@ -414,6 +414,36 @@ RA.FxLayer = L.Layer.extend({
       RA.drawUnit(ctx, U.sym || u.type, x, y, uw, G.P[u.owner].hex, mine, u.hp / U.hp, u.ready > G.tick, u.empUntil > G.tick, u.id === selId, now);
     }
 
+    // straits: a dotted line where ships pass; red and solid when closed ------------------------------------------
+    if (G.straits && G.straits.length) {
+      ctx.save();
+      ctx.lineCap = 'round';
+      for (const st of G.straits) {
+        const C = st.closed ? G.P[st.closed] : null;
+        ctx.strokeStyle = C ? 'rgba(255,80,70,0.9)' : 'rgba(170,215,255,0.55)';
+        ctx.lineWidth = Math.max(1.5, cell * (C ? 0.6 : 0.3));
+        ctx.setLineDash(C ? [] : [Math.max(2, cell * 0.5), Math.max(3, cell * 0.8)]);
+        ctx.beginPath();
+        for (const l of st.lines) l.forEach(([x, y], k) => (k ? ctx.lineTo : ctx.moveTo).call(ctx, gx(x + 0.5), gy(y + 0.5)));
+        ctx.stroke();
+        if (cell >= 5) {
+          const [x, y] = st.lines[0][0], lx = gx(x + 0.5) + 8, ly = gy(y + 0.5) - 8;
+          if (inView(lx, ly, 60)) {
+            ctx.setLineDash([]);
+            ctx.font = '600 11px system-ui, sans-serif';
+            ctx.textAlign = 'left';
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = 'rgba(0,0,0,0.65)';
+            const t = st.name + (C ? ' · zatvoren' : '');
+            ctx.strokeText(t, lx, ly);
+            ctx.fillStyle = C ? '#ff8f86' : '#cfe6ff';
+            ctx.fillText(t, lx, ly);
+          }
+        }
+      }
+      ctx.restore();
+    }
+
     // my pledged land (loans): hatched in the lender's colour ------------------------------------------------
     if (G.me && G.loans.length) {
       ctx.save();

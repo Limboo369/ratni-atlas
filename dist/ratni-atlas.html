@@ -1923,6 +1923,7 @@ RA.Game = class Game {
     this.era = opts.era || 'danas';
     this.borders = false;
     this.zone = null; // battle royale ring (02e-zone.js)
+    this.straitsInit(); // straits and canals (02f-straits.js)
     this.pace = map.pace || 1;
     this.densScale = 1;
     this.state = 'spawn';
@@ -2151,11 +2152,11 @@ RA.Game = class Game {
     this.event(kind, text, pid, cell, 0);
   }
   /* world news between two states (city-states left out): war, fall, ally, break, ally-end, trade */
-  news(t, a, b) {
+  news(t, a, b, x) {
     const A = this.P[a], B = b ? this.P[b] : null;
     if (!A || A.type === 'bot' || (B && B.type === 'bot')) return;
     if (this.feed.length > 200) this.feed.splice(0, 100);
-    this.feed.push({ t, a, b: b || 0, tick: this.tick });
+    this.feed.push({ t, a, b: b || 0, tick: this.tick, x });
   }
 
   /* ---------------- attacks ---------------- */
@@ -2518,7 +2519,7 @@ RA.Game = class Game {
   /* ---------------- boats ---------------- */
   findBoatPath(pid, tgt) {
     // BFS over water from target coast towards any water cell next to pid's land (null: no way, 'far': too far)
-    const map = this.map, W = map.W, H = map.H, N = map.N, land = map.land, own = this.owner, block = map.block;
+    const map = this.map, W = map.W, H = map.H, N = map.N, land = map.land, own = this.owner, block = map.block, stc = this.stc;
     const seen = this.stamp, gen = ++this.stampGen, prev = this.bfsPrev, q = this.queue;
     const maxD = RA.CFG.BOAT_RANGE, maxN = RA.CFG.SEA_CELLS;
     let qh = 0, qt = 0, depth = 0, layer = 0;
@@ -2564,8 +2565,8 @@ RA.Game = class Game {
           const nx = x + dx, ny = y + dy;
           if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
           const n = ny * W + nx;
-          if (land[n] || block[n] || seen[n] === gen) continue;
-          if (dx && dy && (land[y * W + nx] || land[ny * W + x])) continue;
+          if (block[n] || seen[n] === gen || !(stc[n] ? this.seaFor(n, pid) : !land[n])) continue;
+          if (dx && dy && (!this.seaFor(y * W + nx, pid) || !this.seaFor(ny * W + x, pid))) continue;
           seen[n] = gen;
           prev[n] = c;
           q[qt++] = n;
@@ -2576,14 +2577,15 @@ RA.Game = class Game {
   /* does player pid own land next to one of the water components of these start cells? (4-connected components:
      the boat search never crosses between them either) */
   _sharesWater(pid, cells, n) {
-    const map = this.map, W = map.W, H = map.H, wc = map.wcomp, land = map.land;
-    const want = new Set();
-    for (let i = 0; i < n; i++) want.add(wc[cells[i]]);
+    const map = this.map, W = map.W, H = map.H, wr = this.wroot, land = map.land;
+    const want = new Set(), wcomp = map.wcomp; // water components joined by straits are one sea (wroot)
+    const wc = (k) => (wcomp[k] >= 0 ? wr[wcomp[k]] : -1);
+    for (let i = 0; i < n; i++) if (wcomp[cells[i]] >= 0) want.add(wc(cells[i]));
     const p = this.P[pid];
     for (let i = 0; i < p.tiles; i++) {
       const c = p.cells[i];
       const x = c % W, y = (c / W) | 0;
-      if ((x > 0 && !land[c - 1] && want.has(wc[c - 1])) || (x < W - 1 && !land[c + 1] && want.has(wc[c + 1])) || (y > 0 && !land[c - W] && want.has(wc[c - W])) || (y < H - 1 && !land[c + W] && want.has(wc[c + W]))) return true;
+      if ((x > 0 && !land[c - 1] && want.has(wc(c - 1))) || (x < W - 1 && !land[c + 1] && want.has(wc(c + 1))) || (y > 0 && !land[c - W] && want.has(wc(c - W))) || (y < H - 1 && !land[c + W] && want.has(wc(c + W)))) return true;
     }
     return false;
   }
@@ -2956,6 +2958,7 @@ RA.Game = class Game {
       this._expireAlliances();
       this._vassals();
       this._loans();
+      this._stepStraits();
       this._decayFallout();
     }
     // enclave check: one player per tick
@@ -4082,7 +4085,9 @@ Object.assign(RA.CFG, {
   };
   P._tradePath = function (sa, sb) {
     this.tradePaths = this.tradePaths || new Map();
-    const key = sa.id < sb.id ? sa.id + ':' + sb.id : sb.id + ':' + sa.id;
+    // a closed strait lets only the closer's friends through, so the way out and the way back may differ
+    const oneWay = this.straits.some((s) => s.closed);
+    const key = oneWay ? sa.id + '>' + sb.id : sa.id < sb.id ? sa.id + ':' + sb.id : sb.id + ':' + sa.id;
     if (this.tradePaths.has(key)) {
       const p = this.tradePaths.get(key);
       if (!p) return null;
@@ -4090,11 +4095,11 @@ Object.assign(RA.CFG, {
     }
     const wa = this._portWater(sa), wb = this._portWater(sb);
     const map = this.map;
-    if (wa < 0 || wb < 0 || map.wcomp[wa] !== map.wcomp[wb]) {
+    if (wa < 0 || wb < 0 || this.wroot[map.wcomp[wa]] !== this.wroot[map.wcomp[wb]]) {
       this.tradePaths.set(key, null);
       return null;
     }
-    const W = map.W, H = map.H, land = map.land, block = map.block;
+    const W = map.W, H = map.H, land = map.land, block = map.block, stc = this.stc, own = sa.owner;
     const seen = this.stamp, gen = ++this.stampGen, prev = this.bfsPrev, q = this.queue;
     let qh = 0, qt = 0, found = false;
     q[qt++] = wa;
@@ -4114,8 +4119,8 @@ Object.assign(RA.CFG, {
           const nx = x + dx, ny = y + dy;
           if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
           const n = ny * W + nx;
-          if (land[n] || block[n] || seen[n] === gen) continue;
-          if (dx && dy && (land[y * W + nx] || land[ny * W + x])) continue;
+          if (block[n] || seen[n] === gen || !(stc[n] ? this.seaFor(n, own) : !land[n])) continue;
+          if (dx && dy && (!this.seaFor(y * W + nx, own) || !this.seaFor(ny * W + x, own))) continue;
           seen[n] = gen;
           prev[n] = c;
           q[qt++] = n;
@@ -4433,7 +4438,7 @@ Object.assign(RA.CFG, {
    can replay exactly the same inputs on every device (lockstep). Args come from other players' devices:
    they are validated here and never trusted. */
 
-RA.CMD_KINDS = ['atk', 'boat', 'para', 'build', 'rec', 'mv', 'dis', 'mis', 'mob', 'ret', 'aReq', 'aRes', 'tReq', 'tRes', 'ext', 'brk', 'tEnd', 'give', 'help', 'ai', 'back', 'rcl', 'png', 'qm', 'tax', 'vas', 'loan', 'pay'];
+RA.CMD_KINDS = ['atk', 'boat', 'para', 'build', 'rec', 'mv', 'dis', 'mis', 'mob', 'ret', 'aReq', 'aRes', 'tReq', 'tRes', 'ext', 'brk', 'tEnd', 'give', 'help', 'ai', 'back', 'rcl', 'png', 'qm', 'tax', 'vas', 'loan', 'pay', 'str'];
 /* pings on the map and quick messages, seen by the sender's allies and team (plan item 57) */
 RA.PINGS = [
   { name: 'Napadni ovdje', icon: 'attack', color: '#ff5d5d' },
@@ -4541,6 +4546,8 @@ RA.QUICK_MSGS = ['Napadam!', 'Treba mi pomoć!', 'Pazi, napadaju nas!', 'Idem ta
         if (this.chat.length > 60) this.chat.splice(0, 30);
         return true;
       }
+      case 'str':
+        return this.cmdStrait(pid, Number.isInteger(a[0]) ? a[0] : -1, a[1] === 1);
       case 'loan':
         return player(a[0]) ? this.requestLoan(pid, a[0], a[1]) : 'Nevažeći igrač.';
       case 'pay':
@@ -4700,6 +4707,163 @@ RA.dcos = (a) => RA.dsin(a + 1.5707963267948966);
     Z.deadLand = all - inside;
   };
 })(RA.Game.prototype);
+
+
+/* Straits and canals (plan 17). A strait is a line of grid cells that ships may cross — also where the coarse grid
+   shows land (the Bosporus, the Dardanelles and Kerch are narrower than a cell) — plus its two shores. Whoever holds
+   both shores (most of the land around each) may close it: then only their own and their allies' ships pass. Closing
+   angers every state that sails those seas (the more the longer it stays shut) and counts as aggression.
+   Lines are grid coordinates [x, y] per map (computed once from lat/lon, so every device gets the same cells);
+   `from`: the first era it exists in (canals). */
+RA.STRAITS = {
+  evropa: [
+    { id: 'tur', name: 'Bosfor i Dardaneli', lines: [[[366, 532], [366, 535], [364, 538]], [[352, 544], [347, 547], [343, 550]]], a: [[362, 537], [345, 547]], b: [[371, 538], [349, 551]] },
+    { id: 'gib', name: 'Gibraltar', lines: [[[49, 590], [49, 600]]], a: [[50, 591]], b: [[49, 600]] },
+    { id: 'dan', name: 'Danski moreuzi', lines: [[[214, 328], [222, 328]], [[199, 338], [206, 338]], [[190, 336], [194, 336]]], a: [[213, 330]], b: [[224, 331]] },
+    { id: 'otr', name: 'Otranto', lines: [[[270, 553], [285, 545]]], a: [[270, 552]], b: [[285, 545]] },
+    { id: 'mes', name: 'Mesina', lines: [[[243, 571], [248, 571]]], a: [[244, 573]], b: [[247, 569]] },
+    { id: 'ker', name: 'Kerč', lines: [[[438, 480], [438, 487]]], a: [[435, 483]], b: [[441, 484]] },
+  ],
+};
+
+(function (P) {
+  /* cells of a thick line (Bresenham, then every cell within 1 of it) */
+  function lineCells(W, H, pts, out) {
+    for (let k = 1; k < pts.length; k++) {
+      let [x0, y0] = pts[k - 1];
+      const [x1, y1] = pts[k];
+      const dx = Math.abs(x1 - x0), dy = -Math.abs(y1 - y0), sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1;
+      let err = dx + dy;
+      for (;;) {
+        for (let oy = -1; oy <= 1; oy++)
+          for (let ox = -1; ox <= 1; ox++) {
+            const x = x0 + ox, y = y0 + oy;
+            if (x >= 0 && y >= 0 && x < W && y < H) out.add(y * W + x);
+          }
+        if (x0 === x1 && y0 === y1) break;
+        const e2 = 2 * err;
+        if (e2 >= dy) {
+          err += dy;
+          x0 += sx;
+        }
+        if (e2 <= dx) {
+          err += dx;
+          y0 += sy;
+        }
+      }
+    }
+  }
+  /* set up this game's straits: G.stc (cell -> strait index + 1), G.straits (runtime state), map water links */
+  P.straitsInit = function () {
+    const map = this.map, W = map.W, H = map.H, defs = RA.STRAITS[map.id] || [];
+    this.stc = new Uint8Array(map.N);
+    this.straits = [];
+    this.straitVer = 0;
+    const eraIdx = RA.ERAS.findIndex((e) => e.id === (this.opts.era || 'danas'));
+    // water components joined by a strait count as one sea (trade routes, boats)
+    const root = map.wsize.map((_, i) => i);
+    const find = (i) => (root[i] === i ? i : (root[i] = find(root[i])));
+    for (const d of defs) {
+      if (d.from && eraIdx < RA.ERAS.findIndex((e) => e.id === d.from)) continue;
+      const cells = new Set();
+      for (const l of d.lines) lineCells(W, H, l, cells);
+      const list = [...cells].filter((c) => !map.block[c]).sort((a, b) => a - b);
+      if (!list.length) continue;
+      // the water the strait touches
+      const comps = new Set();
+      for (const c of list) {
+        const x = c % W, y = (c / W) | 0;
+        for (const n of [c, x > 0 ? c - 1 : -1, x < W - 1 ? c + 1 : -1, y > 0 ? c - W : -1, y < H - 1 ? c + W : -1]) if (n >= 0 && !map.land[n] && map.wcomp[n] >= 0) comps.add(map.wcomp[n]);
+      }
+      // its shores: land cells within 3 of each anchor
+      const shore = (anchors) => {
+        const out = [];
+        for (const [ax, ay] of anchors)
+          for (let y = ay - 3; y <= ay + 3; y++)
+            for (let x = ax - 3; x <= ax + 3; x++) {
+              if (x < 0 || y < 0 || x >= W || y >= H) continue;
+              const c = y * W + x;
+              if (map.land[c] && !map.block[c] && !out.includes(c)) out.push(c);
+            }
+        return out;
+      };
+      const a = shore(d.a), b = shore(d.b);
+      if (!a.length || !b.length) continue; // a region without both shores: no strait
+      const idx = this.straits.length, cs = [...comps];
+      for (const c of list) if (!this.stc[c]) this.stc[c] = idx + 1;
+      for (let i = 1; i < cs.length; i++) root[find(cs[i])] = find(cs[0]);
+      this.straits.push({ i: idx, id: d.id, name: d.name, lines: d.lines, cells: list, a, b, holder: 0, closed: 0, since: 0 });
+    }
+    this.wroot = map.wsize.map((_, i) => find(i));
+  };
+  /* is this cell open water for a ship of player pid? (land straits are water; a closed strait only for friends) */
+  P.seaFor = function (c, pid) {
+    const s = this.stc[c];
+    if (!s) return !this.map.land[c];
+    const st = this.straits[s - 1];
+    if (!st.closed) return true;
+    const p = this.P[pid], q = this.P[st.closed];
+    return !!(p && q && (p === q || p.allies.has(q.id)));
+  };
+  /* who holds both shores (most of the land around each): that player may close the strait */
+  P._straitHolder = function (st) {
+    const own = this.owner, best = (cells) => {
+      const n = new Map();
+      for (const c of cells) if (own[c]) n.set(own[c], (n.get(own[c]) || 0) + 1);
+      for (const [pid, k] of n) if (k * 5 >= cells.length * 3) return pid; // 60%
+      return 0;
+    };
+    const ha = best(st.a);
+    return ha && ha === best(st.b) ? ha : 0;
+  };
+  P._stepStraits = function () {
+    for (const st of this.straits) {
+      const h = this._straitHolder(st);
+      if (h !== st.holder) {
+        st.holder = h;
+        if (st.closed && st.closed !== h) this._setStrait(st, 0, 'lost');
+      }
+      if (!st.closed) continue;
+      // every 10 s shut: the states that sail these seas get angrier (the more ports, the angrier)
+      if ((this.tick - st.since) % 100 === 0) {
+        const cl = this.P[st.closed];
+        for (const o of this.P) {
+          if (!o || !o.alive || o === cl || o.type === 'bot' || cl.allies.has(o.id)) continue;
+          const hurt = Math.min(3, o.n.port) + (o.trade.size ? 1 : 0);
+          if (hurt) o.rel[cl.id] = Math.max(-100, o.rel[cl.id] - hurt);
+        }
+      }
+    }
+  };
+  P._setStrait = function (st, pid, why) {
+    st.closed = pid;
+    st.since = this.tick;
+    this.straitVer++;
+    if (this.tradePaths) this.tradePaths.clear();
+    const H = this.P[st.holder];
+    if (pid) {
+      this.news('strait', pid, 0, st.name);
+      this.addAE(this.P[pid], RA.CFG.AE_STRAIT);
+      for (const o of this.P) if (o && o.alive && o.id !== pid && !o.human && o.type !== 'bot' && !o.allies.has(pid)) o.rel[pid] = Math.max(-100, o.rel[pid] - 15);
+      for (const h of this.P) if (h && h.human && h.alive && h.id !== pid) this.tell(h, 'bad', `${this.P[pid].name} je zatvorio/la ${st.name} za tuđe brodove.`, pid, st.cells[0]);
+    } else if (why === 'lost') {
+      for (const h of this.P) if (h && h.human && h.alive) this.tell(h, 'info', `${st.name} je ponovo otvoren${H ? ' (novi vlasnik obala: ' + H.name + ')' : ''}.`, 0, st.cells[0]);
+    } else {
+      if (H) this.news('straitOpen', H.id, 0, st.name);
+    }
+  };
+  /* the holder opens or closes a strait (command 'str') */
+  P.cmdStrait = function (pid, i, close) {
+    const st = this.straits[i];
+    if (!st) return 'Nema tog moreuza.';
+    if (st.holder !== pid) return `Moraš držati obje obale (${st.name}).`;
+    if (!!st.closed === close) return null;
+    this._setStrait(st, close ? pid : 0);
+    return { name: st.name, closed: close };
+  };
+})(RA.Game.prototype);
+
+RA.CFG.AE_STRAIT = 15; // closing a strait is aggression, like attacking a state
 
 
 /* Ratni Atlas — AI for nations (personalities) and city-states.
@@ -7112,6 +7276,36 @@ RA.FxLayer = L.Layer.extend({
       RA.drawUnit(ctx, U.sym || u.type, x, y, uw, G.P[u.owner].hex, mine, u.hp / U.hp, u.ready > G.tick, u.empUntil > G.tick, u.id === selId, now);
     }
 
+    // straits: a dotted line where ships pass; red and solid when closed ------------------------------------------
+    if (G.straits && G.straits.length) {
+      ctx.save();
+      ctx.lineCap = 'round';
+      for (const st of G.straits) {
+        const C = st.closed ? G.P[st.closed] : null;
+        ctx.strokeStyle = C ? 'rgba(255,80,70,0.9)' : 'rgba(170,215,255,0.55)';
+        ctx.lineWidth = Math.max(1.5, cell * (C ? 0.6 : 0.3));
+        ctx.setLineDash(C ? [] : [Math.max(2, cell * 0.5), Math.max(3, cell * 0.8)]);
+        ctx.beginPath();
+        for (const l of st.lines) l.forEach(([x, y], k) => (k ? ctx.lineTo : ctx.moveTo).call(ctx, gx(x + 0.5), gy(y + 0.5)));
+        ctx.stroke();
+        if (cell >= 5) {
+          const [x, y] = st.lines[0][0], lx = gx(x + 0.5) + 8, ly = gy(y + 0.5) - 8;
+          if (inView(lx, ly, 60)) {
+            ctx.setLineDash([]);
+            ctx.font = '600 11px system-ui, sans-serif';
+            ctx.textAlign = 'left';
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = 'rgba(0,0,0,0.65)';
+            const t = st.name + (C ? ' · zatvoren' : '');
+            ctx.strokeText(t, lx, ly);
+            ctx.fillStyle = C ? '#ff8f86' : '#cfe6ff';
+            ctx.fillText(t, lx, ly);
+          }
+        }
+      }
+      ctx.restore();
+    }
+
     // my pledged land (loans): hatched in the lender's colour ------------------------------------------------
     if (G.me && G.loans.length) {
       ctx.save();
@@ -8786,6 +8980,9 @@ RA.UI = class {
         const T = r.t ? G.P[r.t] : null;
         say('info', `Napad ${T ? 'na ' + RA.esc(T.name) : 'na slobodnu zemlju'} obustavljen — vraćeno ${RA.fmt(r.back)} vojnika${T ? ' (25% izgubljeno u povlačenju)' : ''}.`);
       }
+    } else if (kind === 'str') {
+      if (r && typeof r === 'object') say(r.closed ? 'bad' : 'good', `${RA.esc(r.name)} je ${r.closed ? 'zatvoren za tuđe brodove' : 'ponovo otvoren'}.`);
+      else if (err(r)) say('info', RA.esc(r));
     } else if (kind === 'loan' || kind === 'pay') {
       if (err(r)) say('info', RA.esc(r));
     } else if (kind === 'vas') {
@@ -9703,8 +9900,17 @@ Object.assign(RA.UI.prototype, {
       `<div class="field"><span class="lab">Porez: ${RA.esc(cur.name)}</span><div class="seg wrap" id="taxSeg" role="group" aria-label="Porez">${T.map((t, i) => `<button data-v="${i}" aria-pressed="${i === me.tax}">${RA.esc(t.name)}</button>`).join('')}</div>
       <p class="note">Viši porez: više zlata, ali vojska sporije raste. Niži: vojska brže raste, zlata manje.<br>Sada: zlato ${cur.g === 1 ? 'normalno' : pct(cur.g)}, rast vojske ${cur.grow === 1 ? 'normalan' : pct(cur.grow)}.</p></div>
       <div class="field"><span class="lab">Kamata</span><p class="note">Ušteđeno zlato donosi 1% u minuti, najviše četvrtinu tvog prihoda. Sada: <b>+${RA.fmt(me.interest || 0)}/s</b>.</p></div>` +
-      this.loanHtml();
+      this.loanHtml() + this.straitHtml();
     this.openSheet(h, (s) => {
+      s.querySelectorAll('[data-str]').forEach((b) => (b.onclick = () => {
+        const [i, v] = b.dataset.str.split(':').map(Number);
+        const go = () => {
+          this.act('str', [i, v]);
+          if (G.online) setTimeout(() => this.econSheet(true), 400);
+        };
+        if (v) this.confirm(`Zatvoriti ${G.straits[i].name}?`, 'Prolaze samo tvoji i savezniči brodovi. Svi koji plove tim morima se ljute (sve više što duže traje), a to je i agresija: sam protiv svih — koalicija; s jakim saveznicima možeš izdržati.', 'Zatvori', go);
+        else go();
+      }));
       s.querySelectorAll('#taxSeg button').forEach((b) => (b.onclick = () => {
         this.act('tax', [+b.dataset.v]);
         if (G.online) setTimeout(() => this.econSheet(true), 400); // offline: afterAct redraws
@@ -9719,6 +9925,19 @@ Object.assign(RA.UI.prototype, {
         if (G.online) setTimeout(() => this.econSheet(true), 400);
       }));
     }, keep, () => this.econSheet(true));
+  },
+  /* straits: who holds them; the holder of both shores may close one for foreign ships */
+  straitHtml() {
+    const G = this.G, me = G.me;
+    if (!G.straits.length) return '';
+    let h = '<div class="sec-t">Moreuzi</div><p class="explain">Ko drži obje obale moreuza može ga zatvoriti za tuđe brodove (desanti i trgovina). Prolaze samo njegovi i savezniči brodovi.</p><div class="list">';
+    for (const st of G.straits) {
+      const H = G.P[st.holder], C = G.P[st.closed];
+      const d = C ? `<span class="neg">zatvoren</span> · ${RA.esc(C.name)}` : H ? `otvoren · obje obale drži ${RA.esc(H.name)}` : 'otvoren · obale drže različite države';
+      const btn = st.holder === me.id ? this.mini(st.closed ? 'Otvori' : 'Zatvori', `data-str="${st.i}:${st.closed ? 0 : 1}"`, st.closed ? 'ok' : 'warn') : '';
+      h += `<div class="prow wide"><span class="sw" style="background:${C ? C.hex : H ? H.hex : '#6f8190'}"></span><div class="pn"><div class="nm">${RA.esc(st.name)}</div><div class="d">${d}</div></div><div class="bb">${btn}</div></div>`;
+    }
+    return h + '</div>';
   },
   /* loans: the open ones (repay) and who would lend (neighbours and partners with gold) */
   loanHtml() {
@@ -9832,6 +10051,7 @@ Object.assign(RA.UI.prototype, {
         <li>Vojska raste sama, najbrže oko <b>42%</b> kapaciteta (zelena zona na traci).</li>
         <li><b>Mobilizacija</b> (Vojska): odmah +30% kapaciteta, ali rast stoji 45 s. Jednom u 4 minute.</li>
         <li>Zlato donose teritorija, gradovi, luke, vozovi ili karavani i trgovina.</li>
+        <li><b>Moreuzi</b> (Ekonomija): ko drži obje obale može zatvoriti moreuz za tuđe brodove. Svi koji tuda plove se ljute — zatvaranje je agresija.</li>
         <li><b>Zajam</b> (Ekonomija: klik na zlato ili Z): država kompjutera ti posudi zlato, dio tvoje zemlje je zalog (šrafirano). Ne vratiš na vrijeme → zalog je njen.</li>
         <li><b>Vazal</b> (meni Savezi): slabu susjednu državu možeš učiniti vazalom umjesto da je osvojiš — plaća ti danak i bori se uz tebe. Ako oslabiš, oslobodi se.</li>
         <li><b>Agresivna ekspanzija</b> (meni Savezi): svaka napadnuta i pokorena država ljuti ostale. Previše osvajanja odjednom → kompjuterske države se udružuju protiv tebe. Ljutnja vremenom opada.</li>
@@ -10861,6 +11081,8 @@ Object.assign(RA.UI.prototype, {
       allyEnd: `Istekao savez: ${A} i ${B}`,
       trade: `${A} i ${B} trguju`,
       vassal: `${B} postaje vazal: ${A}`,
+      strait: `${A} zatvara ${RA.esc(n.x || 'moreuz')} za tuđe brodove`,
+      straitOpen: `${A} otvara ${RA.esc(n.x || 'moreuz')}`,
       pledge: `${A} uzima zalog od ${B} (nevraćen zajam)`,
       rebel: `${A} se oslobađa vlasti: ${B}`,
     }[n.t];
@@ -12639,7 +12861,7 @@ Object.assign(RA.UI.prototype, {
   },
 });
 
-RA.BUILD = 'bfff7672';
+RA.BUILD = '1eb5bb38';
 new RA.App().boot();
 }
 function __raFallback(){

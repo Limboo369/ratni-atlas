@@ -115,6 +115,7 @@ RA.Game = class Game {
     this.era = opts.era || 'danas';
     this.borders = false;
     this.zone = null; // battle royale ring (02e-zone.js)
+    this.straitsInit(); // straits and canals (02f-straits.js)
     this.pace = map.pace || 1;
     this.densScale = 1;
     this.state = 'spawn';
@@ -343,11 +344,11 @@ RA.Game = class Game {
     this.event(kind, text, pid, cell, 0);
   }
   /* world news between two states (city-states left out): war, fall, ally, break, ally-end, trade */
-  news(t, a, b) {
+  news(t, a, b, x) {
     const A = this.P[a], B = b ? this.P[b] : null;
     if (!A || A.type === 'bot' || (B && B.type === 'bot')) return;
     if (this.feed.length > 200) this.feed.splice(0, 100);
-    this.feed.push({ t, a, b: b || 0, tick: this.tick });
+    this.feed.push({ t, a, b: b || 0, tick: this.tick, x });
   }
 
   /* ---------------- attacks ---------------- */
@@ -710,7 +711,7 @@ RA.Game = class Game {
   /* ---------------- boats ---------------- */
   findBoatPath(pid, tgt) {
     // BFS over water from target coast towards any water cell next to pid's land (null: no way, 'far': too far)
-    const map = this.map, W = map.W, H = map.H, N = map.N, land = map.land, own = this.owner, block = map.block;
+    const map = this.map, W = map.W, H = map.H, N = map.N, land = map.land, own = this.owner, block = map.block, stc = this.stc;
     const seen = this.stamp, gen = ++this.stampGen, prev = this.bfsPrev, q = this.queue;
     const maxD = RA.CFG.BOAT_RANGE, maxN = RA.CFG.SEA_CELLS;
     let qh = 0, qt = 0, depth = 0, layer = 0;
@@ -756,8 +757,8 @@ RA.Game = class Game {
           const nx = x + dx, ny = y + dy;
           if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
           const n = ny * W + nx;
-          if (land[n] || block[n] || seen[n] === gen) continue;
-          if (dx && dy && (land[y * W + nx] || land[ny * W + x])) continue;
+          if (block[n] || seen[n] === gen || !(stc[n] ? this.seaFor(n, pid) : !land[n])) continue;
+          if (dx && dy && (!this.seaFor(y * W + nx, pid) || !this.seaFor(ny * W + x, pid))) continue;
           seen[n] = gen;
           prev[n] = c;
           q[qt++] = n;
@@ -768,14 +769,15 @@ RA.Game = class Game {
   /* does player pid own land next to one of the water components of these start cells? (4-connected components:
      the boat search never crosses between them either) */
   _sharesWater(pid, cells, n) {
-    const map = this.map, W = map.W, H = map.H, wc = map.wcomp, land = map.land;
-    const want = new Set();
-    for (let i = 0; i < n; i++) want.add(wc[cells[i]]);
+    const map = this.map, W = map.W, H = map.H, wr = this.wroot, land = map.land;
+    const want = new Set(), wcomp = map.wcomp; // water components joined by straits are one sea (wroot)
+    const wc = (k) => (wcomp[k] >= 0 ? wr[wcomp[k]] : -1);
+    for (let i = 0; i < n; i++) if (wcomp[cells[i]] >= 0) want.add(wc(cells[i]));
     const p = this.P[pid];
     for (let i = 0; i < p.tiles; i++) {
       const c = p.cells[i];
       const x = c % W, y = (c / W) | 0;
-      if ((x > 0 && !land[c - 1] && want.has(wc[c - 1])) || (x < W - 1 && !land[c + 1] && want.has(wc[c + 1])) || (y > 0 && !land[c - W] && want.has(wc[c - W])) || (y < H - 1 && !land[c + W] && want.has(wc[c + W]))) return true;
+      if ((x > 0 && !land[c - 1] && want.has(wc(c - 1))) || (x < W - 1 && !land[c + 1] && want.has(wc(c + 1))) || (y > 0 && !land[c - W] && want.has(wc(c - W))) || (y < H - 1 && !land[c + W] && want.has(wc(c + W)))) return true;
     }
     return false;
   }
@@ -1148,6 +1150,7 @@ RA.Game = class Game {
       this._expireAlliances();
       this._vassals();
       this._loans();
+      this._stepStraits();
       this._decayFallout();
     }
     // enclave check: one player per tick

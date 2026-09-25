@@ -182,7 +182,8 @@ async def main():
             q = await ev('''() => { const G = window.__ra.G, me = G.me, l = G.loans[0];
               if (!l) return null;
               const mine = Array.from(l.cells).filter(c => G.owner[c] === me.id).length;
-              for (let i = 0; i < RA.CFG.LOAN_DUE + 20 && G.state === 'play'; i++) { me.gold = 0; G.step(); }
+              l.due = G.tick + 15; // no need to play 5 minutes: the due date is here
+              for (let i = 0; i < 30 && G.state === 'play'; i++) { me.gold = 0; G.step(); }
               const theirs = Array.from(l.cells).filter(c => G.owner[c] === l.from).length;
               return [mine, theirs, G.loans.length]; }''')
             check(q and q[2] == 0 and q[1] >= q[0] * 0.8 and q[1] > 0, f'unpaid: the pledged land goes to the lender {q}')

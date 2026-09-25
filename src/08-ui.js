@@ -894,6 +894,9 @@ RA.UI = class {
         const T = r.t ? G.P[r.t] : null;
         say('info', `Napad ${T ? 'na ' + RA.esc(T.name) : 'na slobodnu zemlju'} obustavljen — vraćeno ${RA.fmt(r.back)} vojnika${T ? ' (25% izgubljeno u povlačenju)' : ''}.`);
       }
+    } else if (kind === 'str') {
+      if (r && typeof r === 'object') say(r.closed ? 'bad' : 'good', `${RA.esc(r.name)} je ${r.closed ? 'zatvoren za tuđe brodove' : 'ponovo otvoren'}.`);
+      else if (err(r)) say('info', RA.esc(r));
     } else if (kind === 'loan' || kind === 'pay') {
       if (err(r)) say('info', RA.esc(r));
     } else if (kind === 'vas') {

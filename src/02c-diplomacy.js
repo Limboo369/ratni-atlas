@@ -96,7 +96,9 @@ Object.assign(RA.CFG, {
   };
   P._tradePath = function (sa, sb) {
     this.tradePaths = this.tradePaths || new Map();
-    const key = sa.id < sb.id ? sa.id + ':' + sb.id : sb.id + ':' + sa.id;
+    // a closed strait lets only the closer's friends through, so the way out and the way back may differ
+    const oneWay = this.straits.some((s) => s.closed);
+    const key = oneWay ? sa.id + '>' + sb.id : sa.id < sb.id ? sa.id + ':' + sb.id : sb.id + ':' + sa.id;
     if (this.tradePaths.has(key)) {
       const p = this.tradePaths.get(key);
       if (!p) return null;
@@ -104,11 +106,11 @@ Object.assign(RA.CFG, {
     }
     const wa = this._portWater(sa), wb = this._portWater(sb);
     const map = this.map;
-    if (wa < 0 || wb < 0 || map.wcomp[wa] !== map.wcomp[wb]) {
+    if (wa < 0 || wb < 0 || this.wroot[map.wcomp[wa]] !== this.wroot[map.wcomp[wb]]) {
       this.tradePaths.set(key, null);
       return null;
     }
-    const W = map.W, H = map.H, land = map.land, block = map.block;
+    const W = map.W, H = map.H, land = map.land, block = map.block, stc = this.stc, own = sa.owner;
     const seen = this.stamp, gen = ++this.stampGen, prev = this.bfsPrev, q = this.queue;
     let qh = 0, qt = 0, found = false;
     q[qt++] = wa;
@@ -128,8 +130,8 @@ Object.assign(RA.CFG, {
           const nx = x + dx, ny = y + dy;
           if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
           const n = ny * W + nx;
-          if (land[n] || block[n] || seen[n] === gen) continue;
-          if (dx && dy && (land[y * W + nx] || land[ny * W + x])) continue;
+          if (block[n] || seen[n] === gen || !(stc[n] ? this.seaFor(n, own) : !land[n])) continue;
+          if (dx && dy && (!this.seaFor(y * W + nx, own) || !this.seaFor(ny * W + x, own))) continue;
           seen[n] = gen;
           prev[n] = c;
           q[qt++] = n;
