@@ -67,13 +67,14 @@ RA.CommandScreen = class {
     this.visibility.observe(this.screen, { attributes: true, attributeFilter: ['hidden'] });
     this.dialogVisibility = new MutationObserver(() => this.applyMotion());
     this.dialogVisibility.observe(this.dialog, { attributes: true, attributeFilter: ['open'] });
+    this.dialogVisibility.observe(this.$('sheetWrap'), { attributes: true, attributeFilter: ['hidden'] });
     document.addEventListener('visibilitychange', () => this.applyMotion());
     this.applyMotion();
     this.refresh();
   }
 
   applyMotion() {
-    const still = !this.motion || this.reduced.matches || this.screen.hidden || this.dialog.open || document.hidden;
+    const still = !this.motion || this.reduced.matches || this.screen.hidden || this.dialog.open || !this.$('sheetWrap').hidden || document.hidden;
     this.screen.classList.toggle('command-still', still);
     const b = this.$('motionBtn'), active = this.motion && !this.reduced.matches;
     b.setAttribute('aria-pressed', String(active));

@@ -40,6 +40,7 @@ RA.Account = class {
     b.innerHTML = RA.icon('user');
     b.onclick = () => this.sheet();
     ui.$('profileBtn').onclick = () => this.sheet();
+    ui.$('leaderboardBtn').onclick = () => this.topSheet('wins');
     if (/^https?:$/.test(location.protocol)) this.load();
   }
 
@@ -76,12 +77,14 @@ RA.Account = class {
     this.user = u || null;
     const b = ui.$('accountBtn'), pb = ui.$('profileBtn');
     b.hidden = pb.hidden = !this.ok;
+    ui.$('leaderboardBtn').hidden = !this.ok;
     b.classList.toggle('on', !!u);
     const label = u ? `Profil: ${u.name}` : 'Prijava';
     b.setAttribute('aria-label', label);
     b.title = label;
     b.innerHTML = u ? RA.emblem(u) : RA.icon('user');
     pb.innerHTML = u ? `${RA.emblem(u)}<span>${RA.esc(u.name)}</span>` : `${RA.icon('user')}<span>Prijava</span>`;
+    pb.setAttribute('aria-label', u ? `Otvori profil: ${u.name}` : 'Prijava i profil');
     // the account name fills the name field, unless the player already typed one
     if (u && !ui.settings.name) {
       ui.settings.name = u.name;
@@ -225,7 +228,7 @@ RA.Account = class {
     put('#accStats', `<div class="acc-grid">${cell('Partija', st.games)}${cell('Pobjeda', st.wins)}${cell('Uspješnost', st.games ? Math.round((st.wins / st.games) * 100) + '%' : '—')}${cell('Online pobjeda', st.onlineWins)}${cell('Najveće carstvo', pct(st.peak))}${cell('Najbrža pobjeda', st.fastest ? RA.fmtTime(st.fastest) : '—')}${cell('Uništeno država', st.kills)}${cell('Osvojeno gradova', st.cities)}${cell('Vrijeme u igri', st.secs >= 3600 ? `${Math.floor(st.secs / 3600)} h ${Math.floor((st.secs % 3600) / 60)} min` : `${Math.floor(st.secs / 60)} min`)}</div>`);
     const got = j.achievements.filter((a) => a.at).length;
     put('#accAchT', `Dostignuća · ${got}/${j.achievements.length}`);
-    put('#accAch', j.achievements.map((a) => `<div class="ach${a.at ? ' on' : ''}"><b>${RA.esc(a.name)}</b><span>${RA.esc(a.desc)}</span></div>`).join(''));
+    put('#accAch', j.achievements.map((a) => `<div class="ach${a.at ? ' on' : ''}"><i class="ach-mark" aria-hidden="true">${RA.icon(a.at ? 'check' : 'lock')}</i><div><b>${RA.esc(a.name)}</b><span>${RA.esc(a.desc)}</span><small>${a.at ? 'OTKLJUČANO' : 'ZAKLJUČANO'}</small></div></div>`).join(''));
     put('#accHist', j.recent.length ? `<ol class="hist">${j.recent.map((r) => this.gameLine(r)).join('')}</ol>` : '<p class="note">Još nema završenih partija. Odigraj jednu do kraja — pobjeda ili poraz se ovdje upisuju.</p>');
   }
   async loadStats(s) {
@@ -242,7 +245,7 @@ RA.Account = class {
   /* leaderboard: most wins, or most online wins */
   async topSheet(by) {
     const ui = this.ui;
-    let h = '<div id="accSheet"></div>' + ui.head('Ljestvica', 'Najbolji komandanti');
+    let h = '<div id="accSheet" class="dossier-marker leaderboard-marker"></div>' + ui.head('Ljestvica komandanata', 'POREDAK · OVERTAKE');
     h += `<div class="seg" id="topSeg"><button data-v="wins" aria-pressed="${by !== 'online'}">Pobjede</button><button data-v="online" aria-pressed="${by === 'online'}">Online pobjede</button></div>
       <div id="topList"><p class="note">Učitavam…</p></div>
       <div class="btns" style="margin-top:14px"><button class="btn" id="topBack"><span class="t">${this.user ? 'Nazad na profil' : 'Nazad'}</span></button></div>`;
@@ -267,11 +270,12 @@ RA.Account = class {
   sheet(keep) {
     const ui = this.ui, u = this.user;
     if (!u) {
-      const h = `<div id="accSheet"></div>${ui.head('Prijava', 'Google nalog')}
-        <p class="explain">Prijavi se Google nalogom i dobij svoj profil: ime i ikonica, čin, statistike, dostignuća i historija partija, na svakom uređaju. Igra radi i bez prijave.</p>
-        <div class="gsi-slot" id="gsiSlot"></div><p class="note" id="accNote" aria-live="polite"></p>
-        <div class="btns" style="margin-top:14px"><button class="btn" id="accTop"><span class="t">Ljestvica</span></button></div>
-        <p class="note">Od Google-a uzimamo samo ime, e-mail i sliku profila. Nalog možeš obrisati kad god hoćeš.</p>`;
+      const h = `<div id="accSheet" class="dossier-marker signin-marker"></div>${ui.head('Tvoja historija počinje ovdje.', 'PROFIL KOMANDANTA')}
+        <div class="signin-hero">${RA.emblem({icon:'orao'}, 'lg')}<p>Svaka pobjeda ostavlja trag.</p><span>Sačuvaj napredak i nastavi na bilo kojem uređaju.</span></div>
+        <div class="signin-features"><div>${RA.icon('army')}<b>Izgradi svoj ugled</b><span>Činovi i lični grb</span></div><div>${RA.icon('star')}<b>Zabilježi pobjede</b><span>Statistika i dostignuća</span></div><div>${RA.icon('globe')}<b>Zauzmi svoje mjesto</b><span>Svjetska ljestvica</span></div></div>
+        <div class="signin-action"><div class="gsi-slot" id="gsiSlot"></div><p class="note" id="accNote" aria-live="polite"></p><p>Igraj i bez prijave. Tvoj izbor.</p></div>
+        <button class="btn" id="accTop"><span class="t">Pogledaj ljestvicu</span><span class="r" aria-hidden="true">↗</span></button>
+        <p class="account-privacy">Google dijeli ime, e-mail i sliku profila. Nalog možeš obrisati u postavkama profila.</p>`;
       ui.openSheet(h, (s) => {
         s.querySelector('#accTop').onclick = () => this.topSheet('wins');
         this.googleButton(s.querySelector('#gsiSlot'), s.querySelector('#accNote'));
@@ -280,22 +284,23 @@ RA.Account = class {
     }
     const since = u.since ? new Date(u.since) : null;
     const embs = (u.pic ? ['google'] : []).concat(Object.keys(RA.EMBLEMS));
-    const h = `<div id="accSheet"></div>${ui.head('Profil', RA.esc(u.email))}
+    const h = `<div id="accSheet" class="dossier-marker profile-marker"></div>${ui.head('Dosje komandanta', 'TVOJA HISTORIJA · TVOJE POBJEDE')}
       <div class="prof-card">
         <button class="prof-emb" id="embBtn" aria-label="Promijeni ikonicu" aria-expanded="false">${RA.emblem(u, 'lg')}<i>${RA.icon('edit')}</i></button>
-        <div class="prof-main"><div class="prof-name">${RA.esc(u.name)}</div><div class="prof-rank" id="accRank"><small>Učitavam…</small></div>${since ? `<small class="prof-since">Član od ${since.getDate()}. ${since.getMonth() + 1}. ${since.getFullYear()}.</small>` : ''}</div>
+        <div class="prof-main"><span class="dossier-eyebrow">KOMANDANT</span><div class="prof-name">${RA.esc(u.name)}</div><div class="prof-rank" id="accRank"><small>Učitavam…</small></div>${since ? `<small class="prof-since">Član od ${since.getDate()}. ${since.getMonth() + 1}. ${since.getFullYear()}.</small>` : ''}</div>
       </div>
       <div class="emb-pick" id="embPick" hidden>${embs.map((id) => `<button data-emb="${id}" aria-pressed="${id === u.icon}" aria-label="Ikonica ${id}">${RA.emblem({ icon: id, pic: u.pic })}</button>`).join('')}</div>
       <div id="accStats"><p class="note">Učitavam statistiku…</p></div>
-      <div class="field acc-name"><label class="lab" for="accName">Ime u igri</label>
+      <div class="dossier-columns"><section class="dossier-achievements"><div class="sec-t" id="accAchT">Dostignuća</div><div class="ach-list" id="accAch"></div></section>
+      <section class="dossier-history"><div class="sec-t">Posljednje operacije</div><div id="accHist"></div></section></div>
+      <div class="account-settings"><div class="sec-t">Postavke profila</div><p class="note">${RA.esc(u.email)}</p><div class="field acc-name"><label class="lab" for="accName">Ime u igri</label>
         <div class="acc-row"><input type="text" id="accName" maxlength="18" value="${RA.esc(u.name)}" autocomplete="nickname" spellcheck="false"><button class="btn good" id="accSave"><span class="t">Sačuvaj</span></button></div></div>
       <p class="note" id="accNote" aria-live="polite"></p>
-      <div class="sec-t" id="accAchT">Dostignuća</div><div class="ach-list" id="accAch"></div>
-      <div class="sec-t">Historija partija</div><div id="accHist"></div>
+      </div>
       <div class="btns" style="margin-top:14px">
         <button class="btn" id="accTop"><span class="t">Ljestvica</span></button>
         <button class="btn" id="accOut"><span class="t">Odjavi se</span></button>
-        <button class="btn danger" id="accDel"><span><span class="t">Obriši nalog</span><br><span class="d">Briše nalog, statistike, dostignuća i historiju</span></span></button>
+        <button class="btn danger" id="accDel"><span class="t">Obriši nalog</span></button>
       </div>`;
     ui.openSheet(h, (s) => {
       const note = s.querySelector('#accNote');
