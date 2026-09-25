@@ -12,6 +12,14 @@ fails = []
 START = sys.argv[1] if len(sys.argv) > 1 else 'klasik'
 
 
+async def shot(page, name):
+    # screenshots only help debugging: a slow CI renderer must not fail the test
+    try:
+        await page.screenshot(path=OUT + name, timeout=15_000)
+    except Exception as e:
+        print('     (no screenshot ' + name + ': ' + str(e).splitlines()[0] + ')')
+
+
 def check(cond, msg):
     print(('OK   ' if cond else 'FAIL ') + msg)
     if not cond:
@@ -96,7 +104,7 @@ async def main():
         await page.wait_for_function('!document.getElementById("resumeBtn").hidden', timeout=10_000)
         txt = await ev('document.getElementById("resumeBtn").textContent')
         check('Nastavi igru' in txt and 'Balkan' in txt, f'start screen offers the saved game: {txt!r}')
-        await page.screenshot(path=OUT + 'save_start.png')
+        await shot(page, 'save_start.png')
         await page.click('#resumeBtn')
         await page.wait_for_function('window.__ra.G && window.__ra.G.rec && !window.__ra.replaying && document.getElementById("loading").hidden && document.getElementById("startScreen").hidden', timeout=60_000)
         c = await ev('() => { const G = window.__ra.G; return [G.tick, G.hash(), G.rec.cmds.length, window.__ra.paused, G.state]; }')
@@ -104,7 +112,7 @@ async def main():
         check(c[1] == a[1], f'same game after replay (hash {c[1]} vs {a[1]})')
         check(c[3] is True and c[4] == 'play', f'continued paused, in play: {c[3:]}')
         check(await ev('window.__ra.G.me.tax') == 4, 'the tax level comes back with the saved game')
-        await page.screenshot(path=OUT + 'save_resumed.png')
+        await shot(page, 'save_resumed.png')
         # plays on and keeps recording into the same save
         d = await ev(PLAY, 2)
         check(d[0] > a[0] and d[2] >= c[2], f'plays on after continue: tick {d[0]}, commands {d[2]}')
