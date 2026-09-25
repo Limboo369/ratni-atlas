@@ -1072,6 +1072,29 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
   .objective-track i, .tbar .fill { transition: none; }
 }
 
+/* your colour (08h-extras.js) */
+.seg.swatches { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.seg.swatches button { height: 38px; min-height: 38px; display: grid; place-items: center; }
+.seg.swatches button span { width: 22px; height: 22px; border-radius: 50%; background: var(--sw); box-shadow: 0 0 0 2px rgba(0, 0, 0, .4); }
+.seg.swatches button[aria-pressed=true] span { box-shadow: 0 0 0 2px #fff, 0 0 0 4px rgba(0, 0, 0, .5); }
+#rematchBtn { margin-top: 10px; }
+
+/* tutorial (08i-tutorial.js): a card above the attack chips, the button / area of the step glows */
+#tutCard { box-sizing: border-box; position: absolute; left: 8px; bottom: calc(var(--dock-h, 90px) + var(--att-h, 0px) + 12px); z-index: 1160; width: min(380px, calc(100vw - 16px)); background: rgba(10, 20, 28, .94); border: 1px solid rgba(242, 177, 52, .6); border-radius: 12px; padding: 10px 12px; box-shadow: 0 8px 30px rgba(0, 0, 0, .45); }
+#tutCard .tut-head { display: flex; justify-content: space-between; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--signal, #f2b134); }
+#tutCard p { margin: 6px 0 8px; font-size: 14px; line-height: 1.4; }
+#tutCard .tut-acts { display: flex; gap: 8px; justify-content: flex-end; }
+#tutCard .tut-acts .btn { width: auto; padding: 7px 14px; }
+.tut-glow { outline: 2px solid var(--signal, #f2b134) !important; outline-offset: 2px; animation: tutGlow 1.2s ease-in-out infinite; }
+@keyframes tutGlow { 50% { outline-color: rgba(242, 177, 52, .25); } }
+#tutBtn.fresh::after { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--signal, #f2b134); margin-left: 4px; }
+@media (max-width: 760px) {
+  /* phone: the tutorial card at the top (the start button and the dock are at the bottom); news waits meanwhile */
+  #tutCard { bottom: auto; top: calc(env(safe-area-inset-top, 0px) + var(--hud-h, 0px) + var(--st-h, 0px) + 8px); }
+  #app:has(#tutCard:not([hidden])) #feed { display: none; }
+  #app:has(#tutCard:not([hidden])) #toasts { top: calc(var(--hud-h, 70px) + var(--st-h, 0px) + 150px); }
+}
+
 #app{touch-action:none}#sheet,.screen{touch-action:pan-y}</style>
 <div id="app">
   <div id="map" aria-label="Karta Evrope"></div>
@@ -1113,6 +1136,7 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
 
   <div id="status"></div>
   <div id="feed" aria-label="Događaji"></div>
+  <div id="tutCard" hidden role="status"><div class="tut-head"><b>Tutorijal</b><span id="tutStep">1/8</span></div><p id="tutText"></p><div class="tut-acts"><button class="btn good" id="tutNext" hidden>Dalje</button><button class="btn" id="tutSkip">Preskoči</button></div></div>
   <div id="toasts" aria-live="polite"></div>
   <aside id="dlog" hidden><header><span>Diplomatija</span><b id="dlogNew" hidden>0</b><button id="dlogToggle" aria-label="Prikaži ili sakrij diplomatiju">▾</button></header><ol id="dlogList"></ol></aside>
 
@@ -1188,7 +1212,7 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
           </div>
           <button class="go command-play" id="goBtn"><span>Započni osvajanje</span><span aria-hidden="true">↗</span></button>
           <button class="command-config" id="configBtn" aria-haspopup="dialog" aria-controls="operationDialog"><span><span class="command-config-label">POSTAVKE OPERACIJE</span><span id="operationSummary">Evropa · Klasično · Srednje</span></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16M9 3v6M15 9v6M8 15v6"/></svg></button>
-          <div class="command-secondary"><button id="onlineToggle" aria-expanded="false" aria-controls="onlineBox"><i data-ic="ally"></i>S prijateljem<span aria-hidden="true">↗</span></button><button id="howBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 .5c0 1.5-2.5 1.5-2.5 3.5M12 16v1"/></svg>Kako se igra</button><button id="leaderboardBtn" hidden aria-haspopup="dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 4h8v6a4 4 0 0 1-8 0V4ZM8 6H4v3a4 4 0 0 0 4 4m8-7h4v3a4 4 0 0 1-4 4M12 14v6m-4 0h8"/></svg>Ljestvica</button></div>
+          <div class="command-secondary"><button id="onlineToggle" aria-expanded="false" aria-controls="onlineBox"><i data-ic="ally"></i>S prijateljem<span aria-hidden="true">↗</span></button><button id="howBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 .5c0 1.5-2.5 1.5-2.5 3.5M12 16v1"/></svg>Kako se igra</button><button id="tutBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3 9l9-5 9 5-9 5-9-5z"/><path d="M7 11.5V16c0 1.5 2.2 3 5 3s5-1.5 5-3v-4.5M21 9v6"/></svg>Tutorijal</button><button id="leaderboardBtn" hidden aria-haspopup="dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 4h8v6a4 4 0 0 1-8 0V4ZM8 6H4v3a4 4 0 0 0 4 4m8-7h4v3a4 4 0 0 1-4 4M12 14v6m-4 0h8"/></svg>Ljestvica</button></div>
           <div class="online-box command-online" id="onlineBox" hidden>
             <div class="sec-t">Igra s prijateljem</div>
             <p class="note" id="onlineNote" aria-live="polite">Povezujem se…</p>
@@ -1221,6 +1245,8 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
         <div class="field"><span class="lab" id="diffLabel">Težina</span><div class="seg" id="diffSeg" role="group" aria-labelledby="diffLabel"><button data-v="lako" aria-pressed="false">Lako</button><button data-v="srednje" aria-pressed="true">Srednje</button><button data-v="tesko" aria-pressed="false">Teško</button></div></div>
         <div class="field"><span class="lab" id="peaceLabel">Mirno doba na početku</span><div class="seg" id="peaceSeg" role="group" aria-labelledby="peaceLabel"><button data-v="0" aria-pressed="false">Bez</button><button data-v="60" aria-pressed="true">1 min</button><button data-v="180" aria-pressed="false">3 min</button></div><p class="note era-note">Vrijeme za razvoj prije prvih napada na države.</p></div>
         <div class="field" id="csField"><span class="lab" id="csLabel">Gradovi-države · mali protivnici</span><div class="seg" id="csSeg" role="group" aria-labelledby="csLabel"><button data-v="0" aria-pressed="false">Bez</button><button data-v="25" aria-pressed="false">25</button><button data-v="50" aria-pressed="true">50</button></div></div>
+        <div class="field"><span class="lab" id="colorLabel">Tvoja boja</span><div class="seg wrap swatches" id="colorSeg" role="group" aria-labelledby="colorLabel"></div></div>
+        <div class="field"><span class="lab" id="cbLabel">Mod za daltoniste</span><div class="seg" id="cbSeg" role="group" aria-labelledby="cbLabel"><button data-v="0" aria-pressed="true">Isključen</button><button data-v="1" aria-pressed="false">Uključen</button></div><p class="note era-note">Boje država koje razlikuju i ljudi s daltonizmom; susjedi nikad iste boje.</p></div>
       </div>
       <div class="operation-foot"><button id="configDone" class="command-apply">Spremno za osvajanje <span aria-hidden="true">✓</span></button></div>
     </dialog>
@@ -1304,6 +1330,7 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
       <canvas id="chart"></canvas>
       <div class="legend" id="legend"></div>
       <button class="go" id="againBtn">Nova igra</button>
+      <button class="btn" id="rematchBtn" hidden><span><span class="t">Revanš</span><br><span class="d">Iste postavke i ista država, odmah u igru</span></span></button>
       <button class="btn good cont-btn" id="contBtn" hidden><span><span class="t">Nastavi igru</span><br><span class="d">Pobjeda ostaje zapisana — osvoji i ostatak karte</span></span></button>
       <div class="small-links"><button id="watchBtn">Gledaj dalje</button><span id="endTime"></span></div>
     </div>
@@ -7690,6 +7717,9 @@ RA.UI = class {
     this._seg('diffSeg', this.settings.difficulty, (v) => (this.settings.difficulty = v));
     this._seg('peaceSeg', String(this.settings.peace), (v) => (this.settings.peace = +v));
     this._seg('csSeg', String(this.settings.cityStates), (v) => (this.settings.cityStates = +v));
+    $('colorSeg').innerHTML = RA.PLAYER_COLORS.map((c) => `<button data-v="${c}" aria-pressed="false" aria-label="Boja ${c}" style="--sw:${c}"><span></span></button>`).join('');
+    this._seg('colorSeg', RA.PLAYER_COLORS.includes(this.settings.color) ? this.settings.color : RA.PLAYER_COLORS[0], (v) => (this.settings.color = v));
+    this._seg('cbSeg', this.settings.cb ? '1' : '0', (v) => this.setColorblind(v === '1'));
 
     $('goBtn').onclick = () => {
       this.settings.name = $('nameIn').value.trim().slice(0, 18);
@@ -7697,6 +7727,10 @@ RA.UI = class {
       app.newGame();
     };
     $('howBtn').onclick = () => this.howTo();
+    $('tutBtn').onclick = () => this.startTutorial();
+    try {
+      if (!localStorage.getItem('ra_tut_done')) $('tutBtn').classList.add('fresh');
+    } catch (_) {}
     $('startBtn').onclick = () => app.start();
     $('natSel').onchange = () => this.pickNation($('natSel').value);
     $('againBtn').onclick = () => {
@@ -7711,6 +7745,7 @@ RA.UI = class {
       $('endScreen').hidden = true;
       this.toast('good', 'Igra se nastavlja. Kad ostaneš sam na karti, igra je gotova.', { ms: 5000 });
     };
+    $('rematchBtn').onclick = () => this.rematch();
     $('watchBtn').onclick = () => {
       $('endScreen').hidden = true;
       this.watching = true;
@@ -8107,6 +8142,7 @@ RA.UI = class {
       G.events.length = 0;
     }
     this.feedUpdate(now);
+    if (this.tut) this.tut.update();
     if (G.fx.length) {
       for (const f of G.fx) if (!f.pid || (G.me && f.pid === G.me.id)) this.fxList.push(Object.assign({ t0: now }, f));
       if (!this.app.attractMode) for (const f of G.fx) {
@@ -9356,6 +9392,7 @@ Object.assign(RA.UI.prototype, {
       <button class="btn" data-m="cities"><span class="t">Imena gradova</span><span class="r" style="font-size:14px">${app.fx.showCities ? 'Uključeno' : 'Isključeno'}</span></button>
       <button class="btn" data-m="osm" ${app.osmOK ? '' : 'disabled'}><span><span class="t">Podloga: ${app.osmOn ? 'OpenStreetMap' : 'Atlas (ugrađena)'}</span><br><span class="d">${app.osmOK ? 'Dodirni za promjenu' : 'OpenStreetMap pločice rade kad igru hostamo na vlastitoj adresi — Claude pregled blokira vanjske slike.'}</span></span></button>
       <button class="btn" data-m="tips"><span class="t">Savjeti tokom igre</span><span class="r" style="font-size:14px">${this.noTips ? 'Isključeno' : 'Uključeno'}</span></button>
+      <button class="btn" data-m="cb"><span class="t">Mod za daltoniste</span><span class="r" style="font-size:14px">${this.settings.cb ? 'Uključeno' : 'Isključeno'}</span></button>
       <button class="btn" data-m="sfx"><span class="t">Zvučni efekti</span><span class="r" style="font-size:14px">${this.audio.s.sfx ? 'Uključeno' : 'Isključeno'}</span></button>
       <button class="btn" data-m="music"><span class="t">Muzika</span><span class="r" style="font-size:14px">${this.audio.s.music ? 'Uključeno' : 'Isključeno'}</span></button>
       <button class="btn danger" data-m="new"><span><span class="t">${G.online ? 'Napusti online igru' : 'Nova igra'}</span><br><span class="d">${G.online ? 'Tvoju državu preuzima kompjuter' : 'Trenutna partija se prekida'}</span></span></button>
@@ -9372,6 +9409,9 @@ Object.assign(RA.UI.prototype, {
         } else if (m === 'cities') {
           app.fx.showCities = !app.fx.showCities;
           this.closeSheet();
+        } else if (m === 'cb') {
+          this.setColorblind(!this.settings.cb);
+          this.menu();
         } else if (m === 'sfx' || m === 'music') {
           this.audio.toggle(m);
           this.menu();
@@ -9455,6 +9495,7 @@ Object.assign(RA.UI.prototype, {
     $('watchBtn').hidden = !!(G.state === 'over');
     // single player: the winner may play on to 100% (online needs every device to agree: later)
     $('contBtn').hidden = !(won && G.state === 'over' && !G.online && !G.continued);
+    $('rematchBtn').hidden = !!G.online;
     $('endScreen').hidden = false;
     this.audio.play(won ? 'win' : 'lose', 3000);
     requestAnimationFrame(() => this.drawChart());
@@ -10627,6 +10668,152 @@ RA.Audio = class {
 };
 
 
+/* Small things from plan item 67: your own colour, a colour-blind mode and the rematch button. */
+
+// your colour on the map (single player; online games keep the slot colours)
+RA.PLAYER_COLORS = ['#2f7bff', '#ff4fc3', '#ffd23f', '#6ee05a', '#ff7a2f', '#9b5cff', '#1fd1c1', '#ff3b4e', '#f4f4f4', '#a8ff3c'];
+
+/* colour-blind mode: every state gets a colour from a palette that people with red-green (and blue-yellow) colour
+   blindness tell apart — Okabe-Ito plus darker / lighter versions, neighbours never the same. Visual only (the sim and
+   online play never read colours); on/off at any time. */
+RA.CB_PALETTE = ['#E69F00', '#56B4E9', '#009E73', '#F0E442', '#0072B2', '#D55E00', '#CC79A7', '#999999',
+  '#8a5f00', '#a9dcf7', '#00553e', '#f7f1a6', '#003f63', '#f2a37a', '#e9bcd7', '#5c5c5c'];
+RA.applyColorblind = function (G, on) {
+  for (const p of G.P) {
+    if (!p) continue;
+    if (p.hex0 === undefined) p.hex0 = p.hex;
+    if (!on) p.hex = p.hex0;
+  }
+  if (on) {
+    // who touches whom (right and down neighbours on the grid)
+    const own = G.owner, W = G.map.W, N = G.map.N, adj = new Map();
+    const link = (a, b) => {
+      if (!a || !b || a === b) return;
+      (adj.get(a) || adj.set(a, new Set()).get(a)).add(b);
+      (adj.get(b) || adj.set(b, new Set()).get(b)).add(a);
+    };
+    for (let c = 0; c < N; c++) {
+      const o = own[c];
+      if (!o) continue;
+      if ((c + 1) % W) link(o, own[c + 1]);
+      if (c + W < N) link(o, own[c + W]);
+    }
+    const order = G.P.filter((p) => p).sort((a, b) => b.tiles - a.tiles);
+    const pal = RA.CB_PALETTE;
+    for (const p of order) {
+      const used = new Set();
+      for (const q of adj.get(p.id) || []) if (G.P[q] && G.P[q].cbDone === G) used.add(G.P[q].hex);
+      // the player: always the first colour free among blue / orange / yellow (easy to find on the map)
+      let hex = p === G.me ? ['#0072B2', '#E69F00', '#F0E442'].find((h) => !used.has(h)) : null;
+      if (!hex) hex = pal.find((h) => !used.has(h)) || pal[p.id % pal.length];
+      p.hex = hex;
+      p.cbDone = G;
+    }
+  }
+  for (const p of G.P) if (p) p.rgb = RA.hexToRgb(p.hex);
+};
+
+Object.assign(RA.UI.prototype, {
+  setColorblind(on) {
+    this.settings.cb = !!on;
+    this._save();
+    if (this.G) {
+      RA.applyColorblind(this.G, this.settings.cb);
+      this.app.terr.updatePalette();
+    }
+  },
+  /* rematch: the same settings and the same country, straight into the game */
+  rematch() {
+    const app = this.app, G = this.G, me = G && G.me;
+    const iso = me && me.took ? me.took.iso : null, cell = me ? me.capital : -1;
+    this.$('endScreen').hidden = true;
+    app.newGame();
+    const go = () => {
+      const G2 = this.G;
+      if (!G2 || G2.state !== 'spawn') return setTimeout(go, 200); // the map may still be loading
+      const n = iso && G2.P.find((p) => p && p.alive && p.type === 'nation' && p.iso === iso);
+      if (n) this.pickNation(String(n.id));
+      else if (cell >= 0) RA.placeHuman(G2, cell, this.settings.name || 'Ti');
+      if (G2.me && G2.me.spawned) app.start();
+    };
+    go();
+  },
+});
+
+
+/* Interactive tutorial (plan item 66): a guided first game on the Balkans (easy, 3 minutes of peace). A card shows
+   one step at a time and waits until the player really does it; the button or area the step is about glows. */
+RA.TUTORIAL = [
+  { t: 'Dobro došao, komandante! Izaberi odakle krećeš: klikni mjesto na karti ili državu sa spiska dole, pa pritisni „Kreni”.', glow: 'spawnBar',
+    done: (G) => G.state === 'play' && G.me },
+  { t: 'Gore su tvoja vojska, zlato i udio kopna. Vojska raste sama — najbrže kad je oko zelene oznake na traci. Pobjeđuješ sa 70% kopna.', glow: 'hud', next: true },
+  { t: 'Sada je mirno doba: niko ne smije napadati države. Klikni sivu, slobodnu zemlju pored svoje granice da se širiš.',
+    done: (G, T) => G.attacks.some((a) => a.a === G.me.id && a.t === 0) || G.me.tiles > T.tiles0 * 1.03 },
+  { t: 'Klizač „Snaga napada” (tipke Q i E) određuje koliko vojske šalješ. Što više pošalješ, to brže osvajaš — ali ti ostaje manje za odbranu.', glow: 'ratio', next: true },
+  { t: 'Otvori „Gradi” (tipka B) i postavi grad ili kasarnu na svojoj zemlji. Gradovi donose zlato i vojsku, kasarne jedinice.', glow: 'aBuild',
+    done: (G, T) => G.structs.some((s) => s.owner === G.me.id && s.id >= T.structs0) },
+  { t: 'Otvori „Savezi” (tipka S): tu sklapaš vojne i trgovinske saveze. Saveznik te brani i pušta preko svoje zemlje.', glow: 'aDiplo',
+    done: (G, T, ui) => !!ui.$('sheet').querySelector('[data-do^="show:"]') },
+  { t: 'Kad mirno doba prođe (možeš ubrzati igru dugmetom 1×/2×/3×), klikni dio susjedne države: vojska ide s tvoje najbliže granice pravo tamo i osvaja samo taj dio. Na računaru možeš i povući strelicu desnim dugmetom miša.', glow: 'speedBtn',
+    done: (G) => G.attacks.some((a) => a.a === G.me.id && a.t > 0 && a.corr) },
+  { t: 'Odlično! Ako ti neko otme zemlju, žuto dugme „Vrati” u traci napada vraća je jednim klikom. Desni klik (dugi dodir) na bilo koje mjesto otvara sve opcije za njega. Sretno!', next: 'Završi' },
+];
+RA.Tutorial = class {
+  constructor(ui) {
+    this.ui = ui;
+    this.i = 0;
+    this.card = ui.$('tutCard');
+    this.card.hidden = false;
+    this.card.querySelector('#tutSkip').onclick = () => this.end(false);
+    this.card.querySelector('#tutNext').onclick = () => this.go(this.i + 1);
+    this.go(0);
+  }
+  go(i) {
+    const ui = this.ui, G = ui.G, S = RA.TUTORIAL[i];
+    if (this.glowEl) this.glowEl.classList.remove('tut-glow');
+    if (!S) return this.end(true);
+    this.i = i;
+    if (G && G.me) {
+      this.tiles0 = G.me.tiles;
+      this.structs0 = G.structs.length;
+    }
+    this.card.querySelector('#tutStep').textContent = `${i + 1}/${RA.TUTORIAL.length}`;
+    this.card.querySelector('#tutText').textContent = S.t;
+    const nb = this.card.querySelector('#tutNext');
+    nb.hidden = !S.next;
+    nb.textContent = typeof S.next === 'string' ? S.next : 'Dalje';
+    this.glowEl = S.glow ? ui.$(S.glow) : null;
+    if (this.glowEl) this.glowEl.classList.add('tut-glow');
+  }
+  update() {
+    const ui = this.ui, G = ui.G, S = RA.TUTORIAL[this.i];
+    if (!G || !S || !S.done) return;
+    if (S.done(G, this, ui)) this.go(this.i + 1);
+  }
+  end(done) {
+    if (this.glowEl) this.glowEl.classList.remove('tut-glow');
+    this.card.hidden = true;
+    this.ui.tut = null;
+    try {
+      localStorage.setItem('ra_tut_done', '1');
+    } catch (_) {}
+    if (done) this.ui.toast('good', 'Tutorijal je završen. Igra se nastavlja — osvoji 70% kopna!', { ms: 6000 });
+  }
+};
+Object.assign(RA.UI.prototype, {
+  /* a fresh easy game on the Balkans for the tutorial; the player's own settings stay as they were */
+  startTutorial() {
+    const s = this.settings, keep = Object.assign({}, s);
+    Object.assign(s, { map: 'evropa', region: 'balkan', era: 'danas', start: 'slobodno', gm: 'klasik', difficulty: 'lako', peace: 180, cityStates: 25 });
+    if (this.tut) this.tut.end(false);
+    this.app.newGame();
+    Object.assign(s, keep);
+    this.noTips = true; // the tutorial card replaces the tips
+    this.tut = new RA.Tutorial(this);
+  },
+});
+
+
 /* Ratni Atlas — boot, Leaflet map, game loop */
 
 RA.App = class {
@@ -10887,6 +11074,7 @@ RA.App = class {
     this.ui.audio.setEra(G.era || 'danas');
     this.ui.feedReset();
     RA.applyEra(G.era);
+    if (this.ui.settings.cb) RA.applyColorblind(G, true);
     this.ui.citiesSorted = G.cities.slice().sort((a, b) => b.tier - a.tier || b.pop - a.pop);
     this.ui.applyEraUI();
   }
@@ -10901,6 +11089,7 @@ RA.App = class {
   }
   showStart() {
     const ui = this.ui;
+    if (ui.tut) ui.tut.end(false);
     if (this.net && (this.net.inGame || this.net.role)) this.net.endGame();
     document.getElementById('lobbyScreen').hidden = true;
     ui.closeSheet();
@@ -10930,6 +11119,7 @@ RA.App = class {
     this.setMap(this.maps[s.map]);
     document.getElementById('startScreen').hidden = true;
     const gm = RA.regionMap(RA.eraMap(this.map, s.era, s.start), s.region);
+    RA.ME_COLOR = RA.PLAYER_COLORS.includes(s.color) ? s.color : RA.PLAYER_COLORS[0];
     const G = RA.newGame(gm, { seed: (Math.random() * 1e9) | 0, difficulty: s.difficulty, cityStates: s.cityStates, peace: s.peace, era: s.era, start: s.start, gm: s.gm });
     G.gid = 's' + Math.random().toString(36).slice(2, 12); // this game on the player's account (results)
     this.setGame(G);
@@ -10957,6 +11147,7 @@ RA.App = class {
     const G = this.G;
     if (!G.me || !G.me.spawned) return;
     RA.startGame(G);
+    if (this.ui.settings.cb) RA.applyColorblind(G, true); // the player's own colour too
     this.terr.updatePalette();
     this.ui.spawnUI(false);
     this.ui.showPlayUI(true);
@@ -11881,7 +12072,7 @@ RA.wsRoom = function (url, creds, onCreds, onBack) {
   };
 };
 
-RA.BUILD = '804106af';
+RA.BUILD = 'f685bbe7';
 new RA.App().boot();
 }
 function __raFallback(){

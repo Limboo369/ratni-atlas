@@ -277,7 +277,9 @@ async def main():
         await page.wait_for_timeout(900)
         await page.screenshot(path=OUT + f'{MODE}_v3_6_army.png')
         await page.click('[data-rec="inf"]')
-        bc = await ev('''() => { const G = window.__ra.G, me = G.me; const info = RA.AI.scan(G, me); const id = [...info.nb.keys()][0]; return id ? RA.AI.borderCellFacing(G, me, id) : me.capital; }''')
+        # a cell deep in my land (a border cell can be taken in the wars the checks above started)
+        bc = await ev('''() => { const G = window.__ra.G, me = G.me; for (const a of G.attacks) if (!a.done && a.t === me.id) a.done = true;
+            return me.capital >= 0 && G.owner[me.capital] === me.id ? me.capital : me.cells[me.tiles >> 1]; }''')
         await ev(f'() => window.__ra.lmap.setView(window.__ra.map.latLngOfCell({bc}), 6.4)')
         await page.wait_for_timeout(300)
         await tap_cell(bc)
@@ -286,11 +288,14 @@ async def main():
         check(nu == 1, 'infantry recruited by tapping')
         await steps(40)
         await page.wait_for_timeout(300)
+        await ev('() => { document.getElementById("toasts").innerHTML = ""; window.__ra.ui.reqToasts.clear(); }')  # offer cards would catch the tap
         upt = await ev('() => { const a = window.__ra, u = a.G.me.units[0]; if (!u) return null; const v = a.terr.view(); return [v.ox + u.x * v.cell, v.oy + u.y * v.cell]; }')
         if upt:
             await tap_xy(upt[0], upt[1])
             await page.wait_for_timeout(300)
             sel = await ev('() => { const m = window.__ra.ui.mode; return m && m.kind; }')
+            if sel != 'unit':
+                print('unit tap debug', upt, await ev(f'() => {{ const e = document.elementFromPoint({upt[0]}, {upt[1]}); return e ? (e.id || e.className || e.tagName) + " in " + (e.closest("[id]") || {{}}).id : null; }}'), await ev('() => window.__ra.G.me.units.length'))
             check(sel == 'unit', 'tapping my unit selects it')
             await page.screenshot(path=OUT + f'{MODE}_v3_7_unit.png')
             cap = await ev('() => window.__ra.G.me.capital')
@@ -382,13 +387,34 @@ async def main():
         await page.click('[data-m="music"]')
         await page.wait_for_timeout(200)
         check(au[0] and au[1] and au[2] == 'danas' and off is False and await ev('() => window.__ra.ui.audio.s.music'), f'sound starts on the first click, era music, switch in the menu {au}')
-        await page.click('[data-m="how"]')
+        # colour-blind mode from the menu: the palette changes, neighbours differ, off restores the colours
+        orig = await ev('() => window.__ra.G.P.filter(p => p).map(p => p.hex).join()')
+        await page.click('[data-m="cb"]')
+        await page.wait_for_timeout(200)
+        cb = await ev('''() => { const G = window.__ra.G, own = G.owner, W = G.map.W; let same = 0, pairs = 0;
+            for (let c = 0; c + 1 < G.map.N; c++) { const a = own[c], b = own[c + 1]; if (a && b && a !== b && (c + 1) % W) { pairs++; if (G.P[a].hex === G.P[b].hex) same++; } }
+            return { same, pairs, pal: G.P.filter(p => p && p.alive).every(p => RA.CB_PALETTE.includes(p.hex)) }; }''')
+        await page.click('[data-m="cb"]')
+        await page.wait_for_timeout(200)
+        back = await ev('() => window.__ra.G.P.filter(p => p).map(p => p.hex).join()')
+        check(cb['pal'] and cb['same'] == 0 and cb['pairs'] > 0 and back == orig, f'colour-blind mode: safe palette, neighbours differ, off restores {cb}')
+        await page.click('[data-m="how"]')  # the menu is open again after a switch
         await page.wait_for_timeout(300)
         check(await ev('() => !!document.querySelector("#sheet .howto")'), 'how-to opens from the in-game menu')
         await ev('window.__ra.ui.closeSheet()')
         await ev('''() => { const G = window.__ra.G; G.winner = G.me; G.state = 'over'; G._history(); G.event('over', 'x', G.me.id); }''')
         await page.wait_for_timeout(900)
         await page.screenshot(path=OUT + f'{MODE}_v3_15_end.png')
+        # rematch: same settings and country, straight into a new game
+        iso0 = await ev('() => { const me = window.__ra.G.me; return me.took ? me.took.iso : null; }')
+        g0 = await ev('() => window.__ra.G.gid')
+        await page.click('#rematchBtn')
+        try:
+            await page.wait_for_function(f'window.__ra.G.gid !== {json.dumps(g0)} && window.__ra.G.state === "play"', timeout=30_000)
+        except Exception:
+            pass
+        rm = await ev('() => { const G = window.__ra.G; return [G.state, G.me && G.me.took ? G.me.took.iso : null, document.getElementById("endScreen").hidden]; }')
+        check(rm == ['play', iso0, True], f'rematch starts a new game with the same country {rm} (was {iso0})')
         print('\n'.join(errs[:20]) or 'no page errors')
         if errs:
             fails.append('page errors')

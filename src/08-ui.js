@@ -117,6 +117,9 @@ RA.UI = class {
     this._seg('diffSeg', this.settings.difficulty, (v) => (this.settings.difficulty = v));
     this._seg('peaceSeg', String(this.settings.peace), (v) => (this.settings.peace = +v));
     this._seg('csSeg', String(this.settings.cityStates), (v) => (this.settings.cityStates = +v));
+    $('colorSeg').innerHTML = RA.PLAYER_COLORS.map((c) => `<button data-v="${c}" aria-pressed="false" aria-label="Boja ${c}" style="--sw:${c}"><span></span></button>`).join('');
+    this._seg('colorSeg', RA.PLAYER_COLORS.includes(this.settings.color) ? this.settings.color : RA.PLAYER_COLORS[0], (v) => (this.settings.color = v));
+    this._seg('cbSeg', this.settings.cb ? '1' : '0', (v) => this.setColorblind(v === '1'));
 
     $('goBtn').onclick = () => {
       this.settings.name = $('nameIn').value.trim().slice(0, 18);
@@ -124,6 +127,10 @@ RA.UI = class {
       app.newGame();
     };
     $('howBtn').onclick = () => this.howTo();
+    $('tutBtn').onclick = () => this.startTutorial();
+    try {
+      if (!localStorage.getItem('ra_tut_done')) $('tutBtn').classList.add('fresh');
+    } catch (_) {}
     $('startBtn').onclick = () => app.start();
     $('natSel').onchange = () => this.pickNation($('natSel').value);
     $('againBtn').onclick = () => {
@@ -138,6 +145,7 @@ RA.UI = class {
       $('endScreen').hidden = true;
       this.toast('good', 'Igra se nastavlja. Kad ostaneš sam na karti, igra je gotova.', { ms: 5000 });
     };
+    $('rematchBtn').onclick = () => this.rematch();
     $('watchBtn').onclick = () => {
       $('endScreen').hidden = true;
       this.watching = true;
@@ -534,6 +542,7 @@ RA.UI = class {
       G.events.length = 0;
     }
     this.feedUpdate(now);
+    if (this.tut) this.tut.update();
     if (G.fx.length) {
       for (const f of G.fx) if (!f.pid || (G.me && f.pid === G.me.id)) this.fxList.push(Object.assign({ t0: now }, f));
       if (!this.app.attractMode) for (const f of G.fx) {

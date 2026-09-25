@@ -259,6 +259,7 @@ RA.App = class {
     this.ui.audio.setEra(G.era || 'danas');
     this.ui.feedReset();
     RA.applyEra(G.era);
+    if (this.ui.settings.cb) RA.applyColorblind(G, true);
     this.ui.citiesSorted = G.cities.slice().sort((a, b) => b.tier - a.tier || b.pop - a.pop);
     this.ui.applyEraUI();
   }
@@ -273,6 +274,7 @@ RA.App = class {
   }
   showStart() {
     const ui = this.ui;
+    if (ui.tut) ui.tut.end(false);
     if (this.net && (this.net.inGame || this.net.role)) this.net.endGame();
     document.getElementById('lobbyScreen').hidden = true;
     ui.closeSheet();
@@ -302,6 +304,7 @@ RA.App = class {
     this.setMap(this.maps[s.map]);
     document.getElementById('startScreen').hidden = true;
     const gm = RA.regionMap(RA.eraMap(this.map, s.era, s.start), s.region);
+    RA.ME_COLOR = RA.PLAYER_COLORS.includes(s.color) ? s.color : RA.PLAYER_COLORS[0];
     const G = RA.newGame(gm, { seed: (Math.random() * 1e9) | 0, difficulty: s.difficulty, cityStates: s.cityStates, peace: s.peace, era: s.era, start: s.start, gm: s.gm });
     G.gid = 's' + Math.random().toString(36).slice(2, 12); // this game on the player's account (results)
     this.setGame(G);
@@ -329,6 +332,7 @@ RA.App = class {
     const G = this.G;
     if (!G.me || !G.me.spawned) return;
     RA.startGame(G);
+    if (this.ui.settings.cb) RA.applyColorblind(G, true); // the player's own colour too
     this.terr.updatePalette();
     this.ui.spawnUI(false);
     this.ui.showPlayUI(true);
