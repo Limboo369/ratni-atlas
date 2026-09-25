@@ -1155,6 +1155,7 @@ RA.Game = class Game {
       this._vassals();
       this._loans();
       this._stepStraits();
+      if (this.tick % 20 === 0) this._stepAir();
       if (this.deps && this.tick % RA.CFG.RES_EVERY === 0) this._stepRes();
       this._decayFallout();
     }

@@ -72,6 +72,8 @@ RA.AI = {
     RA.AI.maybeRecruit(G, p, info);
     if (G.deps) RA.AI.maybeBuyRes(G, p);
     if (!peace && p.n.port) RA.AI.navy(G, p, info);
+    if (!peace && p.n.airport && RA.airOn()) RA.AI.air(G, p, info);
+    if (!peace && !RA.MISSILE.drone.na) RA.AI.drones(G, p, info);
     if (!peace) {
       RA.AI.maybeStrike(G, p, info);
       RA.AI.maybeNuke(G, p, info);
@@ -634,6 +636,37 @@ RA.AI = {
     }
   },
 
+  /* the air force: a fighter squadron to guard the sky, a bomber for the enemy's buildings and units at the front */
+  air(G, p, info) {
+    const tk = G.tick, sq = p.air || [];
+    const has = (k) => sq.some((q) => q.type === k);
+    const enemy = RA.AI.frontEnemy(G, p, info);
+    if (!enemy) return;
+    if (!has('bomber') && p.gold >= RA.AIR.bomber.cost * 2 && G.rng() < 0.35) return void G.buyAir(p.id, 'bomber');
+    if (!has('fighter') && p.gold >= RA.AIR.fighter.cost * 2.5 && G.rng() < 0.25) return void G.buyAir(p.id, 'fighter');
+    const bases = sq.filter((q) => q.type === 'bomber' && q.readyAt <= tk).map((q) => G.structs[q.base]).filter((s) => s && !s.dead);
+    if (!bases.length || G.rng() > 0.5) return;
+    // target in range: an enemy building or unit, else its border army
+    const W = G.map.W, R = RA.CFG.BOMB_RANGE, cands = [];
+    const inRange = (c) => bases.some((s) => RA.dist(s.x - (c % W), s.y - ((c / W) | 0)) <= R);
+    for (const s of G.structs) if (!s.dead && s.owner === enemy.id && (s.type === 'fort' || s.type === 'sam' || s.type === 'silo' || s.type === 'barracks' || s.type === 'airport') && inRange(s.c)) cands.push(s.c);
+    for (const u of G.units) if (!u.dead && u.owner === enemy.id && !RA.UNIT[u.type].naval && inRange((u.y | 0) * W + (u.x | 0))) cands.push((u.y | 0) * W + (u.x | 0));
+    let c = cands.length ? cands[Math.floor(G.rng() * cands.length)] : RA.AI.borderCellFacing(G, enemy, p.id);
+    if (c >= 0 && inRange(c)) G.bombRaid(p.id, c);
+  },
+  /* drones ("danas"): now and then a hunter drone at enemy units near us, or a kamikaze drone at its border */
+  drones(G, p, info) {
+    if (G.tick < 1500 || (p.drones || 0) >= 2 || G.rng() > 0.12) return;
+    const enemy = RA.AI.frontEnemy(G, p, info);
+    if (!enemy) return;
+    const W = G.map.W;
+    const u = G.units.find((x) => !x.dead && x.owner === enemy.id && !RA.UNIT[x.type].naval);
+    if (u && p.gold >= RA.MISSILE.hdrone.cost * 3) return void G.launchMissile(p.id, 'hdrone', (u.y | 0) * W + (u.x | 0));
+    if (p.gold >= RA.MISSILE.drone.cost * 4) {
+      const c = RA.AI.borderCellFacing(G, enemy, p.id);
+      if (c >= 0) G.launchMissile(p.id, 'drone', c);
+    }
+  },
   /* the navy: at war with a state that has ports, build a ship or two and send them to blockade its nearest port */
   navy(G, p, info) {
     const U = RA.UNIT, tk = G.tick;

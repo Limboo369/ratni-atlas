@@ -184,7 +184,7 @@ RA.UI = class {
     };
     $('aArmy').onclick = modal(['recruit', 'unit'], () => this.armySheet());
     $('aBuild').onclick = modal(['build'], () => this.buildSheet());
-    $('aLand').onclick = modal(['boat', 'para'], () => this.landSheet());
+    $('aLand').onclick = modal(['boat', 'para', 'bomb'], () => this.landSheet());
     $('aStrike').onclick = modal(['missile'], () => this.strikeSheet());
     $('aDiplo').onclick = () => this.diploSheet();
     $('modeCancel').onclick = () => this.setMode(null);
@@ -895,6 +895,12 @@ RA.UI = class {
         const T = r.t ? G.P[r.t] : null;
         say('info', `Napad ${T ? 'na ' + RA.esc(T.name) : 'na slobodnu zemlju'} obustavljen — vraćeno ${RA.fmt(r.back)} vojnika${T ? ' (25% izgubljeno u povlačenju)' : ''}.`);
       }
+    } else if (kind === 'air') {
+      if (r && typeof r === 'object') say('good', `${RA.airName(r.type)}: nova eskadrila, spremna za ${Math.round(RA.CFG.AIR_READY / 10)} s.`);
+      else if (err(r)) say('info', RA.esc(r));
+    } else if (kind === 'bomb') {
+      if (r && typeof r === 'object') say('good', `${RA.airName('bomber')} su poletjeli.`);
+      else if (err(r)) say('info', RA.esc(r));
     } else if (kind === 'buy') {
       if (err(r)) say('info', RA.esc(r));
     } else if (kind === 'str') {
@@ -1031,12 +1037,15 @@ RA.UI = class {
         const O = G.owner[m.aim] ? G.P[G.owner[m.aim]] : null;
         const who = O ? (O === G.me ? 'TVOJA zemlja!' : O.name + (G.me.allies.has(O.id) ? ' (saveznik!)' : '')) : 'slobodna zemlja';
         const far = M.range && !G.strikeSilo(G.me, m.type, m.aim, true);
-        txt = `${M.name} → ${who} · krug ${rad} polja · ${RA.fmt(G.missileCost(m.type))}${far ? ` · IZVAN DOMETA (${M.range} polja)` : ''}${this.samCovers(m.aim) ? ` · ${RA.STRUCT.sam.short || 'PVO'} je može oboriti` : ''}`;
+        txt = `${M.name} → ${who} · krug ${rad} polja · ${RA.fmt(G.missileCost(m.type, G.me))}${far ? ` · IZVAN DOMETA (${M.range} polja)` : ''}${this.samCovers(m.aim) ? ` · ${RA.STRUCT.sam.short || 'PVO'} je može oboriti` : ''}`;
         ex.textContent = 'Lansiraj';
         ex.classList.add('fire');
         ex.hidden = false;
       } else txt = `Dodirni metu: ${M.name} (krug ${rad} polja${M.range ? `, domet ${M.range} polja` : ''})`;
       btn = 'aStrike';
+    } else if (m.kind === 'bomb') {
+      txt = `Dodirni neprijateljsku zemlju: ${RA.airName('bomber')}`;
+      btn = 'aLand';
     } else if (m.kind === 'recruit') {
       txt = `Dodirni svoju zemlju uz granicu: ${RA.UNIT[m.type].name}`;
       btn = 'aArmy';
@@ -1196,6 +1205,10 @@ RA.UI = class {
         if (this.fireMissile(m.type, m.aim)) this.ping(cp, false);
         else this.ping(cp, true);
       } else this.aimMissile(m.type, c);
+    } else if (m.kind === 'bomb') {
+      this.ping(cp, false);
+      this.act('bomb', [c]);
+      this.setMode(null);
     } else if (m.kind === 'recruit') {
       const cc = this.nearestOwn(c, 300);
       if (cc < 0) return fail('Jedinicu postavi na svoju teritoriju (najbolje uz granicu).');
@@ -1282,6 +1295,7 @@ RA.UI = class {
     else if (k === 'g' && this.G.online && this.mouseLL) this.act('png', [this.cellFromLatLng(this.mouseLL), 0]);
     else if (k === 'm') this.act('mob', []);
     else if (k === 'z') this.econSheet();
+    else if (k === 'a' && RA.airOn() && G.me.n.airport) this.landSheet();
   }
 
   /* ---------------- sheet helpers ---------------- */

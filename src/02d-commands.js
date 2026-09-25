@@ -3,7 +3,7 @@
    can replay exactly the same inputs on every device (lockstep). Args come from other players' devices:
    they are validated here and never trusted. */
 
-RA.CMD_KINDS = ['atk', 'boat', 'para', 'build', 'rec', 'mv', 'dis', 'mis', 'mob', 'ret', 'aReq', 'aRes', 'tReq', 'tRes', 'ext', 'brk', 'tEnd', 'give', 'help', 'ai', 'back', 'rcl', 'png', 'qm', 'tax', 'vas', 'loan', 'pay', 'str', 'buy'];
+RA.CMD_KINDS = ['atk', 'boat', 'para', 'build', 'rec', 'mv', 'dis', 'mis', 'mob', 'ret', 'aReq', 'aRes', 'tReq', 'tRes', 'ext', 'brk', 'tEnd', 'give', 'help', 'ai', 'back', 'rcl', 'png', 'qm', 'tax', 'vas', 'loan', 'pay', 'str', 'buy', 'air', 'bomb'];
 /* pings on the map and quick messages, seen by the sender's allies and team (plan item 57) */
 RA.PINGS = [
   { name: 'Napadni ovdje', icon: 'attack', color: '#ff5d5d' },
@@ -50,7 +50,7 @@ RA.QUICK_MSGS = ['Napadam!', 'Treba mi pomoć!', 'Pazi, napadaju nas!', 'Idem ta
         return { type: u.type };
       }
       case 'mis':
-        if (!['rocket', 'emp', 'atom', 'hydro', 'mirv'].includes(a[0])) return 'Nepoznata raketa.';
+        if (!['rocket', 'rocket2', 'emp', 'atom', 'hydro', 'mirv', 'drone', 'hdrone'].includes(a[0])) return 'Nepoznata raketa.';
         if (cell(a[1]) < 0) return 'Nevažeća meta.';
         return this.launchMissile(pid, a[0], a[1]);
       case 'mob':
@@ -111,6 +111,10 @@ RA.QUICK_MSGS = ['Napadam!', 'Treba mi pomoć!', 'Pazi, napadaju nas!', 'Idem ta
         if (this.chat.length > 60) this.chat.splice(0, 30);
         return true;
       }
+      case 'air':
+        return typeof a[0] === 'string' ? this.buyAir(pid, a[0]) : 'Nepoznata vrsta aviona.';
+      case 'bomb':
+        return this.bombRaid(pid, cell(a[0]));
       case 'buy':
         return this.buyRes(pid, Number.isInteger(a[0]) ? a[0] : -1, player(a[1]));
       case 'str':

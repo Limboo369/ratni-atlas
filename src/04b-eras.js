@@ -4,7 +4,7 @@
    online game every device applies the same era). */
 
 RA.MISSILE.rocket2 = { name: 'Teška raketa', kind: 'conv', cost: 300000, r: 4, speed: 3.0, cd: 70, na: true, desc: '' };
-RA.MISSILE_ORDER = ['rocket', 'rocket2', 'emp', 'atom', 'hydro', 'mirv'];
+RA.MISSILE_ORDER = ['drone', 'hdrone', 'rocket', 'rocket2', 'emp', 'atom', 'hydro', 'mirv'];
 RA.UNIT.inf.needs = null;
 RA.UNIT.tank.needs = 'factory';
 RA.UNIT.art.needs = 'factory';
@@ -44,7 +44,7 @@ RA.ERAS = [
     },
     missiles: {
       rocket: { name: 'Onager', icon: 'siege', r: 2, range: 16, cost: 45000, speed: 1.2, cd: 50, desc: 'Kamenje do 16 polja od radionice: ruši zgrade, ranjava jedinice i vojsku.' },
-      rocket2: false, emp: false, atom: false, hydro: false, mirv: false,
+      rocket2: false, emp: false, atom: false, hydro: false, mirv: false, drone: false, hdrone: false,
     },
   },
   {
@@ -69,7 +69,7 @@ RA.ERAS = [
     missiles: {
       rocket: { name: 'Trebušet', icon: 'siege', r: 2, range: 18, cost: 50000, speed: 1.3, cd: 50, desc: 'Teško kamenje do 18 polja: ruši zgrade, ranjava jedinice i vojsku.' },
       rocket2: { name: 'Bombarda', icon: 'siege', na: false, r: 3, range: 24, cost: 140000, speed: 1.8, cd: 70, desc: 'Prvi topovi: jači udar (krug 3 polja) do 24 polja daleko.' },
-      emp: false, atom: false, hydro: false, mirv: false,
+      emp: false, atom: false, hydro: false, mirv: false, drone: false, hdrone: false,
     },
   },
   {
@@ -92,7 +92,7 @@ RA.ERAS = [
     },
     missiles: {
       rocket: { name: 'Kongreveova raketa', r: 3, range: 40, cost: 80000, speed: 2.4, cd: 45, desc: 'Neprecizna ali strašna: udar u krugu 3 polja, do 40 polja od baterije.' },
-      rocket2: false, emp: false, atom: false, hydro: false, mirv: false,
+      rocket2: false, emp: false, atom: false, hydro: false, mirv: false, drone: false, hdrone: false,
     },
   },
   {
@@ -114,7 +114,7 @@ RA.ERAS = [
     missiles: {
       rocket: { name: 'Debela Berta', icon: 'rocket', r: 3, range: 30, cost: 110000, speed: 2.6, cd: 40, desc: 'Najveći top rata: udar u krugu 3 polja do 30 polja daleko.' },
       rocket2: { name: 'Cepelin', icon: 'zeppelin', na: false, r: 4, range: 120, cost: 260000, speed: 1.1, cd: 90, desc: 'Vazdušni brod bombarduje metu (krug 4 polja) do 120 polja daleko. Spor — PA topovi ga mogu oboriti.' },
-      emp: false, atom: false, hydro: false, mirv: false,
+      emp: false, atom: false, hydro: false, mirv: false, drone: false, hdrone: false,
     },
   },
   {
@@ -130,7 +130,7 @@ RA.ERAS = [
     missiles: {
       rocket: { name: 'V-2 raketa', desc: 'Prva balistička raketa: ruši zgrade, uništava jedinice i ubija vojsku.' },
       atom: { from: 6000, desc: 'Razvoj traje: dostupna od 10. minute. Briše teritoriju, sve zgrade i jedinice u krugu od 9 polja.' },
-      rocket2: false, emp: false, hydro: false, mirv: false,
+      rocket2: false, emp: false, hydro: false, mirv: false, drone: false, hdrone: false,
     },
   },
   {
@@ -140,7 +140,7 @@ RA.ERAS = [
     strikeTab: 'Rakete', strikeIcon: 'rocket', road: false, para: true,
     units: { ship: { name: 'Razarač' } },
     structs: {},
-    missiles: { rocket2: false, emp: false },
+    missiles: { rocket2: false, emp: false, drone: false, hdrone: false },
   },
   {
     id: 'danas', name: 'Danas', sub: 'današnje granice', short: 'Danas',

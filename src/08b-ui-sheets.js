@@ -141,12 +141,33 @@ Object.assign(RA.UI.prototype, {
       r: troops,
     });
     h += `</div><p class="note">Šalješ ${Math.round(this.ratio * 100)}% vojske (klizač „Snaga napada”).</p>`;
+    h += this.airHtml();
     this.openSheet(h, (s) => {
       s.querySelectorAll('[data-l]').forEach((b) => (b.onclick = () => {
         this.closeSheet();
         this.setMode({ kind: b.dataset.l });
       }));
-    });
+      s.querySelectorAll('[data-air]').forEach((b) => (b.onclick = () => this.act('air', [b.dataset.air])));
+      const bb = s.querySelector('[data-bomb]');
+      if (bb) bb.onclick = () => {
+        this.closeSheet();
+        this.setMode({ kind: 'bomb' });
+      };
+    }, true, () => this.landSheet());
+  },
+  /* the air force: squadrons at your airports, buy more, send the bombers (tipka A) */
+  airHtml() {
+    const G = this.G, me = G.me, C = RA.CFG, tk = G.tick;
+    if (!RA.airOn()) return '';
+    const sq = me.air || [], aps = G.airportsOf(me).length;
+    const cnt = (k) => sq.filter((q) => q.type === k).length, rdy = (k) => sq.filter((q) => q.type === k && q.readyAt <= tk).length;
+    let h = `<div class="sec-t">Avijacija · tipka A</div><p class="explain">Eskadrile čekaju na aerodromu (najviše ${C.AIR_PER_AIRPORT} svake vrste po aerodromu). Lovci obaraju neprijateljske avione iznad mjesta do ${C.FIGHT_R} polja od aerodroma i prate tvoje; PVO obara sve.</p><div class="btns">`;
+    for (const k of ['fighter', 'bomber']) {
+      const A = RA.AIR[k], full = cnt(k) >= aps * C.AIR_PER_AIRPORT;
+      h += this.btn({ model: 'plane', cls: 'model-btn', icon: 'para', attrs: `data-air="${k}"`, dis: full || me.gold < A.cost, t: `${RA.airName(k)} · ${rdy(k)}/${cnt(k)} spremno`, d: full ? 'Aerodromi su puni — izgradi još jedan.' : A.desc, r: RA.fmt(A.cost) });
+    }
+    h += this.btn({ icon: 'attack', cls: 'primary', attrs: 'data-bomb', dis: !rdy('bomber') || G.inPeace(), t: 'Bombarduj', d: rdy('bomber') ? `Dodirni neprijateljsku zemlju do ${C.BOMB_RANGE} polja od aerodroma.` : cnt('bomber') ? 'Bombarderi su u zraku ili se pune.' : 'Prvo kupi bombardere.' });
+    return h + '</div>';
   },
 
   /* ---------------- missiles ---------------- */
@@ -167,11 +188,11 @@ Object.assign(RA.UI.prototype, {
     const peace = G.inPeace();
     for (const t of RA.missileTypes()) {
       const M = RA.MISSILE[t];
-      const cost = G.missileCost(t);
+      const cost = G.missileCost(t, me);
       const wait = M.from && tk < M.from;
       h += this.btn({
         model: M.icon === 'siege' ? 'siege' : M.icon === 'zeppelin' ? 'zeppelin' : 'missile', icon: RA.missileIcon(t), cls: M.kind === 'conv' ? 'model-btn' : 'model-btn danger', attrs: `data-m="${t}"`,
-        dis: !me.n.silo || me.gold < cost || peace || wait, t: M.name,
+        dis: (!me.n.silo && M.kind !== 'drone') || me.gold < cost || peace || wait, t: M.name,
         d: RA.esc(wait ? `Razvoj traje — dostupna za ${RA.fmtTime((M.from - tk) / 10)}.` : M.desc) + (M.range ? ` <b>Domet ${M.range} polja.</b>` : ''), r: RA.fmt(cost),
       });
     }
@@ -200,11 +221,11 @@ Object.assign(RA.UI.prototype, {
       this.toast('info', `Mirno doba — udari su dozvoljeni za ${G.peaceLeft()} s.`);
       return false;
     }
-    if (M.range && !G.strikeSilo(me, type, c, true)) {
+    if (M.range && M.kind !== 'drone' && !G.strikeSilo(me, type, c, true)) {
       this.toast('info', `Meta je izvan dometa (${M.range} polja od zgrade ${RA.STRUCT.silo.name}). Gradi bliže frontu.`);
       return false;
     }
-    if (me.gold < G.missileCost(type)) {
+    if (me.gold < G.missileCost(type, me)) {
       this.toast('info', 'Nemaš dovoljno zlata.');
       return false;
     }
@@ -437,7 +458,7 @@ Object.assign(RA.UI.prototype, {
       for (const t of RA.missileTypes()) {
         if (t === 'mirv' && !O) continue;
         const M = RA.MISSILE[t];
-        const cost = G.missileCost(t);
+        const cost = G.missileCost(t, me);
         const far = M.range && !G.strikeSilo(me, t, c, true);
         const wait = M.from && tk < M.from;
         h += this.btn({ icon: RA.missileIcon(t), cls: M.kind === 'conv' ? '' : 'danger', attrs: `data-nuke="${t}"`, dis: me.gold < cost || peace || far || wait, t: M.name, d: far ? 'izvan dometa' : wait ? 'razvoj traje' : RA.fmt(cost) });
@@ -671,6 +692,7 @@ Object.assign(RA.UI.prototype, {
         <li><b>Mobilizacija</b> (Vojska): odmah +30% kapaciteta, ali rast stoji 45 s. Jednom u 4 minute.</li>
         <li>Zlato donose teritorija, gradovi, luke, vozovi ili karavani i trgovina.</li>
         <li><b>Mornarica</b> (Vojska): dva broda po dobu, iz tvoje luke. Dodirni brod pa more. Ratni brod potapa desante i trgovačke brodove, blokira neprijateljske luke u blizini (bez zlata i trgovine) i gađa obalu; drugi brod lovi desante i trgovačke brodove (podmornica od 1914. je nevidljiva dok joj ratni brod ne priđe).</li>
+        <li><b>Avijacija</b> (od 1938., Desant ili tipka A): lovci brane nebo oko aerodroma i prate tvoje avione, bombarderi ruše zgrade, jedinice i vojsku do 70 polja od aerodroma. <b>Dronovi</b> (danas, Rakete): jeftini, lete pravo s tvoje granice — kamikaza ili lovac na jedinice.</li>
         <li><b>Gvozdena kupola</b> (zgrada, od 1938.): kad neko lansira nuklearku na tebe, svaka spremna kupola sama ispali atomsku bombu na njegovu prijestolnicu i gradove.</li>
         <li><b>Resursi</b> (opcija u postavkama): žito, metal i gorivo na stvarnim nalazištima (znakovi na karti). Bez njih je sve skuplje ili sporije; što nemaš, kupiš od trgovinskog partnera (Ekonomija).</li>
         <li><b>Moreuzi</b> (Ekonomija): ko drži obje obale može zatvoriti moreuz za tuđe brodove. Svi koji tuda plove se ljute — zatvaranje je agresija.</li>

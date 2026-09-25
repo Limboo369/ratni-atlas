@@ -2982,6 +2982,7 @@ RA.Game = class Game {
       this._vassals();
       this._loans();
       this._stepStraits();
+      if (this.tick % 20 === 0) this._stepAir();
       if (this.deps && this.tick % RA.CFG.RES_EVERY === 0) this._stepRes();
       this._decayFallout();
     }
@@ -3823,6 +3824,7 @@ RA.NUKE = RA.MISSILE;
     if (M.from && this.tick < M.from) return `${M.name}: razvoj još traje — dostupna od ${Math.round(M.from / 600)}. minute (još ${RA.fmtTime((M.from - this.tick) / 10)}).`;
     const cost = this.missileCost(type, p);
     if (p.gold < cost) return 'Nemaš dovoljno zlata.';
+    if (M.kind === 'drone') return this._launchDrone(p, type, M, c, cost);
     const W = this.map.W, tk = this.tick;
     const tx = c % W, ty = (c / W) | 0;
     const best = this.strikeSilo(p, type, c, false);
@@ -3853,6 +3855,23 @@ RA.NUKE = RA.MISSILE;
     return m;
   };
   P.launchNuke = P.launchMissile;
+  P._launchDrone = function (p, type, M, c, cost) {
+    const W = this.map.W;
+    if ((p.drones || 0) >= RA.CFG.DRONE_MAX) return `Najviše ${RA.CFG.DRONE_MAX} drona u zraku odjednom.`;
+    const src = this._droneSource(p, c);
+    if (src < 0) return 'Nemaš odakle lansirati dron.';
+    const sx = (src % W) + 0.5, sy = ((src / W) | 0) + 0.5, tx = (c % W) + 0.5, ty = ((c / W) | 0) + 0.5;
+    const d = RA.dist(tx - sx, ty - sy);
+    if (d > M.range) return `Meta je predaleko: ${M.name} leti do ${M.range} polja od tvoje granice.`;
+    p.gold -= cost;
+    p.drones = (p.drones || 0) + 1;
+    const victimId = this.owner[c];
+    const m = { id: this.nextId++, owner: p.id, type, kind: 'drone', sx, sy, tx, ty, c, t: 0, dur: Math.max(10, Math.round(d / M.speed)), sam: null, samAt: 2, done: false, victim: victimId };
+    this._assignSam(m, p);
+    this.missiles.push(m);
+    if (victimId && victimId !== p.id) this.P[victimId].rel[p.id] = Math.max(-100, this.P[victimId].rel[p.id] - 6);
+    return m;
+  };
   /* the victim's iron domes answer a nuclear launch: one atomic bomb per ready dome, at the attacker's capital first */
   P._retaliate = function (V, A) {
     const M = RA.MISSILE.atom, tk = this.tick;
@@ -3893,6 +3912,7 @@ RA.NUKE = RA.MISSILE;
   };
   P._stepMissile = function (m) {
     m.t += 1 / m.dur;
+    if (m.kind === 'drone' && (m.t >= 1 || (m.sam && m.t >= m.samAt))) this.P[m.owner].drones = Math.max(0, (this.P[m.owner].drones || 1) - 1);
     if (m.sam && m.t >= m.samAt) {
       m.done = true;
       this.fx.push({ kind: 'intercept', x: m.sx + (m.tx - m.sx) * m.t, y: m.sy + (m.ty - m.sy) * m.t, sx: m.sam.x + 0.5, sy: m.sam.y + 0.5, tick: this.tick });
@@ -3912,6 +3932,7 @@ RA.NUKE = RA.MISSILE;
       else if (m.kind === 'conv') this._detonateConv(m);
       else if (m.kind === 'emp') this._detonateEmp(m);
       else if (m.kind === 'mirv') this._splitMirv(m);
+      else if (m.kind === 'drone') this._droneHit(m);
     }
   };
   P._blastAssets = function (cx, cy, r, skipOwner, onlyOwner, unitDmg) {
@@ -4230,12 +4251,24 @@ RA.NUKE = RA.MISSILE;
       if (pl.sam && pl.t >= pl.samAt) {
         pl.done = true;
         this.fx.push({ kind: 'intercept', x: pl.sx + (pl.tx - pl.sx) * pl.t, y: pl.sy + (pl.ty - pl.sy) * pl.t, sx: pl.sam.x + 0.5, sy: pl.sam.y + 0.5, tick: this.tick });
+        if (pl.kind === 'bomb') {
+          p.air = (p.air || []).filter((e) => e.id !== pl.sq);
+          this.tell(p, 'bad', 'PVO je oborio tvoje bombardere.', pl.sam.owner, pl.c);
+          this.tell(this.P[pl.sam.owner], 'good', 'PVO je oborio neprijateljske bombardere!', pl.owner, pl.c);
+          continue;
+        }
         this.tell(p, 'bad', `PVO je oborio tvoj avion — izgubljeno ${RA.fmt(pl.troops)} padobranaca.`, pl.sam.owner, pl.c);
         this.tell(this.P[pl.sam.owner], 'good', 'PVO je oborio neprijateljski avion s padobrancima!', pl.owner, pl.c);
         continue;
       }
+      // enemy fighters meet it over the target area
+      if (!pl.fought && pl.t >= 0.6 && this._dogfight(pl)) continue;
       if (pl.t < 1) continue;
       pl.done = true;
+      if (pl.kind === 'bomb') {
+        if (p.alive) this._bombHit(pl);
+        continue;
+      }
       this.fx.push({ kind: 'para', x: pl.tx, y: pl.ty, tick: this.tick });
       if (!p.alive) continue;
       const o = this.owner[pl.c];
@@ -4703,7 +4736,7 @@ Object.assign(RA.CFG, {
    can replay exactly the same inputs on every device (lockstep). Args come from other players' devices:
    they are validated here and never trusted. */
 
-RA.CMD_KINDS = ['atk', 'boat', 'para', 'build', 'rec', 'mv', 'dis', 'mis', 'mob', 'ret', 'aReq', 'aRes', 'tReq', 'tRes', 'ext', 'brk', 'tEnd', 'give', 'help', 'ai', 'back', 'rcl', 'png', 'qm', 'tax', 'vas', 'loan', 'pay', 'str', 'buy'];
+RA.CMD_KINDS = ['atk', 'boat', 'para', 'build', 'rec', 'mv', 'dis', 'mis', 'mob', 'ret', 'aReq', 'aRes', 'tReq', 'tRes', 'ext', 'brk', 'tEnd', 'give', 'help', 'ai', 'back', 'rcl', 'png', 'qm', 'tax', 'vas', 'loan', 'pay', 'str', 'buy', 'air', 'bomb'];
 /* pings on the map and quick messages, seen by the sender's allies and team (plan item 57) */
 RA.PINGS = [
   { name: 'Napadni ovdje', icon: 'attack', color: '#ff5d5d' },
@@ -4750,7 +4783,7 @@ RA.QUICK_MSGS = ['Napadam!', 'Treba mi pomoć!', 'Pazi, napadaju nas!', 'Idem ta
         return { type: u.type };
       }
       case 'mis':
-        if (!['rocket', 'emp', 'atom', 'hydro', 'mirv'].includes(a[0])) return 'Nepoznata raketa.';
+        if (!['rocket', 'rocket2', 'emp', 'atom', 'hydro', 'mirv', 'drone', 'hdrone'].includes(a[0])) return 'Nepoznata raketa.';
         if (cell(a[1]) < 0) return 'Nevažeća meta.';
         return this.launchMissile(pid, a[0], a[1]);
       case 'mob':
@@ -4811,6 +4844,10 @@ RA.QUICK_MSGS = ['Napadam!', 'Treba mi pomoć!', 'Pazi, napadaju nas!', 'Idem ta
         if (this.chat.length > 60) this.chat.splice(0, 30);
         return true;
       }
+      case 'air':
+        return typeof a[0] === 'string' ? this.buyAir(pid, a[0]) : 'Nepoznata vrsta aviona.';
+      case 'bomb':
+        return this.bombRaid(pid, cell(a[0]));
       case 'buy':
         return this.buyRes(pid, Number.isInteger(a[0]) ? a[0] : -1, player(a[1]));
       case 'str':
@@ -5286,6 +5323,208 @@ RA.resKind = function (slot, era) {
 })(RA.Game.prototype);
 
 
+/* Air force (plan 21) and drones (plan 22).
+   Squadrons are bought at an airport (eras with aircraft) and wait there: a fighter guards the sky around its airport
+   (it intercepts enemy bombers and paratroopers flying at targets near it; your own ready fighter escorts your
+   planes and halves that chance), a bomber flies a mission at a place in range, bombs buildings, units and the army
+   there and comes back. Drones ("danas" only) are cheap missiles launched from your own border in a straight line:
+   the kamikaze drone hits a small spot, the hunter drone hits units; a few per player at a time. */
+RA.AIR = {
+  fighter: { name: 'Lovci', cost: 300000, desc: 'Brane nebo oko aerodroma: obaraju neprijateljske bombardere i avione s padobrancima; prate tvoje avione.' },
+  bomber: { name: 'Bombarderi', cost: 450000, desc: 'Let na metu do 70 polja od aerodroma: ruše zgrade, jedinice i vojsku u krugu 2 polja, pa se vraćaju.' },
+};
+Object.assign(RA.CFG, {
+  AIR_PER_AIRPORT: 2, // squadrons of each kind per airport
+  AIR_READY: 150, // a new squadron gets ready
+  BOMB_RANGE: 70,
+  BOMB_SPEED: 2.4,
+  BOMB_CD: 350, // after coming back
+  BOMB_R: 2,
+  FIGHT_R: 22, // a fighter guards targets this close to its airport
+  FIGHT_CD: 150,
+  FIGHT_HIT: 0.65,
+  DRONE_MAX: 6, // drones in the air per player
+});
+Object.assign(RA.MISSILE, {
+  drone: { name: 'Kamikaza dron', kind: 'drone', cost: 45000, r: 1, range: 45, speed: 1.4, cd: 0, icon: 'drone',
+    desc: 'Jeftin mali udar (krug 1 polja) do 45 polja od tvoje granice. Leti pravo — PVO ga može oboriti.' },
+  hdrone: { name: 'Dron lovac', kind: 'drone', hunt: true, cost: 110000, r: 3, range: 60, speed: 1.8, cd: 0, icon: 'drone',
+    desc: 'Napada neprijateljske jedinice u krugu 3 polja, do 60 polja od tvoje granice.' },
+});
+RA.airOn = () => !RA.STRUCT.airport.na && !!RA.ERA.para;
+/* the era's names of the two squadrons */
+RA.airName = (k) => {
+  const e = RA.ERA ? RA.ERA.id : 'danas';
+  if (k === 'fighter') return e === 'ww2' ? 'Lovci' : e === 'hladni' ? 'Mlazni lovci' : 'Višenamjenski lovci';
+  return e === 'danas' ? 'Strateški bombarderi' : 'Bombarderi';
+};
+
+(function (P) {
+  P.airportsOf = function (p) {
+    return this.structs.filter((s) => !s.dead && s.ready && s.type === 'airport' && s.owner === p.id);
+  };
+  P.buyAir = function (pid, type) {
+    const p = this.P[pid], A = RA.AIR[type];
+    if (!A || !Object.prototype.hasOwnProperty.call(RA.AIR, type)) return 'Nepoznata vrsta aviona.';
+    if (!RA.airOn()) return 'U ovom dobu nema vojnih aviona.';
+    const aps = this.airportsOf(p);
+    if (!aps.length) return 'Treba ti aerodrom.';
+    const sq = p.air || (p.air = []);
+    const have = sq.filter((q) => q.type === type).length;
+    if (have >= aps.length * RA.CFG.AIR_PER_AIRPORT) return `Najviše ${RA.CFG.AIR_PER_AIRPORT} po aerodromu — izgradi još jedan aerodrom.`;
+    if (p.gold < A.cost) return 'Nemaš dovoljno zlata.';
+    p.gold -= A.cost;
+    // the airport with the fewest squadrons
+    const load = (s) => sq.filter((q) => q.base === s.id).length;
+    const base = aps.slice().sort((a, b) => load(a) - load(b) || a.id - b.id)[0];
+    const q = { id: this.nextId++, type, base: base.id, readyAt: this.tick + RA.CFG.AIR_READY };
+    sq.push(q);
+    return { type, id: q.id };
+  };
+  /* a bomber mission at cell c */
+  P.bombRaid = function (pid, c) {
+    const p = this.P[pid];
+    if (!RA.airOn()) return 'U ovom dobu nema vojnih aviona.';
+    if (c < 0 || !this.map.land[c]) return 'Bombarduje se samo kopno.';
+    const o = this.owner[c];
+    if (!o || o === pid || this.isFriendly(p, this.P[o])) return 'Izaberi neprijateljsku teritoriju.';
+    if (this.tick < this.peaceUntil) return `Mirno doba — napadi su dozvoljeni za ${this.peaceLeft()} s.`;
+    const W = this.map.W, tx = c % W, ty = (c / W) | 0, tk = this.tick;
+    let best = null, bd = 1e9, base = null;
+    for (const q of p.air || []) {
+      if (q.type !== 'bomber' || q.readyAt > tk) continue;
+      const s = this.structs[q.base];
+      if (!s || s.dead || s.owner !== pid || s.empUntil > tk) continue;
+      const d = RA.dist(s.x - tx, s.y - ty);
+      if (d <= RA.CFG.BOMB_RANGE && d < bd) {
+        bd = d;
+        best = q;
+        base = s;
+      }
+    }
+    if (!best) return (p.air || []).some((q) => q.type === 'bomber') ? `Nijedan spreman bombarder u dometu (${RA.CFG.BOMB_RANGE} polja od aerodroma).` : 'Nemaš bombardera (Desant → Avijacija).';
+    const dur = Math.max(15, Math.round(bd / RA.CFG.BOMB_SPEED));
+    best.readyAt = Infinity; // in the air
+    const pl = { id: this.nextId++, kind: 'bomb', sq: best.id, owner: pid, sx: base.x + 0.5, sy: base.y + 0.5, tx: tx + 0.5, ty: ty + 0.5, c, t: 0, dur, troops: 0, sam: null, samAt: 2, done: false, from: base.id };
+    this._assignSam(pl, p);
+    this.planes.push(pl);
+    const V = this.P[o];
+    V.rel[pid] = Math.max(-100, V.rel[pid] - 15);
+    this.tell(V, 'bad', `✈ Bombarderi (${p.name}) lete na tvoju zemlju!`, pid, c);
+    return { sq: best.id };
+  };
+  /* enemy fighters near the target try to shoot a plane down (once per flight) */
+  P._dogfight = function (pl) {
+    pl.fought = true;
+    const p = this.P[pl.owner], tk = this.tick, W = this.map.W;
+    const R = RA.CFG.FIGHT_R;
+    for (const o of this.P) {
+      if (!o || !o.alive || !o.air || o === p || !this.hostile(p, o.id)) continue;
+      for (const q of o.air) {
+        if (q.type !== 'fighter' || q.readyAt > tk) continue;
+        const s = this.structs[q.base];
+        if (!s || s.dead || s.owner !== o.id || s.empUntil > tk || RA.dist(s.x - (pl.c % W), s.y - ((pl.c / W) | 0)) > R) continue;
+        q.readyAt = tk + RA.CFG.FIGHT_CD;
+        // an escort (a ready fighter of the attacker at the airport the plane came from) halves the chance
+        const esc = (p.air || []).find((e) => e.type === 'fighter' && e.readyAt <= tk && e.base === pl.from);
+        if (esc) esc.readyAt = tk + RA.CFG.FIGHT_CD;
+        if (this.rng() < RA.CFG.FIGHT_HIT * (esc ? 0.5 : 1)) {
+          pl.done = true;
+          this.fx.push({ kind: 'intercept', x: pl.sx + (pl.tx - pl.sx) * pl.t, y: pl.sy + (pl.ty - pl.sy) * pl.t, sx: s.x + 0.5, sy: s.y + 0.5, tick: tk });
+          if (pl.kind === 'bomb') p.air = p.air.filter((e) => e.id !== pl.sq);
+          this.tell(p, 'bad', pl.kind === 'bomb' ? `Lovci (${o.name}) su oborili tvoje bombardere.` : `Lovci (${o.name}) su oborili tvoj avion — izgubljeno ${RA.fmt(pl.troops)} padobranaca.`, o.id, pl.c);
+          this.tell(o, 'good', `Tvoji lovci su oborili neprijateljski ${pl.kind === 'bomb' ? 'bombarder' : 'avion s padobrancima'} (${p.name})!`, p.id, pl.c);
+          return true;
+        }
+        this.tell(o, 'info', `Tvoji lovci nisu uspjeli oboriti neprijateljski avion${esc ? ' (imao je pratnju)' : ''}.`, p.id, pl.c);
+        return false;
+      }
+    }
+    return false;
+  };
+  P._bombHit = function (pl) {
+    const p = this.P[pl.owner], W = this.map.W, H = this.map.H, R = RA.CFG.BOMB_R;
+    const q = (p.air || []).find((e) => e.id === pl.sq);
+    if (q) q.readyAt = this.tick + pl.dur + RA.CFG.BOMB_CD; // flies home, refuels
+    const cx = Math.floor(pl.tx), cy = Math.floor(pl.ty);
+    const cnt = new Map();
+    for (let dy = -R; dy <= R; dy++)
+      for (let dx = -R; dx <= R; dx++) {
+        if (dx * dx + dy * dy > R * R + 1) continue;
+        const x = cx + dx, y = cy + dy;
+        if (x < 0 || y < 0 || x >= W || y >= H) continue;
+        const o = this.owner[y * W + x];
+        if (o && o !== pl.owner && this.hostile(p, o)) cnt.set(o, (cnt.get(o) || 0) + 1);
+      }
+    let assets = new Map();
+    const tgt = this.owner[pl.c];
+    if (tgt && this.hostile(p, tgt)) assets = this._blastAssets(cx + 0.5, cy + 0.5, R + 0.5, pl.owner, tgt, 80);
+    let msg = '';
+    for (const o of new Set([...cnt.keys(), ...assets.keys()])) {
+      const v = this.P[o], n = cnt.get(o) || 0, a = assets.get(o) || { structs: 0, units: 0 };
+      const kill = Math.min(v.troops * 0.15, n * (v.troops / Math.max(1, v.tiles)) * 2.5);
+      v.troops = Math.max(0, v.troops - kill);
+      this.tell(v, 'bad', `✈ Bombardovanje (${p.name}): −${RA.fmt(kill)} vojske${a.structs ? ', ' + a.structs + ' zgrada' : ''}${a.units ? ', ' + a.units + ' jedinica' : ''}.`, p.id, pl.c);
+      if (o === tgt) msg = `${v.name}: −${RA.fmt(kill)} vojske${a.structs ? ', ' + a.structs + ' zgrada' : ''}${a.units ? ', ' + a.units + ' jedinica' : ''}`;
+    }
+    this.tell(p, msg ? 'good' : 'info', msg ? `✈ Bombarderi su pogodili metu — ${msg}.` : '✈ Bombarderi nisu našli ništa vrijedno na meti.', tgt || p.id, pl.c);
+    this.fx.push({ kind: 'conv', x: pl.tx, y: pl.ty, r: R + 0.5, tick: this.tick });
+  };
+  /* squadrons whose airport was lost go down with it */
+  P._stepAir = function () {
+    for (const p of this.P) {
+      if (!p || !p.air || !p.air.length) continue;
+      const before = p.air.length;
+      p.air = p.air.filter((q) => {
+        const s = this.structs[q.base];
+        if (s && !s.dead && s.owner === p.id) return true;
+        if (q.readyAt === Infinity) return true; // in the air: lands elsewhere
+        return false;
+      });
+      if (p.air.length < before) {
+        // a squadron in the air whose airport fell moves to another airport
+        this.tell(p, 'bad', `Izgubio si ${before - p.air.length} ${before - p.air.length === 1 ? 'eskadrilu' : 'eskadrile'} s aerodromom.`, p.id);
+      }
+      const aps = this.airportsOf(p);
+      for (const q of p.air) {
+        const s = this.structs[q.base];
+        if ((!s || s.dead || s.owner !== p.id) && aps.length) q.base = aps[0].id;
+      }
+      if (!aps.length) p.air = p.air.filter((q) => q.readyAt === Infinity);
+    }
+  };
+  /* drones: launched from your land nearest to the target, straight there */
+  P._droneSource = function (p, c) {
+    const W = this.map.W, tx = c % W, ty = (c / W) | 0;
+    let best = -1, bd = 1e9;
+    for (let i = 0; i < p.tiles; i++) {
+      const k = p.cells[i], dx = (k % W) - tx, dy = ((k / W) | 0) - ty, d = dx * dx + dy * dy;
+      if (d < bd) {
+        bd = d;
+        best = k;
+      }
+    }
+    return best;
+  };
+  P._droneHit = function (m) {
+    const M = RA.MISSILE[m.type];
+    if (!M.hunt) return this._detonateConv(m);
+    // hunter drone: enemy units in reach
+    const p = this.P[m.owner], R2 = (M.r + 0.5) * (M.r + 0.5);
+    let n = 0;
+    for (const u of this.units) {
+      if (u.dead || !this.hostile(p, u.owner) || (u.x - m.tx) * (u.x - m.tx) + (u.y - m.ty) * (u.y - m.ty) > R2) continue;
+      u.hp -= 90;
+      u.lastHit = this.tick;
+      n++;
+      if (u.hp <= 0) this._unitDied(u, 'dron');
+    }
+    this.tell(p, n ? 'good' : 'info', n ? `Dron lovac je pogodio ${n} ${n === 1 ? 'jedinicu' : 'jedinice'}.` : 'Dron lovac nije našao jedinice na meti.', p.id, m.c);
+    this.fx.push({ kind: 'conv', x: m.tx, y: m.ty, r: M.r, tick: this.tick });
+  };
+})(RA.Game.prototype);
+
+
 /* Ratni Atlas — AI for nations (personalities) and city-states.
    Design rule: the AI chooses targets by opportunity and grudges, never by "is it the human". */
 
@@ -5359,6 +5598,8 @@ RA.AI = {
     RA.AI.maybeRecruit(G, p, info);
     if (G.deps) RA.AI.maybeBuyRes(G, p);
     if (!peace && p.n.port) RA.AI.navy(G, p, info);
+    if (!peace && p.n.airport && RA.airOn()) RA.AI.air(G, p, info);
+    if (!peace && !RA.MISSILE.drone.na) RA.AI.drones(G, p, info);
     if (!peace) {
       RA.AI.maybeStrike(G, p, info);
       RA.AI.maybeNuke(G, p, info);
@@ -5921,6 +6162,37 @@ RA.AI = {
     }
   },
 
+  /* the air force: a fighter squadron to guard the sky, a bomber for the enemy's buildings and units at the front */
+  air(G, p, info) {
+    const tk = G.tick, sq = p.air || [];
+    const has = (k) => sq.some((q) => q.type === k);
+    const enemy = RA.AI.frontEnemy(G, p, info);
+    if (!enemy) return;
+    if (!has('bomber') && p.gold >= RA.AIR.bomber.cost * 2 && G.rng() < 0.35) return void G.buyAir(p.id, 'bomber');
+    if (!has('fighter') && p.gold >= RA.AIR.fighter.cost * 2.5 && G.rng() < 0.25) return void G.buyAir(p.id, 'fighter');
+    const bases = sq.filter((q) => q.type === 'bomber' && q.readyAt <= tk).map((q) => G.structs[q.base]).filter((s) => s && !s.dead);
+    if (!bases.length || G.rng() > 0.5) return;
+    // target in range: an enemy building or unit, else its border army
+    const W = G.map.W, R = RA.CFG.BOMB_RANGE, cands = [];
+    const inRange = (c) => bases.some((s) => RA.dist(s.x - (c % W), s.y - ((c / W) | 0)) <= R);
+    for (const s of G.structs) if (!s.dead && s.owner === enemy.id && (s.type === 'fort' || s.type === 'sam' || s.type === 'silo' || s.type === 'barracks' || s.type === 'airport') && inRange(s.c)) cands.push(s.c);
+    for (const u of G.units) if (!u.dead && u.owner === enemy.id && !RA.UNIT[u.type].naval && inRange((u.y | 0) * W + (u.x | 0))) cands.push((u.y | 0) * W + (u.x | 0));
+    let c = cands.length ? cands[Math.floor(G.rng() * cands.length)] : RA.AI.borderCellFacing(G, enemy, p.id);
+    if (c >= 0 && inRange(c)) G.bombRaid(p.id, c);
+  },
+  /* drones ("danas"): now and then a hunter drone at enemy units near us, or a kamikaze drone at its border */
+  drones(G, p, info) {
+    if (G.tick < 1500 || (p.drones || 0) >= 2 || G.rng() > 0.12) return;
+    const enemy = RA.AI.frontEnemy(G, p, info);
+    if (!enemy) return;
+    const W = G.map.W;
+    const u = G.units.find((x) => !x.dead && x.owner === enemy.id && !RA.UNIT[x.type].naval);
+    if (u && p.gold >= RA.MISSILE.hdrone.cost * 3) return void G.launchMissile(p.id, 'hdrone', (u.y | 0) * W + (u.x | 0));
+    if (p.gold >= RA.MISSILE.drone.cost * 4) {
+      const c = RA.AI.borderCellFacing(G, enemy, p.id);
+      if (c >= 0) G.launchMissile(p.id, 'drone', c);
+    }
+  },
   /* the navy: at war with a state that has ports, build a ship or two and send them to blockade its nearest port */
   navy(G, p, info) {
     const U = RA.UNIT, tk = G.tick;
@@ -6442,7 +6714,7 @@ RA.startGame = function (G) {
    online game every device applies the same era). */
 
 RA.MISSILE.rocket2 = { name: 'Teška raketa', kind: 'conv', cost: 300000, r: 4, speed: 3.0, cd: 70, na: true, desc: '' };
-RA.MISSILE_ORDER = ['rocket', 'rocket2', 'emp', 'atom', 'hydro', 'mirv'];
+RA.MISSILE_ORDER = ['drone', 'hdrone', 'rocket', 'rocket2', 'emp', 'atom', 'hydro', 'mirv'];
 RA.UNIT.inf.needs = null;
 RA.UNIT.tank.needs = 'factory';
 RA.UNIT.art.needs = 'factory';
@@ -6482,7 +6754,7 @@ RA.ERAS = [
     },
     missiles: {
       rocket: { name: 'Onager', icon: 'siege', r: 2, range: 16, cost: 45000, speed: 1.2, cd: 50, desc: 'Kamenje do 16 polja od radionice: ruši zgrade, ranjava jedinice i vojsku.' },
-      rocket2: false, emp: false, atom: false, hydro: false, mirv: false,
+      rocket2: false, emp: false, atom: false, hydro: false, mirv: false, drone: false, hdrone: false,
     },
   },
   {
@@ -6507,7 +6779,7 @@ RA.ERAS = [
     missiles: {
       rocket: { name: 'Trebušet', icon: 'siege', r: 2, range: 18, cost: 50000, speed: 1.3, cd: 50, desc: 'Teško kamenje do 18 polja: ruši zgrade, ranjava jedinice i vojsku.' },
       rocket2: { name: 'Bombarda', icon: 'siege', na: false, r: 3, range: 24, cost: 140000, speed: 1.8, cd: 70, desc: 'Prvi topovi: jači udar (krug 3 polja) do 24 polja daleko.' },
-      emp: false, atom: false, hydro: false, mirv: false,
+      emp: false, atom: false, hydro: false, mirv: false, drone: false, hdrone: false,
     },
   },
   {
@@ -6530,7 +6802,7 @@ RA.ERAS = [
     },
     missiles: {
       rocket: { name: 'Kongreveova raketa', r: 3, range: 40, cost: 80000, speed: 2.4, cd: 45, desc: 'Neprecizna ali strašna: udar u krugu 3 polja, do 40 polja od baterije.' },
-      rocket2: false, emp: false, atom: false, hydro: false, mirv: false,
+      rocket2: false, emp: false, atom: false, hydro: false, mirv: false, drone: false, hdrone: false,
     },
   },
   {
@@ -6552,7 +6824,7 @@ RA.ERAS = [
     missiles: {
       rocket: { name: 'Debela Berta', icon: 'rocket', r: 3, range: 30, cost: 110000, speed: 2.6, cd: 40, desc: 'Najveći top rata: udar u krugu 3 polja do 30 polja daleko.' },
       rocket2: { name: 'Cepelin', icon: 'zeppelin', na: false, r: 4, range: 120, cost: 260000, speed: 1.1, cd: 90, desc: 'Vazdušni brod bombarduje metu (krug 4 polja) do 120 polja daleko. Spor — PA topovi ga mogu oboriti.' },
-      emp: false, atom: false, hydro: false, mirv: false,
+      emp: false, atom: false, hydro: false, mirv: false, drone: false, hdrone: false,
     },
   },
   {
@@ -6568,7 +6840,7 @@ RA.ERAS = [
     missiles: {
       rocket: { name: 'V-2 raketa', desc: 'Prva balistička raketa: ruši zgrade, uništava jedinice i ubija vojsku.' },
       atom: { from: 6000, desc: 'Razvoj traje: dostupna od 10. minute. Briše teritoriju, sve zgrade i jedinice u krugu od 9 polja.' },
-      rocket2: false, emp: false, hydro: false, mirv: false,
+      rocket2: false, emp: false, hydro: false, mirv: false, drone: false, hdrone: false,
     },
   },
   {
@@ -6578,7 +6850,7 @@ RA.ERAS = [
     strikeTab: 'Rakete', strikeIcon: 'rocket', road: false, para: true,
     units: { ship: { name: 'Razarač' } },
     structs: {},
-    missiles: { rocket2: false, emp: false },
+    missiles: { rocket2: false, emp: false, drone: false, hdrone: false },
   },
   {
     id: 'danas', name: 'Danas', sub: 'današnje granice', short: 'Danas',
@@ -8031,6 +8303,28 @@ RA.FxLayer = L.Layer.extend({
         else ctx.lineTo(q[0], q[1]);
       }
       const h = P(t);
+      if (m.kind === 'drone') {
+        // drones: a small group in a straight line, low over the map
+        const dx = sx + (tx - sx) * t, dy = sy + (ty - sy) * t, a = Math.atan2(ty - sy, tx - sx);
+        ctx.save();
+        ctx.translate(dx, dy);
+        ctx.rotate(a);
+        ctx.fillStyle = G.P[m.owner].hex;
+        ctx.strokeStyle = 'rgba(0,0,0,0.75)';
+        ctx.lineWidth = 1;
+        for (const [ox, oy] of M.hunt ? [[0, 0], [-6, -5], [-6, 5]] : [[0, 0], [-5, -4], [-5, 4], [-10, 0]]) {
+          ctx.beginPath();
+          ctx.moveTo(ox + 4, oy);
+          ctx.lineTo(ox - 3, oy - 3);
+          ctx.lineTo(ox - 1.5, oy);
+          ctx.lineTo(ox - 3, oy + 3);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+        }
+        ctx.restore();
+        continue;
+      }
       if (M.icon === 'siege' || M.icon === 'zeppelin') {
         if (M.icon === 'siege') {
           ctx.strokeStyle = 'rgba(90,80,70,0.45)';
@@ -8768,7 +9062,7 @@ RA.UI = class {
     };
     $('aArmy').onclick = modal(['recruit', 'unit'], () => this.armySheet());
     $('aBuild').onclick = modal(['build'], () => this.buildSheet());
-    $('aLand').onclick = modal(['boat', 'para'], () => this.landSheet());
+    $('aLand').onclick = modal(['boat', 'para', 'bomb'], () => this.landSheet());
     $('aStrike').onclick = modal(['missile'], () => this.strikeSheet());
     $('aDiplo').onclick = () => this.diploSheet();
     $('modeCancel').onclick = () => this.setMode(null);
@@ -9479,6 +9773,12 @@ RA.UI = class {
         const T = r.t ? G.P[r.t] : null;
         say('info', `Napad ${T ? 'na ' + RA.esc(T.name) : 'na slobodnu zemlju'} obustavljen — vraćeno ${RA.fmt(r.back)} vojnika${T ? ' (25% izgubljeno u povlačenju)' : ''}.`);
       }
+    } else if (kind === 'air') {
+      if (r && typeof r === 'object') say('good', `${RA.airName(r.type)}: nova eskadrila, spremna za ${Math.round(RA.CFG.AIR_READY / 10)} s.`);
+      else if (err(r)) say('info', RA.esc(r));
+    } else if (kind === 'bomb') {
+      if (r && typeof r === 'object') say('good', `${RA.airName('bomber')} su poletjeli.`);
+      else if (err(r)) say('info', RA.esc(r));
     } else if (kind === 'buy') {
       if (err(r)) say('info', RA.esc(r));
     } else if (kind === 'str') {
@@ -9615,12 +9915,15 @@ RA.UI = class {
         const O = G.owner[m.aim] ? G.P[G.owner[m.aim]] : null;
         const who = O ? (O === G.me ? 'TVOJA zemlja!' : O.name + (G.me.allies.has(O.id) ? ' (saveznik!)' : '')) : 'slobodna zemlja';
         const far = M.range && !G.strikeSilo(G.me, m.type, m.aim, true);
-        txt = `${M.name} → ${who} · krug ${rad} polja · ${RA.fmt(G.missileCost(m.type))}${far ? ` · IZVAN DOMETA (${M.range} polja)` : ''}${this.samCovers(m.aim) ? ` · ${RA.STRUCT.sam.short || 'PVO'} je može oboriti` : ''}`;
+        txt = `${M.name} → ${who} · krug ${rad} polja · ${RA.fmt(G.missileCost(m.type, G.me))}${far ? ` · IZVAN DOMETA (${M.range} polja)` : ''}${this.samCovers(m.aim) ? ` · ${RA.STRUCT.sam.short || 'PVO'} je može oboriti` : ''}`;
         ex.textContent = 'Lansiraj';
         ex.classList.add('fire');
         ex.hidden = false;
       } else txt = `Dodirni metu: ${M.name} (krug ${rad} polja${M.range ? `, domet ${M.range} polja` : ''})`;
       btn = 'aStrike';
+    } else if (m.kind === 'bomb') {
+      txt = `Dodirni neprijateljsku zemlju: ${RA.airName('bomber')}`;
+      btn = 'aLand';
     } else if (m.kind === 'recruit') {
       txt = `Dodirni svoju zemlju uz granicu: ${RA.UNIT[m.type].name}`;
       btn = 'aArmy';
@@ -9780,6 +10083,10 @@ RA.UI = class {
         if (this.fireMissile(m.type, m.aim)) this.ping(cp, false);
         else this.ping(cp, true);
       } else this.aimMissile(m.type, c);
+    } else if (m.kind === 'bomb') {
+      this.ping(cp, false);
+      this.act('bomb', [c]);
+      this.setMode(null);
     } else if (m.kind === 'recruit') {
       const cc = this.nearestOwn(c, 300);
       if (cc < 0) return fail('Jedinicu postavi na svoju teritoriju (najbolje uz granicu).');
@@ -9866,6 +10173,7 @@ RA.UI = class {
     else if (k === 'g' && this.G.online && this.mouseLL) this.act('png', [this.cellFromLatLng(this.mouseLL), 0]);
     else if (k === 'm') this.act('mob', []);
     else if (k === 'z') this.econSheet();
+    else if (k === 'a' && RA.airOn() && G.me.n.airport) this.landSheet();
   }
 
   /* ---------------- sheet helpers ---------------- */
@@ -10065,12 +10373,33 @@ Object.assign(RA.UI.prototype, {
       r: troops,
     });
     h += `</div><p class="note">Šalješ ${Math.round(this.ratio * 100)}% vojske (klizač „Snaga napada”).</p>`;
+    h += this.airHtml();
     this.openSheet(h, (s) => {
       s.querySelectorAll('[data-l]').forEach((b) => (b.onclick = () => {
         this.closeSheet();
         this.setMode({ kind: b.dataset.l });
       }));
-    });
+      s.querySelectorAll('[data-air]').forEach((b) => (b.onclick = () => this.act('air', [b.dataset.air])));
+      const bb = s.querySelector('[data-bomb]');
+      if (bb) bb.onclick = () => {
+        this.closeSheet();
+        this.setMode({ kind: 'bomb' });
+      };
+    }, true, () => this.landSheet());
+  },
+  /* the air force: squadrons at your airports, buy more, send the bombers (tipka A) */
+  airHtml() {
+    const G = this.G, me = G.me, C = RA.CFG, tk = G.tick;
+    if (!RA.airOn()) return '';
+    const sq = me.air || [], aps = G.airportsOf(me).length;
+    const cnt = (k) => sq.filter((q) => q.type === k).length, rdy = (k) => sq.filter((q) => q.type === k && q.readyAt <= tk).length;
+    let h = `<div class="sec-t">Avijacija · tipka A</div><p class="explain">Eskadrile čekaju na aerodromu (najviše ${C.AIR_PER_AIRPORT} svake vrste po aerodromu). Lovci obaraju neprijateljske avione iznad mjesta do ${C.FIGHT_R} polja od aerodroma i prate tvoje; PVO obara sve.</p><div class="btns">`;
+    for (const k of ['fighter', 'bomber']) {
+      const A = RA.AIR[k], full = cnt(k) >= aps * C.AIR_PER_AIRPORT;
+      h += this.btn({ model: 'plane', cls: 'model-btn', icon: 'para', attrs: `data-air="${k}"`, dis: full || me.gold < A.cost, t: `${RA.airName(k)} · ${rdy(k)}/${cnt(k)} spremno`, d: full ? 'Aerodromi su puni — izgradi još jedan.' : A.desc, r: RA.fmt(A.cost) });
+    }
+    h += this.btn({ icon: 'attack', cls: 'primary', attrs: 'data-bomb', dis: !rdy('bomber') || G.inPeace(), t: 'Bombarduj', d: rdy('bomber') ? `Dodirni neprijateljsku zemlju do ${C.BOMB_RANGE} polja od aerodroma.` : cnt('bomber') ? 'Bombarderi su u zraku ili se pune.' : 'Prvo kupi bombardere.' });
+    return h + '</div>';
   },
 
   /* ---------------- missiles ---------------- */
@@ -10091,11 +10420,11 @@ Object.assign(RA.UI.prototype, {
     const peace = G.inPeace();
     for (const t of RA.missileTypes()) {
       const M = RA.MISSILE[t];
-      const cost = G.missileCost(t);
+      const cost = G.missileCost(t, me);
       const wait = M.from && tk < M.from;
       h += this.btn({
         model: M.icon === 'siege' ? 'siege' : M.icon === 'zeppelin' ? 'zeppelin' : 'missile', icon: RA.missileIcon(t), cls: M.kind === 'conv' ? 'model-btn' : 'model-btn danger', attrs: `data-m="${t}"`,
-        dis: !me.n.silo || me.gold < cost || peace || wait, t: M.name,
+        dis: (!me.n.silo && M.kind !== 'drone') || me.gold < cost || peace || wait, t: M.name,
         d: RA.esc(wait ? `Razvoj traje — dostupna za ${RA.fmtTime((M.from - tk) / 10)}.` : M.desc) + (M.range ? ` <b>Domet ${M.range} polja.</b>` : ''), r: RA.fmt(cost),
       });
     }
@@ -10124,11 +10453,11 @@ Object.assign(RA.UI.prototype, {
       this.toast('info', `Mirno doba — udari su dozvoljeni za ${G.peaceLeft()} s.`);
       return false;
     }
-    if (M.range && !G.strikeSilo(me, type, c, true)) {
+    if (M.range && M.kind !== 'drone' && !G.strikeSilo(me, type, c, true)) {
       this.toast('info', `Meta je izvan dometa (${M.range} polja od zgrade ${RA.STRUCT.silo.name}). Gradi bliže frontu.`);
       return false;
     }
-    if (me.gold < G.missileCost(type)) {
+    if (me.gold < G.missileCost(type, me)) {
       this.toast('info', 'Nemaš dovoljno zlata.');
       return false;
     }
@@ -10361,7 +10690,7 @@ Object.assign(RA.UI.prototype, {
       for (const t of RA.missileTypes()) {
         if (t === 'mirv' && !O) continue;
         const M = RA.MISSILE[t];
-        const cost = G.missileCost(t);
+        const cost = G.missileCost(t, me);
         const far = M.range && !G.strikeSilo(me, t, c, true);
         const wait = M.from && tk < M.from;
         h += this.btn({ icon: RA.missileIcon(t), cls: M.kind === 'conv' ? '' : 'danger', attrs: `data-nuke="${t}"`, dis: me.gold < cost || peace || far || wait, t: M.name, d: far ? 'izvan dometa' : wait ? 'razvoj traje' : RA.fmt(cost) });
@@ -10595,6 +10924,7 @@ Object.assign(RA.UI.prototype, {
         <li><b>Mobilizacija</b> (Vojska): odmah +30% kapaciteta, ali rast stoji 45 s. Jednom u 4 minute.</li>
         <li>Zlato donose teritorija, gradovi, luke, vozovi ili karavani i trgovina.</li>
         <li><b>Mornarica</b> (Vojska): dva broda po dobu, iz tvoje luke. Dodirni brod pa more. Ratni brod potapa desante i trgovačke brodove, blokira neprijateljske luke u blizini (bez zlata i trgovine) i gađa obalu; drugi brod lovi desante i trgovačke brodove (podmornica od 1914. je nevidljiva dok joj ratni brod ne priđe).</li>
+        <li><b>Avijacija</b> (od 1938., Desant ili tipka A): lovci brane nebo oko aerodroma i prate tvoje avione, bombarderi ruše zgrade, jedinice i vojsku do 70 polja od aerodroma. <b>Dronovi</b> (danas, Rakete): jeftini, lete pravo s tvoje granice — kamikaza ili lovac na jedinice.</li>
         <li><b>Gvozdena kupola</b> (zgrada, od 1938.): kad neko lansira nuklearku na tebe, svaka spremna kupola sama ispali atomsku bombu na njegovu prijestolnicu i gradove.</li>
         <li><b>Resursi</b> (opcija u postavkama): žito, metal i gorivo na stvarnim nalazištima (znakovi na karti). Bez njih je sve skuplje ili sporije; što nemaš, kupiš od trgovinskog partnera (Ekonomija).</li>
         <li><b>Moreuzi</b> (Ekonomija): ko drži obje obale može zatvoriti moreuz za tuđe brodove. Svi koji tuda plove se ljute — zatvaranje je agresija.</li>
@@ -13409,7 +13739,7 @@ Object.assign(RA.UI.prototype, {
   },
 });
 
-RA.BUILD = 'b8566dcf';
+RA.BUILD = 'e6937783';
 new RA.App().boot();
 }
 function __raFallback(){

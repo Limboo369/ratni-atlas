@@ -188,6 +188,57 @@ const check = (ok, msg) => {
   check(!SG.subSeen(sub, I.id), 'a far submarine is hidden');
   sub.x = ship.x + 3;
   check(SG.subSeen(sub, I.id), 'a near submarine is seen');
+
+  // the air force and drones (plan 21, 22)
+  const AG = RA.newGame(RA.eraMap(m, 'danas', 'granice'), { seed: 41, difficulty: 'srednje', cityStates: 0, peace: 0, era: 'danas', start: 'granice', gm: 'klasik' });
+  RA.applyEra('danas');
+  const POL = AG.P.find((p) => p && p.iso === 'POL'), BLR = AG.P.find((p) => p && p.iso === 'BLR');
+  RA.placeHuman(AG, POL.nation.c, 'Test');
+  RA.startGame(AG);
+  for (const p of AG.P) if (p) p.ai = null; // no computer wars: only what the test does
+  const Pm = AG.me;
+  Pm.gold = BLR.gold = 5e7;
+  const site = (p, t) => { for (let i = 0; i < p.tiles; i++) { const c = p.cells[(i * 7919) % p.tiles]; if (typeof AG.canBuild(p, t, c) === 'number') return c; } return -1; };
+  const pap0 = AG.build(Pm.id, 'airport', site(Pm, 'airport'));
+  // the Belarusian airport as close to the Polish one as it can be
+  const near3 = BLR.cells.slice(0, BLR.tiles).filter((c) => typeof AG.canBuild(BLR, 'airport', c) === 'number').sort((a, b) => RA.dist((a % W) - pap0.x, ((a / W) | 0) - pap0.y) - RA.dist((b % W) - pap0.x, ((b / W) | 0) - pap0.y));
+  const bap = AG.build(BLR.id, 'airport', near3[0]);
+  for (let i = 0; i < 80; i++) AG.step();
+  for (const st of AG.structs) if (st.type === 'sam') st.dead = true;
+  check(AG.exec(Pm.id, 'air', ['bomber']).type === 'bomber' && AG.exec(Pm.id, 'air', ['fighter']).type === 'fighter', 'bomber and fighter squadrons bought at the airport');
+  check(typeof AG.exec(Pm.id, 'bomb', [BLR.capital]) === 'string', 'a new squadron is not ready yet');
+  for (let i = 0; i < RA.CFG.AIR_READY + 5; i++) AG.step();
+  // a raid on a Belarusian cell near the border (no fighters there)
+  const pap = AG.structs.find((x) => x.type === 'airport' && x.owner === Pm.id);
+  let tgt3 = -1, td = 1e9;
+  for (let i = 0; i < BLR.tiles; i++) { const c = BLR.cells[i], d = RA.dist((c % W) - pap.x, ((c / W) | 0) - pap.y); if (d < td && RA.dist((c % W) - bap.x, ((c / W) | 0) - bap.y) > RA.CFG.FIGHT_R + 2) { td = d; tgt3 = c; } }
+  BLR.growPause = AG.tick + 2000; // its army doesn't grow meanwhile: only the raid changes it
+  BLR.troops = Math.min(BLR.troops, BLR.maxT);
+  const bt0 = BLR.troops;
+  const br = AG.exec(Pm.id, 'bomb', [tgt3]);
+  check(br && typeof br === 'object', `the bombers take off (${typeof br === 'string' ? br : 'ok'})`);
+  for (let i = 0; i < 80; i++) AG.step();
+  check(BLR.troops < bt0 && !AG.planes.some((x) => !x.done && x.kind === 'bomb'), `the raid hits the army (−${RA.fmt(bt0 - BLR.troops)})`);
+  // fighters guard the sky around their airport
+  AG.exec(BLR.id, 'air', ['fighter']);
+  for (let i = 0; i < RA.CFG.AIR_READY + 5; i++) AG.step();
+  Pm.air.find((q) => q.type === 'bomber').readyAt = 0;
+  Pm.air.find((q) => q.type === 'fighter').readyAt = 1e9; // no escort this time
+  const hit0 = RA.CFG.FIGHT_HIT;
+  RA.CFG.FIGHT_HIT = 1;
+  const nearAp = BLR.cells.find((c) => RA.dist((c % W) - bap.x, ((c / W) | 0) - bap.y) < 4);
+  const br2 = AG.bombRaid(Pm.id, nearAp);
+  for (let i = 0; i < 200; i++) AG.step();
+  RA.CFG.FIGHT_HIT = hit0;
+  check(typeof br2 === 'object' && !Pm.air.some((q) => q.type === 'bomber'), `enemy fighters shoot the bombers down over their airport (${typeof br2 === 'string' ? br2 : 'flew'}, airports ${RA.dist(pap.x - bap.x, pap.y - bap.y).toFixed(0)} apart)`);
+  // drones: from your border, a few at a time
+  const d1 = AG.exec(Pm.id, 'mis', ['drone', tgt3]);
+  check(d1 && typeof d1 === 'object' && d1.kind === 'drone' && AG.owner[(d1.sy | 0) * W + (d1.sx | 0)] === Pm.id, 'a kamikaze drone starts from your own land');
+  check(typeof AG.exec(Pm.id, 'mis', ['drone', BLR.cells[BLR.tiles - 1]]) === 'string' || RA.dist((BLR.cells[BLR.tiles - 1] % W) - (tgt3 % W), 0) < 40, 'drones have a range');
+  for (let i = 0; i < 5; i++) AG.exec(Pm.id, 'mis', ['drone', tgt3]);
+  check(typeof AG.exec(Pm.id, 'mis', ['drone', tgt3]) === 'string', `at most ${RA.CFG.DRONE_MAX} drones in the air`);
+  for (let i = 0; i < 80; i++) AG.step();
+  check(!Pm.drones, 'drones land and free their slots');
   console.log('FAILS:', fails.length ? fails : 'none');
   process.exit(fails.length ? 1 : 0);
 })();

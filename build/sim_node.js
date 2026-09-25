@@ -13,7 +13,7 @@ global.Image = class {
 };
 (0, eval)(fs.readFileSync(R + 'build/mapdata.js', 'utf8'));
 (0, eval)(fs.readFileSync(R + 'build/eradata.js', 'utf8'));
-const files = ['00-util', '01-data', '01b-deposits', '02-sim', '02b-military', '02c-diplomacy', '02d-commands', '02e-zone', '02f-straits', '02g-resources', '03-ai', '04-setup', '04b-eras'];
+const files = fs.readdirSync(R + 'src').filter((f) => /^0[0-4].*\.js$/.test(f)).map((f) => f.slice(0, -3)).sort(); // the simulation (no UI)
 new Function(files.map((f) => fs.readFileSync(R + 'src/' + f + '.js', 'utf8').replace("'use strict';", '')).join('\n'))();
 
 (async () => {

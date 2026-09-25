@@ -638,6 +638,7 @@ RA.NUKE = RA.MISSILE;
     if (M.from && this.tick < M.from) return `${M.name}: razvoj još traje — dostupna od ${Math.round(M.from / 600)}. minute (još ${RA.fmtTime((M.from - this.tick) / 10)}).`;
     const cost = this.missileCost(type, p);
     if (p.gold < cost) return 'Nemaš dovoljno zlata.';
+    if (M.kind === 'drone') return this._launchDrone(p, type, M, c, cost);
     const W = this.map.W, tk = this.tick;
     const tx = c % W, ty = (c / W) | 0;
     const best = this.strikeSilo(p, type, c, false);
@@ -668,6 +669,23 @@ RA.NUKE = RA.MISSILE;
     return m;
   };
   P.launchNuke = P.launchMissile;
+  P._launchDrone = function (p, type, M, c, cost) {
+    const W = this.map.W;
+    if ((p.drones || 0) >= RA.CFG.DRONE_MAX) return `Najviše ${RA.CFG.DRONE_MAX} drona u zraku odjednom.`;
+    const src = this._droneSource(p, c);
+    if (src < 0) return 'Nemaš odakle lansirati dron.';
+    const sx = (src % W) + 0.5, sy = ((src / W) | 0) + 0.5, tx = (c % W) + 0.5, ty = ((c / W) | 0) + 0.5;
+    const d = RA.dist(tx - sx, ty - sy);
+    if (d > M.range) return `Meta je predaleko: ${M.name} leti do ${M.range} polja od tvoje granice.`;
+    p.gold -= cost;
+    p.drones = (p.drones || 0) + 1;
+    const victimId = this.owner[c];
+    const m = { id: this.nextId++, owner: p.id, type, kind: 'drone', sx, sy, tx, ty, c, t: 0, dur: Math.max(10, Math.round(d / M.speed)), sam: null, samAt: 2, done: false, victim: victimId };
+    this._assignSam(m, p);
+    this.missiles.push(m);
+    if (victimId && victimId !== p.id) this.P[victimId].rel[p.id] = Math.max(-100, this.P[victimId].rel[p.id] - 6);
+    return m;
+  };
   /* the victim's iron domes answer a nuclear launch: one atomic bomb per ready dome, at the attacker's capital first */
   P._retaliate = function (V, A) {
     const M = RA.MISSILE.atom, tk = this.tick;
@@ -708,6 +726,7 @@ RA.NUKE = RA.MISSILE;
   };
   P._stepMissile = function (m) {
     m.t += 1 / m.dur;
+    if (m.kind === 'drone' && (m.t >= 1 || (m.sam && m.t >= m.samAt))) this.P[m.owner].drones = Math.max(0, (this.P[m.owner].drones || 1) - 1);
     if (m.sam && m.t >= m.samAt) {
       m.done = true;
       this.fx.push({ kind: 'intercept', x: m.sx + (m.tx - m.sx) * m.t, y: m.sy + (m.ty - m.sy) * m.t, sx: m.sam.x + 0.5, sy: m.sam.y + 0.5, tick: this.tick });
@@ -727,6 +746,7 @@ RA.NUKE = RA.MISSILE;
       else if (m.kind === 'conv') this._detonateConv(m);
       else if (m.kind === 'emp') this._detonateEmp(m);
       else if (m.kind === 'mirv') this._splitMirv(m);
+      else if (m.kind === 'drone') this._droneHit(m);
     }
   };
   P._blastAssets = function (cx, cy, r, skipOwner, onlyOwner, unitDmg) {
@@ -1045,12 +1065,24 @@ RA.NUKE = RA.MISSILE;
       if (pl.sam && pl.t >= pl.samAt) {
         pl.done = true;
         this.fx.push({ kind: 'intercept', x: pl.sx + (pl.tx - pl.sx) * pl.t, y: pl.sy + (pl.ty - pl.sy) * pl.t, sx: pl.sam.x + 0.5, sy: pl.sam.y + 0.5, tick: this.tick });
+        if (pl.kind === 'bomb') {
+          p.air = (p.air || []).filter((e) => e.id !== pl.sq);
+          this.tell(p, 'bad', 'PVO je oborio tvoje bombardere.', pl.sam.owner, pl.c);
+          this.tell(this.P[pl.sam.owner], 'good', 'PVO je oborio neprijateljske bombardere!', pl.owner, pl.c);
+          continue;
+        }
         this.tell(p, 'bad', `PVO je oborio tvoj avion — izgubljeno ${RA.fmt(pl.troops)} padobranaca.`, pl.sam.owner, pl.c);
         this.tell(this.P[pl.sam.owner], 'good', 'PVO je oborio neprijateljski avion s padobrancima!', pl.owner, pl.c);
         continue;
       }
+      // enemy fighters meet it over the target area
+      if (!pl.fought && pl.t >= 0.6 && this._dogfight(pl)) continue;
       if (pl.t < 1) continue;
       pl.done = true;
+      if (pl.kind === 'bomb') {
+        if (p.alive) this._bombHit(pl);
+        continue;
+      }
       this.fx.push({ kind: 'para', x: pl.tx, y: pl.ty, tick: this.tick });
       if (!p.alive) continue;
       const o = this.owner[pl.c];

@@ -691,6 +691,28 @@ RA.FxLayer = L.Layer.extend({
         else ctx.lineTo(q[0], q[1]);
       }
       const h = P(t);
+      if (m.kind === 'drone') {
+        // drones: a small group in a straight line, low over the map
+        const dx = sx + (tx - sx) * t, dy = sy + (ty - sy) * t, a = Math.atan2(ty - sy, tx - sx);
+        ctx.save();
+        ctx.translate(dx, dy);
+        ctx.rotate(a);
+        ctx.fillStyle = G.P[m.owner].hex;
+        ctx.strokeStyle = 'rgba(0,0,0,0.75)';
+        ctx.lineWidth = 1;
+        for (const [ox, oy] of M.hunt ? [[0, 0], [-6, -5], [-6, 5]] : [[0, 0], [-5, -4], [-5, 4], [-10, 0]]) {
+          ctx.beginPath();
+          ctx.moveTo(ox + 4, oy);
+          ctx.lineTo(ox - 3, oy - 3);
+          ctx.lineTo(ox - 1.5, oy);
+          ctx.lineTo(ox - 3, oy + 3);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+        }
+        ctx.restore();
+        continue;
+      }
       if (M.icon === 'siege' || M.icon === 'zeppelin') {
         if (M.icon === 'siege') {
           ctx.strokeStyle = 'rgba(90,80,70,0.45)';
