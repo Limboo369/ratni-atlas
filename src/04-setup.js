@@ -41,7 +41,7 @@ RA.setupOnline = function (baseMap, st, mySlot) {
   const set = st.set;
   const era = set.era || 'danas', start = set.st || 'slobodno';
   const gm = RA.regionMap(RA.eraMap(baseMap, era, start), set.reg);
-  const G = RA.newGame(gm, { seed: st.seed, difficulty: set.dif, cityStates: set.cs, peace: set.peace, era, start, gm: set.gm });
+  const G = RA.newGame(gm, { seed: st.seed, difficulty: set.dif, cityStates: set.cs, peace: set.peace, era, start, gm: set.gm, res: set.res === 1 });
   G.online = true;
   G.humans = [];
   st.slots.forEach((sl, i) => {
@@ -420,6 +420,7 @@ RA.startGame = function (G) {
   if (G.borders) G.densScale *= 1.6;
   G.humans = G.P.filter((p) => p && p.human);
   if (G.opts.gm === 'br') G.zoneInit();
+  if (G.opts.res) G.resInit(); // resources and trade (02g-resources.js)
   G.state = 'play';
   G._history();
 };

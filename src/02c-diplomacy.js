@@ -204,6 +204,8 @@ Object.assign(RA.CFG, {
         p.tradeAcc = 0;
         p.tributeRate = (p.tributeRate || 0) * 0.5 + ((p.tributeIn || 0) / 10) * 0.5; // a lord's tribute, per second
         p.tributeIn = 0;
+        p.resRateIn = (p.resRateIn || 0) * 0.5 + ((p.resIn || 0) / 10) * 0.5; // sold resources, per second
+        p.resIn = 0;
       }
     }
     if (tk % 30 === 0) for (const h of this.P) if (h && h.human && h.alive && !h.ai) h.nbCache = RA.AI.scan(this, h).nb;

@@ -13,7 +13,7 @@ global.Image = class {
 };
 (0, eval)(fs.readFileSync(R + 'build/mapdata.js', 'utf8'));
 (0, eval)(fs.readFileSync(R + 'build/eradata.js', 'utf8'));
-const files = ['00-util', '01-data', '02-sim', '02b-military', '02c-diplomacy', '02d-commands', '02e-zone', '02f-straits', '03-ai', '04-setup', '04b-eras'];
+const files = ['00-util', '01-data', '01b-deposits', '02-sim', '02b-military', '02c-diplomacy', '02d-commands', '02e-zone', '02f-straits', '02g-resources', '03-ai', '04-setup', '04b-eras'];
 new Function(files.map((f) => fs.readFileSync(R + 'src/' + f + '.js', 'utf8').replace("'use strict';", '')).join('\n'))();
 
 (async () => {
@@ -33,7 +33,7 @@ new Function(files.map((f) => fs.readFileSync(R + 'src/' + f + '.js', 'utf8').re
     const [era, start, gm, region, maxMin, seed, diff, pick] = r.split(':');
     const reg = RA.REGIONS.find((x) => x.id === region);
     const map = reg && reg.map === 'svijet' ? await worldMap() : europe;
-    const G = RA.newGame(RA.regionMap(RA.eraMap(map, era, start), region), { seed: +seed, difficulty: diff || 'srednje', cityStates: 50, peace: 60, era, start, gm });
+    const G = RA.newGame(RA.regionMap(RA.eraMap(map, era, start), region), { seed: +seed, difficulty: diff || 'srednje', cityStates: 50, peace: 60, era, start, gm, res: !!process.env.RES }); // RES=1: resources and trade on
     const n = G.P.find((p) => p && p.type === 'nation' && p.iso === pick) || G.P.find((p) => p && p.type === 'nation');
     RA.placeHuman(G, n.nation.c, 'Test');
     RA.startGame(G);

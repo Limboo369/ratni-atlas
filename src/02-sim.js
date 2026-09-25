@@ -301,6 +301,7 @@ RA.Game = class Game {
     if (p.crisisUntil > tk) add *= 0.7;
     const tax = RA.TAX[p.tax] || RA.TAX[2];
     if (add > 0) add *= tax.grow;
+    if (add > 0 && this.deps && !this.hasRes(p, 0)) add *= RA.CFG.RES_FOOD; // no grain
     if (p.growPause > tk && add > 0) add = 0;
     if (p.troops > maxT) add = -(p.troops - maxT) * (p.growPause > tk ? 0.0025 : 0.01);
     p.troops = Math.max(0, p.troops + add);
@@ -315,6 +316,7 @@ RA.Game = class Game {
     if (p.type === 'bot') g *= 0.4;
     if (p.crisisUntil > tk) g *= 0.5;
     g *= tax.g;
+    if (p.imp && (p.imp[0] || p.imp[1] || p.imp[2])) g = this._payRes(p, g); // bought resources
     // interest on a player's saved gold, capped at a quarter of the income (saving helps, never beats owning land);
     // the computer spends as it goes, and interest made its wars drag on
     const it = p.human && p.gold > 0 ? Math.min(p.gold * RA.CFG.INTEREST, g * 0.25) : 0;
@@ -328,7 +330,7 @@ RA.Game = class Game {
       p.tribute = t * 10;
     }
     p.gold += g + it;
-    p.goldRate = (g + it) * 10 + (p.trainRate || 0) + (p.tradeRate || 0) + (p.tributeRate || 0);
+    p.goldRate = (g + it) * 10 + (p.trainRate || 0) + (p.tradeRate || 0) + (p.tributeRate || 0) + (p.resRateIn || 0);
     p.growRate = add * 10;
   }
 
@@ -843,7 +845,8 @@ RA.Game = class Game {
 
   /* ---------------- structures ---------------- */
   structCost(p, type) {
-    return RA.STRUCT[type].cost(p.built[type]);
+    const c = RA.STRUCT[type].cost(p.built[type]);
+    return this.deps && !this.hasRes(p, 2) ? Math.round(c * RA.CFG.RES_DEAR) : c; // no fuel
   }
   canBuild(p, type, c) {
     const map = this.map;
@@ -1151,6 +1154,7 @@ RA.Game = class Game {
       this._vassals();
       this._loans();
       this._stepStraits();
+      if (this.deps && this.tick % RA.CFG.RES_EVERY === 0) this._stepRes();
       this._decayFallout();
     }
     // enclave check: one player per tick

@@ -75,9 +75,10 @@ RA.NUKE = RA.MISSILE;
   P.hostile = function (a, bid) {
     return bid && bid !== a.id && !a.allies.has(bid);
   };
-  P.missileCost = function (type) {
+  P.missileCost = function (type, p) {
     const M = RA.MISSILE[type];
-    return type === 'mirv' ? M.cost + 4000000 * (this.mirvCount || 0) : M.cost;
+    const c = type === 'mirv' ? M.cost + 4000000 * (this.mirvCount || 0) : M.cost;
+    return p && this.deps && !this.hasRes(p, 2) ? Math.round(c * RA.CFG.RES_DEAR) : c; // no fuel
   };
   P.winterLevel = function () {
     const C = RA.CFG;
@@ -116,9 +117,10 @@ RA.NUKE = RA.MISSILE;
     if (p.units.length >= cap) return `Limit jedinica je ${cap}. Svaka kasarna daje još ${RA.CFG.UNIT_PER_BARRACKS}.`;
     if (U.na) return 'Ta jedinica ne postoji u ovom dobu.';
     if (U.needs && !p.n[U.needs]) return `${U.name} ${U.pl ? 'traže' : 'traži'} zgradu: ${RA.STRUCT[U.needs].name}.`;
-    if (p.gold < U.gold) return 'Nemaš dovoljno zlata.';
+    const gold = this.unitCost(p, type);
+    if (p.gold < gold) return 'Nemaš dovoljno zlata.';
     if (p.troops < U.troops * 1.2) return 'Nemaš dovoljno vojnika za tu jedinicu.';
-    p.gold -= U.gold;
+    p.gold -= gold;
     p.troops -= U.troops;
     const W = this.map.W;
     const u = {
@@ -438,7 +440,7 @@ RA.NUKE = RA.MISSILE;
     if (c < 0) return 'Nevažeća meta.';
     if (this.tick < this.peaceUntil) return `Mirno doba — udari su dozvoljeni za ${this.peaceLeft()} s.`;
     if (M.from && this.tick < M.from) return `${M.name}: razvoj još traje — dostupna od ${Math.round(M.from / 600)}. minute (još ${RA.fmtTime((M.from - this.tick) / 10)}).`;
-    const cost = this.missileCost(type);
+    const cost = this.missileCost(type, p);
     if (p.gold < cost) return 'Nemaš dovoljno zlata.';
     const W = this.map.W, tk = this.tick;
     const tx = c % W, ty = (c / W) | 0;

@@ -82,7 +82,7 @@ Object.assign(RA.App.prototype, {
     document.getElementById('startScreen').hidden = true;
     const gm = RA.regionMap(RA.eraMap(this.map, s.era, s.start), s.region);
     RA.ME_COLOR = s.color || RA.PLAYER_COLORS[0];
-    const G = RA.newGame(gm, { seed: s.seed, difficulty: s.difficulty, cityStates: s.cityStates, peace: s.peace, era: s.era, start: s.start, gm: s.gm });
+    const G = RA.newGame(gm, { seed: s.seed, difficulty: s.difficulty, cityStates: s.cityStates, peace: s.peace, era: s.era, start: s.start, gm: s.gm, res: !!s.res });
     G.gid = r.gid;
     G.rec = r; // the game goes on recording into the same record
     this.setGame(G);

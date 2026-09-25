@@ -402,6 +402,33 @@ RA.FxLayer = L.Layer.extend({
       RA.drawUnit(ctx, U.sym || u.type, x, y, uw, G.P[u.owner].hex, mine, u.hp / U.hp, u.ready > G.tick, u.empUntil > G.tick, u.id === selId, now, angle, moving, G.tick-u.lastHit<15);
     }
 
+    // resource deposits: a small diamond per kind (bright when yours) ------------------------------------------
+    if (G.deps && cell >= 1.6) {
+      const col = ['#e0b84a', '#b8c4cf', '#b98a5a'], me = G.me;
+      const r = Math.max(4.5, Math.min(8, cell * 0.5));
+      ctx.save();
+      ctx.lineWidth = 1.5;
+      for (const c of G.deps) {
+        const s = G.depAt[c] - 1;
+        if (s < 0) continue;
+        const x = gx((c % W) + 0.5), y = gy(((c / W) | 0) + 0.5);
+        if (!inView(x, y, 10)) continue;
+        const mine = me && G.owner[c] === me.id;
+        ctx.globalAlpha = mine ? 1 : 0.7;
+        ctx.fillStyle = col[s];
+        ctx.strokeStyle = mine ? '#fff' : 'rgba(0,0,0,0.7)';
+        ctx.beginPath();
+        ctx.moveTo(x, y - r);
+        ctx.lineTo(x + r, y);
+        ctx.lineTo(x, y + r);
+        ctx.lineTo(x - r, y);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
     // straits: a dotted line where ships pass; red and solid when closed ------------------------------------------
     if (G.straits && G.straits.length) {
       ctx.save();

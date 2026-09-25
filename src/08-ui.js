@@ -117,6 +117,7 @@ RA.UI = class {
     this._seg('diffSeg', this.settings.difficulty, (v) => (this.settings.difficulty = v));
     this._seg('peaceSeg', String(this.settings.peace), (v) => (this.settings.peace = +v));
     this._seg('csSeg', String(this.settings.cityStates), (v) => (this.settings.cityStates = +v));
+    this._seg('resSeg', this.settings.res ? '1' : '0', (v) => (this.settings.res = v === '1'));
     $('colorSeg').innerHTML = RA.PLAYER_COLORS.map((c) => `<button data-v="${c}" aria-pressed="false" aria-label="Boja ${c}" style="--sw:${c}"><span></span></button>`).join('');
     this._seg('colorSeg', RA.PLAYER_COLORS.includes(this.settings.color) ? this.settings.color : RA.PLAYER_COLORS[0], (v) => (this.settings.color = v));
     this._seg('cbSeg', this.settings.cb ? '1' : '0', (v) => this.setColorblind(v === '1'));
@@ -254,7 +255,7 @@ RA.UI = class {
   /* start screen buttons after the lobby changed the settings (and the map shown behind it) */
   syncStart() {
     const s = this.settings;
-    for (const [id, v] of [['mapSeg', RA.theatreOf(s)], ['eraSeg', s.era], ['startSeg', s.start], ['gmSeg', s.gm], ['diffSeg', s.difficulty], ['peaceSeg', String(s.peace)]]) this._press(id, v);
+    for (const [id, v] of [['mapSeg', RA.theatreOf(s)], ['eraSeg', s.era], ['startSeg', s.start], ['gmSeg', s.gm], ['diffSeg', s.difficulty], ['peaceSeg', String(s.peace)], ['resSeg', s.res ? '1' : '0']]) this._press(id, v);
     this.startNotes();
     if (this.app.map.id !== s.map && this.app.mapOK && this.app.mapOK[s.map]) this.app.useMap(s.map);
   }
@@ -894,6 +895,8 @@ RA.UI = class {
         const T = r.t ? G.P[r.t] : null;
         say('info', `Napad ${T ? 'na ' + RA.esc(T.name) : 'na slobodnu zemlju'} obustavljen — vraćeno ${RA.fmt(r.back)} vojnika${T ? ' (25% izgubljeno u povlačenju)' : ''}.`);
       }
+    } else if (kind === 'buy') {
+      if (err(r)) say('info', RA.esc(r));
     } else if (kind === 'str') {
       if (r && typeof r === 'object') say(r.closed ? 'bad' : 'good', `${RA.esc(r.name)} je ${r.closed ? 'zatvoren za tuđe brodove' : 'ponovo otvoren'}.`);
       else if (err(r)) say('info', RA.esc(r));

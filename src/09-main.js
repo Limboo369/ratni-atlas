@@ -312,10 +312,10 @@ RA.App = class {
     const gm = RA.regionMap(RA.eraMap(this.map, s.era, s.start), s.region);
     RA.ME_COLOR = RA.PLAYER_COLORS.includes(s.color) ? s.color : RA.PLAYER_COLORS[0];
     const seed = (Math.random() * 1e9) | 0;
-    const G = RA.newGame(gm, { seed, difficulty: s.difficulty, cityStates: s.cityStates, peace: s.peace, era: s.era, start: s.start, gm: s.gm });
+    const G = RA.newGame(gm, { seed, difficulty: s.difficulty, cityStates: s.cityStates, peace: s.peace, era: s.era, start: s.start, gm: s.gm, res: !!s.res });
     G.gid = 's' + Math.random().toString(36).slice(2, 12); // this game on the player's account (results)
     // the record of this game for "Nastavi igru": settings + seed + spawn + every command at its tick (09b-save.js)
-    G.rec = { v: 1, build: RA.BUILD, gid: G.gid, set: { map: s.map, region: s.region, era: s.era, start: s.start, gm: s.gm, difficulty: s.difficulty, cityStates: s.cityStates, peace: s.peace, seed, color: RA.ME_COLOR }, picks: [], name: '', cmds: [] };
+    G.rec = { v: 1, build: RA.BUILD, gid: G.gid, set: { map: s.map, region: s.region, era: s.era, start: s.start, gm: s.gm, difficulty: s.difficulty, cityStates: s.cityStates, peace: s.peace, res: !!s.res, seed, color: RA.ME_COLOR }, picks: [], name: '', cmds: [] };
     this.setGame(G);
     this.attractMode = false;
     this.speed = 1;

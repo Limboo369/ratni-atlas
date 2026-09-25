@@ -70,6 +70,7 @@ RA.AI = {
     RA.AI.diplomacy(G, p, info);
     RA.AI.maybeBuild(G, p, info);
     RA.AI.maybeRecruit(G, p, info);
+    if (G.deps) RA.AI.maybeBuyRes(G, p);
     if (!peace) {
       RA.AI.maybeStrike(G, p, info);
       RA.AI.maybeNuke(G, p, info);
@@ -520,7 +521,7 @@ RA.AI = {
       }
     }
     if (!tgt || ts < 1.1) return;
-    if (!MI.mirv.na && p.gold >= G.missileCost('mirv') * 1.05 && G.tick > G.diff.nukeAfter * 2 && G.leader && G.leader.id === tgt.id) {
+    if (!MI.mirv.na && p.gold >= G.missileCost('mirv', p) * 1.05 && G.tick > G.diff.nukeAfter * 2 && G.leader && G.leader.id === tgt.id) {
       const c = tgt.cells[Math.floor(G.rng() * tgt.tiles)];
       const r = G.launchMissile(p.id, 'mirv', c);
       if (typeof r === 'object') {
@@ -627,6 +628,18 @@ RA.AI = {
     }
   },
 
+  /* resources: buy a missing kind from the cheapest trade partner that has it */
+  maybeBuyRes(G, p) {
+    for (let s = 0; s < 3; s++) {
+      if (p.res[s] || p.imp[s]) continue;
+      let best = null;
+      for (const id of p.trade) {
+        const q = G.P[id];
+        if (q && q.alive && q.res && q.res[s] && (!best || G.resRate(q, s) < G.resRate(best, s))) best = q;
+      }
+      if (best) G.buyRes(p.id, s, best.id);
+    }
+  },
   /* the state the others gang up on: the hegemon (over 30% of the land) or the most aggressive conqueror */
   menace(G) {
     if (G._menaceT === G.tick) return G._menace;

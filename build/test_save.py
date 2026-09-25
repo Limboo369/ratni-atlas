@@ -66,7 +66,7 @@ async def main():
         ev = page.evaluate
         check(await ev('document.getElementById("resumeBtn").hidden'), 'no save yet: no "Nastavi igru"')
 
-        await ev('''() => { const ui = window.__ra.ui; Object.assign(ui.settings, { map: 'evropa', region: 'balkan', era: 'danas', start: '%s', gm: 'klasik', difficulty: 'lako', peace: 180 }); window.__ra.newGame(); }''' % START)
+        await ev('''() => { const ui = window.__ra.ui; Object.assign(ui.settings, { map: 'evropa', region: 'balkan', era: 'danas', start: '%s', gm: 'klasik', difficulty: 'lako', peace: 180, res: %s }); window.__ra.newGame(); }''' % (START, 'true' if START == 'granice' else 'false'))
         await page.wait_for_function('window.__ra.G && window.__ra.G.state === "spawn"', timeout=30_000)
         # two picks (the second one moves the player): both are replayed
         await ev('''() => { const G = window.__ra.G, ui = window.__ra.ui, ns = G.P.filter(p => p && p.type === 'nation' && p.alive).sort((x, y) => x.area - y.area);
@@ -79,6 +79,10 @@ async def main():
         await page.click('#taxSeg button[data-v="4"]')
         t = await ev('() => { const G = window.__ra.G; G.step(); return [G.me.tax, G.me.goldRate, document.querySelector("#taxSeg button[data-v=\\"4\\"]").getAttribute("aria-pressed")]; }')
         check(t[0] == 4 and t[1] > g0 * 1.3 and t[2] == 'true', f'tax "Vrlo visok": more gold {g0:.0f} -> {t[1]:.0f}/s {t}')
+        if START == 'granice':
+            txt = await ev('document.getElementById("sheet").textContent')
+            dep = await ev('window.__ra.G.deps ? window.__ra.G.deps.length : 0')
+            check('Resursi' in txt and dep > 0 and ('imaš' in txt), f'resources on: deposits ({dep}) and the Resursi section')
         await page.keyboard.press('Escape')
         # aggressive expansion (plan 36): a conqueror becomes the coalition's target, the AI refuses to ally with it
         ae = await ev('''() => { const G = window.__ra.G, me = G.me, C = RA.CFG;

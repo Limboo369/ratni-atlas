@@ -91,6 +91,43 @@ const check = (ok, msg) => {
   EG._stepStraits();
   const sue = EG.straits.find((s) => s.id === 'sue'), egy = EG.P[sue.holder];
   check(egy && egy.iso === 'EGY', `Egypt holds the Suez canal (${egy && egy.name})`);
+
+  // resources (option): everyone has at least one kind, nobody all three; buying from a partner; missing costs more
+  const RG2 = RA.newGame(RA.eraMap(m, 'danas', 'granice'), { seed: 11, difficulty: 'srednje', cityStates: 0, peace: 60, era: 'danas', start: 'granice', gm: 'klasik', res: true });
+  RA.placeHuman(RG2, RG2.P.find((p) => p && p.iso === 'SRB').nation.c, 'Test');
+  RA.startGame(RG2);
+  const nats = RG2.P.filter((p) => p && p.alive && p.type !== 'bot');
+  const kinds = (p) => p.res.filter((n) => n > 0).length;
+  check(RG2.deps.length > 40 && nats.every((p) => kinds(p) >= 1 && kinds(p) <= 2), `resources: every state has 1–2 kinds (${RG2.deps.length} deposits)`);
+  const noRes = RA.newGame(RA.eraMap(m, 'danas', 'granice'), { seed: 11, difficulty: 'srednje', cityStates: 0, peace: 60, era: 'danas', start: 'granice', gm: 'klasik' });
+  check(!noRes.deps && noRes.hasRes(noRes.P.find((p) => p && p.type === 'nation'), 2), 'resources off: no deposits, nothing is missing');
+  const sr = RG2.me, miss = [0, 1, 2].find((k) => !sr.res[k]);
+  const seller = RG2.P.find((p) => p && p.alive && p !== sr && p.type === 'nation' && p.res[miss] > 0);
+  check(typeof RG2.exec(sr.id, 'buy', [miss, seller.id]) === 'string', 'buying needs a trade agreement');
+  RG2.makeTrade(sr, seller);
+  const unitBefore = RG2.unitCost(sr, 'inf'), structBefore = RG2.structCost(sr, 'fort');
+  const rb = RG2.exec(sr.id, 'buy', [miss, seller.id]);
+  check(rb && rb.sid === seller.id && RG2.hasRes(sr, miss), `bought ${RA.resKind(miss, 'danas').name} from ${seller.name}`);
+  if (miss === 1) check(RG2.unitCost(sr, 'inf') < unitBefore, 'with metal units are cheaper');
+  if (miss === 2) check(RG2.structCost(sr, 'fort') < structBefore, 'with fuel buildings are cheaper');
+  const g0 = seller.gold;
+  for (let i = 0; i < 100; i++) RG2.step();
+  check(seller.gold > g0 && sr.resFee > 0, `the seller earns (${Math.round(sr.resFee)}/s from ${sr.name})`);
+  RG2.cancelTrade(sr.id, seller.id);
+  for (let i = 0; i < 25; i++) RG2.step();
+  check(!sr.imp[miss], 'ending the trade agreement ends the purchase');
+  const bought = RG2.P.filter((p) => p && p.alive && p.ai && p.imp && p.imp.some((x) => x)).length;
+  for (let i = 0; i < 1200; i++) RG2.step();
+  const bought2 = RG2.P.filter((p) => p && p.alive && p.ai && p.imp && p.imp.some((x) => x)).length;
+  check(bought2 > 0, `the computer buys what it lacks from partners (${bought} → ${bought2} states)`);
+  const runR = () => {
+    const H = RA.newGame(RA.eraMap(m, 'ww1', 'granice'), { seed: 4, difficulty: 'srednje', cityStates: 0, peace: 0, era: 'ww1', start: 'granice', gm: 'klasik', res: true });
+    RA.placeHuman(H, H.P.find((p) => p && p.type === 'nation').nation.c, 'T');
+    RA.startGame(H);
+    for (let i = 0; i < 900; i++) H.step();
+    return H.hash();
+  };
+  check(runR() === runR(), 'resources keep the game deterministic');
   console.log('FAILS:', fails.length ? fails : 'none');
   process.exit(fails.length ? 1 : 0);
 })();

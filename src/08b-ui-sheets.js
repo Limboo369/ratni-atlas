@@ -313,7 +313,8 @@ Object.assign(RA.UI.prototype, {
         const o = G.P[oid];
         const land = me.nbCache && me.nbCache.has(oid);
         const via = [land ? 'kopnom' : '', me.n.port && o.n.port ? 'morem' : ''].filter(Boolean).join(' i ') || 'nema puta — trebaju luke ili granica';
-        h += row(o, `trgovina: ${via}`, this.mini('Prekini', `data-do="endT:${oid}"`, 'warn'));
+        const rs = G.deps && o.res ? ' · ima: ' + ([0, 1, 2].filter((s) => o.res[s]).map((s) => `${RA.resKind(s, G.era).name} ${Math.round(G.resRate(o, s) * 100)}%`).join(', ') || 'ništa') : '';
+        h += row(o, `trgovina: ${via}${rs}`, this.mini('Prekini', `data-do="endT:${oid}"`, 'warn'));
       }
       h += '</div>';
     }
@@ -486,8 +487,13 @@ Object.assign(RA.UI.prototype, {
       `<div class="field"><span class="lab">Porez: ${RA.esc(cur.name)}</span><div class="seg wrap" id="taxSeg" role="group" aria-label="Porez">${T.map((t, i) => `<button data-v="${i}" aria-pressed="${i === me.tax}">${RA.esc(t.name)}</button>`).join('')}</div>
       <p class="note">Viši porez: više zlata, ali vojska sporije raste. Niži: vojska brže raste, zlata manje.<br>Sada: zlato ${cur.g === 1 ? 'normalno' : pct(cur.g)}, rast vojske ${cur.grow === 1 ? 'normalan' : pct(cur.grow)}.</p></div>
       <div class="field"><span class="lab">Kamata</span><p class="note">Ušteđeno zlato donosi 1% u minuti, najviše četvrtinu tvog prihoda. Sada: <b>+${RA.fmt(me.interest || 0)}/s</b>.</p></div>` +
-      this.loanHtml() + this.straitHtml();
+      this.resHtml() + this.loanHtml() + this.straitHtml();
     this.openSheet(h, (s) => {
+      s.querySelectorAll('[data-buy]').forEach((b) => (b.onclick = () => {
+        const [k, sid] = b.dataset.buy.split(':').map(Number);
+        this.act('buy', [k, sid]);
+        if (G.online) setTimeout(() => this.econSheet(true), 400);
+      }));
       s.querySelectorAll('[data-str]').forEach((b) => (b.onclick = () => {
         const [i, v] = b.dataset.str.split(':').map(Number);
         const go = () => {
@@ -511,6 +517,29 @@ Object.assign(RA.UI.prototype, {
         if (G.online) setTimeout(() => this.econSheet(true), 400);
       }));
     }, keep, () => this.econSheet(true));
+  },
+  /* resources: what you have, buy, or miss (and what missing costs you); partners' offers with their prices */
+  resHtml() {
+    const G = this.G, me = G.me;
+    if (!G.deps || !me.res) return '';
+    let h = '<div class="sec-t">Resursi</div><p class="explain">Bez resursa ništa nije zabranjeno, samo skuplje ili sporije. Što nemaš, kupuješ od trgovinskog partnera za dio svog prihoda dok kupuješ (ko ima više nalazišta, prodaje jeftinije).</p><div class="list">';
+    for (let s = 0; s < 3; s++) {
+      const K = RA.resKind(s, G.era), sid = me.imp[s], q = G.P[sid];
+      let d, bb = '';
+      if (me.res[s]) d = `<span class="pos">imaš</span> · ${me.res[s]} ${me.res[s] === 1 ? 'nalazište' : 'nalazišta'}`;
+      else if (sid && q) {
+        d = `kupuješ od ${RA.esc(q.name)} · ${Math.round(G.resRate(q, s) * 100)}% prihoda`;
+        bb = this.mini('Prekini', `data-buy="${s}:0"`, 'warn');
+      } else {
+        d = `<span class="neg">nemaš</span> — ${RA.RES[s].lack}`;
+        const sellers = [...me.trade].map((id) => G.P[id]).filter((o) => o && o.alive && o.res && o.res[s]).sort((a, b) => G.resRate(a, s) - G.resRate(b, s));
+        bb = sellers.slice(0, 3).map((o) => this.mini(`${RA.esc(o.name)} ${Math.round(G.resRate(o, s) * 100)}%`, `data-buy="${s}:${o.id}"`)).join('');
+        if (!sellers.length) d += '<br>Nijedan trgovinski partner ga nema — sklopi trgovinski savez (Savezi).';
+      }
+      h += `<div class="prow wide"><span class="sw res-${RA.RES[s].id}"></span><div class="pn"><div class="nm">${K.name}</div><div class="d">${d}</div></div><div class="bb">${bb}</div></div>`;
+    }
+    if (me.resRateIn) h += `<p class="note">Prodaješ drugima: +${RA.fmt(me.resRateIn)}/s.</p>`;
+    return h + '</div>';
   },
   /* straits: who holds them; the holder of both shores may close one for foreign ships */
   straitHtml() {
@@ -637,6 +666,7 @@ Object.assign(RA.UI.prototype, {
         <li>Vojska raste sama, najbrže oko <b>42%</b> kapaciteta (zelena zona na traci).</li>
         <li><b>Mobilizacija</b> (Vojska): odmah +30% kapaciteta, ali rast stoji 45 s. Jednom u 4 minute.</li>
         <li>Zlato donose teritorija, gradovi, luke, vozovi ili karavani i trgovina.</li>
+        <li><b>Resursi</b> (opcija u postavkama): žito, metal i gorivo na stvarnim nalazištima (znakovi na karti). Bez njih je sve skuplje ili sporije; što nemaš, kupiš od trgovinskog partnera (Ekonomija).</li>
         <li><b>Moreuzi</b> (Ekonomija): ko drži obje obale može zatvoriti moreuz za tuđe brodove. Svi koji tuda plove se ljute — zatvaranje je agresija.</li>
         <li><b>Zajam</b> (Ekonomija: klik na zlato ili Z): država kompjutera ti posudi zlato, dio tvoje zemlje je zalog (šrafirano). Ne vratiš na vrijeme → zalog je njen.</li>
         <li><b>Vazal</b> (meni Savezi): slabu susjednu državu možeš učiniti vazalom umjesto da je osvojiš — plaća ti danak i bori se uz tebe. Ako oslabiš, oslobodi se.</li>

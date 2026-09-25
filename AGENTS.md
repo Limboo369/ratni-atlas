@@ -77,6 +77,7 @@ limits apply). Emblem ids are shared by `RA.EMBLEMS` (`src/08e-account.js`) and 
 | `build/eras.py` | Historical borders per era → `build/eradata.js` (polities, capitals, city renames, owner raster). |
 | `build/svijet/` | World map (`prep.py svijet`, `world.py svijet`, `eras.py --map svijet --era <id>` or `--era all`; Bosnian names in `build/names_bs.py`): `map.json` + `era_<id>.json`, served from `/data/svijet/` and loaded only when the player picks Svijet. |
 | `build/eras_world/` | One table per world era (`<id>.py`: polities, capitals, paints, renames); format and workflow in its `README.md`. |
+| `build/deposits.js` | Resource deposits at real places (lat/lon lists) → `src/01b-deposits.js` in grid cells per map (`node build/deposits.js`). |
 | `scripts/fetch_data.sh` | Downloads the raw GeoJSON sources into `data/` (not in git). |
 | `build/test_*.py`, `build/sim_eras.py` | Playwright tests and AI balance runs (Leaflet served from `package/dist/leaflet.js`). |
 | `build/sim_node.js` | Fast AI-only balance runs in node: `node build/sim_node.js era:start:gm:region:maxMin:seed:diff[:pick]`. |
@@ -95,6 +96,8 @@ Rebuild era data: `scripts/fetch_data.sh && python3 build/eras.py`.
 - **Eras** (`src/04b-eras.js`): `RA.applyEra(id)` swaps `RA.UNIT` / `RA.STRUCT` / `RA.MISSILE`. Unavailable entries are
   flagged **`na: true`** — never `off` (`off` is the units' offense multiplier).
 - Battle royale ring: `src/02e-zone.js` (`G.zone`, `G.zoneOut(c)`).
+- Resources (option `opts.res`): `src/02g-resources.js` (`G.deps`, `p.res`, `p.imp`; `G.hasRes`, `G.unitCost`, `G.structCost`,
+  `G.missileCost(type, p)` — always pass the player, never `G.me`, in sim/AI code).
 - Straits and canals: `src/02f-straits.js` (`RA.STRAITS[mapId]`, lines in grid cells; ships cross them even where the grid
   shows land; `G.seaFor(c, pid)` in every sea search; seas joined by straits share `G.wroot`).
 - Land shares (win, leader, army cap) use real area: `p.area` / `G.landTotal()`, cell weights `map.aw` (1 in Europe; on the
