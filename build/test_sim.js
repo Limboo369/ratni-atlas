@@ -153,6 +153,41 @@ const check = (ok, msg) => {
   check(V.troops < vt0 * 0.8 && V.crisisUntil > NG.tick, `a nuke hurts more: −${Math.round((1 - V.troops / vt0) * 100)}% army and an economic crisis`);
   if (capC) check(capC.tier < tier0, `a city in the core drops a level (${capC.name} ${tier0} → ${capC.tier})`);
   check(A.troops < at0 * 0.85 && A.crisisUntil > 0, `the retaliation lands on the attacker (−${Math.round((1 - A.troops / at0) * 100)}% army)`);
+
+  // the navy (plan 20): a warship from a port blockades an enemy port and sinks its landing boats
+  const SG = RA.newGame(RA.eraMap(m, 'danas', 'granice'), { seed: 31, difficulty: 'srednje', cityStates: 0, peace: 0, era: 'danas', start: 'granice', gm: 'klasik' });
+  const ITA = SG.P.find((p) => p && p.iso === 'ITA'), ALB = SG.P.find((p) => p && p.iso === 'ALB');
+  RA.placeHuman(SG, ITA.nation.c, 'Test');
+  RA.startGame(SG);
+  const I = SG.me;
+  I.gold = ALB.gold = 5e7;
+  I.troops = Math.max(I.troops, 400000);
+  const portAt = (p, pred) => { for (let i = 0; i < p.tiles; i++) { const c = p.cells[(i * 104729) % p.tiles]; if (m.coast[c] && (!pred || pred(c)) && typeof SG.canBuild(p, 'port', c) === 'number') return c; } return -1; };
+  const W = m.W;
+  SG.build(I.id, 'port', portAt(I, (c) => c % W > 250)); // the Adriatic side
+  const ap = SG.build(ALB.id, 'port', portAt(ALB));
+  for (let i = 0; i < 60; i++) SG.step();
+  const shr = SG.exec(I.id, 'rec', ['ship', I.capital]);
+  const ship = I.units.find((u) => u.type === 'ship');
+  check(shr && ship && !m.land[(ship.y | 0) * W + (ship.x | 0)], `a warship is launched at sea (${RA.UNIT.ship.name})`);
+  check(SG.exec(I.id, 'mv', [ship.id, I.capital]) !== true, 'a ship cannot be sent onto land');
+  const aw = SG._portWater(ap);
+  check(SG.exec(I.id, 'mv', [ship.id, aw]) === true, 'sent to the Albanian port');
+  for (let i = 0; i < 900 && (ship.path || SG.tick < 100); i++) SG.step();
+  for (let i = 0; i < 20; i++) SG.step();
+  check(ap.blocked === I.id && ALB.portsOff >= 1, `the Albanian port is blockaded (ship ${RA.dist(ship.x - ap.x, ship.y - ap.y).toFixed(1)} cells away)`);
+  // an Albanian landing near the ship is sunk
+  const boatsBefore = ALB.boats;
+  let tgt2 = -1;
+  for (let i = 0; i < I.tiles && tgt2 < 0; i++) { const c = I.cells[i]; if (m.coast[c] && RA.dist((c % W) - ship.x, ((c / W) | 0) - ship.y) < 12) tgt2 = c; }
+  const lb = tgt2 >= 0 ? SG.launchBoat(ALB.id, tgt2, 20000) : null;
+  for (let i = 0; i < 60; i++) SG.step();
+  check(lb && typeof lb === 'object' && lb.done, 'the warship sinks an enemy landing in range');
+  // a submarine is unseen until a warship comes near
+  const sub = { dead: false, type: 'sub', owner: ALB.id, x: ship.x + 20, y: ship.y };
+  check(!SG.subSeen(sub, I.id), 'a far submarine is hidden');
+  sub.x = ship.x + 3;
+  check(SG.subSeen(sub, I.id), 'a near submarine is seen');
   console.log('FAILS:', fails.length ? fails : 'none');
   process.exit(fails.length ? 1 : 0);
 })();

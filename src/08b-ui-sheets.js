@@ -9,7 +9,8 @@ Object.assign(RA.UI.prototype, {
     if (me.units.length >= cap) return `Limit ${cap} jedinica — svaka kasarna daje još ${RA.CFG.UNIT_PER_BARRACKS}`;
     if (U.na) return 'Ne postoji u ovom dobu';
     if (U.needs && !me.n[U.needs]) return `Treba zgrada: ${RA.STRUCT[U.needs].name}`;
-    if (me.gold < U.gold) return 'Nemaš dovoljno zlata';
+    if (U.naval && G._portLaunch(me, me.capital) < 0) return 'Treba ti spremna luka na moru';
+    if (me.gold < G.unitCost(me, type)) return 'Nemaš dovoljno zlata';
     if (me.troops < U.troops * 1.2) return 'Premalo vojnika';
     return '';
   },
@@ -38,14 +39,15 @@ Object.assign(RA.UI.prototype, {
       r: '+' + RA.fmt(add),
     }) + '</div>';
     h += '<div class="sec-t">Regrutuj jedinicu</div><p class="explain">Postavi je uz granicu — sama prati front. Neprijatelju otežava proboj, a tvoje napade u blizini čini jeftinijim.</p><div class="btns">';
-    for (const type of ['inf', 'tank', 'art']) {
+    for (const type of ['inf', 'tank', 'art', 'ship', 'sub']) {
       const U = RA.UNIT[type];
       if (U.na) continue;
+      if (type === 'ship') h += '</div><div class="sec-t">Mornarica</div><p class="explain">Brodovi isplovljavaju iz tvoje luke. Dodirni brod pa more da ga pošalješ. Ratni brod blokira neprijateljske luke u blizini i gađa obalu.</p><div class="btns">';
       const why = this.unitWhy(type);
       h += this.btn({
         model: U.sym || type, cls: 'model-btn', icon: U.sym || type, attrs: `data-rec="${type}"`, dis: !!why,
         t: U.name, d: RA.esc(why || U.desc),
-        r: `${RA.fmt(U.gold)}<small>−${RA.fmt(U.troops)} vojnika</small>`,
+        r: `${RA.fmt(G.unitCost(me, type))}<small>−${RA.fmt(U.troops)} vojnika</small>`,
       });
     }
     h += '</div><div class="sec-t">Tvoje jedinice</div>';
@@ -68,7 +70,9 @@ Object.assign(RA.UI.prototype, {
       };
       s.querySelectorAll('[data-rec]').forEach((b) => (b.onclick = () => {
         this.closeSheet();
-        this.setMode({ kind: 'recruit', type: b.dataset.rec });
+        // a ship needs no place: it leaves the port nearest to the capital (or tap near another port)
+        if (RA.UNIT[b.dataset.rec].naval) this.act('rec', [b.dataset.rec, me.capital]);
+        else this.setMode({ kind: 'recruit', type: b.dataset.rec });
       }));
       s.querySelectorAll('[data-sel]').forEach((b) => (b.onclick = () => {
         const u = me.units.find((x) => x.id === +b.dataset.sel);
@@ -666,6 +670,7 @@ Object.assign(RA.UI.prototype, {
         <li>Vojska raste sama, najbrže oko <b>42%</b> kapaciteta (zelena zona na traci).</li>
         <li><b>Mobilizacija</b> (Vojska): odmah +30% kapaciteta, ali rast stoji 45 s. Jednom u 4 minute.</li>
         <li>Zlato donose teritorija, gradovi, luke, vozovi ili karavani i trgovina.</li>
+        <li><b>Mornarica</b> (Vojska): dva broda po dobu, iz tvoje luke. Dodirni brod pa more. Ratni brod potapa desante i trgovačke brodove, blokira neprijateljske luke u blizini (bez zlata i trgovine) i gađa obalu; drugi brod lovi desante i trgovačke brodove (podmornica od 1914. je nevidljiva dok joj ratni brod ne priđe).</li>
         <li><b>Gvozdena kupola</b> (zgrada, od 1938.): kad neko lansira nuklearku na tebe, svaka spremna kupola sama ispali atomsku bombu na njegovu prijestolnicu i gradove.</li>
         <li><b>Resursi</b> (opcija u postavkama): žito, metal i gorivo na stvarnim nalazištima (znakovi na karti). Bez njih je sve skuplje ili sporije; što nemaš, kupiš od trgovinskog partnera (Ekonomija).</li>
         <li><b>Moreuzi</b> (Ekonomija): ko drži obje obale može zatvoriti moreuz za tuđe brodove. Svi koji tuda plove se ljute — zatvaranje je agresija.</li>

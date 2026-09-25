@@ -152,13 +152,13 @@ Object.assign(RA.CFG, {
     const tk = this.tick;
     // trade ships leave ports towards partners' ports
     for (const s of this.structs) {
-      if (s.dead || !s.ready || s.type !== 'port' || s.empUntil > tk || tk < (s.nextTrade || 0)) continue;
+      if (s.dead || !s.ready || s.type !== 'port' || s.empUntil > tk || s.blocked || tk < (s.nextTrade || 0)) continue;
       s.nextTrade = tk + RA.CFG.TRADE_EVERY + Math.floor(this.rng() * 60);
       const p = this.P[s.owner];
       if (!p.trade.size) continue;
       const cands = [];
       for (const t of this.structs) {
-        if (t.dead || !t.ready || t.type !== 'port' || t.empUntil > tk || !p.trade.has(t.owner)) continue;
+        if (t.dead || !t.ready || t.type !== 'port' || t.empUntil > tk || t.blocked || !p.trade.has(t.owner)) continue;
         cands.push(t);
       }
       for (let k = 0; k < 3 && cands.length; k++) {

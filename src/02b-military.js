@@ -62,6 +62,23 @@ RA.UNIT = {
   },
 };
 
+/* the navy (plan 20): two ships per era, built at a port, sailing wherever the player sends them (sea only).
+   The warship sinks landing boats, trade ships and warships, blockades enemy ports (no income, no trade) and shells
+   the coast; the raider (a submarine from 1914: unseen until an enemy warship is near) hunts boats and trade ships. */
+Object.assign(RA.UNIT, {
+  ship: {
+    name: 'Ratni brod', m: true, naval: true, needs: 'port', gold: 380000, troops: 6000, hp: 200, r: 0, ro: 0, def: 1, defSpd: 1, off: 1, offSpd: 1,
+    speed: 0.55, deploy: 40, dmg: 0, range: 8, fireCd: 22, lost: 'Ratni brod je potopljen',
+    desc: 'Plovi morem: potapa desante, trgovačke i ratne brodove, blokira neprijateljske luke i gađa obalu do 8 polja.',
+  },
+  sub: {
+    name: 'Podmornica', naval: true, sub: true, needs: 'port', gold: 280000, troops: 4000, hp: 110, r: 0, ro: 0, def: 1, defSpd: 1, off: 1, offSpd: 1,
+    speed: 0.5, deploy: 40, dmg: 0, range: 6, fireCd: 16, lost: 'Podmornica je potopljena',
+    desc: 'Nevidljiva dok joj neprijateljski ratni brod ne priđe: lovi desante i trgovačke brodove do 6 polja.',
+  },
+});
+Object.assign(RA.CFG, { NAVY_BLOCK_R: 7, SUB_SEEN_R: 5 });
+
 RA.MISSILE = {
   rocket: { name: 'Raketa', kind: 'conv', cost: 150000, r: 3, speed: 3.8, cd: 45,
     desc: 'Precizan udar: ruši zgrade, uništava jedinice i ubija vojsku. Bez radijacije.' },
@@ -127,6 +144,11 @@ RA.NUKE = RA.MISSILE;
     const gold = this.unitCost(p, type);
     if (p.gold < gold) return 'Nemaš dovoljno zlata.';
     if (p.troops < U.troops * 1.2) return 'Nemaš dovoljno vojnika za tu jedinicu.';
+    if (U.naval) {
+      // ships are launched at your port nearest to the tapped place
+      c = this._portLaunch(p, c);
+      if (c < 0) return 'Treba ti spremna luka na moru.';
+    }
     p.gold -= gold;
     p.troops -= U.troops;
     const W = this.map.W;
@@ -138,10 +160,32 @@ RA.NUKE = RA.MISSILE;
     p.units.push(u);
     return u;
   };
+  /* the water cell next to p's ready port nearest to c (where a new ship is launched) */
+  P._portLaunch = function (p, c) {
+    const W = this.map.W, cx = c % W, cy = (c / W) | 0;
+    let best = -1, bd = 1e9;
+    for (const s of this.structs) {
+      if (s.dead || !s.ready || s.type !== 'port' || s.owner !== p.id) continue;
+      const w = this._portWater(s);
+      if (w < 0) continue;
+      const d = RA.dist(s.x - cx, s.y - cy);
+      if (d < bd) {
+        bd = d;
+        best = w;
+      }
+    }
+    return best;
+  };
   P.moveUnit = function (pid, uid, c) {
     const p = this.P[pid];
     const u = p && p.units.find((x) => x.id === uid);
     if (!u) return 'Jedinica ne postoji.';
+    if (RA.UNIT[u.type].naval) {
+      if (c < 0 || !this.seaFor(c, pid) || this.map.block[c]) return 'Brod plovi samo morem — dodirni more.';
+      u.anchor = c;
+      u.retargetNow = true;
+      return true;
+    }
     if (c < 0 || this.owner[c] !== pid) return 'Jedinicu možeš poslati samo na svoju teritoriju — sama će pratiti front.';
     u.anchor = c;
     u.retargetNow = true;
@@ -265,6 +309,10 @@ RA.NUKE = RA.MISSILE;
       }
       const U = RA.UNIT[u.type];
       const c = (u.y | 0) * W + (u.x | 0);
+      if (U.naval) {
+        this._stepShip(u, U, p, c);
+        continue;
+      }
       const friendly = this._friendlyCell(p, c);
       if (!friendly) {
         u.hp -= 1.4;
@@ -306,6 +354,145 @@ RA.NUKE = RA.MISSILE;
       // EMP'd ports stop paying
       for (const p of this.P) if (p) p.portsOff = 0;
       for (const s of this.structs) if (!s.dead && s.ready && s.type === 'port' && s.empUntil > tk) this.P[s.owner].portsOff++;
+      this._blockades();
+    }
+  };
+  /* ---------------- the navy ---------------- */
+  P._stepShip = function (u, U, p, c) {
+    const tk = this.tick, W = this.map.W;
+    if (u.hp <= 0) {
+      this._unitDied(u, u.why || 'potopljen');
+      return;
+    }
+    if (tk < u.ready || u.empUntil > tk) return;
+    // sail to the anchor (a water cell) along the sea
+    if (u.retargetNow || (!u.path && u.anchor !== c && (tk + u.id) % 20 === 0)) {
+      u.retargetNow = false;
+      u.path = null;
+      if (u.anchor !== c && this.seaFor(u.anchor, p.id)) {
+        const got = this._bfs(c, (n) => this.seaFor(n, p.id) && !this.map.block[n], (n) => n === u.anchor, 60000);
+        if (got >= 0) {
+          const path = [];
+          for (let k = got; k !== -1 && path.length < 2000; k = this.bfsPrev[k]) path.push(k);
+          path.reverse();
+          u.path = path;
+          u.pi = 1;
+        }
+      }
+    }
+    if (u.path && u.pi < u.path.length) {
+      let step = U.speed;
+      while (step > 0 && u.pi < u.path.length) {
+        const tc = u.path[u.pi];
+        const tx = (tc % W) + 0.5, ty = ((tc / W) | 0) + 0.5;
+        const ddx = tx - u.x, ddy = ty - u.y, d = RA.dist(ddx, ddy);
+        if (d <= step) {
+          u.x = tx;
+          u.y = ty;
+          step -= d;
+          u.pi++;
+        } else {
+          u.x += (ddx / d) * step;
+          u.y += (ddy / d) * step;
+          step = 0;
+        }
+      }
+      if (u.pi >= u.path.length) u.path = null;
+    }
+    if (tk - u.lastHit > 60 && u.hp < U.hp) u.hp = Math.min(U.hp, u.hp + 0.2);
+    if (tk >= (u.fireAt || 0)) this._shipFire(u, U, p);
+  };
+  /* can an enemy of this submarine see it? (a hostile warship or port near it) */
+  P.subSeen = function (u, by) {
+    const R = RA.CFG.SUB_SEEN_R, R2 = R * R;
+    for (const e of this.units) if (!e.dead && e.type === 'ship' && e.owner === by && (e.x - u.x) * (e.x - u.x) + (e.y - u.y) * (e.y - u.y) <= R2) return true;
+    return false;
+  };
+  P._shipFire = function (u, U, p) {
+    const tk = this.tick, W = this.map.W, R2 = U.range * U.range;
+    u.fireAt = tk + U.fireCd;
+    const near = (x, y) => (x - u.x) * (x - u.x) + (y - u.y) * (y - u.y) <= R2;
+    const hit = (x, y) => this.fx.push({ kind: 'shell', sx: u.x, sy: u.y, x, y, tick: tk });
+    // 1. enemy ships (a raider only fights raiders; nobody sees a submarine from afar)
+    let best = null, bd = 1e9;
+    for (const e of this.units) {
+      if (e.dead || !this.hostile(p, e.owner)) continue;
+      const E = RA.UNIT[e.type];
+      if (!E.naval || (U.sub && e.type === 'ship') || (E.sub && !this.subSeen(e, u.owner))) continue;
+      const d2 = (e.x - u.x) * (e.x - u.x) + (e.y - u.y) * (e.y - u.y);
+      if (d2 <= R2 && d2 < bd) {
+        bd = d2;
+        best = e;
+      }
+    }
+    if (best) {
+      best.hp -= U.sub ? 18 : 26;
+      best.lastHit = tk;
+      hit(best.x, best.y);
+      return;
+    }
+    // 2. landing boats, 3. trade ships
+    for (const b of this.boats) {
+      if (b.done || !this.hostile(p, b.owner)) continue;
+      const bc = b.path[Math.min(b.path.length - 1, Math.floor(b.pos))];
+      const x = (bc % W) + 0.5, y = ((bc / W) | 0) + 0.5;
+      if (!near(x, y)) continue;
+      b.done = true;
+      this.P[b.owner].boats--;
+      hit(x, y);
+      this.tell(this.P[b.owner], 'bad', `${U.name} (${p.name}) je potopio tvoj desant.`, p.id, bc);
+      this.tell(p, 'good', `${U.name}: potopljen desant (${this.P[b.owner].name}).`, b.owner, bc);
+      return;
+    }
+    for (const s of this.tships) {
+      if (s.done || !this.hostile(p, s.owner)) continue;
+      const k = Math.min(s.path.length - 1, Math.floor(s.pos || 0)), sc = s.path[k];
+      const x = (sc % W) + 0.5, y = ((sc / W) | 0) + 0.5;
+      if (!near(x, y)) continue;
+      s.done = true;
+      hit(x, y);
+      p.gold += 20000; // the cargo
+      return;
+    }
+    if (U.sub) return;
+    // 4. the warship shells the coast: enemy units, else the army on a coastal cell
+    for (const e of this.units) {
+      if (e.dead || RA.UNIT[e.type].naval || !this.hostile(p, e.owner) || !near(e.x, e.y)) continue;
+      e.hp -= e.type === 'tank' ? 9 : 14;
+      e.lastHit = tk;
+      hit(e.x, e.y);
+      return;
+    }
+    const H = this.map.H, coast = this.map.coast;
+    for (let k = 0; k < 12; k++) {
+      const dx = Math.round((this.rng() * 2 - 1) * U.range), dy = Math.round((this.rng() * 2 - 1) * U.range);
+      if (dx * dx + dy * dy > R2) continue;
+      const x = (u.x | 0) + dx, y = (u.y | 0) + dy;
+      if (x < 0 || y < 0 || x >= W || y >= H) continue;
+      const c = y * W + x;
+      const o = this.owner[c];
+      if (!coast[c] || !this.hostile(p, o)) continue;
+      const v = this.P[o];
+      v.troops = Math.max(0, v.troops - Math.min(v.troops * 0.003, (v.troops / Math.max(1, v.tiles)) * 5));
+      hit(x + 0.5, y + 0.5);
+      return;
+    }
+  };
+  /* ports within reach of a hostile warship are blockaded (no gold, no trade ships) */
+  P._blockades = function () {
+    const R = RA.CFG.NAVY_BLOCK_R, R2 = R * R, tk = this.tick;
+    const ships = this.units.filter((u) => !u.dead && u.type === 'ship' && u.ready <= tk);
+    for (const s of this.structs) {
+      if (s.dead || !s.ready || s.type !== 'port') continue;
+      const o = this.P[s.owner];
+      let by = 0;
+      for (const u of ships) if (this.hostile(o, u.owner) && (u.x - s.x - 0.5) * (u.x - s.x - 0.5) + (u.y - s.y - 0.5) * (u.y - s.y - 0.5) <= R2) {
+        by = u.owner;
+        break;
+      }
+      if (by && !s.blocked && s.empUntil <= tk) this.tell(o, 'bad', `Luka je u blokadi (${this.P[by].name}): ne donosi zlato ni trgovinu.`, by, s.c);
+      s.blocked = by;
+      if (by && s.empUntil <= tk) o.portsOff++; // (an EMP'd port is already off)
     }
   };
   P._artFire = function (u) {
@@ -315,7 +502,7 @@ RA.NUKE = RA.MISSILE;
     const R2 = U.range * U.range;
     let best = null, bd = 1e9;
     for (const e of this.units) {
-      if (e.dead || e.owner === u.owner || !this.hostile(p, e.owner)) continue;
+      if (e.dead || e.owner === u.owner || !this.hostile(p, e.owner) || (RA.UNIT[e.type].sub && !this.subSeen(e, u.owner))) continue;
       const d2 = (e.x - u.x) * (e.x - u.x) + (e.y - u.y) * (e.y - u.y);
       if (d2 <= R2 && d2 < bd) {
         bd = d2;
@@ -354,6 +541,7 @@ RA.NUKE = RA.MISSILE;
       for (const u of T.units) {
         if (u.dead || u.ready > tk || u.empUntil > tk) continue;
         const U = RA.UNIT[u.type];
+        if (U.naval) continue;
         const dx = u.x - x, dy = u.y - y;
         if (dx * dx + dy * dy > U.r * U.r) continue;
         n++;
@@ -374,6 +562,7 @@ RA.NUKE = RA.MISSILE;
       for (const u of A.units) {
         if (u.dead || u.ready > tk || u.empUntil > tk) continue;
         const U = RA.UNIT[u.type];
+        if (U.naval) continue;
         const dx = u.x - x, dy = u.y - y;
         if (dx * dx + dy * dy > U.ro * U.ro) continue;
         if (U.off < om) {

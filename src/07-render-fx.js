@@ -376,6 +376,8 @@ RA.FxLayer = L.Layer.extend({
       const x = gx(u.x), y = gy(u.y);
       if (!inView(x, y, 40)) continue;
       const U = RA.UNIT[u.type];
+      // an enemy submarine stays hidden until one of your warships is near
+      if (U.sub && me && !mine && !G.isFriendly(me, G.P[u.owner]) && !G.subSeen(u, me.id)) continue;
       if (u.id === selId || (mine && ui.mode && (ui.mode.kind === 'recruit' || ui.mode.kind === 'unit'))) {
         ctx.beginPath();
         ctx.arc(x, y, U.r * cell, 0, Math.PI * 2);
@@ -384,7 +386,7 @@ RA.FxLayer = L.Layer.extend({
         ctx.lineWidth = u.id === selId ? 2 : 1.2;
         ctx.stroke();
         ctx.setLineDash([]);
-        if (u.type === 'art') {
+        if (u.type === 'art' || U.naval) {
           ctx.beginPath();
           ctx.arc(x, y, U.range * cell, 0, Math.PI * 2);
           ctx.strokeStyle = 'rgba(255,120,90,0.45)';
@@ -399,7 +401,7 @@ RA.FxLayer = L.Layer.extend({
         for(let i=u.pi;i<u.path.length;i++) ctx.lineTo(gx((u.path[i]%W)+.5),gy(((u.path[i]/W)|0)+.5));
         ctx.strokeStyle='rgba(238,213,156,.75)';ctx.lineWidth=1.5;ctx.setLineDash([4,6]);ctx.stroke();ctx.restore();
       }
-      RA.drawUnit(ctx, U.sym || u.type, x, y, uw, G.P[u.owner].hex, mine, u.hp / U.hp, u.ready > G.tick, u.empUntil > G.tick, u.id === selId, now, angle, moving, G.tick-u.lastHit<15);
+      RA.drawUnit(ctx, U.sym || u.type, x, y, U.naval ? uw * 1.25 : uw, G.P[u.owner].hex, mine, u.hp / U.hp, u.ready > G.tick, u.empUntil > G.tick, u.id === selId, now, angle, moving, G.tick-u.lastHit<15);
     }
 
     // resource deposits: a small diamond per kind (bright when yours) ------------------------------------------

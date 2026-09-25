@@ -121,6 +121,22 @@ RA.Models = (() => {
         else { rect(-5,-4,14,8,color); rect(2,-2,8,4,'#748778'); ellipse(13,0,2,2,light); }
         line([[-12,0],[-12,-10]],light,.8);
       }
+    } else if (type === 'ship' || type === 'sub') {
+      // navy (placeholder art until Codex draws per-era ships): bow points right like the route tangent
+      shadow(2,3,26,8);
+      if (type === 'sub' && !horseAge && era !== 'napoleon') {
+        path([[-24,-4],[14,-5],[26,0],[14,5],[-24,4]],'#233540','#6f8790');
+        rect(-4,-9,9,5,'#2c3f49');rect(-2,-12,3,3,color);line([[-22,0],[18,0]],'#8aa1a8',.6);
+      } else if (horseAge || era === 'napoleon') {
+        path([[-24,-7],[12,-7],[26,0],[12,7],[-24,7]],'#5a4632','#b89a6a');
+        for (const x of [-12,2]) { line([[x,-14],[x,12]],'#d2c3a0',1.3); path([[x+1,-13],[x+10,-8],[x+10,8],[x+1,11]],'#e0d7bd'); }
+        rect(-20,-3,6,6,color);
+      } else {
+        path([[-24,-7],[12,-7],[27,0],[12,7],[-24,7]],'#2a3c46','#9fb2b6');
+        path([[-20,-5],[10,-5],[22,0],[10,5],[-20,5]],'#7e8f8e');
+        rect(-8,-4,10,8,'#b8c2bc');rect(-5,-2,5,4,color);
+        for (const x of [-17,8]) { ellipse(x,0,3,3,'#5d6f6c');line([[x,0],[x+9,0]],'#3c4c4b',1.4); }
+      }
     } else if (type === 'missile') {
       path([[-20,-3],[12,-3],[24,0],[12,3],[-20,3]],'#c5d0c5');
       path([[-15,-3],[-22,-9],[-22,-3]],color);path([[-15,3],[-22,9],[-22,3]],color);
@@ -240,7 +256,7 @@ RA.drawUnit = function(ctx,type,x,y,size,color,mine,hp,deploying,emp,selected,no
     ctx.restore();
   }
   // Keep soldiers upright; vehicles turn towards their actual next waypoint.
-  const vehicle=type==='tank'||(type==='art'&&!['rim','srednji'].includes(RA.ERA && RA.ERA.id));
+  const vehicle=type==='tank'||type==='ship'||type==='sub'||(type==='art'&&!['rim','srednji'].includes(RA.ERA && RA.ERA.id));
   RA.Models.draw(ctx,type,x,y,size,color,vehicle?angle:0);
   const bw=size*.68, by=y+size*.6;
   ctx.fillStyle='#15232be6';ctx.fillRect(x-bw/2-1,by-1,bw+2,5);

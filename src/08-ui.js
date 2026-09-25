@@ -874,7 +874,7 @@ RA.UI = class {
         say('good', r.type === 'city' ? `Gradi se novi grad ${RA.esc(r.name)} (${Math.round(S.time / 10)} s).` : `Gradnja: ${S.name} (${Math.round(S.time / 10)} s).`);
       } else if (err(r)) say('info', RA.esc(r));
     } else if (kind === 'rec') {
-      if (r && typeof r === 'object') say('good', `${RA.UNIT[r.type].name}: raspoređivanje (${Math.round(RA.UNIT[r.type].deploy / 10)} s), zatim sama prati front.`);
+      if (r && typeof r === 'object') say('good', RA.UNIT[r.type].naval ? `${RA.UNIT[r.type].name} isplovljava iz luke (${Math.round(RA.UNIT[r.type].deploy / 10)} s). Dodirni ${RA.UNIT[r.type].m ? 'ga' : 'je'} pa more da ${RA.UNIT[r.type].m ? 'ga' : 'je'} pošalješ.` : `${RA.UNIT[r.type].name}: raspoređivanje (${Math.round(RA.UNIT[r.type].deploy / 10)} s), zatim sama prati front.`);
       else if (err(r)) say('info', RA.esc(r));
     } else if (kind === 'mv') {
       if (r === true) {
@@ -1048,7 +1048,7 @@ RA.UI = class {
         return;
       }
       const U = RA.UNIT[u.type];
-      txt = `${U.name} · ${Math.round((u.hp / U.hp) * 100)}% — dodirni novi položaj`;
+      txt = `${U.name} · ${Math.round((u.hp / U.hp) * 100)}% — dodirni ${U.naval ? 'more' : 'novi položaj'}`;
       ex.textContent = 'Raspusti';
       ex.hidden = false;
       btn = 'aArmy';
@@ -1207,6 +1207,15 @@ RA.UI = class {
     } else if (m.kind === 'unit') {
       const u = this.selUnit();
       if (!u) return this.setMode(null);
+      if (RA.UNIT[u.type].naval) {
+        // a ship: the sea cell tapped (or the nearest one)
+        const w = c < 0 ? -1 : G.seaFor(c, me.id) ? c : G._bfs(c, () => true, (n) => G.seaFor(n, me.id) && !G.map.block[n], 400);
+        if (w < 0) return fail('Brod plovi samo morem — dodirni more.');
+        this.ping(cp, false);
+        this.act('mv', [u.id, w]);
+        this.setMode(null);
+        return;
+      }
       const cc = this.nearestOwn(c, 4000);
       if (cc < 0) return fail('Nema tvoje zemlje u blizini.');
       this.ping(cp, false);

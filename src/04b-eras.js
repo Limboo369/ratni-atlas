@@ -32,6 +32,8 @@ RA.ERAS = [
       inf: { name: 'Legija', desc: 'Čvrsta odbrana granice u krugu od 6 polja.' },
       tank: { name: 'Konjica', pl: false, sym: 'cav', needs: 'barracks', desc: 'Brzi proboj: tvoji napadi pored konjice su jeftiniji i brži.' },
       art: { name: 'Strijelci', pl: true, needs: null, range: 8, desc: 'Gađaju neprijateljske jedinice i vojsku do 8 polja. Drže se iza linije.' },
+      ship: { name: 'Trirema', m: false, range: 5, desc: 'Ratna galija: potapa desante i trgovačke brodove, blokira luke i napada obalu do 5 polja.' },
+      sub: { name: 'Liburna', sub: false, range: 5, speed: 0.6, desc: 'Brza galija: lovi desante i trgovačke brodove do 5 polja.' },
     },
     structs: {
       factory: { name: 'Tržnica', short: 'Tržnica', icon: 'market', cost: (n) => Math.min(1.5e6, 150000 * RA.dpow(2, n)), desc: 'Karavani do tvojih gradova (18 polja) donose zlato.' },
@@ -54,6 +56,8 @@ RA.ERAS = [
       inf: { name: 'Pješaci', pl: true, desc: 'Kopljanici čvrsto drže granicu u krugu od 6 polja.' },
       tank: { name: 'Vitezovi', pl: true, sym: 'cav', needs: 'barracks', desc: 'Oklopna konjica: tvoji napadi pored vitezova su jeftiniji i brži.' },
       art: { name: 'Strijelci', pl: true, needs: null, range: 9, desc: 'Samostreličari gađaju jedinice i vojsku do 9 polja.' },
+      ship: { name: 'Karaka', m: false, range: 6, desc: 'Ratni jedrenjak: potapa desante i trgovačke brodove, blokira luke i napada obalu do 6 polja.' },
+      sub: { name: 'Galija', sub: false, range: 5, speed: 0.6, desc: 'Brza galija na vesla: lovi desante i trgovačke brodove do 5 polja.' },
     },
     structs: {
       factory: { name: 'Tržnica', short: 'Tržnica', icon: 'market', cost: (n) => Math.min(1.5e6, 150000 * RA.dpow(2, n)), desc: 'Karavani do tvojih gradova (18 polja) donose zlato.' },
@@ -77,6 +81,8 @@ RA.ERAS = [
       inf: { name: 'Pješadija', desc: 'Mušketari čvrsto drže granicu u krugu od 6 polja.' },
       tank: { name: 'Konjica', pl: false, sym: 'cav', needs: 'barracks', desc: 'Husari i kirasiri: tvoji napadi pored konjice su jeftiniji i brži.' },
       art: { name: 'Topovi', pl: true, needs: 'factory', range: 12, desc: 'Gađaju neprijateljske jedinice i vojsku do 12 polja. Traže manufakturu.' },
+      ship: { name: 'Linijski brod', range: 7, desc: 'Brod sa 74 topa: potapa desante i trgovačke brodove, blokira luke i gađa obalu do 7 polja.' },
+      sub: { name: 'Fregata', sub: false, range: 6, speed: 0.62, desc: 'Brza fregata: lovi desante i trgovačke brodove do 6 polja.' },
     },
     structs: {
       factory: { name: 'Manufaktura', short: 'Manufaktura', desc: 'Kočije do tvojih gradova (18 polja) donose zlato. Potrebna za topove.' },
@@ -97,6 +103,7 @@ RA.ERAS = [
     units: {
       tank: { name: 'Tenkovi', desc: 'Prvi tenkovi (od 1916.): tvoji napadi pored njih su jeftiniji i brži. Traže fabriku.' },
       art: { desc: 'Teška artiljerija gađa jedinice i vojsku do 12 polja. Traži fabriku.' },
+      ship: { name: 'Drednot', desc: 'Bojni brod: potapa desante, trgovačke i ratne brodove, blokira luke i gađa obalu do 8 polja.' },
     },
     structs: {
       fort: { name: 'Rovovi i utvrde', short: 'Rovovi' },
@@ -115,7 +122,7 @@ RA.ERAS = [
     blurb: 'Evropa uoči rata: Njemačka, SSSR, Italija, Kraljevina Jugoslavija… Tenkovi, avioni i padobranci, V-2 rakete — a atomska bomba stiže tek od 10. minute.',
     blurbW: 'Svijet uoči rata: Njemačka, SSSR, Japan, SAD, Britansko i Francusko carstvo… Tenkovi, avioni i padobranci, V-2 rakete — a atomska bomba stiže tek od 10. minute.',
     strikeTab: 'Rakete', strikeIcon: 'rocket', road: false, para: true,
-    units: {},
+    units: { ship: { name: 'Bojni brod' } },
     structs: {
       silo: { name: 'Raketna baza', short: 'Baza', desc: 'Lansira V-2 rakete, a od 10. minute i atomsku bombu.' },
       sam: { name: 'Protivavionska odbrana', short: 'PAO', desc: 'Obara neprijateljske rakete i avione koji ciljaju u krugu od 28 polja.' },
@@ -131,7 +138,7 @@ RA.ERAS = [
     blurb: 'NATO i Varšavski pakt: dvije Njemačke, SSSR, Jugoslavija između blokova. Tenkovi, padobranci, balističke rakete i hidrogenske bombe.',
     blurbW: 'SAD i SSSR dijele svijet: NATO, Varšavski pakt, Kina, nesvrstani i kolonije pred nezavisnošću. Tenkovi, padobranci, balističke rakete i hidrogenske bombe.',
     strikeTab: 'Rakete', strikeIcon: 'rocket', road: false, para: true,
-    units: {},
+    units: { ship: { name: 'Razarač' } },
     structs: {},
     missiles: { rocket2: false, emp: false },
   },
@@ -140,7 +147,7 @@ RA.ERAS = [
     blurb: 'Današnja Evropa. Sve jedinice i oružje: rakete, EMP, atomske i hidrogenske bombe, MIRV.',
     blurbW: 'Današnji svijet. Sve jedinice i oružje: rakete, EMP, atomske i hidrogenske bombe, MIRV.',
     strikeTab: 'Rakete', strikeIcon: 'rocket', road: false, para: true,
-    units: {}, structs: {}, missiles: {},
+    units: { ship: { name: 'Razarač' }, sub: { name: 'Nuklearna podmornica' } }, structs: {}, missiles: {},
   },
 ];
 RA.eraById = (id) => RA.ERAS.find((e) => e.id === id) || RA.ERAS[RA.ERAS.length - 1];
@@ -166,12 +173,14 @@ RA.applyEra = function (id) {
   RA.STRUCT_ORDER = RA.BASE.STRUCT_ORDER.filter((k) => !RA.STRUCT[k].na);
   for (const k in RA.UNIT) {
     const U = RA.UNIT[k];
-    U.lost = `${U.name} ${U.pl ? 'su uništeni' : 'je uništena'}`;
+    U.lost = U.naval ? `${U.name} je potopljen${U.m ? '' : 'a'}` : `${U.name} ${U.pl ? 'su uništeni' : 'je uništena'}`;
   }
   RA.UNIT_TXT = {};
   for (const k in RA.UNIT) {
     const U = RA.UNIT[k];
-    RA.UNIT_TXT[k] = { gone: `${U.name} ${U.pl ? 'su raspušteni' : 'je raspuštena'}`, move: `${U.name} ${U.pl ? 'kreću' : 'kreće'} na novi položaj` };
+    RA.UNIT_TXT[k] = U.naval
+      ? { gone: `${U.name} je rashodovan${U.m ? '' : 'a'}`, move: `${U.name} plovi na novi položaj` }
+      : { gone: `${U.name} ${U.pl ? 'su raspušteni' : 'je raspuštena'}`, move: `${U.name} ${U.pl ? 'kreću' : 'kreće'} na novi položaj` };
   }
   return E;
 };

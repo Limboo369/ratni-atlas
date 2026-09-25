@@ -71,6 +71,7 @@ RA.AI = {
     RA.AI.maybeBuild(G, p, info);
     RA.AI.maybeRecruit(G, p, info);
     if (G.deps) RA.AI.maybeBuyRes(G, p);
+    if (!peace && p.n.port) RA.AI.navy(G, p, info);
     if (!peace) {
       RA.AI.maybeStrike(G, p, info);
       RA.AI.maybeNuke(G, p, info);
@@ -633,6 +634,35 @@ RA.AI = {
     }
   },
 
+  /* the navy: at war with a state that has ports, build a ship or two and send them to blockade its nearest port */
+  navy(G, p, info) {
+    const U = RA.UNIT, tk = G.tick;
+    if (U.ship.na || tk < 1200) return;
+    // targets: ports of states we are at war with (the front enemy first)
+    const enemy = RA.AI.frontEnemy(G, p, info);
+    const foes = new Set(G.attacks.filter((a) => !a.done && a.t && (a.a === p.id || a.t === p.id)).map((a) => (a.a === p.id ? a.t : a.a)));
+    if (enemy) foes.add(enemy.id);
+    const ports = G.structs.filter((s) => !s.dead && s.ready && s.type === 'port' && foes.has(s.owner) && !G.isFriendly(p, G.P[s.owner]));
+    const ships = p.units.filter((u) => U[u.type].naval);
+    if (ports.length && ships.length < 2 && p.units.length < G.unitCap(p) && p.gold >= G.unitCost(p, 'ship') * 1.5 && p.troops > U.ship.troops * 6 && G.rng() < 0.25) {
+      G.recruitUnit(p.id, G.rng() < 0.7 || U.sub.na ? 'ship' : 'sub', p.capital);
+    }
+    const W = G.map.W;
+    for (const u of ships) {
+      if (u.ready > tk || (u.path && u.pi < u.path.length) || (tk + u.id) % 50 !== 0) continue;
+      let best = -1, bd = 1e9;
+      for (const s of ports) {
+        const w = G._portWater(s);
+        if (w < 0 || !G.seaFor(w, p.id)) continue;
+        const d = RA.dist((w % W) + 0.5 - u.x, ((w / W) | 0) + 0.5 - u.y);
+        if (d < bd) {
+          bd = d;
+          best = w;
+        }
+      }
+      if (best >= 0 && bd > 3) G.moveUnit(p.id, u.id, best);
+    }
+  },
   /* resources: buy a missing kind from the cheapest trade partner that has it */
   maybeBuyRes(G, p) {
     for (let s = 0; s < 3; s++) {
