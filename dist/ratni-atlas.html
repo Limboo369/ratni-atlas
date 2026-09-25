@@ -4735,6 +4735,20 @@ RA.STRAITS = {
     { id: 'mes', name: 'Mesina', lines: [[[243, 571], [248, 571]]], a: [[244, 573]], b: [[247, 569]] },
     { id: 'ker', name: 'Kerč', lines: [[[438, 480], [438, 487]]], a: [[435, 483]], b: [[441, 484]] },
   ],
+  // the world grid had closed Gibraltar, the Bosporus, the Dardanelles and Kerch too (the Mediterranean was a lake)
+  svijet: [
+    { id: 'tur', name: 'Bosfor i Dardaneli', lines: [[[929, 267], [928, 269]], [[915, 271], [921, 271]]], a: [[926, 268], [917, 272]], b: [[931, 269], [918, 270]] },
+    { id: 'gib', name: 'Gibraltar', lines: [[[775, 295], [775, 299]]], a: [[775, 294]], b: [[775, 299]] },
+    { id: 'dan', name: 'Danski moreuzi', lines: [[[845, 171], [850, 171]]], a: [[845, 170]], b: [[851, 172]] },
+    { id: 'otr', name: 'Otranto', lines: [[[881, 273], [886, 273]]], a: [[880, 273]], b: [[886, 272]] },
+    { id: 'mes', name: 'Mesina', lines: [[[869, 284], [869, 287]]], a: [[868, 286]], b: [[870, 285]] },
+    { id: 'ker', name: 'Kerč', lines: [[[962, 241], [962, 245]]], a: [[960, 243]], b: [[964, 243]] },
+    { id: 'hor', name: 'Hormuški moreuz', lines: [[[1051, 350], [1055, 345]]], a: [[1049, 349]], b: [[1055, 343]] },
+    { id: 'bab', name: 'Bab el-Mandeb', lines: [[[990, 413], [994, 410]]], a: [[989, 413]], b: [[995, 412]] },
+    { id: 'mal', name: 'Malajski moreuz', lines: [[[1245, 458], [1254, 458]]], a: [[1244, 459]], b: [[1255, 457]] },
+    { id: 'sue', name: 'Suecki kanal', from: 'ww1', lines: [[[943, 322], [945, 332]]], a: [[942, 325]], b: [[947, 329]] },
+    { id: 'pan', name: 'Panamski kanal', from: 'ww1', lines: [[[445, 426], [447, 429]]], a: [[444, 428]], b: [[448, 427]] },
+  ],
 };
 
 (function (P) {
@@ -12847,7 +12861,7 @@ Object.assign(RA.UI.prototype, {
   },
 });
 
-RA.BUILD = '8b2c0606';
+RA.BUILD = '65c2418d';
 new RA.App().boot();
 }
 function __raFallback(){

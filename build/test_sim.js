@@ -73,6 +73,24 @@ const check = (ok, msg) => {
     return H.hash();
   };
   check(run() === run(), 'straits keep the game deterministic');
+
+  // the world: its grid had closed Gibraltar (the Mediterranean was a lake); canals exist from the era they were dug
+  const w = await RA.loadMap(JSON.parse(fs.readFileSync(R + 'build/svijet/map.json', 'utf8')));
+  const E = {};
+  for (const f of fs.readdirSync(R + 'build/svijet')) if (/^era_(rim|danas)\.json$/.test(f)) E[f.slice(4, -5)] = JSON.parse(fs.readFileSync(R + 'build/svijet/' + f, 'utf8'));
+  w.eras = await RA.loadEras(E, w.N);
+  const WG = RA.newGame(RA.eraMap(w, 'danas', 'granice'), { seed: 5, difficulty: 'srednje', cityStates: 0, peace: 60, era: 'danas', start: 'granice', gm: 'klasik' });
+  const sea = (la, lo) => WG.wroot[w.wcomp[w.cellOfLatLng(la, lo)]];
+  check(sea(37, 3) === sea(36, -9) && sea(43, 34) === sea(36, -9) && sea(46, 36.5) === sea(36, -9), 'world: the Mediterranean, the Black Sea and Azov reach the ocean');
+  const ids = WG.straits.map((s) => s.id);
+  check(['gib', 'tur', 'sue', 'pan', 'mal', 'hor', 'bab'].every((k) => ids.includes(k)), `world straits today: ${ids}`);
+  const RG = RA.newGame(RA.eraMap(w, 'rim', 'granice'), { seed: 5, difficulty: 'srednje', cityStates: 0, peace: 60, era: 'rim', start: 'granice', gm: 'klasik' });
+  const rids = RG.straits.map((s) => s.id);
+  check(!rids.includes('sue') && !rids.includes('pan') && rids.includes('gib'), `no canals in Rome's time: ${rids}`);
+  const EG = RA.newGame(RA.eraMap(w, 'danas', 'granice'), { seed: 5, difficulty: 'srednje', cityStates: 0, peace: 60, era: 'danas', start: 'granice', gm: 'klasik' });
+  EG._stepStraits();
+  const sue = EG.straits.find((s) => s.id === 'sue'), egy = EG.P[sue.holder];
+  check(egy && egy.iso === 'EGY', `Egypt holds the Suez canal (${egy && egy.name})`);
   console.log('FAILS:', fails.length ? fails : 'none');
   process.exit(fails.length ? 1 : 0);
 })();
