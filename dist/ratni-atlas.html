@@ -768,7 +768,7 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
 .command-identity .profile-btn { display: flex; align-items: center; gap: 8px; min-height: 36px; min-width: 0; padding: 0 8px; color: #d3dce0; font-size: 12px; border: 1px solid #ffffff15; border-radius: 3px; background: #ffffff04; }
 .command-identity .profile-btn > svg { width: 15px; height: 15px; }
 .command-identity .profile-btn:hover { border-color: #ffffff40; background: #ffffff0b; }
-.command-secondary { gap: 18px; flex-wrap: nowrap; justify-content: space-between; }
+.command-secondary { column-gap: 18px; row-gap: 0; flex-wrap: wrap; justify-content: flex-start; } /* 4–5 buttons (Kampanja, Ljestvica): wrap, never off-screen */
 .command-secondary button { white-space: nowrap; }
 @media (min-width: 761px) {
   .command-main { min-height: 0; }
@@ -15047,7 +15047,7 @@ Object.assign(RA.App.prototype, {
   },
 });
 
-RA.BUILD = '27c93991';
+RA.BUILD = '717ea4c4';
 new RA.App().boot();
 }
 function __raFallback(){
