@@ -48,6 +48,7 @@ Object.assign(RA.UI.prototype, {
     }
   },
   feedAdd(n, now) {
+    this.rulerNews(n); // the rulers have an opinion (08j-rulers.js)
     const G = this.G, A = this.feedName(n.a), B = n.b ? this.feedName(n.b) : '';
     const mine = G.me && (n.a === G.me.id || n.b === G.me.id);
     const focus = n.b || n.a;

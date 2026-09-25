@@ -262,6 +262,7 @@ RA.App = class {
     this.G = G;
     this.ui.audio.setEra(G.era || 'danas');
     this.ui.feedReset();
+    this.ui.rulersReset();
     RA.applyEra(G.era);
     if (this.ui.settings.cb) RA.applyColorblind(G, true);
     this.ui.citiesSorted = G.cities.slice().sort((a, b) => b.tier - a.tier || b.pop - a.pop);

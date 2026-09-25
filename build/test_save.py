@@ -98,6 +98,19 @@ async def main():
           return r; }''')
         check(ae[0] and ae[1] is False and ae[2] and ae[3], f'aggressive expansion: coalition target, no alliance, warned, fades {ae}')
         a = await ev(PLAY, 40)
+        # rulers (phase 9): my attacks made a ruler speak (a bubble with a portrait over its land)
+        await ev('window.__ra.paused = false')
+        try:
+            await page.wait_for_function('window.__ra.ui.rl && window.__ra.ui.rl.per.size >= 1', timeout=15_000)
+        except Exception:
+            pass
+        rl = await ev('() => { const ui = window.__ra.ui, b = document.getElementById("rulerBubble"); return [ui.rl ? ui.rl.per.size : 0, RA.rulerLineCount(), !!b.querySelector("svg"), b.textContent.length]; }')
+        check(rl[0] >= 1 and rl[1] >= 400 and rl[2], f'rulers comment with a portrait ({rl[0]} spoke, {rl[1]} lines)')
+        await ev('() => { const ui = window.__ra.ui; ui.settings.rulers = false; ui.rl.next = 0; ui.rl.per.clear(); document.getElementById("rulerBubble").hidden = true; }')
+        said = await ev('() => { const G = window.__ra.G; const o = G.P.find(p => p && p.alive && p.type === "nation" && !p.human); return window.__ra.ui.rulerSay(o.id, "nonsense", { force: true }); }')
+        check(said is False, 'comments can be switched off (Meni → Komentari vladara)')
+        await ev('() => { window.__ra.ui.settings.rulers = true; window.__ra.paused = true; }')
+        a = await ev(PLAY, 0)
         check(a[2] >= 6 and a[3] == 'play' and a[4], f'commands recorded, still playing: {a[2:]}')
         await ev('window.__ra.autosave(true)')
         saved = await ev('() => { const s = JSON.parse(localStorage.getItem("ra_save")); return s && [s.tick, s.rec.picks.length, s.meta.where]; }')

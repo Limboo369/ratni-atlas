@@ -556,6 +556,7 @@ RA.UI = class {
       G.events.length = 0;
     }
     this.feedUpdate(now);
+    this.rulerTick(now);
     if (this.tut) this.tut.update();
     if (G.fx.length) {
       for (const f of G.fx) if (!f.pid || (G.me && f.pid === G.me.id)) this.fxList.push(Object.assign({ t0: now }, f));
@@ -931,6 +932,7 @@ RA.UI = class {
       if (r && typeof r === 'object') say('ally', `Poziv u pomoć poslan (${RA.esc(O.name)}) — neprijatelj: ${RA.esc(r.name)}.`);
       else if (err(r)) say('info', RA.esc(r));
     }
+    this.rulerAfterAct(kind, a, r);
     this.updateRequests();
     if (this.redraw && !this.$('sheetWrap').hidden) this.redraw();
   }

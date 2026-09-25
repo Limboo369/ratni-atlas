@@ -452,6 +452,10 @@ Object.assign(RA.UI.prototype, {
     }
     h += `<div class="btns">${acts.join('')}</div>`;
     if (G.online) h += `<div class="sec-t">Označi za saveznike</div><div class="grid2">${RA.PINGS.map((P, i) => this.btn({ icon: P.icon, attrs: `data-ping="${i}"`, t: P.name, d: 'ping na karti' })).join('')}</div>`;
+    if (O && O.type === 'nation' && !O.human) {
+      const ru = RA.rulerOf(G, O);
+      h += `<div class="ruler-row"><span class="rb-face">${RA.rulerPortrait(ru.kind, O.hex, O.rel[me.id] < -35, ru.seed)}</span><div><b>${RA.esc(ru.title)} ${RA.esc(ru.name)}</b><br><span class="d">${this.relLabel(O.rel[me.id])}</span></div></div>`;
+    }
     if (O && O.type !== 'me') h += `<div class="sec-t">Odnosi</div><div class="bb" style="display:flex;flex-wrap:wrap;gap:6px">${this.diploButtons(O, true)}</div>`;
     if (me.n.silo) {
       h += `<div class="sec-t">${RA.esc(RA.ERA.strikeTab)} na ovu tačku</div><div class="grid2">`;
@@ -632,6 +636,7 @@ Object.assign(RA.UI.prototype, {
       <button class="btn" data-m="cb"><span class="t">Mod za daltoniste</span><span class="r" style="font-size:14px">${this.settings.cb ? 'Uključeno' : 'Isključeno'}</span></button>
       <button class="btn" data-m="sfx"><span class="t">Zvučni efekti</span><span class="r" style="font-size:14px">${this.audio.s.sfx ? 'Uključeno' : 'Isključeno'}</span></button>
       <button class="btn" data-m="music"><span class="t">Muzika</span><span class="r" style="font-size:14px">${this.audio.s.music ? 'Uključeno' : 'Isključeno'}</span></button>
+      <button class="btn" data-m="rulers"><span class="t">Komentari vladara</span><span class="r" style="font-size:14px">${this.settings.rulers === false ? 'Isključeno' : 'Uključeno'}</span></button>
       <button class="btn danger" data-m="new"><span><span class="t">${G.online ? 'Napusti online igru' : 'Nova igra'}</span><br><span class="d">${G.online ? 'Tvoju državu preuzima kompjuter' : 'Trenutna partija se prekida'}</span></span></button>
     </div>
     <p class="note">Tipke: Space pauza · 1–3 brzina · Q/E snaga napada · V vojska · B gradnja · D desant · P padobranci · R rakete · S savezi · M mobilizacija · Esc odustani.</p>`;
@@ -648,6 +653,11 @@ Object.assign(RA.UI.prototype, {
           this.closeSheet();
         } else if (m === 'cb') {
           this.setColorblind(!this.settings.cb);
+          this.menu();
+        } else if (m === 'rulers') {
+          this.settings.rulers = this.settings.rulers === false;
+          this._save();
+          if (!this.settings.rulers) this.$('rulerBubble').hidden = true;
           this.menu();
         } else if (m === 'sfx' || m === 'music') {
           this.audio.toggle(m);
