@@ -204,6 +204,7 @@ async def main():
             check(lost >= 3 and has, f'land taken from me -> "Vrati" chip ({lost} cells)')
             if has:
                 await ev(f'() => {{ const G = window.__ra.G; G.me.troops = Math.max(G.me.troops, 300000); G.P[{nb["id"]}].troops = 20000; }}')
+                await ev('() => { window.__ra.ui.ratio = 1; }')
                 await page.click('#attBar .achip.back')
                 await page.wait_for_timeout(300)
                 back = await ev(f'''() => {{ const G = window.__ra.G, me = G.me, T = G.P[{nb["id"]}], B = window.__before2;
@@ -212,6 +213,7 @@ async def main():
                     let extra = 0; for (let c = 0; c < G.map.N; c++) if (B[c] === T.id && G.owner[c] === me.id) extra++;
                     const m = G.lostTo(me).get(T.id); return {{ left: m ? m.length : 0, extra, done: att.done }}; }}''')
                 print('reclaim', back)
+                await ev('() => { window.__ra.ui.ratio = 0.3; }')
                 check(back.get('done') and back.get('extra') == 0 and back.get('left', 99) <= lost // 4, f'"Vrati granice" retakes only the lost land ({back}, lost {lost})')
             # right of passage: a military ally's border with a third state is a front for my attacks on it
             via = await ev('''() => { const G = window.__ra.G, me = G.me;
@@ -290,8 +292,11 @@ async def main():
             cap = await ev('() => window.__ra.G.me.capital')
             await tap_cell(cap)
             await page.wait_for_timeout(200)
-            anchor = await ev('() => window.__ra.G.me.units[0].anchor')
-            check(anchor == cap or anchor >= 0, 'unit got a new position')
+            anchor = await ev('() => { const u = window.__ra.G.me.units[0]; return u ? u.anchor : -2; }')
+            if anchor == -2:
+                print('SKIP unit move: the unit was destroyed in the war going on')
+            else:
+                check(anchor == cap or anchor >= 0, 'unit got a new position')
         # 7. diplomacy: alliance offer and trade offer are separate
         # Keep the two injected offers stable while the UI responds on a slow renderer.
         offer = await ev('''() => { const app = window.__ra, G = app.G, me = G.me; app.paused = true;

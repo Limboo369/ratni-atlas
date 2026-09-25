@@ -242,6 +242,17 @@ async def main():
         else:
             team = await B.evaluate('() => window.__ra.G.sameTeam(window.__ra.G.humans[0], window.__ra.G.humans[1])')
             check(team, 'co-op: both players in one team')
+        # the host pings the map and sends a quick message: the ally (or team mate) sees both
+        await act(A, 'png', [await A.evaluate('() => window.__ra.G.me.capital'), 1])
+        await asyncio.sleep(1.2)
+        await act(A, 'qm', [1])
+        try:
+            await B.wait_for_function('[...document.querySelectorAll("#dlogList li.chat")].some(li => li.textContent.includes("Treba mi pomoć"))', timeout=8000)
+        except Exception:
+            pass
+        seen = await B.evaluate('() => [...document.querySelectorAll("#dlogList li")].map(li => li.className + ":" + li.textContent).filter(t => /^(ping|chat)/.test(t))')
+        check(any('Pomoć ovdje' in t for t in seen) and any('Treba mi pomoć' in t for t in seen), f'ally sees the ping and the quick message {seen[-2:]}')
+        await B.screenshot(path=OUT + 'mp_5b_ping.png')
         # attacks from both sides against AI neighbours
         for pg in (A, B):
             await pg.evaluate('''() => { const G = window.__ra.G, me = G.me; const nb = me.nbCache || new Map();

@@ -242,6 +242,7 @@ Object.assign(RA.UI.prototype, {
     return b.join('');
   },
   diploAct(act, id) {
+    if (act === 'chat') return this.quickSheet();
     const G = this.G, me = G.me, O = G.P[id];
     if (!me || !O) return;
     const map = { accA: ['aRes', [id, 1]], decA: ['aRes', [id, 0]], accT: ['tRes', [id, 1]], decT: ['tRes', [id, 0]], propA: ['aReq', [id]], propT: ['tReq', [id]], send: ['give', [id, this.ratio]], help: ['help', [id]], ext: ['ext', [id]], endT: ['tEnd', [id]] };
@@ -271,6 +272,7 @@ Object.assign(RA.UI.prototype, {
     const C = RA.CFG, tk = G.tick;
     const row = (o, meta, buttons, wide) => `<div class="prow${wide ? ' wide' : ''}"><span class="sw" style="background:${o.hex}"></span><div class="pn" data-do="show:${o.id}"><div class="nm">${RA.esc(o.name)}</div><div class="d">${meta}</div></div><div class="bb">${buttons}</div></div>`;
     let h = this.head('Savezi', `Vojni ${G.allyCount(me)}/${C.ALLY_MAX} · trgovinski ${me.trade.size}/${C.TRADE_MAX} · +${RA.fmt(me.tradeRate || 0)}/s od trgovine`);
+    if (G.online) h += `<div class="btns" style="margin-bottom:10px">${this.btn({ icon: 'chat', attrs: 'data-do="chat:0"', t: 'Brze poruke saveznicima', d: 'Poruke i emoji koje vide saveznici i tim (tipka T)' })}</div>`;
     // offers
     const offers = G.allyReqs.filter((r) => r.to === me.id).map((r) => ['A', r]).concat(G.tradeReqs.filter((r) => r.to === me.id).map((r) => ['T', r]));
     if (offers.length) {
@@ -412,6 +414,7 @@ Object.assign(RA.UI.prototype, {
       acts.push(this.btn({ icon: 'para', attrs: 'data-act="para"', dis: !ap || me.gold < C.PARA_GOLD || (O && peace), t: 'Padobranci ovdje', d: ap ? `${RA.fmt(C.PARA_GOLD)} zlata · ${Math.round(this.ratio * 100)}% vojske` : `Nijedan spreman aerodrom u dometu (${C.PARA_RANGE} polja)`, r: troopsTxt }));
     }
     h += `<div class="btns">${acts.join('')}</div>`;
+    if (G.online) h += `<div class="sec-t">Označi za saveznike</div><div class="grid2">${RA.PINGS.map((P, i) => this.btn({ icon: P.icon, attrs: `data-ping="${i}"`, t: P.name, d: 'ping na karti' })).join('')}</div>`;
     if (O && O.type !== 'me') h += `<div class="sec-t">Odnosi</div><div class="bb" style="display:flex;flex-wrap:wrap;gap:6px">${this.diploButtons(O, true)}</div>`;
     if (me.n.silo) {
       h += `<div class="sec-t">${RA.esc(RA.ERA.strikeTab)} na ovu tačku</div><div class="grid2">`;
@@ -434,6 +437,10 @@ Object.assign(RA.UI.prototype, {
         this.closeSheet();
         this.act('atk', [c, this.ratio, O ? 1 : 0]);
       });
+      s.querySelectorAll('[data-ping]').forEach((b) => (b.onclick = () => {
+        this.closeSheet();
+        this.act('png', [c, +b.dataset.ping]);
+      }));
       on('[data-act=attackAll]', () => {
         this.closeSheet();
         this.act('atk', [c, this.ratio, 0]);
@@ -456,6 +463,18 @@ Object.assign(RA.UI.prototype, {
       }));
       this.bindDiplo(s);
     }, keep, () => this.cellSheet(c, true));
+  },
+
+  /* quick messages to allies and team (online) */
+  quickSheet() {
+    const G = this.G;
+    if (!G || !G.me || G.state !== 'play') return;
+    const h = this.head('Brze poruke', 'Vide ih tvoji saveznici i tim · tipka T') + `<div class="qm-grid">${RA.QUICK_MSGS.map((m, i) => `<button class="btn" data-qm="${i}"><span class="t">${RA.esc(m)}</span></button>`).join('')}</div>
+      <p class="note">Ping na karti: desni klik (dugi dodir) na mjesto → „Označi za saveznike”, ili tipka G na mjestu miša.</p>`;
+    this.openSheet(h, (s) => s.querySelectorAll('[data-qm]').forEach((b) => (b.onclick = () => {
+      this.closeSheet();
+      this.act('qm', [+b.dataset.qm]);
+    })));
   },
 
   /* ---------------- menu & rules ---------------- */

@@ -3,7 +3,16 @@
    can replay exactly the same inputs on every device (lockstep). Args come from other players' devices:
    they are validated here and never trusted. */
 
-RA.CMD_KINDS = ['atk', 'boat', 'para', 'build', 'rec', 'mv', 'dis', 'mis', 'mob', 'ret', 'aReq', 'aRes', 'tReq', 'tRes', 'ext', 'brk', 'tEnd', 'give', 'help', 'ai', 'back', 'rcl'];
+RA.CMD_KINDS = ['atk', 'boat', 'para', 'build', 'rec', 'mv', 'dis', 'mis', 'mob', 'ret', 'aReq', 'aRes', 'tReq', 'tRes', 'ext', 'brk', 'tEnd', 'give', 'help', 'ai', 'back', 'rcl', 'png', 'qm'];
+/* pings on the map and quick messages, seen by the sender's allies and team (plan item 57) */
+RA.PINGS = [
+  { name: 'Napadni ovdje', icon: 'attack', color: '#ff5d5d' },
+  { name: 'Pomoć ovdje', icon: 'flag', color: '#3ec7c2' },
+  { name: 'Opasnost', icon: 'emp', color: '#f2b134' },
+  { name: 'Idem tamo', icon: 'send', color: '#8fb8ff' },
+];
+RA.QUICK_MSGS = ['Napadam!', 'Treba mi pomoć!', 'Pazi, napadaju nas!', 'Idem tamo.', 'Čekaj, spremam vojsku.', 'Hajmo zajedno na njih!',
+  'Hvala!', 'Izvini.', 'Dobra igra!', '👍', '😂', '😡', '🔥', '💣', '🤝', '👀'];
 
 (function (P) {
   P.exec = function (pid, kind, a) {
@@ -83,6 +92,25 @@ RA.CMD_KINDS = ['atk', 'boat', 'para', 'build', 'rec', 'mv', 'dis', 'mis', 'mob'
           this.tradeReqs = this.tradeReqs.filter((r) => r.to !== pid);
         }
         return true;
+      case 'png': {
+        // one ping a second at most per player (and one message, below)
+        const c = cell(a[0]), k = Number.isInteger(a[1]) && a[1] >= 0 && a[1] < RA.PINGS.length ? a[1] : -1;
+        if (c < 0 || k < 0) return 'Nevažeći ping.';
+        if (p.lastPing > this.tick - 10) return null;
+        p.lastPing = this.tick;
+        this.pings.push({ pid, c, k, tick: this.tick });
+        if (this.pings.length > 60) this.pings.splice(0, 30);
+        return true;
+      }
+      case 'qm': {
+        const m = Number.isInteger(a[0]) && a[0] >= 0 && a[0] < RA.QUICK_MSGS.length ? a[0] : -1;
+        if (m < 0) return 'Nevažeća poruka.';
+        if (p.lastMsg > this.tick - 10) return null;
+        p.lastMsg = this.tick;
+        this.chat.push({ pid, m, tick: this.tick });
+        if (this.chat.length > 60) this.chat.splice(0, 30);
+        return true;
+      }
       case 'rcl':
         return this.cmdReclaim(pid, player(a[0]), ratio(a[1]));
       case 'back':

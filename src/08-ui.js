@@ -46,6 +46,7 @@ RA.ICONS = {
   eye: '<path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.8"/>',
   edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>',
   skull: '<path d="M12 3a7.5 7.5 0 0 0-7.5 7.5c0 2.6 1.3 4.3 3 5.3V19h9v-3.2c1.7-1 3-2.7 3-5.3A7.5 7.5 0 0 0 12 3z"/><circle cx="9" cy="11" r="1.6" fill="currentColor"/><circle cx="15" cy="11" r="1.6" fill="currentColor"/><path d="M10.5 19v2M13.5 19v2"/>',
+  chat: '<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/>',
   user: '<circle cx="12" cy="8" r="3.6"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/>',
 };
 RA.icon = (n, cls) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"${cls ? ` class="${cls}"` : ''} aria-hidden="true">${RA.ICONS[n] || ''}</svg>`;
@@ -153,6 +154,8 @@ RA.UI = class {
     $('speedBtn').onclick = () => app.cycleSpeed();
     $('pauseBtn').onclick = () => app.togglePause();
     $('menuBtn').onclick = () => this.menu();
+    $('chatBtn').innerHTML = RA.icon('chat');
+    $('chatBtn').onclick = () => this.quickSheet();
     const modal = (kinds, open) => () => {
       if (this.mode && kinds.includes(this.mode.kind)) this.setMode(null);
       else open();
@@ -432,6 +435,7 @@ RA.UI = class {
   /* ---------------- screens ---------------- */
   showPlayUI(on) {
     ['hud', 'dock', 'board', 'meBtn'].forEach((id) => (this.$(id).hidden = !on));
+    this.$('chatBtn').hidden = !(on && this.G && this.G.online);
     if (!on) {
       this.$('dlog').hidden = true;
       this.$('feed').innerHTML = '';
@@ -1202,6 +1206,8 @@ RA.UI = class {
     else if (k === 'p' && RA.ERA.para && G.me.n.airport) this.setMode({ kind: 'para' });
     else if (k === 'r') this.strikeSheet();
     else if (k === 's') this.diploSheet();
+    else if (k === 't' && this.G.online) this.quickSheet();
+    else if (k === 'g' && this.G.online && this.mouseLL) this.act('png', [this.cellFromLatLng(this.mouseLL), 0]);
     else if (k === 'm') this.act('mob', []);
   }
 

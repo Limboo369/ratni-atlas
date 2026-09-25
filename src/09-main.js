@@ -214,6 +214,7 @@ RA.App = class {
         this.ui.arrowDrop();
       } else if (r.long) this.ui.onLong(r.long.ll, r.long.cp);
     });
+    lmap.on('mousemove', (e) => (this.ui.mouseLL = e.latlng)); // tipka G: ping where the mouse is
     lmap.on('contextmenu', (e) => {
       if (e.originalEvent) e.originalEvent.preventDefault();
       if (eatCtx) return void (eatCtx = false);
@@ -533,7 +534,7 @@ RA.App = class {
         this.lastT = now;
       }
       const ui = this.ui;
-      const anim = moving || G.state === 'spawn' || G.boats.length || G.missiles.length || G.units.length || G.trains.length || G.planes.length || G.tships.length || (ui.mode && (ui.mode.aim >= 0 || ui.mode.kind === 'unit')) || ui.fxList.length || (ui.pingState && now - ui.pingState.t0 < 700) || (G.me && G.attacks.some((a) => !a.done && a.a === G.me.id && a.focus >= 0));
+      const anim = moving || G.state === 'spawn' || G.boats.length || G.missiles.length || G.units.length || G.trains.length || G.planes.length || G.tships.length || (ui.mode && (ui.mode.aim >= 0 || ui.mode.kind === 'unit')) || ui.fxList.length || G.pings.some((g) => G.tick - g.tick < 60) || (ui.pingState && now - ui.pingState.t0 < 700) || (G.me && G.attacks.some((a) => !a.done && a.a === G.me.id && a.focus >= 0));
       if (moving || now - (this.lastF || 0) > (anim ? 30 : 200)) {
         this.fx.draw(G, this.terr.view(), ui);
         this.lastF = now;

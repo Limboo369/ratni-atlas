@@ -167,7 +167,7 @@ Ovo zavisi od servera i naloga, pa dolazi odmah poslije postavljanja servera.
 
 | # | Ideja | Odluka i detalji |
 | --- | --- | --- |
-| 57 | Brze poruke i ping | Da, intuitivno kao u League of Legends: na telefonu držiš prst na mapi → kružni meni (napadni ovdje, pomoć, opasnost, idem tamo); na računaru isto mišem. Plus gotove poruke i emoji; vide saveznici i tim. |
+| 57 | Brze poruke i ping | Gotovo (25. 9.), online: desni klik / dugi dodir na mjesto → „Označi za saveznike" (napadni ovdje, pomoć, opasnost, idem tamo) ili tipka G na mjestu miša; 16 gotovih poruka i emoji (dugme poruka, tipka T, meni Savezi). Vide saveznici i tim: pulsirajući znak na karti 6 s, red u dnevniku desno, poruka kao obavještenje. Kružni meni: kasnije (izgled, Codex). |
 | 58 | Gledalac | Da: uđeš u sobu samo da gledaš partiju uživo. |
 | 59 | Statistike i ljestvica | Da, po nalogu: pobjede, porazi, najveće carstvo, nuklearke; rang za online igre. |
 | 61 | Dostignuća | Da, čuvaju se na nalogu svakog igrača (server + domen). |

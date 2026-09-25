@@ -856,6 +856,12 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
   #sheet .acc-grid .k { font-size: 9px; }
   #sheet .acc-grid .v { font-size: 15px; }
 }
+/* quick messages (08b quickSheet) */
+.qm-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.qm-grid .btn { justify-content: center; text-align: center; padding: 10px 8px; }
+#dlogList li.chat span, #dlogList li.ping span { color: #e9f3f5; }
+#dlogList li.chat { background: rgba(62, 199, 194, .08); }
+@media (max-width: 560px) { #chatBtn { display: none; } }
 
 #app{touch-action:none}#sheet,.screen{touch-action:pan-y}</style>
 <div id="app">
@@ -884,6 +890,7 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
         <div id="clock">00:00</div>
       </div>
       <button class="icon-btn" id="pauseBtn" aria-label="Pauza"></button>
+      <button class="icon-btn" id="chatBtn" aria-label="Brze poruke saveznicima (T)" title="Brze poruke saveznicima (T)" hidden></button>
       <button class="icon-btn" id="menuBtn" aria-label="Meni"></button>
     </div>
   </header>
@@ -1640,6 +1647,8 @@ RA.Game = class Game {
     this.feed = []; // world news for the UI (kill feed + diplomacy log): {t, a, b, tick}; never read by the sim
     this._warAt = new Map(); // 'a:b' -> tick of the last "war" news between them
     this.fx = []; // visual events for renderer (explosions etc.)
+    this.pings = []; // map pings for allies {pid, c, k, tick} (k: RA.PINGS index); the UI shows those of friends
+    this.chat = []; // quick messages for allies {pid, m, tick} (m: RA.QUICK_MSGS index)
     this.allyReqs = []; // {from,to,exp}
     this.tradeReqs = [];
     this.tships = [];
@@ -3943,7 +3952,16 @@ Object.assign(RA.CFG, {
    can replay exactly the same inputs on every device (lockstep). Args come from other players' devices:
    they are validated here and never trusted. */
 
-RA.CMD_KINDS = ['atk', 'boat', 'para', 'build', 'rec', 'mv', 'dis', 'mis', 'mob', 'ret', 'aReq', 'aRes', 'tReq', 'tRes', 'ext', 'brk', 'tEnd', 'give', 'help', 'ai', 'back', 'rcl'];
+RA.CMD_KINDS = ['atk', 'boat', 'para', 'build', 'rec', 'mv', 'dis', 'mis', 'mob', 'ret', 'aReq', 'aRes', 'tReq', 'tRes', 'ext', 'brk', 'tEnd', 'give', 'help', 'ai', 'back', 'rcl', 'png', 'qm'];
+/* pings on the map and quick messages, seen by the sender's allies and team (plan item 57) */
+RA.PINGS = [
+  { name: 'Napadni ovdje', icon: 'attack', color: '#ff5d5d' },
+  { name: 'Pomoć ovdje', icon: 'flag', color: '#3ec7c2' },
+  { name: 'Opasnost', icon: 'emp', color: '#f2b134' },
+  { name: 'Idem tamo', icon: 'send', color: '#8fb8ff' },
+];
+RA.QUICK_MSGS = ['Napadam!', 'Treba mi pomoć!', 'Pazi, napadaju nas!', 'Idem tamo.', 'Čekaj, spremam vojsku.', 'Hajmo zajedno na njih!',
+  'Hvala!', 'Izvini.', 'Dobra igra!', '👍', '😂', '😡', '🔥', '💣', '🤝', '👀'];
 
 (function (P) {
   P.exec = function (pid, kind, a) {
@@ -4023,6 +4041,25 @@ RA.CMD_KINDS = ['atk', 'boat', 'para', 'build', 'rec', 'mv', 'dis', 'mis', 'mob'
           this.tradeReqs = this.tradeReqs.filter((r) => r.to !== pid);
         }
         return true;
+      case 'png': {
+        // one ping a second at most per player (and one message, below)
+        const c = cell(a[0]), k = Number.isInteger(a[1]) && a[1] >= 0 && a[1] < RA.PINGS.length ? a[1] : -1;
+        if (c < 0 || k < 0) return 'Nevažeći ping.';
+        if (p.lastPing > this.tick - 10) return null;
+        p.lastPing = this.tick;
+        this.pings.push({ pid, c, k, tick: this.tick });
+        if (this.pings.length > 60) this.pings.splice(0, 30);
+        return true;
+      }
+      case 'qm': {
+        const m = Number.isInteger(a[0]) && a[0] >= 0 && a[0] < RA.QUICK_MSGS.length ? a[0] : -1;
+        if (m < 0) return 'Nevažeća poruka.';
+        if (p.lastMsg > this.tick - 10) return null;
+        p.lastMsg = this.tick;
+        this.chat.push({ pid, m, tick: this.tick });
+        if (this.chat.length > 60) this.chat.splice(0, 30);
+        return true;
+      }
       case 'rcl':
         return this.cmdReclaim(pid, player(a[0]), ratio(a[1]));
       case 'back':
@@ -6563,6 +6600,41 @@ RA.FxLayer = L.Layer.extend({
       RA.drawUnit(ctx, U.sym || u.type, x, y, uw, G.P[u.owner].hex, mine, u.hp / U.hp, u.ready > G.tick, u.empUntil > G.tick, u.id === selId, now);
     }
 
+    // pings of me and my allies (6 s) ------------------------------------------------------------------------
+    if (G.me && G.pings.length) {
+      for (const g of G.pings) {
+        const age = (G.tick - g.tick) / 10;
+        if (age > 6 || age < 0 || (g.pid !== G.me.id && !G.isFriendly(G.me, G.P[g.pid]))) continue;
+        const P = RA.PINGS[g.k], x = gx((g.c % W) + 0.5), y = gy(((g.c / W) | 0) + 0.5);
+        if (!inView(x, y, 40)) continue;
+        const ph = (now / 900) % 1;
+        ctx.save();
+        ctx.strokeStyle = P.color;
+        ctx.globalAlpha = 1 - ph;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(x, y, 8 + ph * 26, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = P.color;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x - 7, y - 14);
+        ctx.arc(x, y - 16, 7, Math.PI * 0.8, Math.PI * 0.2);
+        ctx.closePath();
+        ctx.fill();
+        ctx.font = '600 12px system-ui, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = 'rgba(0,0,0,0.7)';
+        const who = G.P[g.pid], label = `${P.name}${g.pid !== G.me.id && who ? ' · ' + (who.nick || who.name) : ''}`;
+        ctx.strokeText(label, x, y - 28);
+        ctx.fillStyle = '#fff';
+        ctx.fillText(label, x, y - 28);
+        ctx.restore();
+      }
+    }
+
     // the arrow being drawn with the right mouse button (desktop) ----------------------------------------------
     const ar = ui.arrow;
     if (ar && ar.s >= 0 && ar.e >= 0) {
@@ -7333,6 +7405,7 @@ RA.ICONS = {
   eye: '<path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.8"/>',
   edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>',
   skull: '<path d="M12 3a7.5 7.5 0 0 0-7.5 7.5c0 2.6 1.3 4.3 3 5.3V19h9v-3.2c1.7-1 3-2.7 3-5.3A7.5 7.5 0 0 0 12 3z"/><circle cx="9" cy="11" r="1.6" fill="currentColor"/><circle cx="15" cy="11" r="1.6" fill="currentColor"/><path d="M10.5 19v2M13.5 19v2"/>',
+  chat: '<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/>',
   user: '<circle cx="12" cy="8" r="3.6"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/>',
 };
 RA.icon = (n, cls) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"${cls ? ` class="${cls}"` : ''} aria-hidden="true">${RA.ICONS[n] || ''}</svg>`;
@@ -7440,6 +7513,8 @@ RA.UI = class {
     $('speedBtn').onclick = () => app.cycleSpeed();
     $('pauseBtn').onclick = () => app.togglePause();
     $('menuBtn').onclick = () => this.menu();
+    $('chatBtn').innerHTML = RA.icon('chat');
+    $('chatBtn').onclick = () => this.quickSheet();
     const modal = (kinds, open) => () => {
       if (this.mode && kinds.includes(this.mode.kind)) this.setMode(null);
       else open();
@@ -7719,6 +7794,7 @@ RA.UI = class {
   /* ---------------- screens ---------------- */
   showPlayUI(on) {
     ['hud', 'dock', 'board', 'meBtn'].forEach((id) => (this.$(id).hidden = !on));
+    this.$('chatBtn').hidden = !(on && this.G && this.G.online);
     if (!on) {
       this.$('dlog').hidden = true;
       this.$('feed').innerHTML = '';
@@ -8489,6 +8565,8 @@ RA.UI = class {
     else if (k === 'p' && RA.ERA.para && G.me.n.airport) this.setMode({ kind: 'para' });
     else if (k === 'r') this.strikeSheet();
     else if (k === 's') this.diploSheet();
+    else if (k === 't' && this.G.online) this.quickSheet();
+    else if (k === 'g' && this.G.online && this.mouseLL) this.act('png', [this.cellFromLatLng(this.mouseLL), 0]);
     else if (k === 'm') this.act('mob', []);
   }
 
@@ -8776,6 +8854,7 @@ Object.assign(RA.UI.prototype, {
     return b.join('');
   },
   diploAct(act, id) {
+    if (act === 'chat') return this.quickSheet();
     const G = this.G, me = G.me, O = G.P[id];
     if (!me || !O) return;
     const map = { accA: ['aRes', [id, 1]], decA: ['aRes', [id, 0]], accT: ['tRes', [id, 1]], decT: ['tRes', [id, 0]], propA: ['aReq', [id]], propT: ['tReq', [id]], send: ['give', [id, this.ratio]], help: ['help', [id]], ext: ['ext', [id]], endT: ['tEnd', [id]] };
@@ -8805,6 +8884,7 @@ Object.assign(RA.UI.prototype, {
     const C = RA.CFG, tk = G.tick;
     const row = (o, meta, buttons, wide) => `<div class="prow${wide ? ' wide' : ''}"><span class="sw" style="background:${o.hex}"></span><div class="pn" data-do="show:${o.id}"><div class="nm">${RA.esc(o.name)}</div><div class="d">${meta}</div></div><div class="bb">${buttons}</div></div>`;
     let h = this.head('Savezi', `Vojni ${G.allyCount(me)}/${C.ALLY_MAX} · trgovinski ${me.trade.size}/${C.TRADE_MAX} · +${RA.fmt(me.tradeRate || 0)}/s od trgovine`);
+    if (G.online) h += `<div class="btns" style="margin-bottom:10px">${this.btn({ icon: 'chat', attrs: 'data-do="chat:0"', t: 'Brze poruke saveznicima', d: 'Poruke i emoji koje vide saveznici i tim (tipka T)' })}</div>`;
     // offers
     const offers = G.allyReqs.filter((r) => r.to === me.id).map((r) => ['A', r]).concat(G.tradeReqs.filter((r) => r.to === me.id).map((r) => ['T', r]));
     if (offers.length) {
@@ -8946,6 +9026,7 @@ Object.assign(RA.UI.prototype, {
       acts.push(this.btn({ icon: 'para', attrs: 'data-act="para"', dis: !ap || me.gold < C.PARA_GOLD || (O && peace), t: 'Padobranci ovdje', d: ap ? `${RA.fmt(C.PARA_GOLD)} zlata · ${Math.round(this.ratio * 100)}% vojske` : `Nijedan spreman aerodrom u dometu (${C.PARA_RANGE} polja)`, r: troopsTxt }));
     }
     h += `<div class="btns">${acts.join('')}</div>`;
+    if (G.online) h += `<div class="sec-t">Označi za saveznike</div><div class="grid2">${RA.PINGS.map((P, i) => this.btn({ icon: P.icon, attrs: `data-ping="${i}"`, t: P.name, d: 'ping na karti' })).join('')}</div>`;
     if (O && O.type !== 'me') h += `<div class="sec-t">Odnosi</div><div class="bb" style="display:flex;flex-wrap:wrap;gap:6px">${this.diploButtons(O, true)}</div>`;
     if (me.n.silo) {
       h += `<div class="sec-t">${RA.esc(RA.ERA.strikeTab)} na ovu tačku</div><div class="grid2">`;
@@ -8968,6 +9049,10 @@ Object.assign(RA.UI.prototype, {
         this.closeSheet();
         this.act('atk', [c, this.ratio, O ? 1 : 0]);
       });
+      s.querySelectorAll('[data-ping]').forEach((b) => (b.onclick = () => {
+        this.closeSheet();
+        this.act('png', [c, +b.dataset.ping]);
+      }));
       on('[data-act=attackAll]', () => {
         this.closeSheet();
         this.act('atk', [c, this.ratio, 0]);
@@ -8990,6 +9075,18 @@ Object.assign(RA.UI.prototype, {
       }));
       this.bindDiplo(s);
     }, keep, () => this.cellSheet(c, true));
+  },
+
+  /* quick messages to allies and team (online) */
+  quickSheet() {
+    const G = this.G;
+    if (!G || !G.me || G.state !== 'play') return;
+    const h = this.head('Brze poruke', 'Vide ih tvoji saveznici i tim · tipka T') + `<div class="qm-grid">${RA.QUICK_MSGS.map((m, i) => `<button class="btn" data-qm="${i}"><span class="t">${RA.esc(m)}</span></button>`).join('')}</div>
+      <p class="note">Ping na karti: desni klik (dugi dodir) na mjesto → „Označi za saveznike”, ili tipka G na mjestu miša.</p>`;
+    this.openSheet(h, (s) => s.querySelectorAll('[data-qm]').forEach((b) => (b.onclick = () => {
+      this.closeSheet();
+      this.act('qm', [+b.dataset.qm]);
+    })));
   },
 
   /* ---------------- menu & rules ---------------- */
@@ -10014,6 +10111,8 @@ RA.Account = class {
 Object.assign(RA.UI.prototype, {
   feedReset() {
     this.feedSeen = 0;
+    this.chatSeen = 0;
+    this.pingSeen = 0;
     this.$('feed').innerHTML = '';
     this.$('dlogList').innerHTML = '';
     this.$('dlog').hidden = true;
@@ -10029,6 +10128,21 @@ Object.assign(RA.UI.prototype, {
     if (this.feedSeen > F.length) this.feedSeen = 0; // the sim trimmed its list
     if (this.app.attractMode) return void (this.feedSeen = F.length); // the start screen's background game
     for (; this.feedSeen < F.length; this.feedSeen++) this.feedAdd(F[this.feedSeen], now);
+    // quick messages and pings of me and my allies / team
+    const me = G.me, friend = (pid) => me && (pid === me.id || G.isFriendly(me, G.P[pid]));
+    if (this.chatSeen > G.chat.length) this.chatSeen = 0;
+    for (; this.chatSeen < G.chat.length; this.chatSeen++) {
+      const m = G.chat[this.chatSeen];
+      if (!friend(m.pid)) continue;
+      this.logLine('chat', `${this.feedName(m.pid)}: ${RA.esc(RA.QUICK_MSGS[m.m])}`, m.tick, m.pid, true);
+      if (m.pid !== me.id) this.toast('ally', `${this.feedName(m.pid)}: ${RA.esc(RA.QUICK_MSGS[m.m])}`, { ms: 5000 });
+    }
+    if (this.pingSeen > G.pings.length) this.pingSeen = 0;
+    for (; this.pingSeen < G.pings.length; this.pingSeen++) {
+      const g = G.pings[this.pingSeen];
+      if (!friend(g.pid) || g.pid === me.id) continue;
+      this.logLine('ping', `${this.feedName(g.pid)}: ${RA.esc(RA.PINGS[g.k].name)} ⌖`, g.tick, g.pid, true, g.c);
+    }
     // kill feed rows fade after 9 s, at most 5 on screen
     const box = this.$('feed');
     for (const el of [...box.children]) if (now - el._t > 9000 && !el.classList.contains('out')) {
@@ -10049,7 +10163,7 @@ Object.assign(RA.UI.prototype, {
       el._t = now;
       el.onclick = () => this.focusPlayer(focus);
       box.appendChild(el);
-      while (box.children.length > 5) box.firstElementChild.remove();
+      while (box.children.length > (window.innerWidth < 760 ? 3 : 5)) box.firstElementChild.remove();
     }
     // diplomacy log
     const txt = {
@@ -10061,11 +10175,15 @@ Object.assign(RA.UI.prototype, {
       trade: `${A} i ${B} trguju`,
     }[n.t];
     if (!txt) return;
+    this.logLine(n.t, txt, n.tick, focus, mine);
+  },
+  /* one line of the log on the right (news, allies' messages and pings); cell: fly there instead of to the state */
+  logLine(cls, html, tick, focus, mine, cell) {
     const list = this.$('dlogList');
     const li = document.createElement('li');
-    li.className = n.t + (mine ? ' mine' : '');
-    li.innerHTML = `<time>${RA.fmtTime(n.tick / 10)}</time><span>${txt}</span>`;
-    li.onclick = () => this.focusPlayer(focus);
+    li.className = cls + (mine ? ' mine' : '');
+    li.innerHTML = `<time>${RA.fmtTime(tick / 10)}</time><span>${html}</span>`;
+    li.onclick = () => (cell >= 0 ? this.flyToCell(cell) : this.focusPlayer(focus));
     const stick = list.scrollTop + list.clientHeight >= list.scrollHeight - 4;
     list.appendChild(li);
     while (list.children.length > 60) list.firstElementChild.remove();
@@ -10295,6 +10413,7 @@ RA.App = class {
         this.ui.arrowDrop();
       } else if (r.long) this.ui.onLong(r.long.ll, r.long.cp);
     });
+    lmap.on('mousemove', (e) => (this.ui.mouseLL = e.latlng)); // tipka G: ping where the mouse is
     lmap.on('contextmenu', (e) => {
       if (e.originalEvent) e.originalEvent.preventDefault();
       if (eatCtx) return void (eatCtx = false);
@@ -10614,7 +10733,7 @@ RA.App = class {
         this.lastT = now;
       }
       const ui = this.ui;
-      const anim = moving || G.state === 'spawn' || G.boats.length || G.missiles.length || G.units.length || G.trains.length || G.planes.length || G.tships.length || (ui.mode && (ui.mode.aim >= 0 || ui.mode.kind === 'unit')) || ui.fxList.length || (ui.pingState && now - ui.pingState.t0 < 700) || (G.me && G.attacks.some((a) => !a.done && a.a === G.me.id && a.focus >= 0));
+      const anim = moving || G.state === 'spawn' || G.boats.length || G.missiles.length || G.units.length || G.trains.length || G.planes.length || G.tships.length || (ui.mode && (ui.mode.aim >= 0 || ui.mode.kind === 'unit')) || ui.fxList.length || G.pings.some((g) => G.tick - g.tick < 60) || (ui.pingState && now - ui.pingState.t0 < 700) || (G.me && G.attacks.some((a) => !a.done && a.a === G.me.id && a.focus >= 0));
       if (moving || now - (this.lastF || 0) > (anim ? 30 : 200)) {
         this.fx.draw(G, this.terr.view(), ui);
         this.lastF = now;
@@ -11332,7 +11451,7 @@ RA.wsRoom = function (url, creds, onCreds, onBack) {
   };
 };
 
-RA.BUILD = '5b193aec';
+RA.BUILD = '017a3150';
 new RA.App().boot();
 }
 function __raFallback(){

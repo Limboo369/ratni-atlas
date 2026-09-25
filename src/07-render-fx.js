@@ -414,6 +414,41 @@ RA.FxLayer = L.Layer.extend({
       RA.drawUnit(ctx, U.sym || u.type, x, y, uw, G.P[u.owner].hex, mine, u.hp / U.hp, u.ready > G.tick, u.empUntil > G.tick, u.id === selId, now);
     }
 
+    // pings of me and my allies (6 s) ------------------------------------------------------------------------
+    if (G.me && G.pings.length) {
+      for (const g of G.pings) {
+        const age = (G.tick - g.tick) / 10;
+        if (age > 6 || age < 0 || (g.pid !== G.me.id && !G.isFriendly(G.me, G.P[g.pid]))) continue;
+        const P = RA.PINGS[g.k], x = gx((g.c % W) + 0.5), y = gy(((g.c / W) | 0) + 0.5);
+        if (!inView(x, y, 40)) continue;
+        const ph = (now / 900) % 1;
+        ctx.save();
+        ctx.strokeStyle = P.color;
+        ctx.globalAlpha = 1 - ph;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(x, y, 8 + ph * 26, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = P.color;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x - 7, y - 14);
+        ctx.arc(x, y - 16, 7, Math.PI * 0.8, Math.PI * 0.2);
+        ctx.closePath();
+        ctx.fill();
+        ctx.font = '600 12px system-ui, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = 'rgba(0,0,0,0.7)';
+        const who = G.P[g.pid], label = `${P.name}${g.pid !== G.me.id && who ? ' · ' + (who.nick || who.name) : ''}`;
+        ctx.strokeText(label, x, y - 28);
+        ctx.fillStyle = '#fff';
+        ctx.fillText(label, x, y - 28);
+        ctx.restore();
+      }
+    }
+
     // the arrow being drawn with the right mouse button (desktop) ----------------------------------------------
     const ar = ui.arrow;
     if (ar && ar.s >= 0 && ar.e >= 0) {
