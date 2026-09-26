@@ -233,6 +233,36 @@ Svijet dolazi prije ekonomije, vojske i kampanje: resursi, moreuzi, mornarica i 
 | Dnevnik diplomatije | Desno, kao chat: ko je kome objavio rat, ko je s kim sklopio ili raskinuo savez | gotovo (dole desno, klik na red vodi do države; na telefonu skupljen) |
 | Mikrodržave | Svijet danas ima 168 država na karti: 29 najmanjih (Malta, Singapur, Bahrein, Monako, San Marino, Vatikan, Andora, Lihtenštajn, Maldivi, Mauricijus, Sejšeli, karipska i pacifička ostrva…) manje su od 8 polja mreže (polje ≈ 25 × 25 km), pa su slobodna zemlja; Grenland i Tajvan su posebno | ako želiš svih 195: dodati ih kao male države (gradove-države) na njihovom polju |
 
+## Odluke 26. 9. (istraživanje, `docs/ISTRAZIVANJE.md`, poglavlje 8)
+
+| Br | Stavka | Odluka |
+| --- | --- | --- |
+| 1 | Obavještenja (web push) | da |
+| 2 | Naredbe za odsustvo | da, samo Focus |
+| 3 | Focus igre na nalogu | da |
+| 4 | Zašto me voli / mrzi | da, uz prikaz na karti ko je s kim u savezu |
+| 5 | Javna igra | objašnjeno; prijedlog: to je dugme Matchmaking (8) |
+| 6 | Formiranje država | ne |
+| 7 | Vrijeme u satima (Focus) | čeka objašnjenje |
+| 8 | Timovi online → **Matchmaking** + **Ranked** | da; početni ekran: prvo **Online** ili **Conqueror** (solo). Ranked: Find match (solo ili s prijateljima), 1v1 / 2v2 / 5v5, poseban ELO za svaku veličinu, posebno Blitz i Focus; 5 rankova (engleski); pick/ban kontinenata (svaki tim bira 2, banuje 1, skriveno; računar bira mapu, animirano); samo igrači, start od malih polja (ne država) |
+| 9 | Predaja, Ponudi kraj | da, online i ranked; ranked: predaja 4/5 igrača; vote kick samo u 5v5 (kao CS2), kikovanog mijenja računar |
+| 10 | Identitet dinastije | da |
+| 11 | Replay | da: profil → historija partija → Replay |
+| 12 | Kartica za dijeljenje | ne |
+| 13 | Klanovi | ne |
+| 14 | Ljestvica | samo za ranked: world ranking, top 100 za 1v1, 2v2, 5v5 |
+| 15 | Prijedlozi između ljudi | čeka objašnjenje |
+| 16 | Igraj odmah | da, samo solo |
+| 17 | Editor scenarija | čeka objašnjenje |
+| 18 | Jači trenuci | ne |
+| 19 | Pametnija izdaja kompjutera | da |
+| 20 | Pobjeda saveza | da; u rankedu pobjeda = uništiti sve protivnike, bez obzira na procenat |
+| 21 | Zaštita za kasni ulazak | doraditi (6 h samo čekanja nema smisla) |
+| 22 | Nuklearke bez spama | da, + traka na ikoni nuklearke do povratka cijene; tajmer različit za Blitz i Focus |
+| 23 | Ključni trenuci na grafiku | da |
+| 24 | Aplikacija (PWA) | da, instalira se kao prava aplikacija (i iz menija preglednika) |
+| 25 | Prijava igrača | da; prijava na nalog obavezna — bez naloga samo „Igraj odmah“ |
+
 ## Otvorena pitanja
 
 Dok ne kažeš drugačije, radim po pretpostavci u zagradi.
