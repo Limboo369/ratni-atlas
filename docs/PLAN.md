@@ -298,7 +298,7 @@ najmanje hitan.
 ### Predaja dizajna (Codex, 26. 9.)
 
 - C1–C6: Online / Conqueror, pet SVG rank znački + Unranked, znak Conquest League, pregovori, Focus izvještaj i naredbe, Skirmish, liga / pick-ban / ljestvica; rankovi u profilu dolaze iz postojećeg `GET /api/league`.
-- Vektori za ikonu aplikacije i značke: `RA.Brand.appIcon`, `RA.Brand.league`, `RA.Brand.badges` u `src/08l-brand-assets.js`. Ikona se već koristi kao favicon; faza 18 je može koristiti za instalaciju.
+- Vektori za ikonu aplikacije i značke: `RA.Brand.appIcon`, `RA.Brand.league`, `RA.Brand.badges` u `src/08l-brand-assets.js`. Isti znak se koristi za favicon i instaliranu aplikaciju (PNG, uključujući maskable varijantu).
 - Kontrole replaya su stilizirane; postojeći `data-rp`, komande, server i rukovanje snimkom su sačuvani.
 - Osnovno provjereno na 1440 px i 375 px: početni ekran, liga, pick/ban, kartice rankova, pregovori, Skirmish i Focus. Desktop test odabira jedinice sada prolazi na novom kodu.
 - C7 / C8: stilizirana instalacija, obavještenja, Community market i editor. Native browser dijalog instalacije ostaje postojeći.
@@ -343,3 +343,13 @@ objašnjenje prije odluke. **Odbijeno: F1, F6** (zakazane naredbe — ne zna se 
 Sav tekst u igri je na engleskom (i sve što ubuduće dodamo); srpski (latinica, „Istorija“) je drugi jezik, dugme EN/SR
 na početnom ekranu. Nazivi država, gradova i mora imaju engleska imena (`src/00c-names.js`), poruke servera su na
 engleskom. `build/test_lang.py` (i u CI-ju) pada ako na engleskoj stranici ostane bosanska/srpska riječ.
+
+## UI/UX provjera 27. 9.
+
+- Spojeno kroz PR #8 (automatska objava u toku): zajednički prozori sa swipe zatvaranjem, Online/Conqueror, liga i rankovi, pregovori, Focus, replay, market i editor; EN/SR sačuvan.
+- Dodatno popravljeno: ručica je vidljiva i na profilu i desktop prozorima; dugme za zatvaranje ima zonu dodira 44 px, dugi naslovi se prelamaju.
+- Istraživanje oružja: nivoi po stvarnom maksimumu (2 ili 3), traka napretka, preostalo vrijeme i razlog nedostupnosti dugmeta (zlato / drugo istraživanje), na oba jezika.
+- Ikona instalirane aplikacije usklađena s faviconom, standardne i maskable PNG veličine sačuvane.
+- Provjera ovog dopunjavanja: build, JS sintaksa, stanja istraživanja i prevodi; ikona vizuelno provjerena. Lokalna browser provjera nije dostupna (preuzimanje Chromiuma ne uspijeva); CI ostaje obavezan prije objave.
+- Ostaje završna vizuelna provjera stvarnih online ekrana i dugih lista na telefonu nakon objave. Oznake C1–C8 znače implementiran dizajn, ne da je svaki mogući ekran bez daljih UI/UX dorada.
+- F2/F3/F11: sačekati funkcionalne ekrane i njihove UI oznake od Claudea; ne praviti nefunkcionalne kontrole unaprijed.
