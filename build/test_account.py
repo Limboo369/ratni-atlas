@@ -30,6 +30,10 @@ async def main():
     fx = subprocess.Popen(['node', R + 'build/api_fixture.js', 'serve'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
     info = json.loads(fx.stdout.readline())
     url, tok = info['url'], info['tokens']
+    # the online relay that wants an account (as on the server): it asks /api/me about the session cookie
+    import socket
+    s_ = socket.socket(); s_.bind(('127.0.0.1', 0)); wsport = s_.getsockname()[1]; s_.close()
+    relay = subprocess.Popen(['node', R + 'deploy/game/server.js'], env={**os.environ, 'PORT': str(wsport), 'API_URL': url, 'REQUIRE_LOGIN': '1', 'LONG_SIM': '0', 'LONG_DIR': '/tmp/ra-acc-long'}, stdout=subprocess.DEVNULL)
     try:
         async with async_playwright() as p:
             b = await p.chromium.launch(args=['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'])
@@ -50,6 +54,9 @@ async def main():
                 else:
                     await r.abort()
             await ctx.route('**/*', route)
+            await ctx.add_init_script(f"window.RA_WS = 'ws://127.0.0.1:{wsport}/ws'")
+            WS_TRY = '''() => new Promise((ok) => { const w = new WebSocket(window.RA_WS + '?room=acct42'); w.onopen = () => w.send(JSON.stringify({ hello: {} }));
+              w.onmessage = (e) => { ok('all:' + JSON.parse(e.data).t); w.close(); }; w.onclose = (e) => ok('close:' + e.code); setTimeout(() => ok('timeout'), 8000); })'''
 
             async def ev(js):
                 return await page.evaluate(js)
@@ -67,6 +74,13 @@ async def main():
             await page.wait_for_function('!document.getElementById("accountBtn").hidden', timeout=10_000)
             check(not await ev('document.getElementById("accountBtn").classList.contains("on")'), 'account button shown, signed out')
             check(await ev('!document.getElementById("profileBtn").hidden && document.getElementById("profileBtn").textContent.includes("Prijava")'), 'start screen: "Prijava" button')
+            # online needs an account: the relay closes a signed-out socket (4401), the page asks to sign in first
+            check(await ev(WS_TRY) == 'close:4401', 'signed out: the online server refuses a room (4401)')
+            await page.click('#sideSeg [data-v="online"]')
+            await page.click('#onlineToggle')
+            await page.wait_for_selector('#fakeGoogle')
+            check(await ev('document.getElementById("onlineBox").hidden'), 'Online → Privatna soba signed out: the sign-in sheet instead of the room')
+            await ev('window.__ra.ui.closeSheet()')
             await page.click('#profileBtn')
             await page.wait_for_selector('#fakeGoogle')
             check(await ev('window.__gsi && window.__gsi.client_id') == 'test-client.apps.googleusercontent.com', 'Google sign-in set up with the client id from the server')
@@ -82,6 +96,7 @@ async def main():
             await page.click('#fakeGoogle')
             await page.wait_for_function('document.getElementById("accountBtn").classList.contains("on")', timeout=10_000)
             check(True, 'signed in with Google')
+            check(await ev(WS_TRY) == 'all:all', 'signed in: the online server lets me into a room')
             check(await ev('document.getElementById("nameIn").value') == 'Darko', 'account name fills the empty name field')
             await page.wait_for_selector('#accName')
             check(await ev('document.getElementById("accName").value') == 'Darko', 'the open sheet switches to the account view')
@@ -97,6 +112,10 @@ async def main():
             # a finished game goes to the account: play a short single-player game on the Balkans and win it
             await ev('window.__ra.ui.closeSheet()')
             await ev('() => { const ui = window.__ra.ui; ui.settings.region = "balkan"; ui.settings.start = "granice"; ui.settings.era = "danas"; ui.noTips = true; }')
+            await page.click('#onlineToggle')
+            check(await ev('!document.getElementById("onlineBox").hidden'), 'signed in: Online → Privatna soba opens the room box')
+            await page.click('#onlineToggle')
+            await page.click('#sideSeg [data-v="solo"]')
             await page.click('#goBtn')
             await page.wait_for_function('window.__ra.G && window.__ra.G.state === "spawn" || !document.getElementById("spawnBar").hidden', timeout=30_000)
             await ev('() => { const G = window.__ra.G; const n = G.P.find(p => p && p.iso === "BIH") || G.P.find(p => p && p.type === "nation"); window.__ra.ui.pickNation(String(n.id)); }')
@@ -163,6 +182,7 @@ async def main():
             check(not errs, 'no page errors ' + str(errs[:3]))
             await b.close()
     finally:
+        relay.terminate()
         fx.stdin.close()
         fx.wait(timeout=20)
     print('FAILS:', fails or 'none')

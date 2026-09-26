@@ -1229,3 +1229,18 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
 #sheet .btn.model-btn{display:grid;grid-template-columns:80px minmax(0,1fr) auto}
 #sheet .btn.model-btn>.r{margin-left:0;max-width:82px;text-align:right;white-space:normal;overflow-wrap:anywhere}
 @media(max-width:600px){#sheet .btn.model-btn{grid-template-columns:63px minmax(0,1fr) auto}}
+
+/* Conqueror (solo) / Online: the start screen shows one side */
+.side-seg { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: min(100%, 378px); margin: 0 0 12px; }
+.side-seg button { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 10px 12px; border: 1px solid rgba(255,255,255,.18); border-bottom-width: 3px; border-radius: 2px; background: rgba(10,16,20,.55); color: var(--launch-text, #e8eef0); font-family: inherit; text-align: left; cursor: pointer; }
+.side-seg button b { font-size: 16px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.side-seg button small { font-size: 11px; opacity: .75; }
+.side-seg button[aria-pressed="true"] { border-color: var(--danger); background: rgba(255,93,93,.12); }
+#startScreen.side-online .solo-only { display: none !important; }
+#startScreen:not(.side-online) .online-only { display: none !important; }
+.online-pane { display: grid; gap: 8px; width: min(100%, 378px); margin: 0 0 14px; }
+.online-card { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; padding: 14px 16px; border: 1px solid rgba(255,255,255,.18); border-radius: 2px; background: rgba(10,16,20,.6); color: var(--launch-text, #e8eef0); font-family: inherit; text-align: left; cursor: pointer; }
+.online-card b { font-size: 17px; letter-spacing: .1em; text-transform: uppercase; }
+.online-card small { font-size: 12px; opacity: .75; }
+.online-card:hover { border-color: rgba(255,93,93,.6); }
+#leagueBtn { border-left: 3px solid var(--danger); }

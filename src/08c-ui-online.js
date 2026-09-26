@@ -205,6 +205,8 @@ Object.assign(RA.UI.prototype, {
     if (this._noteH !== txt) note.innerHTML = this._noteH = txt;
     if (this._onlineH !== h) btns.innerHTML = this._onlineH = h;
     if (net.code && !net.role) {
+      this.settings.side = 'online';
+      this.sideShow();
       $('onlineBox').hidden = false;
       $('onlineToggle').setAttribute('aria-expanded', 'true');
     }

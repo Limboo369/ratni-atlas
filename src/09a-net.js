@@ -667,8 +667,14 @@ RA.wsRoom = function (url, creds, onCreds, onBack) {
       } else return;
       emit();
     };
-    ws.onclose = () => {
+    ws.onclose = (ev) => {
       if (up) conn(false);
+      if (ev && ev.code === 4401) {
+        // the server wants a signed-in player (online needs an account)
+        closed = true;
+        dispatchEvent(new CustomEvent('ra-login'));
+        return;
+      }
       if (!closed) setTimeout(open, 1500);
     };
   };

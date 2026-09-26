@@ -19,12 +19,12 @@ RA.CommandScreen = class {
       if (e.target === this.dialog && (e.clientX < b.left || e.clientX > b.right || e.clientY < b.top || e.clientY > b.bottom)) this.dialog.close();
     });
     this.dialog.addEventListener('keydown', (e) => e.stopPropagation());
-    this.$('onlineToggle').onclick = () => {
+    this.$('onlineToggle').onclick = () => ui.needAccount(() => {
       const box = this.$('onlineBox');
       box.hidden = !box.hidden;
       this.$('onlineToggle').setAttribute('aria-expanded', String(!box.hidden));
       if (!box.hidden) box.scrollIntoView({ block: 'nearest', behavior: this.motion ? 'smooth' : 'instant' });
-    };
+    });
     this.$('creditsBtn').onclick = () => ui.openSheet(ui.head('O igri i izvori karte') + '<div class="howto"><p><strong>Overtake</strong> — strateška igra osvajanja Evrope i svijeta kroz sedam historijskih doba.</p><p>Karta: Natural Earth (javno vlasništvo). Historijske granice: historical-basemaps, A. Ourednik (GPL-3.0). Reljef: NASA. Motor karte: Leaflet.</p><p>Verzija 0.5 · doba i battle royale.</p></div>');
     this.$('motionBtn').onclick = () => {
       this.motion = !this.motion;

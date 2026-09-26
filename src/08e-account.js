@@ -92,6 +92,13 @@ RA.Account = class {
       ui._save();
     }
     if (this.open()) this.sheet(true);
+    if (u && this.after) {
+      // signed in to go online: go on where the player was going
+      const f = this.after;
+      this.after = null;
+      ui.closeSheet();
+      f();
+    }
     if (ui.resumeOffer) ui.resumeOffer(); // the account may hold a saved game
   }
 
@@ -269,6 +276,7 @@ RA.Account = class {
   }
 
   sheet(keep) {
+    if (!keep) this.after = null;
     const ui = this.ui, u = this.user;
     if (!u) {
       const h = `<div id="accSheet" class="dossier-marker signin-marker"></div>${ui.head('Tvoja historija počinje ovdje.', 'PROFIL KOMANDANTA')}

@@ -82,6 +82,8 @@ async def main():
         await asyncio.sleep(3)
         await A.evaluate("() => { window.__ra.long.simSt = undefined; window.__ra.long.ws.send(JSON.stringify({ sim: 1 })); }")
         await A.wait_for_function('window.__ra.long.simSt !== undefined', timeout=30000)
+        # the device may be a little behind the server: wait until it has played the server's tick
+        await A.wait_for_function('() => { const st = window.__ra.long.simSt; return !st || window.__ra.G.tick > st.tick; }', timeout=30000)
         sv = await A.evaluate('() => { const st = window.__ra.long.simSt, h = window.__ra.G._hh; return st ? [st.tick, st.hash, h[st.tick]] : null; }')
         check(sv and sv[0] > 0 and sv[1] == sv[2], f'the server simulates the same game (tick, server hash, device hash) {sv}')
         # Marko opens the same game: replays it and takes another state
@@ -91,7 +93,10 @@ async def main():
         tb = await B.evaluate(TAKE)
         await B.wait_for_function(f'window.__ra.G.me && window.__ra.G.me.id === {tb}', timeout=20000)
         await B.evaluate(HASHES)
-        await asyncio.sleep(4)
+        for _ in range(40):  # both devices have played the same ticks for a while (a slow machine needs longer)
+            await asyncio.sleep(0.5)
+            if await B.evaluate('Object.keys(window.__ra.G._hh).length') >= 12:
+                break
         cmp = await A.evaluate('''(hb) => { const h = window.__ra.G._hh; const common = Object.keys(hb).filter((t) => h[t] !== undefined); return [common.length, common.filter((t) => h[t] !== hb[t]).length]; }''', await B.evaluate('window.__ra.G._hh'))
         check(cmp[0] >= 5 and cmp[1] == 0, f'both devices play the same game (ticks compared {cmp[0]}, different {cmp[1]})')
         hum = await B.evaluate(f'() => {{ const G = window.__ra.G; return [G.P[{ta}].human, G.P[{ta}].nick, G.P[{tb}].human]; }}')

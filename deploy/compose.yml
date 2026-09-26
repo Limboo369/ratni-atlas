@@ -14,6 +14,9 @@ services:
     mem_limit: 768m
     environment:
       ORIGINS: https://war.deovilab.com
+      # online (rooms) needs an account: the relay asks the accounts API about the session cookie
+      API_URL: http://api:8081
+      REQUIRE_LOGIN: "1"
     env_file:
       - path: ./secret.env
         required: true

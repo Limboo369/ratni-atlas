@@ -26,6 +26,30 @@ const MAX_LOG_BYTES = 1.5e6, MAX_GAMES = 400;
 const KEEP = 10 * 60 * 1000; // how long a departed player's presence and a host's game log are kept for a return
 const SLOW = 512 * 1024; // a peer this far behind on reading is dropped instead of buffered
 
+// Online needs an account (plan phase 12): with REQUIRE_LOGIN=1 a room's hello waits for the accounts API to know the
+// session cookie; without it the socket is closed with 4401 (the page then asks to sign in). Long games (Focus, solo
+// against the computer) stay open to everyone.
+const API = process.env.API_URL || '';
+const REQUIRE_LOGIN = process.env.REQUIRE_LOGIN === '1' && !!API;
+const who = new Map(); // session token → {ok, t}
+async function signedIn(req) {
+  const m = /(?:^|;\s*)ot=([A-Za-z0-9_-]{10,200})/.exec(req.headers.cookie || '');
+  if (!m) return false;
+  const c = who.get(m[1]);
+  if (c && Date.now() - c.t < 300000) return c.ok;
+  let ok = false;
+  try {
+    const r = await fetch(API + '/api/me', { headers: { cookie: 'ot=' + m[1] }, signal: AbortSignal.timeout(4000) });
+    const j = await r.json();
+    ok = !!(j && j.user);
+  } catch (e) {
+    console.warn('login check', e.message);
+  }
+  if (who.size > 5000) who.clear();
+  who.set(m[1], { ok, t: Date.now() });
+  return ok;
+}
+
 const sign = (id) => crypto.createHmac('sha256', SECRET).update(id).digest('base64url').slice(0, 16);
 const validKey = (id, key) => {
   const a = Buffer.from(sign(id)), b = Buffer.from(typeof key === 'string' ? key : '');
@@ -92,6 +116,7 @@ wss.on('connection', (ws, req) => {
   }
   const name = /^[a-z0-9]{4,16}$/.test(q.get('room') || '') ? q.get('room') : '';
   let id = '', me = null, room = null;
+  const gate = REQUIRE_LOGIN ? signedIn(req) : null;
   const helloTimer = setTimeout(() => ws.terminate(), 5000);
 
   function hello(h) {
@@ -132,6 +157,7 @@ wss.on('connection', (ws, req) => {
       return;
     }
     if (!m || typeof m !== 'object') return;
+    if (!me && name && m.hello !== undefined && gate) return void gate.then((ok) => (ok ? !me && hello(m.hello) : ws.close(4401, 'login')));
     if (!me) return name && m.hello !== undefined ? hello(m.hello) : undefined;
     if (typeof m.log === 'string') {
       if (Date.now() - lastLog < 2000) return;

@@ -151,6 +151,19 @@ RA.UI = class {
       this.paceShow();
       if (v === 'custom') this.$('operationDialog').showModal();
     });
+    // Conqueror (solo) or Online (Conquest League, Skirmish, private rooms): what the start screen shows
+    this._seg('sideSeg', this.settings.side === 'online' ? 'online' : 'solo', (v) => {
+      this.settings.side = v;
+      this.sideShow();
+    });
+    this.sideShow();
+    addEventListener('ra-login', () => {
+      if (this.app.net) this.app.net.leave();
+      this.app.showStart();
+      this.needAccount(() => {});
+    });
+    $('leagueBtn').onclick = () => this.needAccount(() => this.toast('info', 'Conquest League stiže uskoro: rangirane partije 1v1, 2v2 i 5v5.', { ms: 5000 }));
+    $('skirmishBtn').onclick = () => this.needAccount(() => this.toast('info', 'Skirmish stiže uskoro: javne igre s ljudima.', { ms: 5000 }));
     this._seg('daysSeg', String([1, 3, 7].includes(this.settings.days) ? this.settings.days : 1), (v) => (this.settings.days = +v));
     this._seg('cPaceSeg', this.settings.cPace === 'focus' ? 'focus' : 'blitz', (v) => {
       this.settings.cPace = v;
@@ -481,6 +494,19 @@ RA.UI = class {
   applyEraUI() {
     const E = RA.ERA;
     this.$('aStrike').innerHTML = `${RA.icon(E.strikeIcon)}<span>${RA.esc(E.strikeTab)}</span>`;
+  }
+  sideShow() {
+    const on = this.settings.side === 'online';
+    this.$('startScreen').classList.toggle('side-online', on);
+    this._press('sideSeg', on ? 'online' : 'solo');
+  }
+  /* online needs an account (when this site has one): sign in first, then go on */
+  needAccount(fn) {
+    const A = this.account;
+    if (!A || !A.ok || A.user) return fn();
+    A.sheet();
+    A.after = fn; // after sheet(): opening the profile by itself forgets it
+    this.toast('info', 'Za online igru prijavi se (Google). Cijela igra protiv kompjutera radi i bez naloga.', { ms: 6000 });
   }
   /* the rules a new game gets: the mode's preset, or (Make your choice) the player's own */
   playSet() {

@@ -81,6 +81,7 @@ async def main():
         await A.screenshot(path=OUT + 'mp_1_start.png')
 
         # host opens a room, guest joins
+        await A.click('#sideSeg [data-v="online"]')
         await A.click('#onlineToggle')
         await A.click('[data-on="host"]')
         await asyncio.sleep(0.8)
@@ -89,6 +90,7 @@ async def main():
 
         async def enter(pg, text):
             if not await pg.locator('#onlineBox').is_visible():
+                await pg.click('#sideSeg [data-v="online"]')
                 await pg.click('#onlineToggle')
             await pg.fill('#codeIn', text)
             await pg.click('[data-on="code"]')

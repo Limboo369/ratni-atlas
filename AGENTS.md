@@ -66,6 +66,14 @@ then sends `{leave: 1}` (the server clears the seat's uid, the computer keeps th
 bilo" (`ui.focusReport`, from the last snapshot of my state).
 Tech tree (`opts.tree`, `src/03b-tech.js`): command `'tech'` (eco/mil/sci/dip, 5 levels, 200k × 2^level), multiplies
 `p.bGold`/`p.bGrow`/`p.bCost` on top of the campaign's bonuses; the AI researches too. `opts.noNuke` refuses nuclear weapons.
+Start screen: `#sideSeg` = **Conqueror** (solo, `.solo-only`: modes, campaign, tutorial; no account needed) or **Online**
+(`.online-only`: `#leagueBtn` Conquest League, `#skirmishBtn` Skirmish — both still to come — and `#onlineToggle` private
+room). Online needs an account: `ui.needAccount(fn)` opens the sign-in sheet first; the relay (`REQUIRE_LOGIN=1`,
+`API_URL`) asks `/api/me` about the `ot` cookie before a room's hello and closes a signed-out socket with 4401.
+The server plays every Focus game itself: `deploy/game/simhost.js` (worker thread) runs `dist/sim/sim.js` (= `src/00–04`,
+built by `make.py`) with the same `RA.longGame` / `RA.longApply` (`src/04c-longsim.js`) as the page, game by game after
+`RA.applyEra`; it records the end (`rec.over`) and answers `{sim: 1}` with the tick and checksum. So `src/00–04` must stay
+browser-free (no DOM) — it runs in node too.
 Long games (days): `deploy/game/long.js` (same server, `/ws?long=<code>`, link `/long-<code>`) is only the clock (one tick
 every `LONG_TICK_MS`, 5 s) and the archive (settings, seed, every command with its tick; files in the `longgames`
 volume); `src/09c-long.js` replays the record to the server's tick and follows it. A player takes over a computer state
