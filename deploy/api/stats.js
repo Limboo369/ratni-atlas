@@ -50,6 +50,12 @@ const SCHEMA = [
      at timestamptz not null default now(),
      gid text not null,
      data text not null)`,
+  `create table if not exists focus (
+     user_id bigint not null references users(id) on delete cascade,
+     code text not null,
+     at timestamptz not null default now(),
+     data text not null,
+     primary key (user_id, code))`,
   `create table if not exists achievements (
      user_id bigint not null references users(id) on delete cascade,
      id text not null,
@@ -180,10 +186,36 @@ module.exports = function statsRoutes(db, sessionUser) {
         const u = await sessionUser(req);
         if (!u) return [401, { e: 'Nisi prijavljen.' }];
         if (typeof b.home !== 'string' || !/^[a-z]{2,16}$/.test(b.home) || !b.tree || typeof b.tree !== 'object' || !b.done || typeof b.done !== 'object') return [400, { e: 'Nevažeća kampanja.' }];
-        const data = JSON.stringify({ v: 1, home: b.home, name: String(b.name || '').slice(0, 18), xp: Math.max(0, Math.min(1e7, b.xp | 0)), tree: b.tree, done: b.done, at: +b.at || Date.now() });
+        const data = JSON.stringify({ v: 1, home: b.home, name: String(b.name || '').slice(0, 18), color: /^#[0-9a-f]{6}$/i.test(b.color || '') ? b.color : '', xp: Math.max(0, Math.min(1e7, b.xp | 0)), tree: b.tree, done: b.done, at: +b.at || Date.now() });
         if (data.length > 20000) return [400, { e: 'Prevelika kampanja.' }];
         await db.query('insert into campaigns (user_id, data) values ($1, $2) on conflict (user_id) do update set data = excluded.data, at = now()', [u.id, data]);
         return { ok: true };
+      },
+      // my Focus games (plan 3): the list behind "Nastavi Focus igru" on every computer, with the last snapshot of my state
+      'POST /api/focus': async (req, b) => {
+        const u = await sessionUser(req);
+        if (!u) return [401, { e: 'Nisi prijavljen.' }];
+        if (typeof b.code !== 'string' || !/^[a-z0-9]{6}$/.test(b.code)) return [400, { e: 'Nevažeća igra.' }];
+        if (b.drop) {
+          await db.query('delete from focus where user_id = $1 and code = $2', [u.id, b.code]);
+          return { ok: true };
+        }
+        const n = (v, lo, hi) => Math.max(lo, Math.min(hi, +v || 0));
+        const sn = b.snap && typeof b.snap === 'object' ? b.snap : null;
+        const data = JSON.stringify({
+          code: b.code, title: String(b.title || '').slice(0, 80), days: [1, 3, 7].includes(b.days) ? b.days : 1, tick: n(b.tick, 0, 1e8), at: n(b.at, 0, 4e12),
+          snap: sn && { share: n(sn.share, 0, 1), cities: n(sn.cities, 0, 1e5), troops: n(sn.troops, 0, 1e12), gold: n(sn.gold, 0, 1e13), allies: n(sn.allies, 0, 300) },
+        });
+        await db.query(`insert into focus (user_id, code, data) values ($1, $2, $3)
+           on conflict (user_id, code) do update set data = excluded.data, at = now()`, [u.id, b.code, data]);
+        await db.query('delete from focus where user_id = $1 and code not in (select code from focus where user_id = $1 order by at desc limit 12)', [u.id]);
+        return { ok: true };
+      },
+      'GET /api/focus': async (req) => {
+        const u = await sessionUser(req);
+        if (!u) return [401, { e: 'Nisi prijavljen.' }];
+        const q = await db.query('select data from focus where user_id = $1 order by at desc limit 12', [u.id]);
+        return { games: q.rows.map((r) => JSON.parse(r.data)) };
       },
       'GET /api/campaign': async (req) => {
         const u = await sessionUser(req);

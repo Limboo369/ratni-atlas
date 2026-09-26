@@ -297,6 +297,29 @@ const check = (ok, msg) => {
   for (let i = 0; i < 3000; i++) TG.step();
   const aiTech = TG.P.filter((p) => p && p.alive && !p.human && p.tech).length;
   check(aiTech > 0 && TG.P.every((p) => !p || !p.stats || !p.stats.nukes), `the computer researches too (${aiTech} states), and nobody nukes`);
+  // orders while away (Focus, plan 2): "defend" starts no war on a state, "auto" does
+  const wars = (k) => {
+    RA.applyEra('danas');
+    const SG2 = RA.newGame(RA.eraMap(m, 'danas', 'granice'), { seed: 71, difficulty: 'srednje', cityStates: 0, peace: 0, era: 'danas', start: 'granice', gm: 'klasik' });
+    RA.placeHuman(SG2, SG2.P.find((p) => p && p.iso === 'POL').nation.c, 'Test');
+    RA.startGame(SG2);
+    const me = SG2.me;
+    SG2.exec(me.id, 'ai', []);
+    if (k) SG2.exec(me.id, 'stance', k === 'atk' ? ['atk', SG2.P.find((p) => p && p.iso === 'DEU').id] : [k]);
+    me.troops = me.maxT; // an army that wants to fight
+    const seen = new Set(), la = SG2.launchAttack.bind(SG2);
+    // wars the computer starts for me (not a counter-attack, not help for an ally)
+    SG2.launchAttack = (a, t, ...r) => {
+      if (a === me.id && t && SG2.P[t].type !== 'bot' && me.lastAttackedBy !== t && !(me.ai && me.ai.help)) seen.add(t);
+      return la(a, t, ...r);
+    };
+    for (let i = 0; i < 1500; i++) SG2.step();
+    return seen;
+  };
+  const wAuto = wars(null), wDef = wars('def'), wAtk = wars('atk');
+  const deuId = RA.newGame(RA.eraMap(m, 'danas', 'granice'), { seed: 71, difficulty: 'srednje', cityStates: 0, peace: 0, era: 'danas', start: 'granice', gm: 'klasik' }).P.find((p) => p && p.iso === 'DEU').id;
+  check(wAtk.has(deuId), `while away: "napadaj Njemačku" attacks Germany (${[...wAtk]})`);
+  check(wAuto.size > 0 && wDef.size === 0, `while away: "kao kompjuter" starts wars (${wAuto.size}), "brani se" none (${wDef.size})`);
   // the server steps many Focus games in one process (deploy/game/simhost.js), switching the era tables between them:
   // a game stepped between steps of another era's game must stay the same as the game alone
   const rec = (code, era, seed) => ({ code, seed, set: { map: 'evropa', reg: 'balkan', era, gm: 'klasik', dif: 'srednje', cs: 0, peace: 0, res: 1, tree: 1, nn: 0 } });

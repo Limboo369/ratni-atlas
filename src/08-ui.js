@@ -728,7 +728,7 @@ RA.UI = class {
     if (!me) return;
     $('hNation').textContent = me.name;
     $('hNation').title = me.name;
-    $('hEra').textContent = RA.ERA.short + (G.online ? ' · ONLINE' : ' · OPERACIJA');
+    $('hEra').textContent = RA.ERA.short + (G.online ? ' · ONLINE' : G.dynasty ? ' · DINASTIJA ' + G.dynasty.toUpperCase() : ' · OPERACIJA');
     $('hObjective').style.width = RA.clamp(me.area / G.landTotal() / G.winShare() * 100, 0, 100) + '%';
     $('hTroops').textContent = RA.fmt(me.troops);
     const r = me.troops / Math.max(1, me.maxT);

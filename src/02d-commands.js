@@ -3,7 +3,7 @@
    can replay exactly the same inputs on every device (lockstep). Args come from other players' devices:
    they are validated here and never trusted. */
 
-RA.CMD_KINDS = ['atk', 'boat', 'para', 'build', 'rec', 'mv', 'dis', 'mis', 'mob', 'ret', 'aReq', 'aRes', 'tReq', 'tRes', 'ext', 'brk', 'tEnd', 'give', 'help', 'ai', 'back', 'rcl', 'png', 'qm', 'tax', 'vas', 'loan', 'pay', 'str', 'buy', 'air', 'bomb', 'tech'];
+RA.CMD_KINDS = ['atk', 'boat', 'para', 'build', 'rec', 'mv', 'dis', 'mis', 'mob', 'ret', 'aReq', 'aRes', 'tReq', 'tRes', 'ext', 'brk', 'tEnd', 'give', 'help', 'ai', 'back', 'rcl', 'png', 'qm', 'tax', 'vas', 'loan', 'pay', 'str', 'buy', 'air', 'bomb', 'tech', 'stance'];
 /* pings on the map and quick messages, seen by the sender's allies and team (plan item 57) */
 RA.PINGS = [
   { name: 'Napadni ovdje', icon: 'attack', color: '#ff5d5d' },
@@ -115,6 +115,12 @@ RA.QUICK_MSGS = ['Napadam!', 'Treba mi pomoć!', 'Pazi, napadaju nas!', 'Idem ta
         return typeof a[0] === 'string' ? this.buyAir(pid, a[0]) : 'Nepoznata vrsta aviona.';
       case 'bomb':
         return this.bombRaid(pid, cell(a[0]));
+      case 'stance':
+        // orders for the computer while I'm away (Focus): auto | def | eco | atk + target
+        if (!['auto', 'def', 'eco', 'atk'].includes(a[0])) return 'Nevažeća naredba.';
+        if (a[0] === 'atk' && !player(a[1])) return 'Izaberi državu za napad.';
+        p.stance = a[0] === 'auto' ? null : { k: a[0], t: a[0] === 'atk' ? a[1] : 0 };
+        return { stance: a[0] };
       case 'tech':
         return typeof a[0] === 'string' && RA.TECH_ORDER.includes(a[0]) ? this.buyTech(pid, a[0]) : 'Nepoznata grana.';
       case 'buy':

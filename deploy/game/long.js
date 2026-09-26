@@ -18,7 +18,7 @@ const crypto = require('crypto');
 const DIR = process.env.LONG_DIR || path.join(__dirname, 'long-data');
 const TICK_MS = +process.env.LONG_TICK_MS || 5000;
 const MAX_GAMES = 300, MAX_SLOTS = 8, MAX_BYTES = 4e6, IDLE_DAYS = 30;
-const KINDS = new Set(['atk', 'boat', 'para', 'build', 'rec', 'mv', 'dis', 'mis', 'mob', 'ret', 'aReq', 'aRes', 'tReq', 'tRes', 'ext', 'brk', 'tEnd', 'give', 'help', 'rcl', 'png', 'qm', 'tax', 'vas', 'loan', 'pay', 'str', 'buy', 'air', 'bomb', 'tech']);
+const KINDS = new Set(['atk', 'boat', 'para', 'build', 'rec', 'mv', 'dis', 'mis', 'mob', 'ret', 'aReq', 'aRes', 'tReq', 'tRes', 'ext', 'brk', 'tEnd', 'give', 'help', 'rcl', 'png', 'qm', 'tax', 'vas', 'loan', 'pay', 'str', 'buy', 'air', 'bomb', 'tech', 'stance']);
 const SET_KEYS = { map: /^[a-z]{2,12}$/, reg: /^[a-z0-9_-]{2,24}$/, era: /^[a-z0-9]{2,12}$/, gm: /^[a-z]{2,8}$/, dif: /^[a-z]{3,8}$/ };
 
 const games = new Map(); // code → {rec, file, socks: Set, bytes, dirty}
@@ -131,9 +131,9 @@ function cleanSet(s) {
 }
 
 /* one connection; q = the URL's search params */
-function handle(ws, q) {
+function handle(ws, q, account) {
   const want = q.get('long');
-  let gm = null, uid = '', slot = -1, n = 0, t0 = Date.now();
+  let gm = null, uid = '', browserUid = '', slot = -1, n = 0, t0 = Date.now(), starting = false;
   const bye = setTimeout(() => !gm && ws.terminate(), 8000);
   const send = (m) => ws.readyState === 1 && ws.send(JSON.stringify(m));
   function enter(g, name) {
@@ -141,6 +141,11 @@ function handle(ws, q) {
     gm = g;
     gm.socks.add(ws);
     slot = gm.rec.slots.findIndex((s) => s.uid === uid);
+    if (slot < 0 && uid !== browserUid && browserUid) {
+      // my seat from before I signed in (this browser): it moves to my account
+      slot = gm.rec.slots.findIndex((s) => s.uid === browserUid);
+      if (slot >= 0) gm.rec.slots[slot].uid = uid;
+    }
     if (slot >= 0) {
       const s = gm.rec.slots[slot];
       if (name) s.name = name;
@@ -166,7 +171,20 @@ function handle(ws, q) {
     if (!gm) {
       const h = m.create || m.hello;
       if (!h || typeof h.uid !== 'string' || !/^[A-Za-z0-9]{12,40}$/.test(h.uid)) return ws.terminate();
-      uid = h.uid;
+      if (starting) return;
+      starting = true;
+      // signed in: the seat belongs to the account (the same state from every computer); else to this browser
+      return void (account ? account() : Promise.resolve('')).then((acct) => {
+        if (ws.readyState !== 1) return;
+        uid = acct ? 'acct' + acct : h.uid;
+        browserUid = h.uid;
+        first(m, h);
+      });
+    }
+    onCmd(m);
+  });
+  function first(m, h) {
+    {
       const name = str(h.name, 18) || 'Igrač';
       if (m.create && want === 'new') {
         const set = cleanSet(m.create.set);
@@ -185,6 +203,8 @@ function handle(ws, q) {
       if (!g) return send({ t: 'err', e: 'Ta Focus igra ne postoji (ili je istekla).', gone: 1 });
       return enter(g, name);
     }
+  }
+  function onCmd(m) {
     if (Array.isArray(m.join)) {
       // take over a computer state: a new seat, or my seat again after my state fell
       const id = m.join[0];
@@ -216,7 +236,7 @@ function handle(ws, q) {
       if (!KINDS.has(kind) || !Array.isArray(args) || JSON.stringify(args).length > 300) return;
       add(gm, slot, kind, args);
     }
-  });
+  }
   ws.on('close', () => {
     clearTimeout(bye);
     if (!gm) return;

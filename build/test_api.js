@@ -179,6 +179,21 @@ async function main() {
     check(r.j.campaign && r.j.campaign.home === 'sarajevo' && r.j.campaign.xp === 320 && r.j.campaign.done[0] === 3, 'campaign progress comes back');
     r = await call('POST', '/api/campaign', { home: '../x', tree: {}, done: {} }, { cookie: cookieAna });
     check(r.status === 400, 'a bad campaign is refused');
+    r = await call('POST', '/api/campaign', { home: 'sarajevo', name: 'K', color: '#ff4fc3', xp: 1, tree: {}, done: {} }, { cookie: cookieAna });
+    r = await call('GET', '/api/campaign', null, { cookie: cookieAna });
+    check(r.j.campaign.color === '#ff4fc3', 'the dynasty colour is kept');
+    // my Focus games on the account (plan 3)
+    r = await call('POST', '/api/focus', { code: 'abc123', title: 'Srbija · Balkan · Danas', days: 3, tick: 900, at: 7, snap: { share: 0.12, cities: 4, troops: 5e5, gold: 1e5, allies: 1 } }, { cookie: cookieAna });
+    check(r.status === 200, 'a Focus game saved on the account');
+    r = await call('GET', '/api/focus', null, { cookie: cookieAna });
+    check(r.j.games.length === 1 && r.j.games[0].code === 'abc123' && r.j.games[0].days === 3 && r.j.games[0].snap.cities === 4, 'my Focus games come back (on any computer)');
+    r = await call('POST', '/api/focus', { code: '../x' }, { cookie: cookieAna });
+    check(r.status === 400, 'a bad Focus code is refused');
+    r = await call('POST', '/api/focus', { code: 'abc123', drop: 1 }, { cookie: cookieAna });
+    r = await call('GET', '/api/focus', null, { cookie: cookieAna });
+    check(r.j.games.length === 0, 'a left or finished Focus game is gone from the account');
+    r = await call('GET', '/api/focus', null, { cookie: '' });
+    check(r.status === 401, 'Focus list: only signed in');
 
     // delete account
     jar = cookie1;

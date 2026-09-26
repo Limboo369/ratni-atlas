@@ -521,6 +521,37 @@ Object.assign(RA.UI.prototype, {
     }, keep, () => this.cellSheet(c, true));
   },
 
+  stanceName() {
+    const st = this.G.me && this.G.me.stance, T = st && this.G.P[st.t];
+    return !st ? 'kao kompjuter' : st.k === 'def' ? 'brani se' : st.k === 'eco' ? 'gradi ekonomiju' : `napadaj ${T ? T.name : ''}`;
+  },
+  /* Focus: orders for the computer while I'm away (command 'stance') */
+  stanceSheet() {
+    const G = this.G, me = G.me;
+    if (!me) return;
+    const cur = me.stance ? me.stance.k : 'auto';
+    const opt = (k, t, d) => this.btn({ attrs: `data-st="${k}"`, cls: cur === k ? 'primary' : '', t, d });
+    let h = this.head('Dok me nema', 'Kad zatvoriš igru, kompjuter vodi tvoju državu po ovoj naredbi') + '<div class="btns">';
+    h += opt('auto', 'Kao kompjuter', 'Sam odlučuje: širi se, ratuje, sklapa saveze');
+    h += opt('def', 'Brani se', 'Bez novih ratova: utvrde i PVO, uzvraća samo kad ga napadnu, prihvata saveze');
+    h += opt('eco', 'Gradi ekonomiju', 'Bez novih ratova: gradovi, fabrike i luke, širi se na slobodnu zemlju');
+    h += '</div><div class="sec-t">Napadaj državu</div><div class="list">';
+    // my neighbours (no RA.AI.scan here: it draws from the game's random numbers)
+    const W = G.map.W, ids = new Set();
+    for (let i = 0; i < me.tiles; i++) {
+      const c = me.cells[i];
+      for (const n of [c - 1, c + 1, c - W, c + W]) if (n >= 0 && n < G.map.N && G.owner[n] && G.owner[n] !== me.id) ids.add(G.owner[n]);
+    }
+    const nb = [...ids].map((id) => G.P[id]).filter((o) => o && o.alive && o.type !== 'bot' && !G.isFriendly(me, o));
+    for (const o of nb) h += `<div class="prow wide"><span class="sw" style="background:${o.hex}"></span><div class="pn"><div class="nm">${RA.esc(o.name)}</div><div class="d">vojska ${RA.fmt(o.troops)}</div></div><div class="bb">${this.mini(me.stance && me.stance.t === o.id ? 'Izabrano' : 'Napadaj', `data-st="atk:${o.id}"`, 'warn')}</div></div>`;
+    if (!nb.length) h += '<p class="note">Nemaš susjeda s kojim nisi u savezu.</p>';
+    this.openSheet(h + '</div>', (s) => s.querySelectorAll('[data-st]').forEach((b) => (b.onclick = () => {
+      const [k, t] = b.dataset.st.split(':');
+      this.act('stance', k === 'atk' ? [k, +t] : [k]);
+      this.toast('good', `Dok te nema: ${k === 'auto' ? 'kao kompjuter' : k === 'def' ? 'brani se' : k === 'eco' ? 'gradi ekonomiju' : 'napadaj ' + G.P[+t].name}.`);
+      this.closeSheet();
+    })));
+  },
   /* nuclear spam: how much dearer the next one is and until when (a bar that runs out) */
   nukeBar(M) {
     const G = this.G, me = G.me;
@@ -691,7 +722,8 @@ Object.assign(RA.UI.prototype, {
       <button class="btn" data-m="sfx"><span class="t">Zvučni efekti</span><span class="r" style="font-size:14px">${this.audio.s.sfx ? 'Uključeno' : 'Isključeno'}</span></button>
       <button class="btn" data-m="music"><span class="t">Muzika</span><span class="r" style="font-size:14px">${this.audio.s.music ? 'Uključeno' : 'Isključeno'}</span></button>
       <button class="btn" data-m="rulers"><span class="t">Komentari vladara</span><span class="r" style="font-size:14px">${this.settings.rulers === false ? 'Isključeno' : 'Uključeno'}</span></button>
-      ${G.long ? `<button class="btn" data-m="home"><span><span class="t">Glavni meni</span><br><span class="d">Igra teče dalje, kompjuter vodi tvoju državu — vratiš se preko „Nastavi Focus igru”</span></span></button>
+      ${G.long ? `<button class="btn" data-m="stance"><span><span class="t">Dok me nema: ${RA.esc(this.stanceName())}</span><br><span class="d">Šta kompjuter radi s tvojom državom kad zatvoriš igru</span></span></button>
+      <button class="btn" data-m="home"><span><span class="t">Glavni meni</span><br><span class="d">Igra teče dalje, kompjuter vodi tvoju državu — vratiš se preko „Nastavi Focus igru”</span></span></button>
       <button class="btn danger" data-m="leave"><span><span class="t">Napusti igru</span><br><span class="d">Zauvijek — progres ove Focus igre se briše</span></span></button>` : `<button class="btn danger" data-m="new"><span><span class="t">${G.online ? 'Napusti online igru' : 'Nova igra'}</span><br><span class="d">${G.online ? 'Tvoju državu preuzima kompjuter' : 'Trenutna partija se prekida'}</span></span></button>`}
     </div>
     <p class="note">Tipke: Space pauza · 1–3 brzina · Q/E snaga napada · V vojska · B gradnja · D desant · P padobranci · R rakete · S savezi · L savezi na karti · M mobilizacija · Esc odustani.</p>`;
@@ -720,6 +752,8 @@ Object.assign(RA.UI.prototype, {
         } else if (m === 'tips') {
           this.noTips = !this.noTips;
           this.closeSheet();
+        } else if (m === 'stance') {
+          this.stanceSheet();
         } else if (m === 'home') {
           app.long.snap();
           app.showStart();

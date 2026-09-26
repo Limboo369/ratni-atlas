@@ -10,9 +10,10 @@ Object.assign(RA.App.prototype, {
     const region = ui.campRegion(map, cell);
     const set = { map: home.map, region, era: m.era, start: 'granice', gm: 'klasik', difficulty: m.diff, cityStates: 25, peace: 60, res: false };
     const gm = RA.regionMap(RA.eraMap(map, m.era, 'granice'), region);
-    RA.ME_COLOR = RA.PLAYER_COLORS[0];
+    // the dynasty keeps its colour in every era (plan 10)
+    RA.ME_COLOR = RA.PLAYER_COLORS.includes(c.color) ? c.color : RA.PLAYER_COLORS.includes(ui.settings.color) ? ui.settings.color : RA.PLAYER_COLORS[0];
     const seed = (Math.random() * 1e9) | 0;
-    const camp = { type: m.type, mid: m.id, bonus: Object.assign({}, c.tree) };
+    const camp = { type: m.type, mid: m.id, bonus: Object.assign({}, c.tree), dyn: c.name };
     const G = RA.newGame(gm, { seed, difficulty: set.difficulty, cityStates: set.cityStates, peace: set.peace, era: set.era, start: 'granice', gm: 'klasik', camp });
     G.gid = 'c' + Math.random().toString(36).slice(2, 12);
     G.rec = { v: 1, build: RA.BUILD, gid: G.gid, set: Object.assign({}, set, { seed, color: RA.ME_COLOR, camp }), picks: [], name: '', cmds: [] };
@@ -38,12 +39,14 @@ Object.assign(RA.App.prototype, {
         }
       }
     }
-    RA.placeHuman(G, tgt ? G.P[tgt].nation.c : cell, c.name);
+    const ruler = ui.campRuler(c);
+    RA.placeHuman(G, tgt ? G.P[tgt].nation.c : cell, ruler);
     if (!G.me) return ui.toast('bad', 'Dom dinastije nije na karti ovog doba.', { ms: 5000 });
     ui.settings.name = ui.settings.name || c.name;
     this.start();
     const T = G.camp && G.P[G.camp.target];
     ui.toast('info', `<b>${RA.esc(m.title)}</b> — ${RA.esc(m.type === 'free' ? 'slobodna igra' : RA.campGoalText(m))}${T ? ` Cilj: <b>${RA.esc(T.name)}</b>.` : ''}`, { ms: 9000, cell: T ? T.capital : -1 });
+    ui.toast('good', `Dinastija ${RA.esc(c.name)} vlada: <b>${RA.esc(G.me.name)}</b> · vladar <b>${RA.esc(ruler)}</b>`, { ms: 7000 });
     if (gm.region) {
       const bx = gm.region.box;
       this.lmap.setMaxBounds(L.latLngBounds([[bx[1], bx[0]], [bx[3], bx[2]]]).pad(0.7));

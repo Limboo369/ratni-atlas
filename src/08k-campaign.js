@@ -148,18 +148,36 @@ Object.assign(RA.UI.prototype, {
     let h = this.head('Nova kampanja', 'Tvoja dinastija od Rima do danas') + '<span class="campaign-marker" hidden></span>';
     h += '<p class="explain">Izaberi dom dinastije: u svakom dobu vodiš državu koja drži taj grad. Sedam poglavlja po deset misija; iskustvo ulažeš u tehnološko stablo.</p>';
     h += `<div class="field"><span class="lab">Ime dinastije</span><input type="text" id="campName" class="sel" maxlength="18" value="${RA.esc(this.settings.name || 'Kotromanić')}"></div>`;
+    const col0 = RA.PLAYER_COLORS.includes(this.settings.color) ? this.settings.color : RA.PLAYER_COLORS[0];
+    h += `<div class="field"><span class="lab">Boja dinastije (ista u svakom dobu)</span><div class="seg wrap swatches" id="campColor">${RA.PLAYER_COLORS.map((c) => `<button data-v="${c}" aria-pressed="${c === col0}" aria-label="Boja ${c}" style="--sw:${c}"><span></span></button>`).join('')}</div></div>`;
     h += '<div class="sec-t">Dom dinastije</div><div class="campaign-homes qm-grid">';
     for (const hm of RA.CAMP_HOMES) {
       const ok = hm.map === 'evropa' || world;
       h += `<button class="btn" data-home="${hm.id}" ${ok ? '' : 'disabled title="Karta svijeta je samo na war.deovilab.com"'}><span class="t">${RA.esc(hm.name)}</span>${hm.map === 'svijet' ? '<br><span class="d">svijet</span>' : ''}</button>`;
     }
     h += '</div>';
-    this.openSheet(h, (s) => s.querySelectorAll('[data-home]').forEach((b) => (b.onclick = () => {
+    let col = col0;
+    this.openSheet(h, (s) => {
+      s.querySelectorAll('#campColor button').forEach((b) => (b.onclick = () => {
+        col = b.dataset.v;
+        s.querySelectorAll('#campColor button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+      }));
+      s.querySelectorAll('[data-home]').forEach((b) => (b.onclick = () => {
       const nm = (s.querySelector('#campName').value || '').trim().slice(0, 18) || 'Kotromanić';
-      this.camp = { v: 1, home: b.dataset.home, name: nm, xp: 0, tree: { mil: 0, eco: 0, dip: 0, sci: 0 }, done: {} };
+      this.camp = { v: 1, home: b.dataset.home, name: nm, color: col, xp: 0, tree: { mil: 0, eco: 0, dip: 0, sci: 0 }, done: {} };
       this.campSave();
       this.campaignSheet();
-    })));
+    }));
+    });
+  },
+  /* the ruler of the dynasty in this mission: "Kotromanić VII" (one more for every mission finished) */
+  campRuler(c) {
+    const n = Object.keys(c.done || {}).length + 1;
+    const rom = (v) => [[1000, 'M'], [900, 'CM'], [500, 'D'], [400, 'CD'], [100, 'C'], [90, 'XC'], [50, 'L'], [40, 'XL'], [10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']].reduce((s, [k, r]) => {
+      while (v >= k) (s += r), (v -= k);
+      return s;
+    }, '');
+    return `${c.name} ${rom(n)}`;
   },
   /* the region of the home: the smallest part of the map that contains it */
   campRegion(map, cell) {

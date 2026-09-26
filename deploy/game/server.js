@@ -31,24 +31,26 @@ const SLOW = 512 * 1024; // a peer this far behind on reading is dropped instead
 // against the computer) stay open to everyone.
 const API = process.env.API_URL || '';
 const REQUIRE_LOGIN = process.env.REQUIRE_LOGIN === '1' && !!API;
-const who = new Map(); // session token → {ok, t}
-async function signedIn(req) {
-  const m = /(?:^|;\s*)ot=([A-Za-z0-9_-]{10,200})/.exec(req.headers.cookie || '');
-  if (!m) return false;
+const who = new Map(); // session token → {id, t}
+/* the account id behind the request's session cookie ('' = not signed in, or no accounts API here) */
+async function accountOf(req) {
+  const m = API && /(?:^|;\s*)ot=([A-Za-z0-9_-]{10,200})/.exec(req.headers.cookie || '');
+  if (!m) return '';
   const c = who.get(m[1]);
-  if (c && Date.now() - c.t < 300000) return c.ok;
-  let ok = false;
+  if (c && Date.now() - c.t < 300000) return c.id;
+  let id = '';
   try {
     const r = await fetch(API + '/api/me', { headers: { cookie: 'ot=' + m[1] }, signal: AbortSignal.timeout(4000) });
     const j = await r.json();
-    ok = !!(j && j.user);
+    id = j && j.user ? String(j.user.id) : '';
   } catch (e) {
     console.warn('login check', e.message);
   }
   if (who.size > 5000) who.clear();
-  who.set(m[1], { ok, t: Date.now() });
-  return ok;
+  who.set(m[1], { id, t: Date.now() });
+  return id;
 }
+const signedIn = async (req) => !!(await accountOf(req));
 
 const sign = (id) => crypto.createHmac('sha256', SECRET).update(id).digest('base64url').slice(0, 16);
 const validKey = (id, key) => {
@@ -112,7 +114,7 @@ wss.on('connection', (ws, req) => {
       if (c > 0) perIp.set(ip, c);
       else perIp.delete(ip);
     });
-    return long.handle(ws, q);
+    return long.handle(ws, q, () => accountOf(req)); // signed in: my Focus seats follow my account
   }
   const name = /^[a-z0-9]{4,16}$/.test(q.get('room') || '') ? q.get('room') : '';
   let id = '', me = null, room = null;

@@ -97,6 +97,23 @@ async def main():
             await page.wait_for_function('document.getElementById("accountBtn").classList.contains("on")', timeout=10_000)
             check(True, 'signed in with Google')
             check(await ev(WS_TRY) == 'all:all', 'signed in: the online server lets me into a room')
+            # Focus seats follow the account: a game made and joined here is my seat also from another browser (another uid)
+            seat = await ev('''() => new Promise((ok) => {
+              const set = { map: 'evropa', reg: 'balkan', era: 'danas', gm: 'klasik', dif: 'lako', cs: 0, peace: 0, res: 0, tree: 0, nn: 0, days: 1 };
+              const a = new WebSocket(window.RA_WS + '?long=new');
+              a.onopen = () => a.send(JSON.stringify({ create: { set, name: 'Ana', uid: 'browserAAAAAAAA1' } }));
+              a.onmessage = (e) => { const m = JSON.parse(e.data);
+                if (m.t === 'rec') a.send(JSON.stringify({ join: [5, 'Ana'] }));
+                if (m.t === 'c' && m.e[2] === 'join') {
+                  const b = new WebSocket(window.RA_WS + '?long=' + a.__code);
+                  b.onopen = () => b.send(JSON.stringify({ hello: { name: 'Ana', uid: 'otherBBBBBBBBBB2' } }));
+                  b.onmessage = (e2) => { const m2 = JSON.parse(e2.data); if (m2.t === 'rec') { ok(m2.you); a.close(); b.close(); } };
+                }
+                if (m.t === 'rec') a.__code = m.rec.code;
+              };
+              setTimeout(() => ok('timeout'), 10000);
+            })''')
+            check(seat == 0, f'signed in: my Focus seat follows my account to another browser (seat {seat})')
             check(await ev('document.getElementById("nameIn").value') == 'Darko', 'account name fills the empty name field')
             await page.wait_for_selector('#accName')
             check(await ev('document.getElementById("accName").value') == 'Darko', 'the open sheet switches to the account view')

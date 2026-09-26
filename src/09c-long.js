@@ -204,9 +204,11 @@ RA.focusPut = function (code, patch) {
   if (i >= 0) l.splice(i, 1);
   l.unshift(e);
   RA.focusSet(l);
+  if (RA.focusHook) RA.focusHook(code, e);
 };
 RA.focusDrop = function (code) {
   RA.focusSet(RA.focusList().filter((e) => e.code !== code));
+  if (RA.focusHook) RA.focusHook(code, null);
 };
 RA.focusSnap = function (G, p) {
   let cities = 0;
@@ -308,8 +310,35 @@ Object.assign(RA.UI.prototype, {
     h += '<div class="btns"><button class="btn primary" data-ok><span class="t">Nastavi</span></button></div>';
     this.openSheet(h, (s) => (s.querySelector('[data-ok]').onclick = () => this.closeSheet()));
   },
-  /* the start screen's "Nastavi Focus igru" (my Focus games in this browser) */
+  /* signed in: my Focus games also live on the account (plan 3) — every change goes there (a snapshot at most once a
+     minute), and the start screen merges the account's list with this browser's */
+  focusAccount() {
+    const A = this.account, sent = (this._focusSent = this._focusSent || {});
+    RA.focusHook = (code, e) => {
+      if (!A || !A.user) return;
+      if (e && Date.now() - (sent[code] || 0) < 60000 && !e.title) return;
+      sent[code] = Date.now();
+      A.api('POST', '/api/focus', e ? Object.assign({}, e) : { code, drop: 1 }).catch(() => {});
+    };
+    if (!A || !A.user || Date.now() - (this._focusGot || 0) < 30000) return;
+    this._focusGot = Date.now();
+    A.api('GET', '/api/focus').then((j) => {
+      const l = RA.focusList();
+      let changed = false;
+      for (const g of j.games || []) {
+        const i = l.findIndex((e) => e.code === g.code);
+        if (i < 0) l.push(g), (changed = true);
+        else if ((g.at || 0) > (l[i].at || 0)) (l[i] = Object.assign(l[i], g)), (changed = true);
+      }
+      if (changed) {
+        RA.focusSet(l.sort((a, b) => (b.at || 0) - (a.at || 0)));
+        this.focusOffer();
+      }
+    }, () => {});
+  },
+  /* the start screen's "Nastavi Focus igru" (my Focus games in this browser and, signed in, on the account) */
   focusOffer() {
+    this.focusAccount();
     const b = this.$('focusBtn'), l = RA.focusList(), net = this.app.net;
     b.hidden = !l.length || !(net && net.wsUrl);
     if (b.hidden) return;

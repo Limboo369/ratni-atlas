@@ -79,15 +79,21 @@ RA.AI = {
     if (p.type === 'bot') return RA.AI.thinkBot(G, p, info);
 
     const peace = G.tick < G.peaceUntil;
+    // a player's orders while away (Focus, plan 2): defend / build / attack X; the computer follows them
+    const st = p.human && p.stance ? p.stance : null;
+    const calm = st && (st.k === 'def' || st.k === 'eco'); // no new wars against states
+    if (ai.pers0 === undefined) ai.pers0 = ai.pers;
+    ai.pers = st && st.k === 'def' ? 'graditelj' : st && st.k === 'eco' ? 'trgovac' : ai.pers0;
     RA.AI.diplomacy(G, p, info);
     RA.AI.maybeBuild(G, p, info);
     RA.AI.maybeRecruit(G, p, info);
     if (G.deps) RA.AI.maybeBuyRes(G, p);
     if (G.opts.tree) RA.AI.maybeTech(G, p);
+    if (st && st.k === 'eco') RA.AI.maybeBuild(G, p, info); // building comes first
     if (!peace && p.n.port) RA.AI.navy(G, p, info);
-    if (!peace && p.n.airport && RA.airOn()) RA.AI.air(G, p, info);
-    if (!peace && !RA.MISSILE.drone.na) RA.AI.drones(G, p, info);
-    if (!peace) {
+    if (!peace && !calm && p.n.airport && RA.airOn()) RA.AI.air(G, p, info);
+    if (!peace && !calm && !RA.MISSILE.drone.na) RA.AI.drones(G, p, info);
+    if (!peace && !calm) {
       RA.AI.maybeStrike(G, p, info);
       RA.AI.maybeNuke(G, p, info);
     }
@@ -131,9 +137,11 @@ RA.AI = {
       G.launchAttack(p.id, 0, p.troops * (0.3 + G.rng() * 0.25), focus >= 0 ? focus : info.neutralCell);
       return;
     }
+    if (calm) return; // defend / build: only counter-attacks and free land
     // war
     if (ratio >= ai.trig && info.nb.size) {
-      const tgt = RA.AI.pickTarget(G, p, info);
+      const X = st && st.k === 'atk' ? G.P[st.t] : null;
+      const tgt = X && X.alive && info.nb.has(X.id) && !G.isFriendly(p, X) && !peace ? X : RA.AI.pickTarget(G, p, info);
       if (tgt) {
         const troops = p.troops - ai.reserve * p.maxT;
         if (troops > p.troops * 0.15) {

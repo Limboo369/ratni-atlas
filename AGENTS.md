@@ -74,6 +74,11 @@ The server plays every Focus game itself: `deploy/game/simhost.js` (worker threa
 built by `make.py`) with the same `RA.longGame` / `RA.longApply` (`src/04c-longsim.js`) as the page, game by game after
 `RA.applyEra`; it records the end (`rec.over`) and answers `{sim: 1}` with the tick and checksum. So `src/00–04` must stay
 browser-free (no DOM) — it runs in node too.
+Opinions remember their reasons: change `o.rel[id]` only through `G.relTo(o, id, value, why)` (reasons in `o.why`, labels
+`RA.WHY`, shown in the country sheet). Timers people read go through `RA.dur(ticks)` (real time in Focus: `RA.TICK_REAL`).
+Focus orders while away: command `'stance'` (`p.stance`: def / eco / atk + target; the AI follows it when it plays a
+human's state). Signed in, a Focus seat belongs to the account (`acct<id>`, resolved by the relay from the `ot` cookie) and
+the list of my Focus games is on the account (`/api/focus`).
 Long games (days): `deploy/game/long.js` (same server, `/ws?long=<code>`, link `/long-<code>`) is only the clock (one tick
 every `LONG_TICK_MS`, 5 s) and the archive (settings, seed, every command with its tick; files in the `longgames`
 volume); `src/09c-long.js` replays the record to the server's tick and follows it. A player takes over a computer state
