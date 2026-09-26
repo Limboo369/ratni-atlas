@@ -804,6 +804,8 @@ RA.UI = class {
       for (const [k, v] of this.reqToasts) if (v === last) this.reqToasts.delete(k);
       last.remove();
     }
+    // a plain message never catches a tap meant for the map (on a phone the toasts cover part of it)
+    if (!(opts.cell >= 0) && !el.querySelector('button, a')) el.classList.add('pass');
     if (opts.cell >= 0) {
       el.style.cursor = 'pointer';
       el.addEventListener('click', (e) => {
@@ -1138,6 +1140,7 @@ RA.UI = class {
   }
   setMode(m) {
     this.mode = m;
+    document.getElementById('app').classList.toggle('aiming', !!m); // taps go through toasts to the map (style.css)
     const bar = this.$('modeBar');
     ['aArmy', 'aBuild', 'aLand', 'aStrike'].forEach((id) => this.$(id).classList.remove('on'));
     const ex = this.$('modeExtra');
@@ -1168,7 +1171,7 @@ RA.UI = class {
         ex.textContent = 'Lansiraj';
         ex.classList.add('fire');
         ex.hidden = false;
-      } else txt = `Dodirni metu: ${M.name} (krug ${rad} polja${M.range ? `, domet ${M.range} polja` : ''})`;
+      } else txt = `${m.fired ? `Poslano ${m.fired} · dodirni sljedeću metu ili Odustani — ` : 'Dodirni metu: '}${M.name} (krug ${rad} polja${M.range ? `, domet ${M.range} polja` : ''})`;
       btn = 'aStrike';
     } else if (m.kind === 'bomb') {
       txt = `Dodirni neprijateljsku zemlju: ${RA.airName('bomber')}`;
@@ -1206,7 +1209,7 @@ RA.UI = class {
       this.toast('info', 'MIRV cilja državu — dodirni tuđu teritoriju.');
       return;
     }
-    this.setMode({ kind: 'missile', type, aim: c });
+    this.setMode({ kind: 'missile', type, aim: c, fired: (this.mode && this.mode.fired) || 0 });
   }
   modeExtra() {
     const m = this.mode;
@@ -1330,14 +1333,18 @@ RA.UI = class {
     } else if (m.kind === 'missile') {
       // first tap aims (blast radius is drawn on the map), a second tap on the same spot or "Lansiraj" fires
       const W = G.map.W;
-      if (m.aim >= 0 && RA.dist((m.aim % W) - (c % W), ((m.aim / W) | 0) - ((c / W) | 0)) <= 1.5) {
+      // a drone flies at once on a tap (no aiming step), so a swarm is a few quick taps
+      if (RA.MISSILE[m.type].kind === 'drone') {
+        if (this.fireMissile(m.type, c)) this.ping(cp, false);
+        else this.ping(cp, true);
+      } else if (m.aim >= 0 && RA.dist((m.aim % W) - (c % W), ((m.aim / W) | 0) - ((c / W) | 0)) <= 1.5) {
         if (this.fireMissile(m.type, m.aim)) this.ping(cp, false);
         else this.ping(cp, true);
       } else this.aimMissile(m.type, c);
     } else if (m.kind === 'bomb') {
       this.ping(cp, false);
       this.act('bomb', [c]);
-      this.setMode(null);
+      this.setMode({ kind: 'bomb', fired: (m.fired || 0) + 1 }); // the next target, until "Odustani"
     } else if (m.kind === 'recruit') {
       const cc = this.nearestOwn(c, 300);
       if (cc < 0) return fail('Jedinicu postavi na svoju teritoriju (najbolje uz granicu).');

@@ -1306,3 +1306,8 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
 .code-row { display: flex; flex-direction: column; align-items: stretch; gap: 8px; margin-top: 8px; }
 .code-row input { flex: none; width: 100%; min-width: 0; min-height: 44px; box-sizing: border-box; }
 .code-row .btn, .code-row .mini { width: 100%; justify-content: center; }
+
+/* toasts let taps through to the map: plain messages always, all of them while aiming (drones, missiles, building) —
+   only their buttons still take a tap */
+.toast.pass, #app.aiming .toast { pointer-events: none; }
+#app.aiming .toast button, .toast.pass button { pointer-events: auto; }

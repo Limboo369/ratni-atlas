@@ -23,7 +23,7 @@ def check(cond, msg):
 
 
 def start_server():
-    srv = subprocess.Popen(['node', R + 'deploy/game/server.js'], env={**os.environ, 'PORT': str(PORT), 'LONG_DIR': DATA, 'LONG_TICK_MS': '250'},
+    srv = subprocess.Popen(['node', R + 'deploy/game/server.js'], env={**os.environ, 'PORT': str(PORT), 'LONG_DIR': DATA, 'LONG_TICK_MS': '250', 'LONG_SUB_MS': '50'},
                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
     for _ in range(100):
         try:
@@ -57,7 +57,7 @@ async def page_for(b, name, errs, uid=None):
 
 # take the biggest free state from the pick sheet
 TAKE = '''() => { const b = document.querySelector('#sheet [data-take]'); if (!b) return -1; b.click(); return +b.dataset.take; }'''
-HASHES = '''() => { const G = window.__ra.G; if (G._hh) return true; G._hh = {}; const s = G.step.bind(G); G.step = () => { s(); G._hh[G.tick] = G.hash(); }; return true; }'''
+HASHES = '''() => { const G = window.__ra.G; if (G._hh) return true; G._hh = {}; const s = G.step.bind(G); G.step = () => { s(); G._hh[G.clock()] = G.hash(); }; return true; }'''
 
 
 async def main():
@@ -83,7 +83,7 @@ async def main():
         await A.evaluate("() => { window.__ra.long.simSt = undefined; window.__ra.long.ws.send(JSON.stringify({ sim: 1 })); }")
         await A.wait_for_function('window.__ra.long.simSt !== undefined', timeout=30000)
         # the device may be a little behind the server: wait until it has played the server's tick
-        await A.wait_for_function('() => { const st = window.__ra.long.simSt; return !st || window.__ra.G.tick > st.tick; }', timeout=30000)
+        await A.wait_for_function('() => { const st = window.__ra.long.simSt; return !st || window.__ra.G.clock() > st.tick; }', timeout=30000)
         sv = await A.evaluate('() => { const st = window.__ra.long.simSt, h = window.__ra.G._hh; return st ? [st.tick, st.hash, h[st.tick]] : null; }')
         check(sv and sv[0] > 0 and sv[1] == sv[2], f'the server simulates the same game (tick, server hash, device hash) {sv}')
         # Marko opens the same game: replays it and takes another state
@@ -169,8 +169,8 @@ async def main():
         await D.click('#goBtn')
         await D.click('#sheet [data-y]')
         await D.wait_for_function('window.__ra.long.rec', timeout=60000)
-        tm = await D.evaluate('[window.__ra.long.rec.tickMs, window.__ra.long.rec.set.days]')
-        check(tm == [250 * 7, 7], f'Focus ~7 days: the clock is 7x slower {tm}')
+        tm = await D.evaluate('[window.__ra.long.rec.tickMs * window.__ra.long.rec.sub, window.__ra.long.rec.set.days, window.__ra.long.rec.tickMs]')
+        check(tm == [250 * 7, 7, 50], f'Focus ~7 days: the world steps 7x slower, the clock (gold, orders) stays fast {tm}')
         check(not errs, f'no page errors {errs[:3]}')
         await b.close()
     srv.terminate()

@@ -381,6 +381,16 @@ async def main():
         await page.click('#modeExtra')
         await page.wait_for_timeout(300)
         check(await ev('() => window.__ra.G.missiles.filter(m => !m.done).length') == 1, 'Lansiraj fires the bomb')
+        # the strike mode stays after a launch: drones fly on each tap until "Odustani" (Darko, 27. 9.)
+        check(await ev('() => { const m = window.__ra.ui.mode; return !!m && m.kind === "missile" && m.aim === -1 && m.fired === 1; }'), 'after a launch the strike mode stays for the next target')
+        await ev('() => window.__ra.ui.setMode({ kind: "missile", type: "drone" })')
+        for _ in range(3):
+            await tap_cell(tgt)
+            await page.wait_for_timeout(700)  # taps closer than that are a double tap (zoom) on a phone
+        fired = await ev('() => window.__ra.ui.mode && window.__ra.ui.mode.fired')
+        check(fired == 3, f'three taps = three drones, no aiming step ({fired})')
+        await page.click('#modeCancel')
+        check(await ev('() => !window.__ra.ui.mode'), '"Odustani" ends the strike mode')
         await page.wait_for_timeout(1200)
         await page.screenshot(path=OUT + f'{MODE}_v3_13_flight.png')
 

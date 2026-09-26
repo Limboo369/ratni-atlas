@@ -470,6 +470,43 @@ const check = (ok, msg) => {
     for (let i = 0; i < 300; i++) G1.step(), G2.step();
     check(G1.hash() === G2.hash(), 'scenario: deterministic');
   }
+  // Focus clock (Darko, 27. 9.): the world steps every `sub` seconds, gold and orders every second, buildings in seconds
+  {
+    RA.applyEra('danas');
+    const fr = (sub) => ({ code: 'fsub01', seed: 21, sub, tickMs: sub ? 1000 : 5000, set: { map: 'evropa', reg: 'balkan', era: 'danas', gm: 'klasik', dif: 'srednje', cs: 0, peace: 600, res: 0, tree: 0, nn: 0, days: 1 } });
+    const F = RA.longGame(m, fr(5)), O = RA.longGame(m, fr(0));
+    const nat = (G, iso) => G.P.find((p) => p && p.iso === iso);
+    RA.longApply(F, [0, 0, 'join', [nat(F, 'SRB').id, 'Ana']]);
+    RA.longApply(O, [0, 0, 'join', [nat(O, 'SRB').id, 'Ana']]);
+    const f0 = nat(F, 'SRB').gold, o0 = nat(O, 'SRB').gold;
+    for (let i = 0; i < 50; i++) F.step();
+    for (let i = 0; i < 10; i++) O.step();
+    const fg = nat(F, 'SRB').gold - f0, og = nat(O, 'SRB').gold - o0;
+    check(F.tick === 10 && F.clock() === 50 && O.tick === 10, `Focus: 50 seconds = 10 world steps (${F.tick}, ${F.clock()})`);
+    check(fg > og * 8, `Focus: gold ${Math.round(fg / Math.max(1, og))}× faster than the old Focus in the same world time (${Math.round(fg)} vs ${Math.round(og)})`);
+    // gold every second, not only on world steps
+    const g1 = nat(F, 'SRB').gold;
+    F.step();
+    check(F.clock() % 5 !== 0 && nat(F, 'SRB').gold > g1, 'Focus: gold arrives every second between world steps');
+    // an order is carried out in the next second; a building is done in seconds
+    const me = nat(F, 'SRB');
+    me.gold = 5e6;
+    const cell = me.cells[Math.floor(me.tiles / 2)];
+    const r = RA.longApply(F, [F.clock(), 0, 'build', ['factory', cell]]);
+    const st = r.r && r.r.type ? r.r : null;
+    const secs = Math.ceil(RA.STRUCT.factory.time * RA.CFG.FOCUS_BUILD);
+    for (let i = 0; i < secs - 1; i++) F.step();
+    const early = st && st.ready;
+    F.step();
+    check(st && !early && st.ready, `Focus: a factory is built in ${secs} s of real time (not ${RA.STRUCT.factory.time} slow world steps)`);
+    const F2 = RA.longGame(m, fr(5));
+    RA.longApply(F2, [0, 0, 'join', [nat(F2, 'SRB').id, 'Ana']]);
+    for (let i = 0; i < 51; i++) F2.step();
+    nat(F2, 'SRB').gold = 5e6;
+    RA.longApply(F2, [F2.clock(), 0, 'build', ['factory', cell]]);
+    for (let i = 0; i < secs; i++) F2.step();
+    check(F.hash() === F2.hash() && F.clock() === F2.clock(), 'Focus clock: deterministic');
+  }
   // the server steps many Focus games in one process (deploy/game/simhost.js), switching the era tables between them:
   // a game stepped between steps of another era's game must stay the same as the game alone
   const rec = (code, era, seed) => ({ code, seed, set: { map: 'evropa', reg: 'balkan', era, gm: 'klasik', dif: 'srednje', cs: 0, peace: 0, res: 1, tree: 1, nn: 0 } });

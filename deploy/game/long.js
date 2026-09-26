@@ -19,6 +19,13 @@ const DIR = process.env.LONG_DIR || path.join(__dirname, 'long-data');
 const TICK_MS = +process.env.LONG_TICK_MS || 5000;
 // Skirmish (public online games, plan phase 15): the same server clock at Blitz speed, a countdown before the start
 const FAST_MS = +process.env.LONG_FAST_MS || 100;
+// Focus: the clock turns every second (gold, orders); the world steps every `sub` seconds (TICK_MS × days)
+const SUB_MS = +process.env.LONG_SUB_MS || 1000;
+const clockOf = (set) => {
+  if (set.fast) return { tickMs: FAST_MS };
+  const sub = Math.max(1, Math.round((TICK_MS * set.days) / SUB_MS));
+  return sub > 1 ? { tickMs: SUB_MS, sub } : { tickMs: TICK_MS * set.days };
+};
 const WAIT_S = +process.env.SKIRMISH_WAIT || 60;
 const MAX_GAMES = 300, MAX_SLOTS = 8, MAX_BYTES = 4e6, IDLE_DAYS = 30;
 const KINDS = new Set(['atk', 'boat', 'para', 'build', 'rec', 'mv', 'dis', 'mis', 'mob', 'ret', 'aReq', 'aRes', 'tReq', 'tRes', 'ext', 'brk', 'tEnd', 'give', 'help', 'rcl', 'png', 'qm', 'tax', 'vas', 'loan', 'pay', 'str', 'buy', 'air', 'bomb', 'tech', 'stance', 'offer', 'offerRes', 'surr', 'endv', 'kick']);
@@ -146,7 +153,7 @@ function simAsk(code) {
 }
 
 const tickOf = (rec) => Math.max(0, Math.floor((Date.now() - rec.start) / rec.tickMs));
-const pub = (rec) => ({ code: rec.code, set: rec.set, seed: rec.seed, tickMs: rec.tickMs, start: rec.start, slots: rec.slots.map((s) => (s.team ? { name: s.name, team: s.team } : { name: s.name })), cmds: rec.cmds, league: rec.league ? { l: rec.league.l, res: rec.league.res } : undefined });
+const pub = (rec) => ({ code: rec.code, set: rec.set, seed: rec.seed, tickMs: rec.tickMs, sub: rec.sub, start: rec.start, slots: rec.slots.map((s) => (s.team ? { name: s.name, team: s.team } : { name: s.name })), cmds: rec.cmds, league: rec.league ? { l: rec.league.l, res: rec.league.res } : undefined });
 const str = (v, n) => (typeof v === 'string' ? v.replace(/[\u0000-\u001f]/g, '').slice(0, n) : '');
 function save(gm) {
   gm.dirty = true;
@@ -204,7 +211,7 @@ function newCode() {
 }
 function newGame(set) {
   const now = Date.now();
-  const rec = { code: newCode(), set, seed: crypto.randomInt(1, 1e9), tickMs: set.fast ? FAST_MS : TICK_MS * set.days, start: now + (set.pub ? WAIT_S * 1000 : 0), slots: [], cmds: [], created: now, seen: now };
+  const rec = Object.assign({ code: newCode(), set, seed: crypto.randomInt(1, 1e9) }, clockOf(set), { start: now + (set.pub ? WAIT_S * 1000 : 0), slots: [], cmds: [], created: now, seen: now });
   const g = { rec, socks: new Set(), bytes: 2, dirty: false };
   games.set(rec.code, g);
   simSend({ add: rec });
@@ -216,7 +223,7 @@ function newGame(set) {
    pick/ban reveal */
 function newLeague(set, slots, meta, waitMs) {
   const now = Date.now();
-  const rec = { code: newCode(), set, seed: crypto.randomInt(1, 1e9), tickMs: set.fast ? FAST_MS : TICK_MS * set.days, start: now + waitMs, slots: slots.map((s) => ({ ...s, awayAt: now })), cmds: [], created: now, seen: now, league: meta };
+  const rec = { code: newCode(), set, seed: crypto.randomInt(1, 1e9), ...clockOf(set), start: now + waitMs, slots: slots.map((s) => ({ ...s, awayAt: now })), cmds: [], created: now, seen: now, league: meta };
   const g = { rec, socks: new Set(), bytes: 2, dirty: false };
   games.set(rec.code, g);
   simSend({ add: rec });

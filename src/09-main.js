@@ -268,7 +268,7 @@ RA.App = class {
 
   /* the game being shown (and its era's names and city list for the renderer) */
   setGame(G) {
-    RA.TICK_REAL = G && G.long && this.long && this.long.rec ? this.long.rec.tickMs : 100; // Focus: timers in real time
+    RA.TICK_REAL = G && G.long && this.long && this.long.rec ? this.long.rec.tickMs * (this.long.rec.sub || 1) : 100; // Focus: timers in real time (a world step)
     this.G = G;
     this.ui.audio.setEra(G.era || 'danas');
     this.ui.feedReset();

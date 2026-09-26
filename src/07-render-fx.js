@@ -296,7 +296,7 @@ RA.FxLayer = L.Layer.extend({
       }
       if (s.empUntil > G.tick) RA.drawZap(ctx, x, y, ss, now);
       if (!s.ready) {
-        const t = 1 - (s.doneAt - G.tick) / RA.STRUCT[s.type].time;
+        const t = s.doneSt ? (G.st - s.startSt) / Math.max(1, s.doneSt - s.startSt) : 1 - (s.doneAt - G.tick) / RA.STRUCT[s.type].time;
         ctx.beginPath();
         ctx.arc(x, y, ss * 0.75, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * RA.clamp(t, 0, 1));
         ctx.strokeStyle = '#ffffff';

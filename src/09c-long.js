@@ -143,9 +143,9 @@ RA.Long = class {
   /* apply the entries of this tick (before stepping) */
   applyDue(G) {
     const q = this.queue;
-    while (q.length && q[0][0] <= G.tick) {
+    while (q.length && q[0][0] <= G.clock()) {
       const e = q.shift();
-      if (e[0] < G.tick) {
+      if (e[0] < G.clock()) {
         // a command for a tick we already played: this device fell out of step — replay from the start
         this.app.ui.toast('info', 'Usklađujem igru sa serverom…', { ms: 3000 });
         setTimeout(() => this.open(this.code), 300);
@@ -166,7 +166,7 @@ RA.Long = class {
     const G = this.app.G;
     if (!G || !G.long || this.replaying) return;
     const t0 = performance.now();
-    while (G.state === 'play' && G.tick < this.T - 1 && performance.now() - t0 < 30) {
+    while (G.state === 'play' && G.clock() < this.T - 1 && performance.now() - t0 < 30) {
       if (!this.applyDue(G)) return;
       G.step();
     }
@@ -243,11 +243,11 @@ Object.assign(RA.App.prototype, {
       if (this.G !== G) return;
       const t0 = performance.now();
       while (performance.now() - t0 < 60) {
-        if (G.tick >= LG.T - 1 || G.state !== 'play') return done();
+        if (G.clock() >= LG.T - 1 || G.state !== 'play') return done();
         if (!LG.applyDue(G)) return;
         G.step();
       }
-      msg.textContent = `Focus: sustižem server… ${Math.round((G.tick / Math.max(1, LG.T - 1)) * 100)}%`;
+      msg.textContent = `Focus: sustižem server… ${Math.round((G.clock() / Math.max(1, LG.T - 1)) * 100)}%`;
       setTimeout(slice, 0);
     };
     const done = () => {
@@ -275,7 +275,7 @@ Object.assign(RA.App.prototype, {
       else ui.longPick();
       if (r.set.lg && LG.startAt > Date.now()) ui.toast('info', `Conquest League ${r.set.lg}v${r.set.lg}: počinje za ${Math.ceil((LG.startAt - Date.now()) / 1000)} s — uništi protivnički tim.`, { ms: 6000 });
       if (G.state === 'over' && !G.continued) RA.focusDrop(r.code);
-      if (!r.set.fast) ui.toast('info', `Focus: 1 potez svakih ${Math.round(r.tickMs / 1000)} s — igra teče i kad nisi tu. Link: <b>${RA.esc(location.origin + '/long-' + r.code)}</b>`, { ms: 9000 });
+      if (!r.set.fast) ui.toast('info', `Focus: zlato i naredbe svake sekunde, vojske se pomjeraju svakih ${Math.round((r.tickMs * (r.sub || 1)) / 1000)} s — igra teče i kad nisi tu. Link: <b>${RA.esc(location.origin + '/long-' + r.code)}</b>`, { ms: 9000 });
     };
     slice();
   },
@@ -304,7 +304,7 @@ Object.assign(RA.UI.prototype, {
   /* "Dok te nije bilo": what happened to my state since I last looked (the record replays the same game) */
   focusReport(was, r) {
     const G = this.G, me = G.me, a = was.snap, b = RA.focusSnap(G, me);
-    const secs = ((G.tick - was.tick) * r.tickMs) / 1000;
+    const secs = ((G.tick - was.tick) * r.tickMs * (r.sub || 1)) / 1000;
     const pc = (v) => (v * 100).toFixed(1).replace('.', ',') + '%';
     const d = (x, y, f) => `${f(x)} → <b>${f(y)}</b>${y > x ? ' <span class="pos">▲</span>' : y < x ? ' <span class="neg">▼</span>' : ''}`;
     const ev = G.feed.filter((f) => f.tick > was.tick && (f.a === me.id || f.b === me.id)).slice(-10);
@@ -373,7 +373,7 @@ Object.assign(RA.UI.prototype, {
     const humans = G.P.filter((p) => p && p.alive && p.human);
     const set = L.rec.set, fast = set.fast === 1, T = set.teams || '0';
     const wait = Math.max(0, Math.ceil(((L.startAt || 0) - Date.now()) / 1000));
-    let h = this.head(fast ? 'Skirmish' : 'Focus igra', fast ? `Javna igra · igrača ${humans.length}${wait ? ` · počinje za <span id="longWait">${wait}</span> s` : ` · traje ${RA.fmtTime(G.tick / 10)}`}` : `Potez svakih ${Math.round(L.rec.tickMs / 1000)} s · igrača ${humans.length} · tik ${G.tick}`);
+    let h = this.head(fast ? 'Skirmish' : 'Focus igra', fast ? `Javna igra · igrača ${humans.length}${wait ? ` · počinje za <span id="longWait">${wait}</span> s` : ` · traje ${RA.fmtTime(G.tick / 10)}`}` : `Vojske se pomjeraju svakih ${Math.round((L.rec.tickMs * (L.rec.sub || 1)) / 1000)} s · igrača ${humans.length} · tik ${G.tick}`);
     h += fast ? '<p class="explain">Izaberi državu i preuzmi je. Ostale države vodi kompjuter; ko dođe kasnije, preuzme neku od njih.</p>' : `<p class="explain">Izaberi državu kojom upravlja kompjuter i preuzmi je. Kad zatvoriš igru, kompjuter igra za tebe dok se ne vratiš (preko istog linka).</p>`;
     // teams: pick one (the smaller one first); humans vs states: everybody on the players' team
     let team = 1;

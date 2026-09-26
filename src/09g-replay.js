@@ -77,7 +77,7 @@ Object.assign(RA.App.prototype, {
   /* one tick of the replay: the record's commands of this tick, then the step */
   replayStep(G) {
     const q = G.rp.q;
-    while (q.length && q[0][0] <= G.tick) RA.longApply(G, q.shift());
+    while (q.length && q[0][0] <= G.clock()) RA.longApply(G, q.shift());
     if (G.state === 'play') G.step(); // a command may have ended the game (a surrender) before this tick's step
   },
   /* jump to a tick: forward from here, or back = the game again from tick 0 (time-sliced, with the loading bar) */
@@ -85,7 +85,7 @@ Object.assign(RA.App.prototype, {
     let G = this.G;
     if (!G || !G.rp) return;
     t = Math.max(0, Math.min(G.rp.end, t | 0));
-    if (t < G.tick) {
+    if (t < G.clock()) {
       G = this.replayBuild(G.rp.rec);
       this.setGame(G);
       this.terr.reset(G);
@@ -96,10 +96,10 @@ Object.assign(RA.App.prototype, {
     const slice = () => {
       if (this.G !== G) return;
       const t0 = performance.now();
-      while (G.tick < t && G.state === 'play' && performance.now() - t0 < 60) this.replayStep(G);
-      if (G.tick >= t) while (G.rp.q.length && G.rp.q[0][0] <= G.tick) RA.longApply(G, G.rp.q.shift()); // this tick's commands too
-      if (G.tick < t && G.state === 'play') {
-        msg.textContent = `Premotavam… ${Math.round((G.tick / Math.max(1, t)) * 100)}%`;
+      while (G.clock() < t && G.state === 'play' && performance.now() - t0 < 60) this.replayStep(G);
+      if (G.clock() >= t) while (G.rp.q.length && G.rp.q[0][0] <= G.clock()) RA.longApply(G, G.rp.q.shift()); // this tick's commands too
+      if (G.clock() < t && G.state === 'play') {
+        msg.textContent = `Premotavam… ${Math.round((G.clock() / Math.max(1, t)) * 100)}%`;
         return setTimeout(slice, 0);
       }
       this.replaying = false;
@@ -165,10 +165,10 @@ Object.assign(RA.UI.prototype, {
         if (!(G && G.rp)) b.remove();
         return;
       }
-      if (!dragging) seek.value = G.tick;
-      const r = G.rp.rec, secs = (G.tick * r.tickMs) / 1000, all = (G.rp.end * r.tickMs) / 1000;
+      if (!dragging) seek.value = G.clock();
+      const r = G.rp.rec, secs = (G.clock() * r.tickMs) / 1000, all = (G.rp.end * r.tickMs) / 1000;
       time.textContent = `${RA.fmtTime(secs)} / ${RA.fmtTime(all)}`;
-      if (G.state !== 'play' || G.tick >= G.rp.end) (app.paused = true), syncPlay();
+      if (G.state !== 'play' || G.clock() >= G.rp.end) (app.paused = true), syncPlay();
     }, 250);
   },
 });

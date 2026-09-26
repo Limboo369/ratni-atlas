@@ -1312,6 +1312,11 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
 .code-row input { flex: none; width: 100%; min-width: 0; min-height: 44px; box-sizing: border-box; }
 .code-row .btn, .code-row .mini { width: 100%; justify-content: center; }
 
+/* toasts let taps through to the map: plain messages always, all of them while aiming (drones, missiles, building) —
+   only their buttons still take a tap */
+.toast.pass, #app.aiming .toast { pointer-events: none; }
+#app.aiming .toast button, .toast.pass button { pointer-events: auto; }
+
 #app{touch-action:none}#sheet,.screen{touch-action:pan-y}</style>
 <div id="app">
   <div id="map" aria-label="Karta Evrope"></div>
@@ -2089,6 +2094,10 @@ RA.CFG = {
   AE_COALITION: 50,
   NUKE_CRISIS: 300, // a nuclear hit: 30 s of economic crisis for the target (a minute made games drag on)
   INTEREST: 0.01 / 600, // on a player's saved gold, per tick (1% a minute), at most a quarter of the income
+  // Focus (a game of days, opts.sub): the world moves one step every `sub` seconds, but gold comes every second and
+  // orders are carried out within a second (Darko, 27. 9.: slow armies, a fast economy — build while there is peace)
+  FOCUS_GOLD: 20, // gold of one world step × days, spread over its seconds (a first factory in ~5 min)
+  FOCUS_BUILD: 0.6, // a building takes its Blitz time × this, in seconds
 };
 /* tax (plan 33): more gold ↔ slower army growth; every state starts at 'Srednji' */
 RA.TAX = [
@@ -2166,6 +2175,10 @@ RA.Game = class Game {
     this.tradeReqs = [];
     this.tships = [];
     this.tick = 0;
+    // Focus: a world step every `sub` seconds of the record's clock (st); the seconds between carry gold and orders
+    this.sub = opts.sub > 1 ? opts.sub | 0 : 0;
+    this.st = 0;
+    this.goldMul = this.sub ? RA.CFG.FOCUS_GOLD * (opts.days || 1) : 1;
     this.peaceUntil = opts.peace !== undefined ? Math.round(opts.peace * 10) : RA.CFG.PEACE;
     if (opts.gm === 'defcon') this.peaceUntil = Math.max(this.peaceUntil, RA.CFG.DEFCON_STEP); // DEFCON 5: no attacks
     this.era = opts.era || 'danas';
@@ -2380,17 +2393,22 @@ RA.Game = class Game {
     // the computer spends as it goes, and interest made its wars drag on
     const it = p.human && p.gold > 0 ? Math.min(p.gold * RA.CFG.INTEREST, g * 0.25) : 0;
     p.interest = it * 10;
+    // Focus: gold × FOCUS_GOLD × days per world step, a share of it every second (_subStep)
+    const mul = this.goldMul, sub = this.sub || 1;
     if (p.lord) {
       // a vassal's tribute
       const t = g * RA.CFG.TRIBUTE, L = this.P[p.lord];
       g -= t;
-      L.gold += t;
+      L.gold += (t * mul) / sub;
       L.tributeIn = (L.tributeIn || 0) + t;
       p.tribute = t * 10;
-    }
-    p.gold += g + it;
-    p.goldRate = (g + it) * 10 + (p.trainRate || 0) + (p.tradeRate || 0) + (p.tributeRate || 0) + (p.resRateIn || 0);
-    p.growRate = add * 10;
+      p.tSub = this.sub ? (t * mul) / sub : 0;
+    } else p.tSub = 0;
+    const gs = ((g + it) * mul) / sub;
+    p.gold += gs;
+    p.gSub = this.sub ? gs : 0;
+    p.goldRate = this.sub ? gs : (g + it) * 10 + (p.trainRate || 0) + (p.tradeRate || 0) + (p.tributeRate || 0) + (p.resRateIn || 0);
+    p.growRate = this.sub ? add / this.sub : add * 10; // per real second
   }
 
   /* ---------------- events ---------------- */
@@ -2964,6 +2982,13 @@ RA.Game = class Game {
     p.built[type]++;
     const W = this.map.W;
     const s = { id: this.structs.length, type, owner: pid, c, x: c % W, y: (c / W) | 0, doneAt: this.tick + RA.STRUCT[type].time, ready: false, cd: 0, dead: false, empUntil: 0 };
+    if (this.sub) {
+      // Focus: built in seconds (Blitz time × FOCUS_BUILD), not in slow world steps
+      const secs = Math.max(1, Math.ceil(RA.STRUCT[type].time * RA.CFG.FOCUS_BUILD));
+      s.startSt = this.st;
+      s.doneSt = this.st + secs;
+      s.doneAt = this.tick + Math.ceil(secs / this.sub);
+    }
     if (type === 'city') s.name = RA.CITY_NAMES[this.cityNameIdx++ % RA.CITY_NAMES.length];
     this.structs.push(s);
     this.structAt[c] = s.id;
@@ -3186,8 +3211,36 @@ RA.Game = class Game {
   }
 
   /* ---------------- main tick ---------------- */
+  /* the record's clock: Focus counts seconds (st), everything else counts ticks */
+  clock() {
+    return this.sub ? this.st : this.tick;
+  }
+  /* a second of a Focus game between two world steps: gold, and buildings that are done */
+  _subStep() {
+    const P = this.P;
+    for (let i = 1; i < P.length; i++) {
+      const p = P[i];
+      if (!p.alive || !p.spawned || !p.gSub) continue;
+      p.gold += p.gSub;
+      if (p.tSub && p.lord && this.P[p.lord]) this.P[p.lord].gold += p.tSub;
+    }
+    this._stepBuild();
+  }
+  _stepBuild() {
+    const P = this.P;
+    for (const s of this.structs) {
+      if (s.dead || s.ready || (s.doneSt ? this.st < s.doneSt : this.tick < s.doneAt)) continue;
+      s.ready = true;
+      const p = P[s.owner];
+      p.n[s.type]++;
+      if (s.type === 'fort') p.forts.push(s);
+      if (s.type === 'city') p.bcities.push(s);
+      this.tell(p, 'good', s.type === 'city' ? `Osnovan je grad ${s.name}.` : `${RA.STRUCT[s.type].name}: izgradnja završena.`, p.id, s.c);
+    }
+  }
   step() {
     if (this.state !== 'play') return;
+    if (this.sub && ++this.st % this.sub) return this._subStep();
     this.tick++;
     if (this.tick === this.peaceUntil) this.tellAll('info', '⚔ Mirno doba je završeno — od sada su dozvoljeni napadi na države!');
     this._season();
@@ -3217,16 +3270,7 @@ RA.Game = class Game {
     this._stepTrade();
     if (this.tick % 20 === 0) this.missiles = this.missiles.filter((m) => !m.done);
     // construction
-    for (const s of this.structs) {
-      if (!s.dead && !s.ready && this.tick >= s.doneAt) {
-        s.ready = true;
-        const p = P[s.owner];
-        p.n[s.type]++;
-        if (s.type === 'fort') p.forts.push(s);
-        if (s.type === 'city') p.bcities.push(s);
-        this.tell(p, 'good', s.type === 'city' ? `Osnovan je grad ${s.name}.` : `${RA.STRUCT[s.type].name}: izgradnja završena.`, p.id, s.c);
-      }
-    }
+    this._stepBuild();
     if (this.tick % 10 === 0) {
       this._expireAlliances();
       this._vassals();
@@ -7914,7 +7958,7 @@ RA.longGame = function (base, rec) {
   const s = rec.set, lg = [1, 2, 5].includes(s.lg) ? s.lg : 0;
   const start = lg ? 'slobodno' : 'granice';
   const gm = RA.regionMap(RA.eraMap(base, s.era, start), s.reg);
-  const G = RA.newGame(gm, { seed: rec.seed, difficulty: s.dif, cityStates: lg ? 0 : s.cs, peace: s.peace, era: s.era, start, gm: s.gm, res: s.res === 1, tree: s.tree === 1, noNuke: s.nn === 1, teams: lg ? '0' : s.teams || '0', allyWin: s.aw === 1, fast: s.fast === 1, days: s.days || 1, league: lg });
+  const G = RA.newGame(gm, { seed: rec.seed, difficulty: s.dif, cityStates: lg ? 0 : s.cs, peace: s.peace, era: s.era, start, gm: s.gm, res: s.res === 1, tree: s.tree === 1, noNuke: s.nn === 1, teams: lg ? '0' : s.teams || '0', allyWin: s.aw === 1, fast: s.fast === 1, days: s.days || 1, league: lg, sub: s.fast === 1 ? 0 : rec.sub | 0 });
   RA.startGame(G);
   if (lg) RA.leagueSetup(G, rec.slots);
   G.online = true;
@@ -8967,7 +9011,7 @@ RA.FxLayer = L.Layer.extend({
       }
       if (s.empUntil > G.tick) RA.drawZap(ctx, x, y, ss, now);
       if (!s.ready) {
-        const t = 1 - (s.doneAt - G.tick) / RA.STRUCT[s.type].time;
+        const t = s.doneSt ? (G.st - s.startSt) / Math.max(1, s.doneSt - s.startSt) : 1 - (s.doneAt - G.tick) / RA.STRUCT[s.type].time;
         ctx.beginPath();
         ctx.arc(x, y, ss * 0.75, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * RA.clamp(t, 0, 1));
         ctx.strokeStyle = '#ffffff';
@@ -10823,6 +10867,8 @@ RA.UI = class {
       for (const [k, v] of this.reqToasts) if (v === last) this.reqToasts.delete(k);
       last.remove();
     }
+    // a plain message never catches a tap meant for the map (on a phone the toasts cover part of it)
+    if (!(opts.cell >= 0) && !el.querySelector('button, a')) el.classList.add('pass');
     if (opts.cell >= 0) {
       el.style.cursor = 'pointer';
       el.addEventListener('click', (e) => {
@@ -11157,6 +11203,7 @@ RA.UI = class {
   }
   setMode(m) {
     this.mode = m;
+    document.getElementById('app').classList.toggle('aiming', !!m); // taps go through toasts to the map (style.css)
     const bar = this.$('modeBar');
     ['aArmy', 'aBuild', 'aLand', 'aStrike'].forEach((id) => this.$(id).classList.remove('on'));
     const ex = this.$('modeExtra');
@@ -11187,7 +11234,7 @@ RA.UI = class {
         ex.textContent = 'Lansiraj';
         ex.classList.add('fire');
         ex.hidden = false;
-      } else txt = `Dodirni metu: ${M.name} (krug ${rad} polja${M.range ? `, domet ${M.range} polja` : ''})`;
+      } else txt = `${m.fired ? `Poslano ${m.fired} · dodirni sljedeću metu ili Odustani — ` : 'Dodirni metu: '}${M.name} (krug ${rad} polja${M.range ? `, domet ${M.range} polja` : ''})`;
       btn = 'aStrike';
     } else if (m.kind === 'bomb') {
       txt = `Dodirni neprijateljsku zemlju: ${RA.airName('bomber')}`;
@@ -11225,7 +11272,7 @@ RA.UI = class {
       this.toast('info', 'MIRV cilja državu — dodirni tuđu teritoriju.');
       return;
     }
-    this.setMode({ kind: 'missile', type, aim: c });
+    this.setMode({ kind: 'missile', type, aim: c, fired: (this.mode && this.mode.fired) || 0 });
   }
   modeExtra() {
     const m = this.mode;
@@ -11349,14 +11396,18 @@ RA.UI = class {
     } else if (m.kind === 'missile') {
       // first tap aims (blast radius is drawn on the map), a second tap on the same spot or "Lansiraj" fires
       const W = G.map.W;
-      if (m.aim >= 0 && RA.dist((m.aim % W) - (c % W), ((m.aim / W) | 0) - ((c / W) | 0)) <= 1.5) {
+      // a drone flies at once on a tap (no aiming step), so a swarm is a few quick taps
+      if (RA.MISSILE[m.type].kind === 'drone') {
+        if (this.fireMissile(m.type, c)) this.ping(cp, false);
+        else this.ping(cp, true);
+      } else if (m.aim >= 0 && RA.dist((m.aim % W) - (c % W), ((m.aim / W) | 0) - ((c / W) | 0)) <= 1.5) {
         if (this.fireMissile(m.type, m.aim)) this.ping(cp, false);
         else this.ping(cp, true);
       } else this.aimMissile(m.type, c);
     } else if (m.kind === 'bomb') {
       this.ping(cp, false);
       this.act('bomb', [c]);
-      this.setMode(null);
+      this.setMode({ kind: 'bomb', fired: (m.fired || 0) + 1 }); // the next target, until "Odustani"
     } else if (m.kind === 'recruit') {
       const cc = this.nearestOwn(c, 300);
       if (cc < 0) return fail('Jedinicu postavi na svoju teritoriju (najbolje uz granicu).');
@@ -11751,7 +11802,8 @@ Object.assign(RA.UI.prototype, {
       return false;
     }
     this.act('mis', [type, c]);
-    this.setMode(null);
+    // the strike mode stays: tap the next target (4 drones for a tank = 4 taps), "Odustani" ends it (Darko, 27. 9.)
+    this.setMode({ kind: 'missile', type, aim: -1, fired: ((this.mode && this.mode.fired) || 0) + 1 });
     return true;
   },
   confirm(title, text, yes, fn) {
@@ -14859,7 +14911,7 @@ RA.App = class {
 
   /* the game being shown (and its era's names and city list for the renderer) */
   setGame(G) {
-    RA.TICK_REAL = G && G.long && this.long && this.long.rec ? this.long.rec.tickMs : 100; // Focus: timers in real time
+    RA.TICK_REAL = G && G.long && this.long && this.long.rec ? this.long.rec.tickMs * (this.long.rec.sub || 1) : 100; // Focus: timers in real time (a world step)
     this.G = G;
     this.ui.audio.setEra(G.era || 'danas');
     this.ui.feedReset();
@@ -16240,9 +16292,9 @@ RA.Long = class {
   /* apply the entries of this tick (before stepping) */
   applyDue(G) {
     const q = this.queue;
-    while (q.length && q[0][0] <= G.tick) {
+    while (q.length && q[0][0] <= G.clock()) {
       const e = q.shift();
-      if (e[0] < G.tick) {
+      if (e[0] < G.clock()) {
         // a command for a tick we already played: this device fell out of step — replay from the start
         this.app.ui.toast('info', 'Usklađujem igru sa serverom…', { ms: 3000 });
         setTimeout(() => this.open(this.code), 300);
@@ -16263,7 +16315,7 @@ RA.Long = class {
     const G = this.app.G;
     if (!G || !G.long || this.replaying) return;
     const t0 = performance.now();
-    while (G.state === 'play' && G.tick < this.T - 1 && performance.now() - t0 < 30) {
+    while (G.state === 'play' && G.clock() < this.T - 1 && performance.now() - t0 < 30) {
       if (!this.applyDue(G)) return;
       G.step();
     }
@@ -16340,11 +16392,11 @@ Object.assign(RA.App.prototype, {
       if (this.G !== G) return;
       const t0 = performance.now();
       while (performance.now() - t0 < 60) {
-        if (G.tick >= LG.T - 1 || G.state !== 'play') return done();
+        if (G.clock() >= LG.T - 1 || G.state !== 'play') return done();
         if (!LG.applyDue(G)) return;
         G.step();
       }
-      msg.textContent = `Focus: sustižem server… ${Math.round((G.tick / Math.max(1, LG.T - 1)) * 100)}%`;
+      msg.textContent = `Focus: sustižem server… ${Math.round((G.clock() / Math.max(1, LG.T - 1)) * 100)}%`;
       setTimeout(slice, 0);
     };
     const done = () => {
@@ -16372,7 +16424,7 @@ Object.assign(RA.App.prototype, {
       else ui.longPick();
       if (r.set.lg && LG.startAt > Date.now()) ui.toast('info', `Conquest League ${r.set.lg}v${r.set.lg}: počinje za ${Math.ceil((LG.startAt - Date.now()) / 1000)} s — uništi protivnički tim.`, { ms: 6000 });
       if (G.state === 'over' && !G.continued) RA.focusDrop(r.code);
-      if (!r.set.fast) ui.toast('info', `Focus: 1 potez svakih ${Math.round(r.tickMs / 1000)} s — igra teče i kad nisi tu. Link: <b>${RA.esc(location.origin + '/long-' + r.code)}</b>`, { ms: 9000 });
+      if (!r.set.fast) ui.toast('info', `Focus: zlato i naredbe svake sekunde, vojske se pomjeraju svakih ${Math.round((r.tickMs * (r.sub || 1)) / 1000)} s — igra teče i kad nisi tu. Link: <b>${RA.esc(location.origin + '/long-' + r.code)}</b>`, { ms: 9000 });
     };
     slice();
   },
@@ -16401,7 +16453,7 @@ Object.assign(RA.UI.prototype, {
   /* "Dok te nije bilo": what happened to my state since I last looked (the record replays the same game) */
   focusReport(was, r) {
     const G = this.G, me = G.me, a = was.snap, b = RA.focusSnap(G, me);
-    const secs = ((G.tick - was.tick) * r.tickMs) / 1000;
+    const secs = ((G.tick - was.tick) * r.tickMs * (r.sub || 1)) / 1000;
     const pc = (v) => (v * 100).toFixed(1).replace('.', ',') + '%';
     const d = (x, y, f) => `${f(x)} → <b>${f(y)}</b>${y > x ? ' <span class="pos">▲</span>' : y < x ? ' <span class="neg">▼</span>' : ''}`;
     const ev = G.feed.filter((f) => f.tick > was.tick && (f.a === me.id || f.b === me.id)).slice(-10);
@@ -16470,7 +16522,7 @@ Object.assign(RA.UI.prototype, {
     const humans = G.P.filter((p) => p && p.alive && p.human);
     const set = L.rec.set, fast = set.fast === 1, T = set.teams || '0';
     const wait = Math.max(0, Math.ceil(((L.startAt || 0) - Date.now()) / 1000));
-    let h = this.head(fast ? 'Skirmish' : 'Focus igra', fast ? `Javna igra · igrača ${humans.length}${wait ? ` · počinje za <span id="longWait">${wait}</span> s` : ` · traje ${RA.fmtTime(G.tick / 10)}`}` : `Potez svakih ${Math.round(L.rec.tickMs / 1000)} s · igrača ${humans.length} · tik ${G.tick}`);
+    let h = this.head(fast ? 'Skirmish' : 'Focus igra', fast ? `Javna igra · igrača ${humans.length}${wait ? ` · počinje za <span id="longWait">${wait}</span> s` : ` · traje ${RA.fmtTime(G.tick / 10)}`}` : `Vojske se pomjeraju svakih ${Math.round((L.rec.tickMs * (L.rec.sub || 1)) / 1000)} s · igrača ${humans.length} · tik ${G.tick}`);
     h += fast ? '<p class="explain">Izaberi državu i preuzmi je. Ostale države vodi kompjuter; ko dođe kasnije, preuzme neku od njih.</p>' : `<p class="explain">Izaberi državu kojom upravlja kompjuter i preuzmi je. Kad zatvoriš igru, kompjuter igra za tebe dok se ne vratiš (preko istog linka).</p>`;
     // teams: pick one (the smaller one first); humans vs states: everybody on the players' team
     let team = 1;
@@ -17015,7 +17067,7 @@ Object.assign(RA.App.prototype, {
   /* one tick of the replay: the record's commands of this tick, then the step */
   replayStep(G) {
     const q = G.rp.q;
-    while (q.length && q[0][0] <= G.tick) RA.longApply(G, q.shift());
+    while (q.length && q[0][0] <= G.clock()) RA.longApply(G, q.shift());
     if (G.state === 'play') G.step(); // a command may have ended the game (a surrender) before this tick's step
   },
   /* jump to a tick: forward from here, or back = the game again from tick 0 (time-sliced, with the loading bar) */
@@ -17023,7 +17075,7 @@ Object.assign(RA.App.prototype, {
     let G = this.G;
     if (!G || !G.rp) return;
     t = Math.max(0, Math.min(G.rp.end, t | 0));
-    if (t < G.tick) {
+    if (t < G.clock()) {
       G = this.replayBuild(G.rp.rec);
       this.setGame(G);
       this.terr.reset(G);
@@ -17034,10 +17086,10 @@ Object.assign(RA.App.prototype, {
     const slice = () => {
       if (this.G !== G) return;
       const t0 = performance.now();
-      while (G.tick < t && G.state === 'play' && performance.now() - t0 < 60) this.replayStep(G);
-      if (G.tick >= t) while (G.rp.q.length && G.rp.q[0][0] <= G.tick) RA.longApply(G, G.rp.q.shift()); // this tick's commands too
-      if (G.tick < t && G.state === 'play') {
-        msg.textContent = `Premotavam… ${Math.round((G.tick / Math.max(1, t)) * 100)}%`;
+      while (G.clock() < t && G.state === 'play' && performance.now() - t0 < 60) this.replayStep(G);
+      if (G.clock() >= t) while (G.rp.q.length && G.rp.q[0][0] <= G.clock()) RA.longApply(G, G.rp.q.shift()); // this tick's commands too
+      if (G.clock() < t && G.state === 'play') {
+        msg.textContent = `Premotavam… ${Math.round((G.clock() / Math.max(1, t)) * 100)}%`;
         return setTimeout(slice, 0);
       }
       this.replaying = false;
@@ -17103,10 +17155,10 @@ Object.assign(RA.UI.prototype, {
         if (!(G && G.rp)) b.remove();
         return;
       }
-      if (!dragging) seek.value = G.tick;
-      const r = G.rp.rec, secs = (G.tick * r.tickMs) / 1000, all = (G.rp.end * r.tickMs) / 1000;
+      if (!dragging) seek.value = G.clock();
+      const r = G.rp.rec, secs = (G.clock() * r.tickMs) / 1000, all = (G.rp.end * r.tickMs) / 1000;
       time.textContent = `${RA.fmtTime(secs)} / ${RA.fmtTime(all)}`;
-      if (G.state !== 'play' || G.tick >= G.rp.end) (app.paused = true), syncPlay();
+      if (G.state !== 'play' || G.clock() >= G.rp.end) (app.paused = true), syncPlay();
     }, 250);
   },
 });
@@ -17593,7 +17645,7 @@ Object.assign(RA.UI.prototype, {
   },
 });
 
-RA.BUILD = 'feb15dd1';
+RA.BUILD = '0af53d1f';
 new RA.App().boot();
 }
 function __raFallback(){

@@ -245,7 +245,8 @@ Object.assign(RA.UI.prototype, {
       return false;
     }
     this.act('mis', [type, c]);
-    this.setMode(null);
+    // the strike mode stays: tap the next target (4 drones for a tank = 4 taps), "Odustani" ends it (Darko, 27. 9.)
+    this.setMode({ kind: 'missile', type, aim: -1, fired: ((this.mode && this.mode.fired) || 0) + 1 });
     return true;
   },
   confirm(title, text, yes, fn) {

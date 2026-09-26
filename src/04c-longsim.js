@@ -7,7 +7,7 @@ RA.longGame = function (base, rec) {
   const s = rec.set, lg = [1, 2, 5].includes(s.lg) ? s.lg : 0;
   const start = lg ? 'slobodno' : 'granice';
   const gm = RA.regionMap(RA.eraMap(base, s.era, start), s.reg);
-  const G = RA.newGame(gm, { seed: rec.seed, difficulty: s.dif, cityStates: lg ? 0 : s.cs, peace: s.peace, era: s.era, start, gm: s.gm, res: s.res === 1, tree: s.tree === 1, noNuke: s.nn === 1, teams: lg ? '0' : s.teams || '0', allyWin: s.aw === 1, fast: s.fast === 1, days: s.days || 1, league: lg });
+  const G = RA.newGame(gm, { seed: rec.seed, difficulty: s.dif, cityStates: lg ? 0 : s.cs, peace: s.peace, era: s.era, start, gm: s.gm, res: s.res === 1, tree: s.tree === 1, noNuke: s.nn === 1, teams: lg ? '0' : s.teams || '0', allyWin: s.aw === 1, fast: s.fast === 1, days: s.days || 1, league: lg, sub: s.fast === 1 ? 0 : rec.sub | 0 });
   RA.startGame(G);
   if (lg) RA.leagueSetup(G, rec.slots);
   G.online = true;

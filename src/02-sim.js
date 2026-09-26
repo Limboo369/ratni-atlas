@@ -37,6 +37,10 @@ RA.CFG = {
   AE_COALITION: 50,
   NUKE_CRISIS: 300, // a nuclear hit: 30 s of economic crisis for the target (a minute made games drag on)
   INTEREST: 0.01 / 600, // on a player's saved gold, per tick (1% a minute), at most a quarter of the income
+  // Focus (a game of days, opts.sub): the world moves one step every `sub` seconds, but gold comes every second and
+  // orders are carried out within a second (Darko, 27. 9.: slow armies, a fast economy — build while there is peace)
+  FOCUS_GOLD: 20, // gold of one world step × days, spread over its seconds (a first factory in ~5 min)
+  FOCUS_BUILD: 0.6, // a building takes its Blitz time × this, in seconds
 };
 /* tax (plan 33): more gold ↔ slower army growth; every state starts at 'Srednji' */
 RA.TAX = [
@@ -114,6 +118,10 @@ RA.Game = class Game {
     this.tradeReqs = [];
     this.tships = [];
     this.tick = 0;
+    // Focus: a world step every `sub` seconds of the record's clock (st); the seconds between carry gold and orders
+    this.sub = opts.sub > 1 ? opts.sub | 0 : 0;
+    this.st = 0;
+    this.goldMul = this.sub ? RA.CFG.FOCUS_GOLD * (opts.days || 1) : 1;
     this.peaceUntil = opts.peace !== undefined ? Math.round(opts.peace * 10) : RA.CFG.PEACE;
     if (opts.gm === 'defcon') this.peaceUntil = Math.max(this.peaceUntil, RA.CFG.DEFCON_STEP); // DEFCON 5: no attacks
     this.era = opts.era || 'danas';
@@ -328,17 +336,22 @@ RA.Game = class Game {
     // the computer spends as it goes, and interest made its wars drag on
     const it = p.human && p.gold > 0 ? Math.min(p.gold * RA.CFG.INTEREST, g * 0.25) : 0;
     p.interest = it * 10;
+    // Focus: gold × FOCUS_GOLD × days per world step, a share of it every second (_subStep)
+    const mul = this.goldMul, sub = this.sub || 1;
     if (p.lord) {
       // a vassal's tribute
       const t = g * RA.CFG.TRIBUTE, L = this.P[p.lord];
       g -= t;
-      L.gold += t;
+      L.gold += (t * mul) / sub;
       L.tributeIn = (L.tributeIn || 0) + t;
       p.tribute = t * 10;
-    }
-    p.gold += g + it;
-    p.goldRate = (g + it) * 10 + (p.trainRate || 0) + (p.tradeRate || 0) + (p.tributeRate || 0) + (p.resRateIn || 0);
-    p.growRate = add * 10;
+      p.tSub = this.sub ? (t * mul) / sub : 0;
+    } else p.tSub = 0;
+    const gs = ((g + it) * mul) / sub;
+    p.gold += gs;
+    p.gSub = this.sub ? gs : 0;
+    p.goldRate = this.sub ? gs : (g + it) * 10 + (p.trainRate || 0) + (p.tradeRate || 0) + (p.tributeRate || 0) + (p.resRateIn || 0);
+    p.growRate = this.sub ? add / this.sub : add * 10; // per real second
   }
 
   /* ---------------- events ---------------- */
@@ -912,6 +925,13 @@ RA.Game = class Game {
     p.built[type]++;
     const W = this.map.W;
     const s = { id: this.structs.length, type, owner: pid, c, x: c % W, y: (c / W) | 0, doneAt: this.tick + RA.STRUCT[type].time, ready: false, cd: 0, dead: false, empUntil: 0 };
+    if (this.sub) {
+      // Focus: built in seconds (Blitz time × FOCUS_BUILD), not in slow world steps
+      const secs = Math.max(1, Math.ceil(RA.STRUCT[type].time * RA.CFG.FOCUS_BUILD));
+      s.startSt = this.st;
+      s.doneSt = this.st + secs;
+      s.doneAt = this.tick + Math.ceil(secs / this.sub);
+    }
     if (type === 'city') s.name = RA.CITY_NAMES[this.cityNameIdx++ % RA.CITY_NAMES.length];
     this.structs.push(s);
     this.structAt[c] = s.id;
@@ -1134,8 +1154,36 @@ RA.Game = class Game {
   }
 
   /* ---------------- main tick ---------------- */
+  /* the record's clock: Focus counts seconds (st), everything else counts ticks */
+  clock() {
+    return this.sub ? this.st : this.tick;
+  }
+  /* a second of a Focus game between two world steps: gold, and buildings that are done */
+  _subStep() {
+    const P = this.P;
+    for (let i = 1; i < P.length; i++) {
+      const p = P[i];
+      if (!p.alive || !p.spawned || !p.gSub) continue;
+      p.gold += p.gSub;
+      if (p.tSub && p.lord && this.P[p.lord]) this.P[p.lord].gold += p.tSub;
+    }
+    this._stepBuild();
+  }
+  _stepBuild() {
+    const P = this.P;
+    for (const s of this.structs) {
+      if (s.dead || s.ready || (s.doneSt ? this.st < s.doneSt : this.tick < s.doneAt)) continue;
+      s.ready = true;
+      const p = P[s.owner];
+      p.n[s.type]++;
+      if (s.type === 'fort') p.forts.push(s);
+      if (s.type === 'city') p.bcities.push(s);
+      this.tell(p, 'good', s.type === 'city' ? `Osnovan je grad ${s.name}.` : `${RA.STRUCT[s.type].name}: izgradnja završena.`, p.id, s.c);
+    }
+  }
   step() {
     if (this.state !== 'play') return;
+    if (this.sub && ++this.st % this.sub) return this._subStep();
     this.tick++;
     if (this.tick === this.peaceUntil) this.tellAll('info', '⚔ Mirno doba je završeno — od sada su dozvoljeni napadi na države!');
     this._season();
@@ -1165,16 +1213,7 @@ RA.Game = class Game {
     this._stepTrade();
     if (this.tick % 20 === 0) this.missiles = this.missiles.filter((m) => !m.done);
     // construction
-    for (const s of this.structs) {
-      if (!s.dead && !s.ready && this.tick >= s.doneAt) {
-        s.ready = true;
-        const p = P[s.owner];
-        p.n[s.type]++;
-        if (s.type === 'fort') p.forts.push(s);
-        if (s.type === 'city') p.bcities.push(s);
-        this.tell(p, 'good', s.type === 'city' ? `Osnovan je grad ${s.name}.` : `${RA.STRUCT[s.type].name}: izgradnja završena.`, p.id, s.c);
-      }
-    }
+    this._stepBuild();
     if (this.tick % 10 === 0) {
       this._expireAlliances();
       this._vassals();
