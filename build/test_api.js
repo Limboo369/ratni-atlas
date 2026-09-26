@@ -182,6 +182,13 @@ async function main() {
     r = await call('POST', '/api/campaign', { home: 'sarajevo', name: 'K', color: '#ff4fc3', xp: 1, tree: {}, done: {} }, { cookie: cookieAna });
     r = await call('GET', '/api/campaign', null, { cookie: cookieAna });
     check(r.j.campaign.color === '#ff4fc3', 'the dynasty colour is kept');
+    // reporting a player (plan 25)
+    r = await call('POST', '/api/report', { game: 'abc123', name: 'Zločko', reason: 'team' }, { cookie: cookieAna });
+    check(r.status === 200, 'a player can be reported');
+    r = await call('POST', '/api/report', { game: 'abc123', name: 'X', reason: 'spam' }, { cookie: cookieAna });
+    check(r.status === 400, 'an unknown report reason is refused');
+    r = await call('POST', '/api/report', { game: 'abc123', name: 'X', reason: 'team' }, { cookie: '' });
+    check(r.status === 401, 'reporting needs an account');
     // my Focus games on the account (plan 3)
     r = await call('POST', '/api/focus', { code: 'abc123', title: 'Srbija · Balkan · Danas', days: 3, tick: 900, at: 7, snap: { share: 0.12, cities: 4, troops: 5e5, gold: 1e5, allies: 1 } }, { cookie: cookieAna });
     check(r.status === 200, 'a Focus game saved on the account');

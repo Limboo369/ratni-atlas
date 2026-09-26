@@ -343,6 +343,26 @@ const check = (ok, msg) => {
   const deuId = RA.newGame(RA.eraMap(m, 'danas', 'granice'), { seed: 71, difficulty: 'srednje', cityStates: 0, peace: 0, era: 'danas', start: 'granice', gm: 'klasik' }).P.find((p) => p && p.iso === 'DEU').id;
   check(wAtk.has(deuId), `while away: "napadaj Njemačku" attacks Germany (${[...wAtk]})`);
   check(wAuto.size > 0 && wDef.size === 0, `while away: "kao kompjuter" starts wars (${wAuto.size}), "brani se" none (${wDef.size})`);
+  // Focus: a late player is protected from players (plan 21); players allied win together (plan 20)
+  {
+    RA.applyEra('danas');
+    const LR = { code: 'lllll1', seed: 5, set: { map: 'evropa', reg: 'balkan', era: 'danas', gm: 'klasik', dif: 'srednje', cs: 0, peace: 0, res: 0, tree: 0, nn: 0, days: 1, aw: 1 } };
+    const LG = RA.longGame(m, LR);
+    const nat = (iso) => LG.P.find((p) => p && p.iso === iso);
+    RA.longApply(LG, [0, 0, 'join', [nat('SRB').id, 'Ana']]);
+    for (let i = 0; i < 700; i++) LG.step();
+    const g0 = nat('BIH').gold;
+    RA.longApply(LG, [700, 1, 'join', [nat('BIH').id, 'Kasni']]);
+    const late = nat('BIH'), early = nat('SRB');
+    check(late.shieldUntil > LG.tick && late.gold > g0, `a late player: protected ${RA.dur(late.shieldUntil - LG.tick)} and +${Math.round(late.gold - g0)} gold`);
+    const e1 = LG.cmdAttack(early.id, late.cells[0], 0.3);
+    check(e1.err && /zaštićen/.test(e1.err), 'the protected player cannot be attacked by another player');
+    LG.cmdAttack(late.id, early.cells[0], 0.1);
+    check(!(late.shieldUntil > LG.tick), 'attacking a player ends the protection');
+    LG.makeAlliance(early, late);
+    const rt = LG._allyRoots();
+    check(rt.get(early.id) === rt.get(late.id), 'allied players are one side (allies win together)');
+  }
   // the server steps many Focus games in one process (deploy/game/simhost.js), switching the era tables between them:
   // a game stepped between steps of another era's game must stay the same as the game alone
   const rec = (code, era, seed) => ({ code, seed, set: { map: 'evropa', reg: 'balkan', era, gm: 'klasik', dif: 'srednje', cs: 0, peace: 0, res: 1, tree: 1, nn: 0 } });

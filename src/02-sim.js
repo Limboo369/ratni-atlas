@@ -816,6 +816,8 @@ RA.Game = class Game {
     const tp = this.P[this.owner[tgtCell]];
     if (tp && this.isFriendly(p, tp)) return 'ally';
     if (tp && this.tick < this.peaceUntil) return 'peace';
+    const shB = this.shieldErr(p, tp);
+    if (shB) return shB;
     if (p.boats >= RA.CFG.BOAT_MAX) return 'max';
     troops = Math.floor(Math.min(troops, p.troops));
     if (troops < 50) return 'troops';
@@ -1263,11 +1265,11 @@ RA.Game = class Game {
   _checkWin() {
     if (this.winner && !this.continued) return;
     const tot = this.landTotal();
-    // sides: a co-op team plays as one side
-    const sides = new Map();
+    // sides: a co-op team plays as one side; with opts.allyWin players in a military alliance win together
+    const sides = new Map(), root = this.opts.allyWin ? this._allyRoots() : null;
     for (const p of this.P) {
       if (!p || !p.alive || !p.spawned) continue;
-      const k = p.team ? -p.team : p.id;
+      const k = p.team ? -p.team : root && root.has(p.id) ? -1000 - root.get(p.id) : p.id;
       let sd = sides.get(k);
       if (!sd) sides.set(k, (sd = { area: 0, best: null, real: false }));
       sd.area += p.area;
@@ -1289,12 +1291,71 @@ RA.Game = class Game {
       }
       return;
     }
+    // online: every other player surrendered or fell — the last side of players wins
+    if (this.online && this.humans && this.humans.length > 1) {
+      const act = this.activeHumans(), ks = new Set(act.map((p) => (p.team ? -p.team : root && root.has(p.id) ? -1000 - root.get(p.id) : p.id)));
+      if (act.length && ks.size === 1 && this.P.some((p) => p && p.human && (p.surr || !p.alive))) {
+        this.winner = act.sort((a, b) => b.area - a.area)[0];
+        this.state = 'over';
+        this._history();
+        this.tellAll('over', `Pobjednik: ${this.winner.name}`, this.winner.id);
+        return;
+      }
+    }
     if (best.area / tot >= this.winShare() || (realSides === 1 && best.real)) {
       this.winner = best.best;
       this.state = 'over';
       this._history();
       this.tellAll('over', `Pobjednik: ${best.best.name}`, best.best.id);
     }
+  }
+  /* the players still in an online game (not surrendered, not gone) */
+  activeHumans() {
+    return this.P.filter((p) => p && p.alive && p.human && !p.surr);
+  }
+  _endVotes() {
+    const hs = this.activeHumans();
+    if (!hs.length || this.state !== 'play' || !hs.every((p) => p.endVote)) return;
+    this.tellAll('info', 'Svi igrači su glasali za kraj igre.', 0);
+    this._decide();
+  }
+  /* end now: the side with the most land wins */
+  _decide() {
+    const tot = this.landTotal(), root = this.opts.allyWin ? this._allyRoots() : null, sides = new Map();
+    for (const p of this.P) {
+      if (!p || !p.alive || !p.spawned || p.type === 'bot') continue;
+      const k = p.team ? -p.team : root && root.has(p.id) ? -1000 - root.get(p.id) : p.id;
+      const sd = sides.get(k) || { area: 0, best: null };
+      sd.area += p.area;
+      if (!sd.best || p.area > sd.best.area) sd.best = p;
+      sides.set(k, sd);
+    }
+    let best = null;
+    for (const sd of sides.values()) if (!best || sd.area > best.area) best = sd;
+    if (!best || !tot) return;
+    this.winner = best.best;
+    this.state = 'over';
+    this._history();
+    this.tellAll('over', `Pobjednik: ${best.best.name}`, best.best.id);
+  }
+  /* a late player in a Focus game (plan 21) is safe from other players until it attacks one (or the time is up) */
+  shieldErr(p, T) {
+    if (!T || !p || !p.human || !T.human) return null;
+    if (T.shieldUntil > this.tick) return `${T.name} je tek ušao/la u igru — zaštićen/a od napada igrača još ${RA.dur(T.shieldUntil - this.tick)}.`;
+    p.shieldUntil = 0; // attacking a player ends my own protection
+    return null;
+  }
+  /* players joined by military alliances (each group keyed by its smallest id) */
+  _allyRoots() {
+    const hs = this.P.filter((p) => p && p.alive && p.human), root = new Map();
+    for (const p of hs) root.set(p.id, p.id);
+    const find = (i) => (root.get(i) === i ? i : find(root.get(i)));
+    for (const p of hs) for (const [q] of p.allies) if (root.has(q)) {
+      const a = find(p.id), b = find(q);
+      if (a !== b) root.set(Math.max(a, b), Math.min(a, b));
+    }
+    for (const p of hs) root.set(p.id, find(p.id));
+    return root;
   }
   /* checksum of the whole game, compared between devices in online play */
   hash() {
@@ -1351,6 +1412,8 @@ RA.Game = class Game {
     const T = tid ? this.P[tid] : null;
     if (T && this.isFriendly(p, T)) return { err: `${T.name} ti je saveznik.` };
     if (T && this.tick < this.peaceUntil) return { err: `Mirno doba: napadi na države počinju za ${this.peaceLeft()}. Do tada zauzimaj slobodnu zemlju i sklapaj saveze.` };
+    const sh = this.shieldErr(p, T);
+    if (sh) return { err: sh };
     const troops = p.troops * ratio;
     if (troops < 1) return { err: 'Nemaš dovoljno vojske.' };
     if (this.hasBorderWith(p, tid) || (T && p.human && this._viaOf(p, T))) {
@@ -1377,6 +1440,6 @@ RA.Game = class Game {
       peace: 'Mirno doba — brodom zasad možeš samo na slobodnu obalu.',
       zone: 'Ta obala je u radioaktivnoj zoni.',
       dead: 'Nisi u igri.',
-    })[r] || (r && r.startsWith('DEFCON') ? r : 'Brod ne može isploviti.');
+    })[r] || (r && r.length > 12 ? r : 'Brod ne može isploviti.');
   }
 };

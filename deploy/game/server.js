@@ -106,6 +106,14 @@ wss.on('connection', (ws, req) => {
   if (wss.clients.size > MAX_SOCKETS || (perIp.get(ip) || 0) >= PER_IP) return ws.close(1013, 'busy');
   perIp.set(ip, (perIp.get(ip) || 0) + 1);
   const q = new URL(req.url, 'http://x').searchParams;
+  if (q.has('lobby')) {
+    ws.on('close', () => {
+      const c = (perIp.get(ip) || 1) - 1;
+      if (c > 0) perIp.set(ip, c);
+      else perIp.delete(ip);
+    });
+    return long.lobby(ws); // Skirmish: the list of public games
+  }
   if (q.has('long')) {
     ws.alive = true;
     ws.on('pong', () => (ws.alive = true));

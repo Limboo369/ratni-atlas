@@ -56,6 +56,13 @@ const SCHEMA = [
      at timestamptz not null default now(),
      data text not null,
      primary key (user_id, code))`,
+  `create table if not exists reports (
+     id bigserial primary key,
+     at timestamptz not null default now(),
+     by_user bigint references users(id) on delete set null,
+     game text not null,
+     name text not null,
+     reason text not null)`,
   `create table if not exists achievements (
      user_id bigint not null references users(id) on delete cascade,
      id text not null,
@@ -216,6 +223,16 @@ module.exports = function statsRoutes(db, sessionUser) {
         if (!u) return [401, { e: 'Nisi prijavljen.' }];
         const q = await db.query('select data from focus where user_id = $1 order by at desc limit 12', [u.id]);
         return { games: q.rows.map((r) => JSON.parse(r.data)) };
+      },
+      // a player reported in an online game (plan 25): kept for the owner to look at
+      'POST /api/report': async (req, b) => {
+        const u = await sessionUser(req);
+        if (!u) return [401, { e: 'Nisi prijavljen.' }];
+        if (!['team', 'name', 'cheat', 'grief'].includes(b.reason)) return [400, { e: 'Nevažeća prijava.' }];
+        const n = await db.query("select count(*)::int as n from reports where by_user = $1 and at > now() - interval '1 hour'", [u.id]);
+        if (n.rows[0].n >= 10) return [429, { e: 'Previše prijava — pokušaj kasnije.' }];
+        await db.query('insert into reports (by_user, game, name, reason) values ($1, $2, $3, $4)', [u.id, String(b.game || '').slice(0, 40), String(b.name || '').slice(0, 30), b.reason]);
+        return { ok: true };
       },
       'GET /api/campaign': async (req) => {
         const u = await sessionUser(req);

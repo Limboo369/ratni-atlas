@@ -285,6 +285,18 @@ async def main():
         await tap_cell(bc)
         await page.wait_for_timeout(300)
         nu = await ev('() => window.__ra.G.me.units.length')
+        if nu == 0:
+            # the spot may be taken (a toast over it, a building on it): once more on another cell deep in my land
+            print('recruit retry', await ev('document.getElementById("toasts").textContent.slice(0, 120)'))
+            await ev('window.__ra.ui.armySheet()')
+            await page.wait_for_timeout(400)
+            await page.click('[data-rec="inf"]')
+            bc = await ev('() => { const me = window.__ra.G.me; return me.cells[me.tiles >> 2]; }')
+            await ev(f'() => window.__ra.lmap.setView(window.__ra.map.latLngOfCell({bc}), 6.4)')
+            await page.wait_for_timeout(300)
+            await tap_cell(bc)
+            await page.wait_for_timeout(300)
+            nu = await ev('() => window.__ra.G.me.units.length')
         check(nu == 1, 'infantry recruited by tapping')
         await steps(40)
         await page.wait_for_timeout(300)

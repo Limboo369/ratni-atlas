@@ -645,6 +645,8 @@ RA.NUKE = RA.MISSILE;
     if (M.na) return 'To oružje ne postoji u ovom dobu.';
     if (c < 0) return 'Nevažeća meta.';
     if (this.opts.noNuke && (M.kind === 'nuke' || M.kind === 'mirv')) return 'Nuklearno oružje je isključeno u ovoj igri.';
+    const shM = this.shieldErr(p, this.P[this.owner[c]]);
+    if (shM) return shM;
     const de = this.defconErr(M.kind === 'nuke' || M.kind === 'mirv' ? 'nuke' : 'conv');
     if (de) return de;
     if (this.tick < this.peaceUntil) return `Mirno doba — udari su dozvoljeni za ${this.peaceLeft()}.`;
@@ -1048,6 +1050,8 @@ RA.NUKE = RA.MISSILE;
     return best;
   };
   P.launchPara = function (pid, c, troops) {
+    const shP = c >= 0 && this.shieldErr(this.P[pid], this.P[this.owner[c]]);
+    if (shP) return shP;
     const p = this.P[pid];
     if (!p || !p.alive) return 'Nisi u igri.';
     if (!RA.ERA.para || RA.STRUCT.airport.na) return 'U ovom dobu nema padobranaca.';

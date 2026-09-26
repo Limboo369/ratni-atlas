@@ -281,6 +281,7 @@ Object.assign(RA.UI.prototype, {
       if (!(O.human && !O.ai) && !G.vassalErr(me, O)) b.push(this.mini('Vazal', `data-do="vas:${O.id}"`, 'ok', false, 'flag'));
     }
     if (O.type !== 'bot') b.push(this.mini('Pregovaraj', `data-do="deal:${O.id}"`, '', false, 'trade'));
+    if (G.online && O.human && O !== me) b.push(this.mini('Prijavi', `data-do="rep:${O.id}"`, 'warn'));
     if (me.trade.has(O.id)) b.push(this.mini('Prekini trgovinu', `data-do="endT:${O.id}"`, 'warn'));
     else b.push(this.mini('Trgovina', `data-do="propT:${O.id}"`, '', me.trade.size >= C.TRADE_MAX || O.trade.size >= C.TRADE_MAX || G.atWar(me, O), 'trade'));
     return b.join('');
@@ -294,6 +295,7 @@ Object.assign(RA.UI.prototype, {
       return o && this.dealSheet(o.from, { give: o.want, want: o.give, reply: o.id });
     }
     if (act === 'deal') return this.dealSheet(id);
+    if (act === 'rep') return this.reportSheet(this.G.P[id]);
     const G = this.G, me = G.me, O = G.P[id];
     if (!me || !O) return;
     const map = { accA: ['aRes', [id, 1]], decA: ['aRes', [id, 0]], accT: ['tRes', [id, 1]], decT: ['tRes', [id, 0]], propA: ['aReq', [id]], propT: ['tReq', [id]], send: ['give', [id, this.ratio]], help: ['help', [id]], vas: ['vas', [id]], ext: ['ext', [id]], endT: ['tEnd', [id]] };
@@ -776,7 +778,12 @@ Object.assign(RA.UI.prototype, {
       <button class="btn" data-m="sfx"><span class="t">Zvučni efekti</span><span class="r" style="font-size:14px">${this.audio.s.sfx ? 'Uključeno' : 'Isključeno'}</span></button>
       <button class="btn" data-m="music"><span class="t">Muzika</span><span class="r" style="font-size:14px">${this.audio.s.music ? 'Uključeno' : 'Isključeno'}</span></button>
       <button class="btn" data-m="rulers"><span class="t">Komentari vladara</span><span class="r" style="font-size:14px">${this.settings.rulers === false ? 'Isključeno' : 'Uključeno'}</span></button>
-      ${G.long ? `<button class="btn" data-m="stance"><span><span class="t">Dok me nema: ${RA.esc(this.stanceName())}</span><br><span class="d">Šta kompjuter radi s tvojom državom kad zatvoriš igru</span></span></button>
+      ${G.online && G.me && !G.me.surr && (!G.long || (this.app.long.rec && this.app.long.rec.set.fast)) ? (() => {
+        const hs = G.activeHumans(), v = hs.filter((p) => p.endVote).length;
+        return `<button class="btn" data-m="endv"><span><span class="t">${G.me.endVote ? 'Povuci glas za kraj' : 'Ponudi kraj igre'}</span><br><span class="d">Glasova ${v}/${hs.length} — kad glasaju svi, pobjeđuje ko ima najviše kopna</span></span></button>
+        <button class="btn danger" data-m="surr"><span><span class="t">Predaja</span><br><span class="d">Tvoju državu preuzima kompjuter, partija je izgubljena</span></span></button>`;
+      })() : ''}
+      ${G.long && !(this.app.long.rec && this.app.long.rec.set.fast) ? `<button class="btn" data-m="stance"><span><span class="t">Dok me nema: ${RA.esc(this.stanceName())}</span><br><span class="d">Šta kompjuter radi s tvojom državom kad zatvoriš igru</span></span></button>
       <button class="btn" data-m="home"><span><span class="t">Glavni meni</span><br><span class="d">Igra teče dalje, kompjuter vodi tvoju državu — vratiš se preko „Nastavi Focus igru”</span></span></button>
       <button class="btn danger" data-m="leave"><span><span class="t">Napusti igru</span><br><span class="d">Zauvijek — progres ove Focus igre se briše</span></span></button>` : `<button class="btn danger" data-m="new"><span><span class="t">${G.online ? 'Napusti online igru' : 'Nova igra'}</span><br><span class="d">${G.online ? 'Tvoju državu preuzima kompjuter' : 'Trenutna partija se prekida'}</span></span></button>`}
     </div>
@@ -806,6 +813,11 @@ Object.assign(RA.UI.prototype, {
         } else if (m === 'tips') {
           this.noTips = !this.noTips;
           this.closeSheet();
+        } else if (m === 'endv') {
+          this.act('endv', [G.me.endVote ? 0 : 1]);
+          this.closeSheet();
+        } else if (m === 'surr') {
+          this.confirm('Predati se?', 'Tvoju državu preuzima kompjuter i partija se računa kao izgubljena.', 'Predaja', () => this.act('surr', []));
         } else if (m === 'stance') {
           this.stanceSheet();
         } else if (m === 'home') {

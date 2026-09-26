@@ -17,8 +17,11 @@ const crypto = require('crypto');
 
 const DIR = process.env.LONG_DIR || path.join(__dirname, 'long-data');
 const TICK_MS = +process.env.LONG_TICK_MS || 5000;
+// Skirmish (public online games, plan phase 15): the same server clock at Blitz speed, a countdown before the start
+const FAST_MS = +process.env.LONG_FAST_MS || 100;
+const WAIT_S = +process.env.SKIRMISH_WAIT || 60;
 const MAX_GAMES = 300, MAX_SLOTS = 8, MAX_BYTES = 4e6, IDLE_DAYS = 30;
-const KINDS = new Set(['atk', 'boat', 'para', 'build', 'rec', 'mv', 'dis', 'mis', 'mob', 'ret', 'aReq', 'aRes', 'tReq', 'tRes', 'ext', 'brk', 'tEnd', 'give', 'help', 'rcl', 'png', 'qm', 'tax', 'vas', 'loan', 'pay', 'str', 'buy', 'air', 'bomb', 'tech', 'stance', 'offer', 'offerRes']);
+const KINDS = new Set(['atk', 'boat', 'para', 'build', 'rec', 'mv', 'dis', 'mis', 'mob', 'ret', 'aReq', 'aRes', 'tReq', 'tRes', 'ext', 'brk', 'tEnd', 'give', 'help', 'rcl', 'png', 'qm', 'tax', 'vas', 'loan', 'pay', 'str', 'buy', 'air', 'bomb', 'tech', 'stance', 'offer', 'offerRes', 'surr', 'endv']);
 const SET_KEYS = { map: /^[a-z]{2,12}$/, reg: /^[a-z0-9_-]{2,24}$/, era: /^[a-z0-9]{2,12}$/, gm: /^[a-z]{2,8}$/, dif: /^[a-z]{3,8}$/ };
 
 const games = new Map(); // code → {rec, file, socks: Set, bytes, dirty}
@@ -83,7 +86,7 @@ function simAsk(code) {
   });
 }
 
-const tickOf = (rec) => Math.floor((Date.now() - rec.start) / rec.tickMs);
+const tickOf = (rec) => Math.max(0, Math.floor((Date.now() - rec.start) / rec.tickMs));
 const pub = (rec) => ({ code: rec.code, set: rec.set, seed: rec.seed, tickMs: rec.tickMs, start: rec.start, slots: rec.slots.map((s) => ({ name: s.name })), cmds: rec.cmds });
 const str = (v, n) => (typeof v === 'string' ? v.replace(/[\u0000-\u001f]/g, '').slice(0, n) : '');
 function save(gm) {
@@ -127,7 +130,60 @@ function cleanSet(s) {
   out.tree = s.tree === 1 ? 1 : 0;
   out.nn = s.nn === 1 ? 1 : 0;
   out.days = [1, 3, 7].includes(s.days) ? s.days : 1; // Focus: ~1, 3 or 7 days (the clock turns slower)
+  out.pub = s.pub === 1 ? 1 : 0; // listed in Skirmish
+  out.fast = s.fast === 1 ? 1 : 0; // Blitz speed (else Focus days)
+  out.teams = ['0', '2', '3', 'hvs'].includes(s.teams) ? s.teams : '0'; // free for all, 2 or 3 teams, humans vs states
+  out.aw = s.aw === 1 ? 1 : 0; // allies (players) win together
   return out;
+}
+
+function newCode() {
+  let code;
+  do code = crypto.randomBytes(6).toString('base64').replace(/[^a-z0-9]/gi, '').toLowerCase().slice(0, 6);
+  while (code.length < 6 || games.has(code));
+  return code;
+}
+function newGame(set) {
+  const now = Date.now();
+  const rec = { code: newCode(), set, seed: crypto.randomInt(1, 1e9), tickMs: set.fast ? FAST_MS : TICK_MS * set.days, start: now + (set.pub ? WAIT_S * 1000 : 0), slots: [], cmds: [], created: now, seen: now };
+  const g = { rec, socks: new Set(), bytes: 2, dirty: false };
+  games.set(rec.code, g);
+  simSend({ add: rec });
+  save(g);
+  return g;
+}
+
+/* Skirmish lobby (/ws?lobby=1): the public games, every 2 s; while somebody looks, there is always a Blitz game to join */
+const lobbies = new Set();
+const ERAS = ['danas', 'ww2', 'ww1', 'napoleon', 'hladni', 'srednji', 'rim'];
+function publicList() {
+  const out = [];
+  for (const gm of games.values()) {
+    const r = gm.rec;
+    if (!r.set.pub || r.over) continue;
+    out.push({ code: r.code, set: r.set, humans: r.slots.filter((s) => s.uid).length, max: MAX_SLOTS, tick: tickOf(r), wait: Math.max(0, r.start - Date.now()), tickMs: r.tickMs });
+  }
+  return out.sort((a, b) => b.wait - a.wait || a.tick - b.tick);
+}
+function ensurePublic() {
+  const open = publicList().some((g) => g.set.fast && g.humans < g.max && g.tick < 3000);
+  if (open || games.size >= MAX_GAMES) return;
+  const era = ERAS[crypto.randomInt(0, ERAS.length)];
+  newGame({ map: 'evropa', reg: 'evropa', era, gm: 'klasik', dif: 'srednje', cs: 0, peace: 60, res: 0, tree: 0, nn: 0, days: 1, pub: 1, fast: 1, teams: '0', aw: 0 });
+}
+function lobby(ws) {
+  lobbies.add(ws);
+  const tell = () => {
+    ensurePublic();
+    if (ws.readyState === 1) ws.send(JSON.stringify({ t: 'list', games: publicList() }));
+  };
+  tell();
+  const iv = setInterval(tell, 2000);
+  ws.on('close', () => {
+    clearInterval(iv);
+    lobbies.delete(ws);
+  });
+  ws.on('message', () => {});
 }
 
 /* one connection; q = the URL's search params */
@@ -156,7 +212,7 @@ function handle(ws, q, account) {
     }
     gm.rec.seen = Date.now();
     save(gm);
-    send({ t: 'rec', rec: pub(gm.rec), T: tickOf(gm.rec), you: slot });
+    send({ t: 'rec', rec: pub(gm.rec), T: tickOf(gm.rec), you: slot, wait: Math.max(0, gm.rec.start - Date.now()) });
   }
   ws.on('message', (buf) => {
     if (Date.now() - t0 > 1000) (t0 = Date.now()), (n = 0);
@@ -193,11 +249,7 @@ function handle(ws, q, account) {
         let code;
         do code = crypto.randomBytes(6).toString('base64').replace(/[^a-z0-9]/gi, '').toLowerCase().slice(0, 6);
         while (code.length < 6 || games.has(code));
-        const rec = { code, set, seed: crypto.randomInt(1, 1e9), tickMs: TICK_MS * set.days, start: Date.now(), slots: [], cmds: [], created: Date.now(), seen: Date.now() };
-        const g = { rec, socks: new Set(), bytes: 2, dirty: false };
-        games.set(code, g);
-        simSend({ add: rec });
-        return enter(g, name);
+        return enter(newGame(set), name);
       }
       const g = /^[a-z0-9]{6}$/.test(want || '') && games.get(want);
       if (!g) return send({ t: 'err', e: 'Ta Focus igra ne postoji (ili je istekla).', gone: 1 });
@@ -214,7 +266,7 @@ function handle(ws, q, account) {
         gm.rec.slots.push({ uid, name: str(m.join[1], 18) || 'Igrač', away: false });
         slot = gm.rec.slots.length - 1;
       }
-      add(gm, slot, 'join', [id, gm.rec.slots[slot].name]);
+      add(gm, slot, 'join', [id, gm.rec.slots[slot].name, Number.isInteger(m.join[2]) && m.join[2] >= 0 && m.join[2] <= 3 ? m.join[2] : 0]);
       return send({ t: 'you', you: slot });
     }
     if (m.sim === 1) {
@@ -261,7 +313,21 @@ setInterval(() => {
     if (T !== gm.lastT && gm.socks.size) cast(gm, { t: 'T', T });
     gm.lastT = T;
   }
-}, 1000);
+}, Math.min(1000, FAST_MS));
+// public Blitz games: gone 10 min after the end, or when nobody is in them any more
+setInterval(() => {
+  const now = Date.now();
+  for (const [code, gm] of games) {
+    const r = gm.rec;
+    if (!r.set.fast || gm.socks.size) continue;
+    const idle = now - (r.seen || r.created);
+    if ((r.over && idle > 600e3) || (r.start < now && idle > 1800e3)) {
+      games.delete(code);
+      simSend({ drop: code });
+      fs.unlink(path.join(DIR, code + '.json'), () => {});
+    }
+  }
+}, 60e3);
 setInterval(() => {
   const old = Date.now() - IDLE_DAYS * 86400e3;
   for (const [code, gm] of games) if ((gm.rec.seen || gm.rec.created) < old && !gm.socks.size) {
@@ -286,4 +352,4 @@ function flush() {
   }
 }
 
-module.exports = { handle, games, flush, TICK_MS, simAsk };
+module.exports = { handle, lobby, games, flush, TICK_MS, simAsk };

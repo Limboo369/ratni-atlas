@@ -39,9 +39,9 @@ RA.Long = class {
     return ((inp && inp.value) || this.app.ui.settings.name || '').trim().slice(0, 18) || 'Igrač';
   }
   /* a new long game with the start screen's settings */
-  create() {
+  create(extra) {
     const s = this.app.ui.playSet(); // Focus preset or Make your choice
-    const set = { map: s.map, reg: s.region, era: s.era, gm: s.gm === 'br' ? 'klasik' : s.gm, dif: s.difficulty, cs: s.cityStates, peace: s.peace, res: s.res ? 1 : 0, tree: s.tree ? 1 : 0, nn: s.noNuke ? 1 : 0, days: [1, 3, 7].includes(s.days) ? s.days : 1 };
+    const set = Object.assign({ map: s.map, reg: s.region, era: s.era, gm: s.gm === 'br' ? 'klasik' : s.gm, dif: s.difficulty, cs: s.cityStates, peace: s.peace, res: s.res ? 1 : 0, tree: s.tree ? 1 : 0, nn: s.noNuke ? 1 : 0, days: [1, 3, 7].includes(s.days) ? s.days : 1 }, extra || {});
     this.connect('new', { create: { set, name: this.name(), uid: this.uid() } });
   }
   open(code) {
@@ -100,8 +100,8 @@ RA.Long = class {
     RA.focusDrop(this.code);
     this.left = this.code; // no snapshot may put it back
   }
-  join(id) {
-    if (this.ws && this.ws.readyState === 1) this.ws.send(JSON.stringify({ join: [id, this.name()] }));
+  join(id, team) {
+    if (this.ws && this.ws.readyState === 1) this.ws.send(JSON.stringify({ join: [id, this.name(), team | 0] }));
   }
   onMsg(m) {
     const ui = this.app.ui;
@@ -118,6 +118,7 @@ RA.Long = class {
     else if (m.t === 'rec') {
       this.T = m.T | 0;
       this.you = m.you;
+      this.startAt = Date.now() + (m.wait || 0); // a public game waits for its countdown
       if (this.rec && this.rec.code === m.rec.code) {
         // a reconnect: only what we missed
         for (const e of m.rec.cmds.slice(this.known)) this.addEntry(e);
@@ -129,7 +130,7 @@ RA.Long = class {
       this.queue = m.rec.cmds.slice();
       this.known = m.rec.cmds.length;
       if (/^https?:$/.test(location.protocol)) history.replaceState(null, '', '/long-' + this.code);
-      if (!RA.focusGet(this.code) && this.you >= 0) RA.focusPut(this.code, {});
+      if (!m.rec.set.fast && !RA.focusGet(this.code) && this.you >= 0) RA.focusPut(this.code, {});
       this.app.startLong(this);
     }
   }
@@ -169,7 +170,7 @@ RA.Long = class {
       G.step();
     }
     if (G.state === 'over' && !G.continued) RA.focusDrop(this.code); // the game is finished: nothing to continue
-    else if (t0 - (this.snapAt || 0) > 10000) {
+    else if (!this.rec.set.fast && t0 - (this.snapAt || 0) > 10000) {
       this.snapAt = t0;
       this.snap();
     }
@@ -271,7 +272,7 @@ Object.assign(RA.App.prototype, {
         if (was && was.snap && G.tick - was.tick > 20) ui.focusReport(was, r);
       } else ui.longPick();
       if (G.state === 'over' && !G.continued) RA.focusDrop(r.code);
-      ui.toast('info', `Focus: 1 potez svakih ${Math.round(r.tickMs / 1000)} s — igra teče i kad nisi tu. Link: <b>${RA.esc(location.origin + '/long-' + r.code)}</b>`, { ms: 9000 });
+      if (!r.set.fast) ui.toast('info', `Focus: 1 potez svakih ${Math.round(r.tickMs / 1000)} s — igra teče i kad nisi tu. Link: <b>${RA.esc(location.origin + '/long-' + r.code)}</b>`, { ms: 9000 });
     };
     slice();
   },
@@ -279,8 +280,13 @@ Object.assign(RA.App.prototype, {
     const G = this.G, ui = this.ui, s = this.long.rec.set;
     G.me = p;
     this.long.left = '';
+    if (s.fast) return this.longShow(p); // Skirmish: no Focus list
     const reg = RA.REGIONS.find((x) => x.id === s.reg && x.map === s.map);
     RA.focusPut(this.long.code, { title: `${p.name} · ${reg ? reg.name : RA.mapInfo(s.map).all} · ${RA.eraById(s.era).short}`, days: s.days || 1, tick: G.tick, snap: RA.focusSnap(G, p) });
+    this.longShow(p);
+  },
+  longShow(p) {
+    const G = this.G, ui = this.ui;
     ui.watching = false;
     ui.closeSheet();
     ui.showPlayUI(true);
@@ -362,15 +368,36 @@ Object.assign(RA.UI.prototype, {
     if (!G || !G.long) return;
     const nats = G.P.filter((p) => p && p.alive && p.type === 'nation' && !p.human).sort((a, b) => b.area - a.area);
     const humans = G.P.filter((p) => p && p.alive && p.human);
-    let h = this.head('Focus igra', `Potez svakih ${Math.round(L.rec.tickMs / 1000)} s · igrača ${humans.length} · tik ${G.tick}`);
-    h += `<p class="explain">Izaberi državu kojom upravlja kompjuter i preuzmi je. Kad zatvoriš igru, kompjuter igra za tebe dok se ne vratiš (preko istog linka).</p>`;
+    const set = L.rec.set, fast = set.fast === 1, T = set.teams || '0';
+    const wait = Math.max(0, Math.ceil(((L.startAt || 0) - Date.now()) / 1000));
+    let h = this.head(fast ? 'Skirmish' : 'Focus igra', fast ? `Javna igra · igrača ${humans.length}${wait ? ` · počinje za <span id="longWait">${wait}</span> s` : ` · traje ${RA.fmtTime(G.tick / 10)}`}` : `Potez svakih ${Math.round(L.rec.tickMs / 1000)} s · igrača ${humans.length} · tik ${G.tick}`);
+    h += fast ? '<p class="explain">Izaberi državu i preuzmi je. Ostale države vodi kompjuter; ko dođe kasnije, preuzme neku od njih.</p>' : `<p class="explain">Izaberi državu kojom upravlja kompjuter i preuzmi je. Kad zatvoriš igru, kompjuter igra za tebe dok se ne vratiš (preko istog linka).</p>`;
+    // teams: pick one (the smaller one first); humans vs states: everybody on the players' team
+    let team = 1;
+    if (T === '2' || T === '3') {
+      const n = +T, cnt = (t) => humans.filter((p) => p.team === t).length;
+      for (let t = 2; t <= n; t++) if (cnt(t) < cnt(team)) team = t;
+      h += `<div class="field"><span class="lab">Tvoj tim</span><div class="seg" id="teamSeg">${Array.from({ length: n }, (_, i) => `<button data-v="${i + 1}" aria-pressed="${i + 1 === team}">Tim ${i + 1} · ${cnt(i + 1)}</button>`).join('')}</div></div>`;
+    } else if (T === 'hvs') h += '<p class="note">Ljudi protiv država: svi igrači su jedan tim.</p>';
     h += `<div class="btns"><button class="btn" data-copy><span class="t">Kopiraj link igre</span><br><span class="d">${RA.esc(location.origin + '/long-' + L.code)}</span></button></div><div class="list">`;
     for (const p of nats.slice(0, 40)) h += `<div class="prow wide"><span class="sw" style="background:${p.hex}"></span><div class="pn"><div class="nm">${RA.esc(p.name)}</div><div class="d">${((p.area / G.landTotal()) * 100).toFixed(1).replace('.', ',')}% kopna · vojska ${RA.fmt(p.troops)}</div></div><div class="bb">${this.mini('Preuzmi', `data-take="${p.id}"`, 'ok')}</div></div>`;
     h += '</div>';
     if (humans.length) h += `<p class="note">Igrači: ${humans.map((p) => RA.esc(p.nick || p.name) + ' (' + RA.esc(p.name) + ')').join(', ')}</p>`;
     this.openSheet(h, (s) => {
+      s.querySelectorAll('#teamSeg button').forEach((b) => (b.onclick = () => {
+        team = +b.dataset.v;
+        s.querySelectorAll('#teamSeg button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+      }));
+      if (wait) {
+        clearInterval(this._waitIv);
+        this._waitIv = setInterval(() => {
+          const el = document.getElementById('longWait');
+          if (!el) return clearInterval(this._waitIv);
+          el.textContent = Math.max(0, Math.ceil(((L.startAt || 0) - Date.now()) / 1000));
+        }, 500);
+      }
       s.querySelectorAll('[data-take]').forEach((b) => (b.onclick = () => {
-        L.join(+b.dataset.take);
+        L.join(+b.dataset.take, team);
         this.toast('info', 'Preuzimaš državu — potvrda stiže sa sljedećim potezom servera.', { ms: 4000 });
         b.disabled = true;
       }));

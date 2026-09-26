@@ -1396,7 +1396,7 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
           <button class="command-config solo-only" id="configBtn" aria-haspopup="dialog" aria-controls="operationDialog"><span><span class="command-config-label">POSTAVKE OPERACIJE</span><span id="operationSummary">Evropa · Klasično · Srednje</span></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16M9 3v6M15 9v6M8 15v6"/></svg></button>
           <div class="online-pane online-only" id="onlinePane">
             <button class="online-card" id="leagueBtn"><b>Conquest League</b><small>Rangirane partije · 1v1 · 2v2 · 5v5 · uskoro</small></button>
-            <button class="online-card" id="skirmishBtn"><b>Skirmish</b><small>Javne igre s ljudima · uskoro</small></button>
+            <button class="online-card" id="skirmishBtn"><b>Skirmish</b><small>Javne igre s ljudima · uđi u otvorenu ili napravi svoju</small></button>
             <button class="online-card" id="onlineToggle" aria-expanded="false" aria-controls="onlineBox"><b>Privatna soba</b><small>Igraj s prijateljima preko linka</small></button>
           </div>
           <div class="command-secondary"><button id="howBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 .5c0 1.5-2.5 1.5-2.5 3.5M12 16v1"/></svg>Kako se igra</button><button id="campBtn" class="solo-only"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M5 21V4l7 3 7-3v12l-7 3-7-3"/></svg>Kampanja</button><button id="tutBtn" class="solo-only"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3 9l9-5 9 5-9 5-9-5z"/><path d="M7 11.5V16c0 1.5 2.2 3 5 3s5-1.5 5-3v-4.5M21 9v6"/></svg>Tutorijal</button><button id="leaderboardBtn" hidden aria-haspopup="dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 4h8v6a4 4 0 0 1-8 0V4ZM8 6H4v3a4 4 0 0 0 4 4m8-7h4v3a4 4 0 0 1-4 4M12 14v6m-4 0h8"/></svg>Ljestvica</button></div>
@@ -2823,6 +2823,8 @@ RA.Game = class Game {
     const tp = this.P[this.owner[tgtCell]];
     if (tp && this.isFriendly(p, tp)) return 'ally';
     if (tp && this.tick < this.peaceUntil) return 'peace';
+    const shB = this.shieldErr(p, tp);
+    if (shB) return shB;
     if (p.boats >= RA.CFG.BOAT_MAX) return 'max';
     troops = Math.floor(Math.min(troops, p.troops));
     if (troops < 50) return 'troops';
@@ -3270,11 +3272,11 @@ RA.Game = class Game {
   _checkWin() {
     if (this.winner && !this.continued) return;
     const tot = this.landTotal();
-    // sides: a co-op team plays as one side
-    const sides = new Map();
+    // sides: a co-op team plays as one side; with opts.allyWin players in a military alliance win together
+    const sides = new Map(), root = this.opts.allyWin ? this._allyRoots() : null;
     for (const p of this.P) {
       if (!p || !p.alive || !p.spawned) continue;
-      const k = p.team ? -p.team : p.id;
+      const k = p.team ? -p.team : root && root.has(p.id) ? -1000 - root.get(p.id) : p.id;
       let sd = sides.get(k);
       if (!sd) sides.set(k, (sd = { area: 0, best: null, real: false }));
       sd.area += p.area;
@@ -3296,12 +3298,71 @@ RA.Game = class Game {
       }
       return;
     }
+    // online: every other player surrendered or fell — the last side of players wins
+    if (this.online && this.humans && this.humans.length > 1) {
+      const act = this.activeHumans(), ks = new Set(act.map((p) => (p.team ? -p.team : root && root.has(p.id) ? -1000 - root.get(p.id) : p.id)));
+      if (act.length && ks.size === 1 && this.P.some((p) => p && p.human && (p.surr || !p.alive))) {
+        this.winner = act.sort((a, b) => b.area - a.area)[0];
+        this.state = 'over';
+        this._history();
+        this.tellAll('over', `Pobjednik: ${this.winner.name}`, this.winner.id);
+        return;
+      }
+    }
     if (best.area / tot >= this.winShare() || (realSides === 1 && best.real)) {
       this.winner = best.best;
       this.state = 'over';
       this._history();
       this.tellAll('over', `Pobjednik: ${best.best.name}`, best.best.id);
     }
+  }
+  /* the players still in an online game (not surrendered, not gone) */
+  activeHumans() {
+    return this.P.filter((p) => p && p.alive && p.human && !p.surr);
+  }
+  _endVotes() {
+    const hs = this.activeHumans();
+    if (!hs.length || this.state !== 'play' || !hs.every((p) => p.endVote)) return;
+    this.tellAll('info', 'Svi igrači su glasali za kraj igre.', 0);
+    this._decide();
+  }
+  /* end now: the side with the most land wins */
+  _decide() {
+    const tot = this.landTotal(), root = this.opts.allyWin ? this._allyRoots() : null, sides = new Map();
+    for (const p of this.P) {
+      if (!p || !p.alive || !p.spawned || p.type === 'bot') continue;
+      const k = p.team ? -p.team : root && root.has(p.id) ? -1000 - root.get(p.id) : p.id;
+      const sd = sides.get(k) || { area: 0, best: null };
+      sd.area += p.area;
+      if (!sd.best || p.area > sd.best.area) sd.best = p;
+      sides.set(k, sd);
+    }
+    let best = null;
+    for (const sd of sides.values()) if (!best || sd.area > best.area) best = sd;
+    if (!best || !tot) return;
+    this.winner = best.best;
+    this.state = 'over';
+    this._history();
+    this.tellAll('over', `Pobjednik: ${best.best.name}`, best.best.id);
+  }
+  /* a late player in a Focus game (plan 21) is safe from other players until it attacks one (or the time is up) */
+  shieldErr(p, T) {
+    if (!T || !p || !p.human || !T.human) return null;
+    if (T.shieldUntil > this.tick) return `${T.name} je tek ušao/la u igru — zaštićen/a od napada igrača još ${RA.dur(T.shieldUntil - this.tick)}.`;
+    p.shieldUntil = 0; // attacking a player ends my own protection
+    return null;
+  }
+  /* players joined by military alliances (each group keyed by its smallest id) */
+  _allyRoots() {
+    const hs = this.P.filter((p) => p && p.alive && p.human), root = new Map();
+    for (const p of hs) root.set(p.id, p.id);
+    const find = (i) => (root.get(i) === i ? i : find(root.get(i)));
+    for (const p of hs) for (const [q] of p.allies) if (root.has(q)) {
+      const a = find(p.id), b = find(q);
+      if (a !== b) root.set(Math.max(a, b), Math.min(a, b));
+    }
+    for (const p of hs) root.set(p.id, find(p.id));
+    return root;
   }
   /* checksum of the whole game, compared between devices in online play */
   hash() {
@@ -3358,6 +3419,8 @@ RA.Game = class Game {
     const T = tid ? this.P[tid] : null;
     if (T && this.isFriendly(p, T)) return { err: `${T.name} ti je saveznik.` };
     if (T && this.tick < this.peaceUntil) return { err: `Mirno doba: napadi na države počinju za ${this.peaceLeft()}. Do tada zauzimaj slobodnu zemlju i sklapaj saveze.` };
+    const sh = this.shieldErr(p, T);
+    if (sh) return { err: sh };
     const troops = p.troops * ratio;
     if (troops < 1) return { err: 'Nemaš dovoljno vojske.' };
     if (this.hasBorderWith(p, tid) || (T && p.human && this._viaOf(p, T))) {
@@ -3384,7 +3447,7 @@ RA.Game = class Game {
       peace: 'Mirno doba — brodom zasad možeš samo na slobodnu obalu.',
       zone: 'Ta obala je u radioaktivnoj zoni.',
       dead: 'Nisi u igri.',
-    })[r] || (r && r.startsWith('DEFCON') ? r : 'Brod ne može isploviti.');
+    })[r] || (r && r.length > 12 ? r : 'Brod ne može isploviti.');
   }
 };
 
@@ -4035,6 +4098,8 @@ RA.NUKE = RA.MISSILE;
     if (M.na) return 'To oružje ne postoji u ovom dobu.';
     if (c < 0) return 'Nevažeća meta.';
     if (this.opts.noNuke && (M.kind === 'nuke' || M.kind === 'mirv')) return 'Nuklearno oružje je isključeno u ovoj igri.';
+    const shM = this.shieldErr(p, this.P[this.owner[c]]);
+    if (shM) return shM;
     const de = this.defconErr(M.kind === 'nuke' || M.kind === 'mirv' ? 'nuke' : 'conv');
     if (de) return de;
     if (this.tick < this.peaceUntil) return `Mirno doba — udari su dozvoljeni za ${this.peaceLeft()}.`;
@@ -4438,6 +4503,8 @@ RA.NUKE = RA.MISSILE;
     return best;
   };
   P.launchPara = function (pid, c, troops) {
+    const shP = c >= 0 && this.shieldErr(this.P[pid], this.P[this.owner[c]]);
+    if (shP) return shP;
     const p = this.P[pid];
     if (!p || !p.alive) return 'Nisi u igri.';
     if (!RA.ERA.para || RA.STRUCT.airport.na) return 'U ovom dobu nema padobranaca.';
@@ -4960,7 +5027,7 @@ Object.assign(RA.CFG, {
    can replay exactly the same inputs on every device (lockstep). Args come from other players' devices:
    they are validated here and never trusted. */
 
-RA.CMD_KINDS = ['atk', 'boat', 'para', 'build', 'rec', 'mv', 'dis', 'mis', 'mob', 'ret', 'aReq', 'aRes', 'tReq', 'tRes', 'ext', 'brk', 'tEnd', 'give', 'help', 'ai', 'back', 'rcl', 'png', 'qm', 'tax', 'vas', 'loan', 'pay', 'str', 'buy', 'air', 'bomb', 'tech', 'stance', 'offer', 'offerRes'];
+RA.CMD_KINDS = ['atk', 'boat', 'para', 'build', 'rec', 'mv', 'dis', 'mis', 'mob', 'ret', 'aReq', 'aRes', 'tReq', 'tRes', 'ext', 'brk', 'tEnd', 'give', 'help', 'ai', 'back', 'rcl', 'png', 'qm', 'tax', 'vas', 'loan', 'pay', 'str', 'buy', 'air', 'bomb', 'tech', 'stance', 'offer', 'offerRes', 'surr', 'endv'];
 /* pings on the map and quick messages, seen by the sender's allies and team (plan item 57) */
 RA.PINGS = [
   { name: 'Napadni ovdje', icon: 'attack', color: '#ff5d5d' },
@@ -5072,6 +5139,19 @@ RA.QUICK_MSGS = ['Napadam!', 'Treba mi pomoć!', 'Pazi, napadaju nas!', 'Idem ta
         return typeof a[0] === 'string' ? this.buyAir(pid, a[0]) : 'Nepoznata vrsta aviona.';
       case 'bomb':
         return this.bombRaid(pid, cell(a[0]));
+      case 'surr':
+        // surrender (online): the computer takes my state, I have lost
+        if (!this.online || p.surr) return 'Predaja je samo u online igri.';
+        p.surr = true;
+        if (!p.ai) RA.AI.init(this, p);
+        this.tellAll('info', `${p.nick || p.name} se predao/la.`, pid);
+        return { surr: true };
+      case 'endv':
+        // a vote to end the game (online): when every player still in it agrees, the biggest side wins now
+        if (!this.online) return 'Samo u online igri.';
+        p.endVote = a[0] !== 0;
+        this._endVotes();
+        return { endv: p.endVote };
       case 'offer':
         // offers and demands (02l-offers.js): [to, what I give, what I want]
         return player(a[0]) ? this.makeOffer(pid, a[0], a[1], a[2]) : 'Nevažeća država.';
@@ -7676,7 +7756,7 @@ RA.applyEra('danas');
 RA.longGame = function (base, rec) {
   const s = rec.set;
   const gm = RA.regionMap(RA.eraMap(base, s.era, 'granice'), s.reg);
-  const G = RA.newGame(gm, { seed: rec.seed, difficulty: s.dif, cityStates: s.cs, peace: s.peace, era: s.era, start: 'granice', gm: s.gm, res: s.res === 1, tree: s.tree === 1, noNuke: s.nn === 1 });
+  const G = RA.newGame(gm, { seed: rec.seed, difficulty: s.dif, cityStates: s.cs, peace: s.peace, era: s.era, start: 'granice', gm: s.gm, res: s.res === 1, tree: s.tree === 1, noNuke: s.nn === 1, teams: s.teams || '0', allyWin: s.aw === 1, fast: s.fast === 1, days: s.days || 1 });
   RA.startGame(G);
   G.online = true;
   G.long = true;
@@ -7686,7 +7766,7 @@ RA.longGame = function (base, rec) {
 };
 
 /* a player takes over a computer state (deterministic: every device does the same at the same tick) */
-RA.longJoin = function (G, slot, id, name) {
+RA.longJoin = function (G, slot, id, name, team) {
   const p = Number.isInteger(id) ? G.P[id] : null;
   const had = G.P[G.slotPid[slot]];
   if (!p || !p.alive || p.human || p.type !== 'nation' || (had && had.alive)) return null;
@@ -7696,13 +7776,30 @@ RA.longJoin = function (G, slot, id, name) {
   p.nick = typeof name === 'string' && name ? name.slice(0, 18) : 'Igrač';
   G.slotPid[slot] = p.id;
   if (!G.humans.includes(p)) G.humans.push(p);
+  // a late player in a Focus game (plan 21): up to ~3 h safe from other players (until it attacks one), and gold and an
+  // army to catch up with a game that has been running
+  if (!G.opts.fast && G.tick > 600) {
+    p.shieldUntil = G.tick + Math.round(2160 / (G.opts.days || 1));
+    p.gold += Math.min(2e6, G.tick * 40);
+    const ns = G.P.filter((q) => q && q.alive && q.type === 'nation' && q !== p);
+    const avg = ns.reduce((a, q) => a + q.troops, 0) / Math.max(1, ns.length);
+    p.troops = Math.max(p.troops, Math.min(p.maxT || Infinity, avg * 0.8));
+    G.tell(p, 'good', `Kasni ulazak: zaštita od napada igrača ${RA.dur(p.shieldUntil - G.tick)} (dok ne napadneš igrača) i pomoć od ${RA.fmt(Math.min(2e6, G.tick * 40))} zlata.`, p.id);
+  }
+  // teams (Skirmish): humans vs states = one team of all players; 2 / 3 teams = the team the player chose
+  const T = G.opts.teams;
+  if (T && T !== '0') {
+    const n = T === 'hvs' ? 1 : +T;
+    p.team = T === 'hvs' ? 1 : Number.isInteger(team) && team >= 1 && team <= n ? team : 1;
+    RA.makeTeam(G, G.humans.filter((h) => h.alive && h.team === p.team), p.team);
+  }
   return p;
 };
 
 /* one entry of the record [tick, slot, kind, args]: {pid, joined, r} (joined: the state taken over) */
 RA.longApply = function (G, e) {
   const [, slot, kind, args] = e;
-  if (kind === 'join') return { pid: 0, joined: RA.longJoin(G, slot, args[0], args[1]) };
+  if (kind === 'join') return { pid: 0, joined: RA.longJoin(G, slot, args[0], args[1], args[2]) };
   const pid = G.slotPid[slot];
   if (!pid) return { pid: 0 };
   return { pid, r: G.exec(pid, kind, Array.isArray(args) ? args : []) };
@@ -9761,7 +9858,7 @@ RA.UI = class {
       this.needAccount(() => {});
     });
     $('leagueBtn').onclick = () => this.needAccount(() => this.toast('info', 'Conquest League stiže uskoro: rangirane partije 1v1, 2v2 i 5v5.', { ms: 5000 }));
-    $('skirmishBtn').onclick = () => this.needAccount(() => this.toast('info', 'Skirmish stiže uskoro: javne igre s ljudima.', { ms: 5000 }));
+    $('skirmishBtn').onclick = () => this.needAccount(() => this.skirmishSheet());
     this._seg('daysSeg', String([1, 3, 7].includes(this.settings.days) ? this.settings.days : 1), (v) => (this.settings.days = +v));
     this._seg('cPaceSeg', this.settings.cPace === 'focus' ? 'focus' : 'blitz', (v) => {
       this.settings.cPace = v;
@@ -10658,7 +10755,8 @@ RA.UI = class {
     const T = (t) => RA.dur(Math.max(0, t));
     if (me && me.alive && G.state === 'play') {
       if (G.opts.camp && G.opts.camp.type !== 'free' && this.campProg) pills.push(['goal', `🎯 ${this.campProg}`]);
-      if (G.long && this.app.long.rec) pills.push(['calm', `Focus · potez svakih ${Math.round(this.app.long.rec.tickMs / 1000)} s · igrača ${G.humans.filter((p) => p.alive).length}`]);
+      if (G.long && this.app.long.rec && this.app.long.rec.set.fast) pills.push(['calm', `Skirmish · igrača ${G.humans.filter((p) => p.alive && !p.surr).length}`]);
+      else if (G.long && this.app.long.rec) pills.push(['calm', `Focus · potez svakih ${Math.round(this.app.long.rec.tickMs / 1000)} s · igrača ${G.humans.filter((p) => p.alive).length}`]);
       const dc = G.defcon();
       if (dc) {
         const next = (6 - dc) * C.DEFCON_STEP;
@@ -11363,6 +11461,7 @@ Object.assign(RA.UI.prototype, {
       if (!(O.human && !O.ai) && !G.vassalErr(me, O)) b.push(this.mini('Vazal', `data-do="vas:${O.id}"`, 'ok', false, 'flag'));
     }
     if (O.type !== 'bot') b.push(this.mini('Pregovaraj', `data-do="deal:${O.id}"`, '', false, 'trade'));
+    if (G.online && O.human && O !== me) b.push(this.mini('Prijavi', `data-do="rep:${O.id}"`, 'warn'));
     if (me.trade.has(O.id)) b.push(this.mini('Prekini trgovinu', `data-do="endT:${O.id}"`, 'warn'));
     else b.push(this.mini('Trgovina', `data-do="propT:${O.id}"`, '', me.trade.size >= C.TRADE_MAX || O.trade.size >= C.TRADE_MAX || G.atWar(me, O), 'trade'));
     return b.join('');
@@ -11376,6 +11475,7 @@ Object.assign(RA.UI.prototype, {
       return o && this.dealSheet(o.from, { give: o.want, want: o.give, reply: o.id });
     }
     if (act === 'deal') return this.dealSheet(id);
+    if (act === 'rep') return this.reportSheet(this.G.P[id]);
     const G = this.G, me = G.me, O = G.P[id];
     if (!me || !O) return;
     const map = { accA: ['aRes', [id, 1]], decA: ['aRes', [id, 0]], accT: ['tRes', [id, 1]], decT: ['tRes', [id, 0]], propA: ['aReq', [id]], propT: ['tReq', [id]], send: ['give', [id, this.ratio]], help: ['help', [id]], vas: ['vas', [id]], ext: ['ext', [id]], endT: ['tEnd', [id]] };
@@ -11858,7 +11958,12 @@ Object.assign(RA.UI.prototype, {
       <button class="btn" data-m="sfx"><span class="t">Zvučni efekti</span><span class="r" style="font-size:14px">${this.audio.s.sfx ? 'Uključeno' : 'Isključeno'}</span></button>
       <button class="btn" data-m="music"><span class="t">Muzika</span><span class="r" style="font-size:14px">${this.audio.s.music ? 'Uključeno' : 'Isključeno'}</span></button>
       <button class="btn" data-m="rulers"><span class="t">Komentari vladara</span><span class="r" style="font-size:14px">${this.settings.rulers === false ? 'Isključeno' : 'Uključeno'}</span></button>
-      ${G.long ? `<button class="btn" data-m="stance"><span><span class="t">Dok me nema: ${RA.esc(this.stanceName())}</span><br><span class="d">Šta kompjuter radi s tvojom državom kad zatvoriš igru</span></span></button>
+      ${G.online && G.me && !G.me.surr && (!G.long || (this.app.long.rec && this.app.long.rec.set.fast)) ? (() => {
+        const hs = G.activeHumans(), v = hs.filter((p) => p.endVote).length;
+        return `<button class="btn" data-m="endv"><span><span class="t">${G.me.endVote ? 'Povuci glas za kraj' : 'Ponudi kraj igre'}</span><br><span class="d">Glasova ${v}/${hs.length} — kad glasaju svi, pobjeđuje ko ima najviše kopna</span></span></button>
+        <button class="btn danger" data-m="surr"><span><span class="t">Predaja</span><br><span class="d">Tvoju državu preuzima kompjuter, partija je izgubljena</span></span></button>`;
+      })() : ''}
+      ${G.long && !(this.app.long.rec && this.app.long.rec.set.fast) ? `<button class="btn" data-m="stance"><span><span class="t">Dok me nema: ${RA.esc(this.stanceName())}</span><br><span class="d">Šta kompjuter radi s tvojom državom kad zatvoriš igru</span></span></button>
       <button class="btn" data-m="home"><span><span class="t">Glavni meni</span><br><span class="d">Igra teče dalje, kompjuter vodi tvoju državu — vratiš se preko „Nastavi Focus igru”</span></span></button>
       <button class="btn danger" data-m="leave"><span><span class="t">Napusti igru</span><br><span class="d">Zauvijek — progres ove Focus igre se briše</span></span></button>` : `<button class="btn danger" data-m="new"><span><span class="t">${G.online ? 'Napusti online igru' : 'Nova igra'}</span><br><span class="d">${G.online ? 'Tvoju državu preuzima kompjuter' : 'Trenutna partija se prekida'}</span></span></button>`}
     </div>
@@ -11888,6 +11993,11 @@ Object.assign(RA.UI.prototype, {
         } else if (m === 'tips') {
           this.noTips = !this.noTips;
           this.closeSheet();
+        } else if (m === 'endv') {
+          this.act('endv', [G.me.endVote ? 0 : 1]);
+          this.closeSheet();
+        } else if (m === 'surr') {
+          this.confirm('Predati se?', 'Tvoju državu preuzima kompjuter i partija se računa kao izgubljena.', 'Predaja', () => this.act('surr', []));
         } else if (m === 'stance') {
           this.stanceSheet();
         } else if (m === 'home') {
@@ -15666,9 +15776,9 @@ RA.Long = class {
     return ((inp && inp.value) || this.app.ui.settings.name || '').trim().slice(0, 18) || 'Igrač';
   }
   /* a new long game with the start screen's settings */
-  create() {
+  create(extra) {
     const s = this.app.ui.playSet(); // Focus preset or Make your choice
-    const set = { map: s.map, reg: s.region, era: s.era, gm: s.gm === 'br' ? 'klasik' : s.gm, dif: s.difficulty, cs: s.cityStates, peace: s.peace, res: s.res ? 1 : 0, tree: s.tree ? 1 : 0, nn: s.noNuke ? 1 : 0, days: [1, 3, 7].includes(s.days) ? s.days : 1 };
+    const set = Object.assign({ map: s.map, reg: s.region, era: s.era, gm: s.gm === 'br' ? 'klasik' : s.gm, dif: s.difficulty, cs: s.cityStates, peace: s.peace, res: s.res ? 1 : 0, tree: s.tree ? 1 : 0, nn: s.noNuke ? 1 : 0, days: [1, 3, 7].includes(s.days) ? s.days : 1 }, extra || {});
     this.connect('new', { create: { set, name: this.name(), uid: this.uid() } });
   }
   open(code) {
@@ -15727,8 +15837,8 @@ RA.Long = class {
     RA.focusDrop(this.code);
     this.left = this.code; // no snapshot may put it back
   }
-  join(id) {
-    if (this.ws && this.ws.readyState === 1) this.ws.send(JSON.stringify({ join: [id, this.name()] }));
+  join(id, team) {
+    if (this.ws && this.ws.readyState === 1) this.ws.send(JSON.stringify({ join: [id, this.name(), team | 0] }));
   }
   onMsg(m) {
     const ui = this.app.ui;
@@ -15745,6 +15855,7 @@ RA.Long = class {
     else if (m.t === 'rec') {
       this.T = m.T | 0;
       this.you = m.you;
+      this.startAt = Date.now() + (m.wait || 0); // a public game waits for its countdown
       if (this.rec && this.rec.code === m.rec.code) {
         // a reconnect: only what we missed
         for (const e of m.rec.cmds.slice(this.known)) this.addEntry(e);
@@ -15756,7 +15867,7 @@ RA.Long = class {
       this.queue = m.rec.cmds.slice();
       this.known = m.rec.cmds.length;
       if (/^https?:$/.test(location.protocol)) history.replaceState(null, '', '/long-' + this.code);
-      if (!RA.focusGet(this.code) && this.you >= 0) RA.focusPut(this.code, {});
+      if (!m.rec.set.fast && !RA.focusGet(this.code) && this.you >= 0) RA.focusPut(this.code, {});
       this.app.startLong(this);
     }
   }
@@ -15796,7 +15907,7 @@ RA.Long = class {
       G.step();
     }
     if (G.state === 'over' && !G.continued) RA.focusDrop(this.code); // the game is finished: nothing to continue
-    else if (t0 - (this.snapAt || 0) > 10000) {
+    else if (!this.rec.set.fast && t0 - (this.snapAt || 0) > 10000) {
       this.snapAt = t0;
       this.snap();
     }
@@ -15898,7 +16009,7 @@ Object.assign(RA.App.prototype, {
         if (was && was.snap && G.tick - was.tick > 20) ui.focusReport(was, r);
       } else ui.longPick();
       if (G.state === 'over' && !G.continued) RA.focusDrop(r.code);
-      ui.toast('info', `Focus: 1 potez svakih ${Math.round(r.tickMs / 1000)} s — igra teče i kad nisi tu. Link: <b>${RA.esc(location.origin + '/long-' + r.code)}</b>`, { ms: 9000 });
+      if (!r.set.fast) ui.toast('info', `Focus: 1 potez svakih ${Math.round(r.tickMs / 1000)} s — igra teče i kad nisi tu. Link: <b>${RA.esc(location.origin + '/long-' + r.code)}</b>`, { ms: 9000 });
     };
     slice();
   },
@@ -15906,8 +16017,13 @@ Object.assign(RA.App.prototype, {
     const G = this.G, ui = this.ui, s = this.long.rec.set;
     G.me = p;
     this.long.left = '';
+    if (s.fast) return this.longShow(p); // Skirmish: no Focus list
     const reg = RA.REGIONS.find((x) => x.id === s.reg && x.map === s.map);
     RA.focusPut(this.long.code, { title: `${p.name} · ${reg ? reg.name : RA.mapInfo(s.map).all} · ${RA.eraById(s.era).short}`, days: s.days || 1, tick: G.tick, snap: RA.focusSnap(G, p) });
+    this.longShow(p);
+  },
+  longShow(p) {
+    const G = this.G, ui = this.ui;
     ui.watching = false;
     ui.closeSheet();
     ui.showPlayUI(true);
@@ -15989,15 +16105,36 @@ Object.assign(RA.UI.prototype, {
     if (!G || !G.long) return;
     const nats = G.P.filter((p) => p && p.alive && p.type === 'nation' && !p.human).sort((a, b) => b.area - a.area);
     const humans = G.P.filter((p) => p && p.alive && p.human);
-    let h = this.head('Focus igra', `Potez svakih ${Math.round(L.rec.tickMs / 1000)} s · igrača ${humans.length} · tik ${G.tick}`);
-    h += `<p class="explain">Izaberi državu kojom upravlja kompjuter i preuzmi je. Kad zatvoriš igru, kompjuter igra za tebe dok se ne vratiš (preko istog linka).</p>`;
+    const set = L.rec.set, fast = set.fast === 1, T = set.teams || '0';
+    const wait = Math.max(0, Math.ceil(((L.startAt || 0) - Date.now()) / 1000));
+    let h = this.head(fast ? 'Skirmish' : 'Focus igra', fast ? `Javna igra · igrača ${humans.length}${wait ? ` · počinje za <span id="longWait">${wait}</span> s` : ` · traje ${RA.fmtTime(G.tick / 10)}`}` : `Potez svakih ${Math.round(L.rec.tickMs / 1000)} s · igrača ${humans.length} · tik ${G.tick}`);
+    h += fast ? '<p class="explain">Izaberi državu i preuzmi je. Ostale države vodi kompjuter; ko dođe kasnije, preuzme neku od njih.</p>' : `<p class="explain">Izaberi državu kojom upravlja kompjuter i preuzmi je. Kad zatvoriš igru, kompjuter igra za tebe dok se ne vratiš (preko istog linka).</p>`;
+    // teams: pick one (the smaller one first); humans vs states: everybody on the players' team
+    let team = 1;
+    if (T === '2' || T === '3') {
+      const n = +T, cnt = (t) => humans.filter((p) => p.team === t).length;
+      for (let t = 2; t <= n; t++) if (cnt(t) < cnt(team)) team = t;
+      h += `<div class="field"><span class="lab">Tvoj tim</span><div class="seg" id="teamSeg">${Array.from({ length: n }, (_, i) => `<button data-v="${i + 1}" aria-pressed="${i + 1 === team}">Tim ${i + 1} · ${cnt(i + 1)}</button>`).join('')}</div></div>`;
+    } else if (T === 'hvs') h += '<p class="note">Ljudi protiv država: svi igrači su jedan tim.</p>';
     h += `<div class="btns"><button class="btn" data-copy><span class="t">Kopiraj link igre</span><br><span class="d">${RA.esc(location.origin + '/long-' + L.code)}</span></button></div><div class="list">`;
     for (const p of nats.slice(0, 40)) h += `<div class="prow wide"><span class="sw" style="background:${p.hex}"></span><div class="pn"><div class="nm">${RA.esc(p.name)}</div><div class="d">${((p.area / G.landTotal()) * 100).toFixed(1).replace('.', ',')}% kopna · vojska ${RA.fmt(p.troops)}</div></div><div class="bb">${this.mini('Preuzmi', `data-take="${p.id}"`, 'ok')}</div></div>`;
     h += '</div>';
     if (humans.length) h += `<p class="note">Igrači: ${humans.map((p) => RA.esc(p.nick || p.name) + ' (' + RA.esc(p.name) + ')').join(', ')}</p>`;
     this.openSheet(h, (s) => {
+      s.querySelectorAll('#teamSeg button').forEach((b) => (b.onclick = () => {
+        team = +b.dataset.v;
+        s.querySelectorAll('#teamSeg button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+      }));
+      if (wait) {
+        clearInterval(this._waitIv);
+        this._waitIv = setInterval(() => {
+          const el = document.getElementById('longWait');
+          if (!el) return clearInterval(this._waitIv);
+          el.textContent = Math.max(0, Math.ceil(((L.startAt || 0) - Date.now()) / 1000));
+        }, 500);
+      }
       s.querySelectorAll('[data-take]').forEach((b) => (b.onclick = () => {
-        L.join(+b.dataset.take);
+        L.join(+b.dataset.take, team);
         this.toast('info', 'Preuzimaš državu — potvrda stiže sa sljedećim potezom servera.', { ms: 4000 });
         b.disabled = true;
       }));
@@ -16068,7 +16205,93 @@ Object.assign(RA.App.prototype, {
   },
 });
 
-RA.BUILD = 'e3aa81e0';
+
+/* Skirmish (plan phase 15): public online games with people. The server keeps them like Focus games (deploy/game/long.js)
+   but at Blitz speed, with a countdown before the start; the other states are the computer's and whoever comes later
+   takes one of them. Online → Skirmish lists the open games (/ws?lobby=1) and makes a new public one from the start
+   screen's settings (Blitz / Focus / Make your choice) plus teams. */
+Object.assign(RA.UI.prototype, {
+  skirmishSheet() {
+    const net = this.app.net;
+    if (!net || !net.wsUrl) return this.toast('info', 'Skirmish radi na war.deovilab.com.', { ms: 4000 });
+    const S = (this.skirm = this.skirm || { teams: '0', aw: 0 });
+    let h = '<div id="skirmSheet"></div>' + this.head('Skirmish', 'Javne igre s ljudima · ostale države vodi kompjuter');
+    h += '<div class="sec-t">Otvorene igre</div><div class="list" id="skirmList"><p class="note">Tražim igre…</p></div>';
+    h += `<div class="sec-t">Napravi javnu igru</div><p class="explain">Postavke s početnog ekrana (${RA.esc(this.playSet().pace === 'focus' ? 'Focus' : 'Blitz')}, mapa, doba, pravila), plus:</p>`;
+    h += `<div class="field"><span class="lab">Timovi</span><div class="seg wrap" id="skTeams">${[['0', 'Svako za sebe'], ['2', '2 tima'], ['3', '3 tima'], ['hvs', 'Ljudi protiv država']].map(([v, t]) => `<button data-v="${v}" aria-pressed="${S.teams === v}">${t}</button>`).join('')}</div></div>`;
+    h += `<div class="field"><span class="lab">Saveznici pobjeđuju zajedno</span><div class="seg" id="skAw"><button data-v="0" aria-pressed="${!S.aw}">Ne</button><button data-v="1" aria-pressed="${!!S.aw}">Da</button></div></div>`;
+    h += '<div class="btns"><button class="btn primary" data-sknew><span class="t">Napravi javnu igru</span><br><span class="d">Počinje za 60 s — dok čekaš, drugi ulaze</span></button></div>';
+    this.openSheet(h, (s) => {
+      for (const [id, k] of [['skTeams', 'teams'], ['skAw', 'aw']]) s.querySelectorAll(`#${id} button`).forEach((b) => (b.onclick = () => {
+        S[k] = k === 'aw' ? +b.dataset.v : b.dataset.v;
+        s.querySelectorAll(`#${id} button`).forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+      }));
+      s.querySelector('[data-sknew]').onclick = () => {
+        this.skirmishClose();
+        this.closeSheet();
+        this.app.long.create({ pub: 1, fast: this.playSet().pace === 'focus' ? 0 : 1, teams: S.teams, aw: S.aw });
+      };
+      this.skirmishListen();
+    });
+  },
+  /* the lobby socket: the list of public games every 2 s while the sheet is open */
+  skirmishListen() {
+    this.skirmishClose();
+    const ws = new WebSocket(this.app.net.wsUrl + '?lobby=1');
+    this.skirmWs = ws;
+    ws.onmessage = (ev) => {
+      let m;
+      try {
+        m = JSON.parse(ev.data);
+      } catch (_) {
+        return;
+      }
+      const box = document.getElementById('skirmList');
+      if (!box || !document.getElementById('skirmSheet')) return this.skirmishClose();
+      if (m.t === 'list') box.innerHTML = this.skirmishRows(m.games || []);
+      box.querySelectorAll('[data-skjoin]').forEach((b) => (b.onclick = () => {
+        this.skirmishClose();
+        this.closeSheet();
+        this.app.long.open(b.dataset.skjoin);
+      }));
+    };
+  },
+  skirmishClose() {
+    if (this.skirmWs) {
+      try {
+        this.skirmWs.close();
+      } catch (_) {}
+      this.skirmWs = null;
+    }
+  },
+  skirmishRows(games) {
+    if (!games.length) return '<p class="note">Nema otvorenih igara — napravi jednu.</p>';
+    const TN = { 0: 'svako za sebe', 2: '2 tima', 3: '3 tima', hvs: 'ljudi protiv država' };
+    return games.map((g) => {
+      const s = g.set, reg = RA.REGIONS.find((r) => r.id === s.reg && r.map === s.map);
+      const when = g.wait > 0 ? `počinje za ${Math.ceil(g.wait / 1000)} s` : `traje ${g.tickMs <= 100 ? RA.fmtTime(g.tick / 10) : Math.round((g.tick * g.tickMs) / 60000) + ' min'}`;
+      const d = `${s.fast ? 'Blitz' : 'Focus'} · ${RA.esc(reg ? reg.name : RA.mapInfo(s.map).all)} · ${RA.esc(RA.eraById(s.era).short)} · ${TN[s.teams] || ''} · ${when}`;
+      return `<div class="prow wide"><div class="pn"><div class="nm">Igrača ${g.humans}/${g.max}</div><div class="d">${d}</div></div><div class="bb">${this.mini('Uđi', `data-skjoin="${g.code}"`, 'ok', g.humans >= g.max)}</div></div>`;
+    }).join('');
+  },
+  /* report a player (plan 25): teaming, a rude name, cheating — the owner sees the reports */
+  reportSheet(O) {
+    const G = this.G, L = this.app.long;
+    let h = this.head(`Prijavi: ${RA.esc(O.nick || O.name)}`, 'Prijava ide administratoru igre');
+    h += '<div class="btns">' + [['team', 'Timovanje u igri svako za sebe'], ['name', 'Uvredljivo ime'], ['cheat', 'Varanje'], ['grief', 'Namjerno kvari igru']].map(([k, t]) => this.btn({ attrs: `data-rep="${k}"`, t })).join('') + '</div>';
+    this.openSheet(h, (s) => s.querySelectorAll('[data-rep]').forEach((b) => (b.onclick = () => {
+      const A = this.account;
+      const body = { game: (L && L.code) || G.gid || '', name: String(O.nick || O.name).slice(0, 30), reason: b.dataset.rep };
+      (A && A.user ? A.api('POST', '/api/report', body) : Promise.reject(new Error('Prijava traži nalog.'))).then(
+        () => this.toast('good', 'Prijava je poslana. Hvala!'),
+        (e) => this.toast('bad', RA.esc(e.message))
+      );
+      this.closeSheet();
+    })));
+  },
+});
+
+RA.BUILD = '58cbff7b';
 new RA.App().boot();
 }
 function __raFallback(){

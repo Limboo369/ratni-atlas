@@ -163,7 +163,7 @@ RA.UI = class {
       this.needAccount(() => {});
     });
     $('leagueBtn').onclick = () => this.needAccount(() => this.toast('info', 'Conquest League stiže uskoro: rangirane partije 1v1, 2v2 i 5v5.', { ms: 5000 }));
-    $('skirmishBtn').onclick = () => this.needAccount(() => this.toast('info', 'Skirmish stiže uskoro: javne igre s ljudima.', { ms: 5000 }));
+    $('skirmishBtn').onclick = () => this.needAccount(() => this.skirmishSheet());
     this._seg('daysSeg', String([1, 3, 7].includes(this.settings.days) ? this.settings.days : 1), (v) => (this.settings.days = +v));
     this._seg('cPaceSeg', this.settings.cPace === 'focus' ? 'focus' : 'blitz', (v) => {
       this.settings.cPace = v;
@@ -1060,7 +1060,8 @@ RA.UI = class {
     const T = (t) => RA.dur(Math.max(0, t));
     if (me && me.alive && G.state === 'play') {
       if (G.opts.camp && G.opts.camp.type !== 'free' && this.campProg) pills.push(['goal', `🎯 ${this.campProg}`]);
-      if (G.long && this.app.long.rec) pills.push(['calm', `Focus · potez svakih ${Math.round(this.app.long.rec.tickMs / 1000)} s · igrača ${G.humans.filter((p) => p.alive).length}`]);
+      if (G.long && this.app.long.rec && this.app.long.rec.set.fast) pills.push(['calm', `Skirmish · igrača ${G.humans.filter((p) => p.alive && !p.surr).length}`]);
+      else if (G.long && this.app.long.rec) pills.push(['calm', `Focus · potez svakih ${Math.round(this.app.long.rec.tickMs / 1000)} s · igrača ${G.humans.filter((p) => p.alive).length}`]);
       const dc = G.defcon();
       if (dc) {
         const next = (6 - dc) * C.DEFCON_STEP;

@@ -82,6 +82,12 @@ the list of my Focus games is on the account (`/api/focus`).
 Offers and demands (`src/02l-offers.js`): commands `'offer'` [to, give, want] and `'offerRes'` [id, yes|no|counter, give,
 want]; a bundle is {g gold, t troops (allies only), c city index (with its land), r resource slot (supply for a while,
 `p.giftRes`), s strait index (open it)}; a computer state answers at once (accept, counter for more gold, refuse).
+Skirmish (`src/09e-skirmish.js`): public online games = long games with `set.pub` and `set.fast` (clock `LONG_FAST_MS`,
+100 ms) that start after a countdown (`SKIRMISH_WAIT` s); `/ws?lobby=1` lists them every 2 s and keeps one public Blitz game
+open. `set.teams` ('0', '2', '3', 'hvs') puts joining players in teams (`join` [state, name, team]); `set.aw` = allied
+players win together (`G._allyRoots`). Online commands `'surr'` (surrender) and `'endv'` (vote to end: all players agree →
+the biggest side wins, `G._decide`). A late player in a Focus game gets `p.shieldUntil` (safe from players until it attacks
+one, `G.shieldErr`) and gold/troops to catch up. Reports: `/api/report`.
 Long games (days): `deploy/game/long.js` (same server, `/ws?long=<code>`, link `/long-<code>`) is only the clock (one tick
 every `LONG_TICK_MS`, 5 s) and the archive (settings, seed, every command with its tick; files in the `longgames`
 volume); `src/09c-long.js` replays the record to the server's tick and follows it. A player takes over a computer state
