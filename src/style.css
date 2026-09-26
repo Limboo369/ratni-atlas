@@ -1300,3 +1300,9 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
 .ed-panel .ed-btns { display: flex; flex-wrap: wrap; gap: 6px; }
 .ed-panel .seg button { padding: 5px 8px; font-size: 13px; }
 @media (max-width: 520px) { .ed-panel { top: auto; bottom: 8px; left: 8px; right: 8px; width: auto; max-height: 45vh; } }
+
+/* joining a friend's game (private room, league party): the code field on its own row, "Uđi" below it — side by side
+   the field was squeezed to nothing on a phone */
+.code-row { display: flex; flex-direction: column; align-items: stretch; gap: 8px; margin-top: 8px; }
+.code-row input { flex: none; width: 100%; min-width: 0; min-height: 44px; box-sizing: border-box; }
+.code-row .btn, .code-row .mini { width: 100%; justify-content: center; }

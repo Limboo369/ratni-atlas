@@ -99,7 +99,7 @@ Object.assign(RA.UI.prototype, {
       h += `<div class="btns"><button class="btn" data-lgp="leave"><span class="t">Napusti party</span></button></div>`;
     } else {
       h += `<div class="btns"><button class="btn" data-lgp="new"><span class="t">Napravi party</span><br><span class="d">Igraj s prijateljima u istom timu (razlika ELO najviše 250)</span></button></div>
-        <div class="field"><span class="lab">Uđi u party</span><input id="lgCode" maxlength="6" placeholder="kod" autocomplete="off"> ${this.mini('Uđi', 'data-lgp="join"', 'ok')}</div>`;
+        <div class="field"><span class="lab">Uđi u party</span><div class="code-row"><input id="lgCode" maxlength="6" placeholder="kod partyja" autocomplete="off">${this.mini('Uđi', 'data-lgp="join"', 'ok')}</div></div>`;
     }
     h += '</div>';
     const Q = L.queue;

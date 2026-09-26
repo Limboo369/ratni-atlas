@@ -1306,6 +1306,12 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
 .ed-panel .seg button { padding: 5px 8px; font-size: 13px; }
 @media (max-width: 520px) { .ed-panel { top: auto; bottom: 8px; left: 8px; right: 8px; width: auto; max-height: 45vh; } }
 
+/* joining a friend's game (private room, league party): the code field on its own row, "Uđi" below it — side by side
+   the field was squeezed to nothing on a phone */
+.code-row { display: flex; flex-direction: column; align-items: stretch; gap: 8px; margin-top: 8px; }
+.code-row input { flex: none; width: 100%; min-width: 0; min-height: 44px; box-sizing: border-box; }
+.code-row .btn, .code-row .mini { width: 100%; justify-content: center; }
+
 #app{touch-action:none}#sheet,.screen{touch-action:pan-y}</style>
 <div id="app">
   <div id="map" aria-label="Karta Evrope"></div>
@@ -16749,7 +16755,7 @@ Object.assign(RA.UI.prototype, {
       h += `<div class="btns"><button class="btn" data-lgp="leave"><span class="t">Napusti party</span></button></div>`;
     } else {
       h += `<div class="btns"><button class="btn" data-lgp="new"><span class="t">Napravi party</span><br><span class="d">Igraj s prijateljima u istom timu (razlika ELO najviše 250)</span></button></div>
-        <div class="field"><span class="lab">Uđi u party</span><input id="lgCode" maxlength="6" placeholder="kod" autocomplete="off"> ${this.mini('Uđi', 'data-lgp="join"', 'ok')}</div>`;
+        <div class="field"><span class="lab">Uđi u party</span><div class="code-row"><input id="lgCode" maxlength="6" placeholder="kod partyja" autocomplete="off">${this.mini('Uđi', 'data-lgp="join"', 'ok')}</div></div>`;
     }
     h += '</div>';
     const Q = L.queue;
@@ -17587,7 +17593,7 @@ Object.assign(RA.UI.prototype, {
   },
 });
 
-RA.BUILD = '705e54bb';
+RA.BUILD = 'feb15dd1';
 new RA.App().boot();
 }
 function __raFallback(){
