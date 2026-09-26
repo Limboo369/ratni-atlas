@@ -240,28 +240,60 @@ Svijet dolazi prije ekonomije, vojske i kampanje: resursi, moreuzi, mornarica i 
 | 1 | Obavještenja (web push) | da |
 | 2 | Naredbe za odsustvo | da, samo Focus |
 | 3 | Focus igre na nalogu | da |
-| 4 | Zašto me voli / mrzi | da, uz prikaz na karti ko je s kim u savezu |
-| 5 | Javna igra | objašnjeno; prijedlog: to je dugme Matchmaking (8) |
+| 4 | Zašto me voli / mrzi | da, + na karti ko je s kim u savezu |
+| 5 | Javna igra | = **Casual** u Online (ne miješati s rankedom) |
 | 6 | Formiranje država | ne |
-| 7 | Vrijeme u satima (Focus) | čeka objašnjenje |
-| 8 | Timovi online → **Matchmaking** + **Ranked** | da; početni ekran: prvo **Online** ili **Conqueror** (solo). Ranked: Find match (solo ili s prijateljima), 1v1 / 2v2 / 5v5, poseban ELO za svaku veličinu, posebno Blitz i Focus; 5 rankova (engleski); pick/ban kontinenata (svaki tim bira 2, banuje 1, skriveno; računar bira mapu, animirano); samo igrači, start od malih polja (ne država) |
-| 9 | Predaja, Ponudi kraj | da, online i ranked; ranked: predaja 4/5 igrača; vote kick samo u 5v5 (kao CS2), kikovanog mijenja računar |
+| 7 | Vrijeme u satima (Focus) | da |
+| 8 | Online | početni ekran: **Online** ili **Conqueror** (solo). Online = **Casual** (Blitz / Focus / Make your choice, javne sobe, timovi, privatna soba po linku) i **Conquest League** (ranked) |
+| 9 | Predaja, Ponudi kraj, vote kick | da (Casual i Conquest League); vote kick samo 5v5 (4 od 5, kao CS2), kikovanog mijenja računar; predaja u ligi 4 od 5 |
 | 10 | Identitet dinastije | da |
 | 11 | Replay | da: profil → historija partija → Replay |
 | 12 | Kartica za dijeljenje | ne |
 | 13 | Klanovi | ne |
-| 14 | Ljestvica | samo za ranked: world ranking, top 100 za 1v1, 2v2, 5v5 |
-| 15 | Prijedlozi između ljudi | čeka objašnjenje |
+| 14 | Ljestvica | samo liga: world ranking, top 100 za 1v1, 2v2, 5v5 (posebno Blitz i Focus) |
+| 15 | Ponuda i potražnja | da, ručno: u meniju države **Zahtijevaj** (novac, vojska samo saveznik, zemlja, resurs, otvaranje moreuza/kanala…) i **Nudim** (novac, vojska, zemlja, resurs); druga strana prihvata, odbija ili pravi protivponudu (više novca, drugi resurs…), dok se ne dogovore |
 | 16 | Igraj odmah | da, samo solo |
-| 17 | Editor scenarija | čeka objašnjenje |
+| 17 | Editor scenarija | da, zove se **Community market**: praviš i objavljuješ scenarije, igraš tuđe |
 | 18 | Jači trenuci | ne |
 | 19 | Pametnija izdaja kompjutera | da |
-| 20 | Pobjeda saveza | da; u rankedu pobjeda = uništiti sve protivnike, bez obzira na procenat |
-| 21 | Zaštita za kasni ulazak | doraditi (6 h samo čekanja nema smisla) |
-| 22 | Nuklearke bez spama | da, + traka na ikoni nuklearke do povratka cijene; tajmer različit za Blitz i Focus |
+| 20 | Pobjeda saveza | da; u ligi pobjeda = uništiti sve protivnike (za Blitz ligu treba pravilo kraja — otvoreno pitanje) |
+| 21 | Kasni ulazak u Focus | otvoreno (prijedlog: zaštita dok prvi put ne napadneš čovjeka, najviše 3 h, + dotacija zlata i vojske) |
+| 22 | Nuklearke bez spama | da, tajmer ~50% kraći od prvog prijedloga (Blitz 1,5 min; Focus se razvuče s igrom); traka na ikoni do povratka cijene |
 | 23 | Ključni trenuci na grafiku | da |
-| 24 | Aplikacija (PWA) | da, instalira se kao prava aplikacija (i iz menija preglednika) |
-| 25 | Prijava igrača | da; prijava na nalog obavezna — bez naloga samo „Igraj odmah“ |
+| 24 | Aplikacija (PWA) | da, instalira se kao prava aplikacija |
+| 25 | Prijava igrača + nalog | da; nalog obavezan za Online (Casual, liga, privatna soba); cijeli solo radi bez naloga |
+
+**Conquest League (ranked)**: biraš Blitz ili Focus i 1v1, 2v2 ili 5v5; **Find match** sam ili s prijateljima (party).
+ELO: start 500, najniže 100; prvih 5 partija „Unranked“ (K = 40), zatim K = 24; 6 odvojenih ljestvica (3 veličine × Blitz/Focus).
+Timovi: raspodjela po prosjeku, a **svako dobija svoje bodove**: očekivanje igrača = 1 / (1 + 10^((prosjek protivnika −
+njegov ELO)/400)), promjena = K × (rezultat − očekivanje) — jači igrač u slabijem timu dobija manje i gubi više (party
+najviše ±250 ELO razlike, protiv „dizanja“ prijatelja). Rankovi: **Raider** 100–299 · **Vanguard** 300–449 · **Warlord**
+450–599 · **Emperor** 600–799 · **Overlord** 800+. Napuštanje: gubiš ELO, bez zabrane traženja. Pick/ban: bazen cijeli svijet
++ 6 kontinenata i 7 doba; svaki tim tajno bira 2 i banuje 1 (i mapu i doba), računar bira između odabranih, animirano.
+Samo igrači, start od malih polja (od prijestolnice, bez država kompjutera).
+
+## Plan faza 12–19: Claude i Codex
+
+Pravilo rada: **Claude** pravi logiku, server i jednostavan ekran koji radi (postojeće klase, nove stvari dobiju stalne
+`id` / `data-` oznake zapisane ovdje); **Codex** radi izgled prethodne faze dok Claude radi sljedeću — tako ne diraju iste
+fajlove u isto vrijeme (Codex: `style.css`, izgled u `body.html` i ikone; Claude: `src/0[0-4]*`, `src/09*`, `deploy/`).
+Codex radi preko PR-a na `main`; poslije svake faze Claude upiše „Za Codex“ u ovu tabelu.
+
+| Faza | Claude (logika, server) | Codex (izgled) u isto vrijeme |
+| --- | --- | --- |
+| 12 | **Temelj**: server sam vrti simulaciju Focus i online igara (isti kod `src/00–04` u nodeu) → pošten rezultat (ELO se ne može lažirati), događaji za obavještenja; nalog obavezan za Online; skelet novog početnog ekrana (Online / Conqueror, prazna dugmad s oznakama) | C1: rank značke (5, SVG), logo Conquest League, ikona aplikacije; dotjerivanje Focus izvještaja, modova i stabla |
+| 13 | **Brze stvari**: 2 naredbe za odsustvo, 3 Focus na nalogu, 4 razlozi odnosa + linije saveza (tipka L), 7 vrijeme u satima, 10 dinastija, 16 Igraj odmah, 19 izdaja, 22 nuklearke + traka, 23 oznake na grafiku | C2: novi početni ekran Online / Conqueror (na Claudeov skelet) |
+| 14 | **Ponuda i potražnja** (15): komande `offer`/`counter`/`accept`, kompjuter procjenjuje ponude po vrijednosti | C3: izgled faze 13 (razlozi odnosa, linije saveza, traka nuklearke, grafik, meni „Dok me nema“, lista Focus igara) |
+| 15 | **Casual online**: javne sobe (Blitz / Focus / Make your choice), timovi 2v2, 3v3, ljudi protiv država, privatna soba, 9 predaja i ponudi kraj, 20 pobjeda saveza, 25 prijava igrača, 21 kasni ulazak (kad odlučiš) | C4: prozor pregovora (faza 14) |
+| 16 | **Conquest League**: ELO i 6 ljestvica, red za traženje i party, pick/ban (logika i tajnost na serveru), start od malih polja, pobjeda uništenjem, vote kick 5v5, predaja 4/5, world ranking top 100, historija partija | C5: Casual ekrani (lobi, traženje, timovi) |
+| 17 | **Replay** (11): server čuva zapis svake online i ligaške partije; profil → historija → Replay (4–16×) | C6: liga: ekran traženja, **animacija pick/ban**, rank u profilu, ljestvica |
+| 18 | **Aplikacija + obavještenja** (24 + 1): manifest, service worker, instalacija, web push iz servera (ključevi u GitHub Secrets) | C7: kontrole replaya, dugme i ekran instalacije, podešavanja obavještenja |
+| 19 | **Community market** (17): editor scenarija (doba, karta, granice, mjesta za igrače), objava na nalogu, pregled i igranje tuđih | C8: izgled editora i marketa |
+
+Zašto ovim redom: faza 12 je temelj za ligu (pošten rezultat) i obavještenja; brze stvari (13) odmah poboljšavaju igru i
+daju Codexu posao; pregovori (14) trebaju i Casual i ligi; Casual (15) postavlja sobe i timove na kojima liga (16) stoji;
+replay (17) koristi zapise iz lige; obavještenja (18) koriste serversku simulaciju iz 12; market (19) je najveći i
+najmanje hitan.
 
 ## Otvorena pitanja
 
