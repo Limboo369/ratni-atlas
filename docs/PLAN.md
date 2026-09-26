@@ -306,3 +306,14 @@ Dok ne kažeš drugačije, radim po pretpostavci u zagradi.
 - [x] Gvozdena kupola: automatski uzvraća, a nuklearke u letu obara PVO (kao i do sada).
 - [x] Kampanja: jedna dinastija kroz sva doba (dom = grad; u svakom dobu država koja ga drži).
 - [x] Portreti: izmišljeni vladari (za sada jednostavni SVG portreti, Codex ih može zamijeniti).
+
+## Focus 27. 9. (Darko): šta je urađeno i prijedlozi
+
+Urađeno: sat od 1 s za zlato i naredbe (vojske i dalje na sporom potezu), zlato ~18× brže, zgrade u sekundama,
+dronovi/rakete/bombarderi na više meta dok ne klikneš „Odustani“, istraživanje oružja (dronovi, domet, razorna moć,
+PVO, oklop, pokretljivost). Čeka odluku (prijedlozi F1–F12 u chatu 27. 9.):
+F1 zadaci u igri (ugovori s rokom i nagradom) · F2 red proizvodnje u fabrikama/kasarnama · F3 nadogradnja zgrada
+(nivoi 1–3) · F4 špijuni (izviđanje, sabotaža, krađa istraživanja) + magla rata samo u Focusu · F5 događaji s izborom
+(suša, pobuna, izbjeglice) · F6 zakazane naredbe („u 21:00 napadni…“) · F7 utvrde i rovovi na granici · F8 pakt o
+nenapadanju s rokom, embargo · F9 savez: zajednička kasa i zajednički cilj · F10 generali s iskustvom · F11 dnevni
+izvještaj / ratne novine · F12 neutralni pobunjenici i blago na mapi.
