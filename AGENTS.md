@@ -106,6 +106,12 @@ to `index.html`; `src/09h-app.js` (service worker, `#installBtn`, profile `#accP
 port); the game server sends Focus notes (`RA.longNotes`: war on / fall of a human state, from `simhost.js`; the end)
 only to players with no tab open (`long.js` `note`), and "match found" (`league.js`). Browser tests over http need
 `PW_EXPERIMENTAL_SERVICE_WORKER_NETWORK_EVENTS=1` so the service worker's requests go through the test's routes.
+Community market (scenarios): `src/04d-scenario.js` (`RA.scenMap` applies a scenario to an era map: `paint` runs of
+cells → polity key, `nat` renames/colours, `add` new states with keys `k0 + 1 + i`, `slots` the states players may take;
+`RA.scenGameMap`, `RA.scenDiff` = what an edited game differs from the era), `src/09i-editor.js` (market sheet, the editor:
+a borders game that never starts, painted with `G.setOwner`; draft in localStorage `ra_scen_draft`; `app.scenPlay`), a
+game's `set.scen` keeps the scenario (save/resume), `deploy/api/market.js` (`/api/scen/*`, tables `scenarios`,
+`scenario_likes`). Link `/scenario-<code>`.
 Long games (days): `deploy/game/long.js` (same server, `/ws?long=<code>`, link `/long-<code>`) is only the clock (one tick
 every `LONG_TICK_MS`, 5 s) and the archive (settings, seed, every command with its tick; files in the `longgames`
 volume); `src/09c-long.js` replays the record to the server's tick and follows it. A player takes over a computer state
@@ -184,6 +190,7 @@ python3 build/test_save.py klasik          # save + reload + "Nastavi igru": the
 node build/test_api.js                     # accounts API: Google token checks, sessions, rename, delete (real PostgreSQL)
 python3 build/test_account.py              # sign-in on the start screen (fake Google), reload keeps the session, logout
 python3 build/test_pwa.py                  # the app: manifest, icons, service worker, offline start, install button
+python3 build/test_market.py               # Community market: editor on the map, publish, list, play a scenario, link
 python3 build/test_tutorial.py desktop     # the guided tutorial, step by step (also `phone`)
 python3 build/test_eras.py 1200            # every era + battle royale
 python3 build/sim_eras.py rim:granice:klasik:evropa:DAC:30:11:srednje   # AI balance run

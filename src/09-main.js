@@ -34,6 +34,8 @@ RA.App = class {
     if (lm) setTimeout(() => this.long.open(lm[1]), 0);
     const rm = /^\/replay-([a-z0-9]{6})\/?$/.exec(location.pathname); // a finished game's replay (09g-replay.js)
     if (rm) setTimeout(() => this.replayOpen(rm[1]), 0);
+    const sm = /^\/scenario-([a-z0-9]{8})\/?$/.exec(location.pathname); // a Community market scenario (09i-editor.js)
+    if (sm) setTimeout(() => this.scenOpen(sm[1]), 300);
     this.attract();
     this.showStart();
     document.getElementById('loading').hidden = true;
@@ -294,6 +296,14 @@ RA.App = class {
     }
     const rb = document.getElementById('replayBar');
     if (rb) rb.remove(); // leaving a replay
+    if (ui.editor) {
+      // leaving the scenario editor (its draft stays in this browser)
+      ui.editor.keepDraft();
+      ui.editor = null;
+      this.editorMouse(false);
+    }
+    const ep = document.getElementById('edPanel');
+    if (ep) ep.remove();
     if (/^\/replay-/.test(location.pathname)) history.replaceState(null, '', '/');
     this.autosave(true); // leaving a game: keep it for "Nastavi igru"
     if (ui.tut) ui.tut.end(false);
@@ -326,13 +336,14 @@ RA.App = class {
     if (!this.mapReady(s.map, s.era)) return this.withMap(s.map, s.era, () => this.newGame(over));
     this.setMap(this.maps[s.map]);
     document.getElementById('startScreen').hidden = true;
-    const gm = RA.regionMap(RA.eraMap(this.map, s.era, s.start), s.region);
+    // a Community market scenario (04d-scenario.js): its borders instead of the era's
+    const gm = s.scen ? RA.scenGameMap(this.map, s.scen) : RA.regionMap(RA.eraMap(this.map, s.era, s.start), s.region);
     RA.ME_COLOR = RA.PLAYER_COLORS.includes(s.color) ? s.color : RA.PLAYER_COLORS[0];
     const seed = (Math.random() * 1e9) | 0;
     const G = RA.newGame(gm, { seed, difficulty: s.difficulty, cityStates: s.cityStates, peace: s.peace, era: s.era, start: s.start, gm: s.gm, res: !!s.res, tree: !!s.tree, noNuke: !!s.noNuke });
     G.gid = 's' + Math.random().toString(36).slice(2, 12); // this game on the player's account (results)
     // the record of this game for "Nastavi igru": settings + seed + spawn + every command at its tick (09b-save.js)
-    G.rec = { v: 1, build: RA.BUILD, gid: G.gid, set: { map: s.map, region: s.region, era: s.era, start: s.start, gm: s.gm, difficulty: s.difficulty, cityStates: s.cityStates, peace: s.peace, res: !!s.res, tree: !!s.tree, noNuke: !!s.noNuke, seed, color: RA.ME_COLOR }, picks: [], name: '', cmds: [] };
+    G.rec = { v: 1, build: RA.BUILD, gid: G.gid, set: { map: s.map, region: s.region, era: s.era, start: s.start, gm: s.gm, difficulty: s.difficulty, cityStates: s.cityStates, peace: s.peace, res: !!s.res, tree: !!s.tree, noNuke: !!s.noNuke, seed, color: RA.ME_COLOR, scen: s.scen || undefined, scenTitle: s.scenTitle || undefined }, picks: [], name: '', cmds: [] };
     this.setGame(G);
     this.attractMode = false;
     this.speed = 1;

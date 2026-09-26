@@ -50,6 +50,7 @@ jobs:
       - run: node build/test_api.js
       - run: python3 build/test_account.py
       - run: python3 build/test_pwa.py  # aplikacija: manifest, ikone, service worker, bez interneta, instalacija
+      - run: python3 build/test_market.py  # Community market: editor, objava, lista, igranje scenarija, link
       - if: failure()
         uses: actions/upload-artifact@v4
         with: { name: shots, path: build/shots/ }

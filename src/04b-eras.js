@@ -289,7 +289,7 @@ RA.eraMap = function (base, id, start) {
    c0..c1: the cell range that holds the region (its bounding rows), so small regions of a big map scan less */
 RA.eraRegionNations = function (base, inside, minCells, c0 = 0, c1 = base.N) {
   const own = base.eraOwn, W = base.W;
-  const K = base.nations.length + 1;
+  const K = base.nations.reduce((a, n) => Math.max(a, n.k), 0) + 1; // a scenario's states may skip keys
   const cnt = new Int32Array(K), sx = new Float64Array(K), sy = new Float64Array(K);
   for (let c = c0; c < c1; c++) {
     if (!inside(c)) continue;

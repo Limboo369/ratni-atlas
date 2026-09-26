@@ -428,6 +428,48 @@ const check = (ok, msg) => {
     LE.step();
     check(LE.state === 'over' && LE.lgWin.team === 1 && LE.lgWin.why === 'elim', `league: the last team standing wins ${JSON.stringify(LE.lgWin)}`);
   }
+  // Community market scenarios (plan phase 19): edit the era's borders, save the difference, play it back the same
+  {
+    RA.applyEra('ww2');
+    const meta = { map: 'evropa', reg: 'balkan', era: 'ww2', title: 'Test' };
+    const em = RA.eraMap(m, 'ww2', 'granice');
+    const E0 = RA.newGame(RA.scenGameMap(m, Object.assign({ k0: em.nations.length }, meta)), { seed: 3, difficulty: 'srednje', cityStates: 0, era: 'ww2', start: 'granice', gm: 'klasik' });
+    const byName = (G, re) => G.P.find((p) => p && p.nation && re.test(p.name));
+    const pA = E0.P.filter((p) => p && p.nation && p.alive).sort((a, b) => b.tiles - a.tiles);
+    const big = pA[0], other = pA[1];
+    // the editor's operations: paint 30 of the biggest state's cells to the second, 20 to free land, rename + recolour,
+    // a new state on 25 cells of the second
+    const cells = Array.from(big.cells.subarray(0, big.tiles)).sort((a, b) => a - b);
+    for (const c of cells.slice(0, 30)) E0.setOwner(c, other.id);
+    for (const c of cells.slice(30, 50)) E0.setOwner(c, 0);
+    other.name = 'Velika Test';
+    other.hex = '#123456';
+    const nk = em.nations.length + 1, oc = Array.from(other.cells.subarray(0, other.tiles)).sort((a, b) => b - a).slice(0, 25);
+    const np = E0.addPlayer({ name: 'Nova Zemlja', type: 'nation', color: '#abcdef', iso: 'S1' });
+    np.nation = { k: nk, c: oc[0], x: oc[0] % m.W, y: (oc[0] / m.W) | 0, name: 'Nova Zemlja', color: '#abcdef', capital: '', iso: 'S1' };
+    for (const c of oc) E0.setOwner(c, np.id);
+    const S = RA.scenDiff(E0, em, Object.assign({ slots: [nk, other.nation.k] }, meta));
+    const json = JSON.stringify(S);
+    check(S.paint.length > 0 && S.add.length === 1 && S.nat[other.nation.k].n === 'Velika Test' && json.length < 5000, `scenario: the difference is small (${json.length} bytes, ${S.paint.length} runs)`);
+    const S2 = JSON.parse(json);
+    const G1 = RA.newGame(RA.scenGameMap(m, S2), { seed: 3, difficulty: 'srednje', cityStates: 0, era: 'ww2', start: 'granice', gm: 'klasik' });
+    const kOf = (G, pid) => (pid && G.P[pid].nation ? G.P[pid].nation.k : 0);
+    let diff = 0;
+    for (let c = 0; c < m.N; c++) if (G1.map.land[c] && kOf(G1, G1.owner[c]) !== kOf(E0, E0.owner[c])) diff++;
+    const nz = byName(G1, /Nova Zemlja/), vt = byName(G1, /Velika Test/);
+    check(diff === 0, `scenario: the game has exactly the edited borders (${diff} cells differ)`);
+    check(nz && nz.tiles === 25 && nz.hex === '#abcdef' && vt && vt.hex === '#123456' && G1.owner[nz.capital] === nz.id, 'scenario: new state, new name and colour, capitals on own land');
+    const r1 = RA.placeHuman(G1, big.capital >= 0 ? G1.P.find((p) => p && p.nation && p.nation.k === big.nation.k).capital : 0, 'Ja');
+    check(r1.err && /igraš jednu od/.test(r1.err), 'scenario: only the states it names can be taken');
+    const r2 = RA.placeHuman(G1, nz.capital, 'Ja');
+    check(r2.ok && G1.me && G1.me.name === 'Nova Zemlja', 'scenario: a named state can be taken');
+    RA.startGame(G1);
+    const G2 = RA.newGame(RA.scenGameMap(m, S2), { seed: 3, difficulty: 'srednje', cityStates: 0, era: 'ww2', start: 'granice', gm: 'klasik' });
+    RA.placeHuman(G2, G2.P.find((p) => p && p.name === 'Nova Zemlja').capital, 'Ja');
+    RA.startGame(G2);
+    for (let i = 0; i < 300; i++) G1.step(), G2.step();
+    check(G1.hash() === G2.hash(), 'scenario: deterministic');
+  }
   // the server steps many Focus games in one process (deploy/game/simhost.js), switching the era tables between them:
   // a game stepped between steps of another era's game must stay the same as the game alone
   const rec = (code, era, seed) => ({ code, seed, set: { map: 'evropa', reg: 'balkan', era, gm: 'klasik', dif: 'srednje', cs: 0, peace: 0, res: 1, tree: 1, nn: 0 } });

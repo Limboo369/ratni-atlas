@@ -13,6 +13,7 @@
    POST /api/delete  → {ok}                     (deletes the account and everything on it)
    GET  /api/health  → {ok}
    Conquest League ratings, world ranking and match history: league.js (results only on the internal port).
+   Community market (scenarios): market.js.
    Web push notifications: push.js (subscriptions; the game server sends through the internal port).
    Results, statistics, achievements and the leaderboard: stats.js.
    Every POST must be JSON from an allowed origin (ORIGINS), which together with SameSite=Lax stops CSRF. */
@@ -28,7 +29,7 @@ const SECURE = process.env.COOKIE_SECURE !== '0';
 const COOKIE = 'ot';
 const SESSION_DAYS = 90;
 const MAX_BODY = 64 * 1024;
-const BIG_BODY = { '/api/save': 1024 * 1024 }; // a saved game: its settings and every command
+const BIG_BODY = { '/api/save': 1024 * 1024, '/api/scen/save': 512 * 1024 }; // a saved game: its settings and every command
 const ISSUERS = new Set(['accounts.google.com', 'https://accounts.google.com']);
 
 const db = new Pool({ max: 8, idleTimeoutMillis: 30000 });
@@ -217,6 +218,9 @@ Object.assign(routes, league.routes);
 const push = require('./push')(db, sessionUser);
 SCHEMA.push(...push.SCHEMA);
 Object.assign(routes, push.routes);
+const market = require('./market')(db, sessionUser);
+SCHEMA.push(...market.SCHEMA);
+Object.assign(routes, market.routes);
 const INTERNAL = { ...league.internal, ...push.internal };
 
 /* the internal port (INT_PORT): only the game server reaches it, inside the compose network (it is not published and

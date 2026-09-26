@@ -5,8 +5,23 @@
    Stable hooks for the look (Codex C7): #installBtn (.command-install), #accPush (profile → notifications). */
 RA.appSW = null;
 if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
-  navigator.serviceWorker.register('/sw.js').then((r) => (RA.appSW = r), (e) => console.warn('sw', e && e.message));
+  navigator.serviceWorker.register('/sw.js').then((r) => {
+    RA.appSW = r;
+    // a new build on the server = a new service worker: tell the player (the start screen just reloads)
+    r.addEventListener('updatefound', () => {
+      if (!navigator.serviceWorker.controller) return; // the first install, not an update
+      const w = r.installing;
+      if (w) w.addEventListener('statechange', () => w.state === 'activated' && RA.appUpdated());
+    });
+    setInterval(() => r.update().catch(() => {}), 15 * 60e3); // an app left open for hours still hears of it
+  }, (e) => console.warn('sw', e && e.message));
 }
+RA.appUpdated = () => {
+  const app = window.__ra, start = document.getElementById('startScreen');
+  const idle = start && !start.hidden && document.getElementById('sheetWrap').hidden && !(app && app.ui && app.ui.editor);
+  if (idle) return location.reload();
+  if (app && app.ui) app.ui.toast('info', 'Nova verzija igre je spremna — osvježi stranicu kad završiš partiju (online igrači moraju imati istu verziju).', { ms: 20000 });
+};
 RA.appInstalled = () => (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
 
 Object.assign(RA.UI.prototype, {

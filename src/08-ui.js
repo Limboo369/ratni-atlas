@@ -164,6 +164,7 @@ RA.UI = class {
     });
     $('leagueBtn').onclick = () => this.needAccount(() => this.leagueSheet());
     $('skirmishBtn').onclick = () => this.needAccount(() => this.skirmishSheet());
+    $('marketBtn').onclick = () => this.marketSheet(); // Community market (09i-editor.js): browsing and playing need no account
     this._seg('daysSeg', String([1, 3, 7].includes(this.settings.days) ? this.settings.days : 1), (v) => (this.settings.days = +v));
     this._seg('cPaceSeg', this.settings.cPace === 'focus' ? 'focus' : 'blitz', (v) => {
       this.settings.cPace = v;
@@ -1256,6 +1257,7 @@ RA.UI = class {
     const G = this.G;
     if (!G) return;
     const c = this.cellFromLatLng(ll);
+    if (this.editor) return this.editor.tap(c); // the scenario editor (09i-editor.js)
     if (G.state === 'spawn') {
       const res = RA.placeHuman(G, c, this.settings.name || 'Ti');
       if (res.err) {

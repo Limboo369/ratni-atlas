@@ -180,7 +180,7 @@ RA.regionNations = function (base, id) {
   return RA._regionNats(base, R, K, (c) => !block[c] && land[c]);
 };
 RA._regionNats = function (base, R, K, inside) {
-  if (base.eraOwn) return RA.eraRegionNations(base, inside, 40, K.c0, K.c1);
+  if (base.eraOwn) return RA.eraRegionNations(base, inside, base.scen ? 1 : 40, K.c0, K.c1); // a scenario's small states stay
   if (!R.nations) return base.nations.filter((n) => inside(n.c)); // era raster not loaded (should not happen)
   const nats = [];
   for (const iso of R.nations) {
@@ -326,6 +326,8 @@ RA.placeHuman = function (G, cell, name, inner) {
     if (G.me && G.owner[cell] === G.me.id) return { ok: true, took: G.me.took };
     const n = G.owner[cell] ? G.P[G.owner[cell]] : null;
     if (!n || n.type !== 'nation') return { err: 'Tu nema države — dodirni obojenu teritoriju.' };
+    const sl = G.map.scenSlots; // a scenario may name the states players take
+    if (sl && sl.length && !sl.includes(n.nation.k)) return { err: `U ovom scenariju igraš jednu od: ${G.P.filter((q) => q && q.nation && sl.includes(q.nation.k)).map((q) => q.name).join(', ')}.` };
     if (G.me) RA.giveBack(G, G.me);
     else G.me = RA.addHuman(G, name, RA.ME_COLOR);
     G.me.nick = name || 'Ti';

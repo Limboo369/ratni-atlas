@@ -302,6 +302,45 @@ async function main() {
       ps.close();
     }
 
+    // Community market (plan phase 19)
+    {
+      const data = { map: 'evropa', reg: 'balkan', era: 'ww2', k0: 40, paint: [[1000, 20, 3], [5000, 5, 41]], nat: { 3: { n: 'Nova <b>Srbija</b>', c: '#123456' } }, add: [{ n: 'Hercegovina', c: '#abcdef', cap: 5000 }], slots: [41], rules: { peace: 30, res: 1 } };
+      r = await call('POST', '/api/scen/save', { title: 'Balkan 1941', data, pub: true }, { cookie: '' });
+      check(r.status === 401, 'market: publishing needs an account');
+      r = await call('POST', '/api/scen/save', { title: 'Balkan 1941', data: { ...data, paint: [['x']] }, pub: true }, { cookie: cookieAna });
+      check(r.status === 400, 'market: a broken scenario is refused');
+      r = await call('POST', '/api/scen/save', { title: 'Balkan 1941', desc: 'Ko drži Hercegovinu?', data, pub: true }, { cookie: cookieAna });
+      const code = r.j.code;
+      check(r.status === 200 && /^[a-z0-9]{8}$/.test(code), 'market: published ' + code);
+      r = await call('POST', '/api/scen/save', { title: 'Moj nacrt', data, pub: false }, { cookie: cookieAna });
+      const draft = r.j.code;
+      r = await call('GET', '/api/scen/list', null, { cookie: '' });
+      check(r.j.rows.some((x) => x.code === code && x.author && x.plays === 0) && !r.j.rows.some((x) => x.code === draft), 'market: everybody sees the public one, not the draft');
+      r = await call('GET', '/api/scen/list?mine=1', null, { cookie: cookieAna });
+      check(r.j.rows.length === 2, 'market: my scenarios, drafts too');
+      r = await call('GET', '/api/scen/get?code=' + code, null, { cookie: '' });
+      check(r.j.scen.data.nat[3].n === 'Nova bSrbija/b' && r.j.scen.data.add[0].n === 'Hercegovina' && r.j.scen.data.rules.res === 1 && !r.j.scen.mine, 'market: the scenario comes back cleaned (no markup)');
+      r = await call('GET', '/api/scen/get?code=' + draft, null, { cookie: '' });
+      check(r.status === 404, 'market: somebody else’s draft stays private');
+      r = await call('POST', '/api/scen/save', { code, title: 'Tuđe', data, pub: true }, { cookie: cookie1 });
+      check(r.status === 404, 'market: nobody else can change it');
+      await call('POST', '/api/scen/play', { code }, { cookie: '' });
+      await call('POST', '/api/scen/play', { code }, { cookie: '' });
+      r = await call('POST', '/api/scen/like', { code, on: 1 }, { cookie: cookie1 });
+      check(r.j.likes === 1, 'market: a like');
+      r = await call('GET', '/api/scen/list?sort=top', null, { cookie: cookie1 });
+      const row = r.j.rows.find((x) => x.code === code);
+      check(row.plays === 1 && row.likes === 1 && row.liked, 'market: plays counted once, likes, "liked" for me');
+      r = await call('GET', '/api/scen/list?q=1941', null, { cookie: '' });
+      check(r.j.rows.length === 1, 'market: search by title');
+      await call('POST', '/api/scen/delete', { code }, { cookie: cookie1 });
+      r = await call('GET', '/api/scen/get?code=' + code, null, { cookie: '' });
+      check(r.status === 200, 'market: only the author deletes');
+      await call('POST', '/api/scen/delete', { code }, { cookie: cookieAna });
+      r = await call('GET', '/api/scen/get?code=' + code, null, { cookie: '' });
+      check(r.status === 404, 'market: the author deleted it');
+    }
+
     // delete account
     jar = cookie1;
     r = await call('POST', '/api/delete', {});
