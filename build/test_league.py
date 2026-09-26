@@ -111,11 +111,16 @@ async def main():
         await A.evaluate('window.__ra.replaySeek(0)')
         await A.wait_for_function('!window.__ra.replaying', timeout=30000)
         await A.evaluate('window.__ra.paused = false')
-        await asyncio.sleep(1.5)  # the first frame after the rewind redraws the whole map (slow on a software GPU)
+        await A.evaluate('window.__ra.ui.closeSheet()')
+        # a software GPU (CI) draws a frame every second or two: wait for the replay to move on, up to 30 s
         t0 = await A.evaluate('window.__ra.G.tick')
-        await asyncio.sleep(3)
-        t1 = await A.evaluate('window.__ra.G.tick')
-        check(t1 - t0 > 100 or t1 >= endB[0], f'replay at 16×: {t1 - t0} ticks in 3 s')
+        t1, waited = t0, 0
+        while waited < 30 and not (t1 - t0 > 100 or t1 >= endB[0]):
+            await asyncio.sleep(1)
+            waited += 1
+            t1 = await A.evaluate('window.__ra.G.tick')
+        dbg = await A.evaluate('() => { const a = window.__ra; return [a.speed, a.paused, a.sheetPaused, a.G.state, a.replaying]; }')
+        check(t1 - t0 > 100 or t1 >= endB[0], f'replay at 16×: {t1 - t0} ticks in {waited} s {dbg}')
         await A.evaluate(f'window.__ra.replaySeek({endB[0] + 5})')
         await A.wait_for_function('window.__ra.G.state === "over" && !window.__ra.replaying', timeout=60000)
         endA = await A.evaluate('[window.__ra.G.tick, window.__ra.G.hash(), window.__ra.G.lgWin.team]')
