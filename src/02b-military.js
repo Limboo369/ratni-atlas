@@ -33,7 +33,7 @@ RA.STRUCT.factory = {
 /* the iron dome (plan 50): automatic retaliation — when somebody launches a nuclear weapon at you, every ready dome
    fires an atomic bomb at their country (the capital first, then their biggest cities) */
 RA.STRUCT.dome = {
-  name: 'Gvozdena kupola', short: 'Kupola', icon: 'sam', cost: (n) => Math.min(7.5e6, 2500000 * (n + 1)), time: 90,
+  name: 'Gvozdena kupola', short: 'Kupola', icon: 'dome', cost: (n) => Math.min(7.5e6, 2500000 * (n + 1)), time: 90,
   desc: 'Automatski uzvrat: kad neko lansira nuklearku na tebe, svaka spremna kupola ispali atomsku bombu na njegovu prijestolnicu i gradove. Puni se 60 s.',
 };
 RA.CFG.DOME_CD = 600;

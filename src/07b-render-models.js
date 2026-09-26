@@ -5,6 +5,7 @@
 RA.unitSize = (cell) => RA.clamp(cell * 4.4, 25, 48);
 RA.Models = (() => {
   const cache = new Map(), previews = new Map();
+  const structures = new Set(['city','factory','barracks','market','fort','port','airport','silo','sam','dome','siege','hangar']);
   const ink = '#172127', steel = '#889a99', light = '#c4cec4', dark = '#414e4c';
   function paint(c, type, color, era) {
     const old = ['rim', 'srednji'].includes(era), horseAge = old || era === 'napoleon';
@@ -29,12 +30,6 @@ RA.Models = (() => {
     const shadow = (x = 1, y = 9, rx = 18, ry = 7) => ellipse(x, y, rx, ry, 'rgba(5,12,17,.32)');
     const metal = c.createLinearGradient(-14, -16, 14, 15);
     metal.addColorStop(0, '#c0c5ab'); metal.addColorStop(.4, '#7c8a75'); metal.addColorStop(1, '#3b4c44');
-    const box = (x, y, w, d, h, roof = '#899789') => {
-      path([[x,y],[x+w,y+d*.35],[x+w,y+d*.35-h],[x,y-h]], '#566267');
-      path([[x+w,y+d*.35],[x+w+d*.7,y-d*.25],[x+w+d*.7,y-d*.25-h],[x+w,y+d*.35-h]], '#303e46');
-      path([[x,y-h],[x+d*.7,y-d*.6-h],[x+w+d*.7,y-d*.25-h],[x+w,y+d*.35-h]], roof);
-      line([[x,y-h],[x+w,y+d*.35-h]], '#bdc4b7', .65);
-    };
     const flag = (x, y) => { line([[x,y],[x,y-13]], light, .9); path([[x,y-13],[x+8,y-11],[x+8,y-6],[x,y-8]], color, ink, .6); };
     const wheel = (x,y,r=3) => { ellipse(x,y,r,r,'#20282b', '#8a938c'); ellipse(x,y,r*.38,r*.38, '#8a938c'); };
     const soldier = (x, y, archer = false) => {
@@ -159,67 +154,92 @@ RA.Models = (() => {
       if(horseAge) { line([[20,0],[27,0]],'#c7b68b',2); }
       else { rect(13,-4,5,8,'#263a40');rect(2,-3,5,6,'#c5c8b6'); }
     } else {
-      // Isometric architecture: elevation, facade, roof and ownership pennant.
-      shadow(0,11,23,8);
-      path([[-25,5],[-5,-8],[25,3],[5,18]], '#46534f', '#81928a',.6);
+      // Flat front elevations: shared baseline, no perspective or cast shadows.
+      // The same cached artwork is used on the map and in the construction menu.
+      c.translate(0, 4);
+      const wall = '#bbc5b7', roof = '#637d78', pane = '#263e48', trim = '#e3dcc2';
+      const windows = (xs, ys) => { for (const x of xs) for (const y of ys) rect(x,y,3,4,pane,null,0); };
+      const door = (x,y=-1,w=6,h=13) => rect(x,y,w,h,pane,null,0);
+      const stripe = (x,y,w) => rect(x,y,w,3,color,ink,0);
+      const base = () => line([[-23,13],[23,13]],ink,1.8);
+      const roofline = (x,y,w,h=7) => path([[x-2,y],[x+w/2,y-h],[x+w+2,y]],roof,ink,1.2);
+      const pennant = (x,y) => {line([[x,y],[x,y-12]],ink,1.2);path([[x,y-12],[x+7,y-12],[x+7,y-7],[x,y-7]],color,ink,.8);};
       if(type==='city') {
         if(horseAge) {
-          box(-17,7,10,8,12,'#a99e83'); box(-1,8,11,9,17,'#8d8070');
-          path([[-2,-9],[7,-20],[17,-11]],'#756758'); box(-7,-4,7,7,20,'#b5ac94');
-        } else { box(-18,6,9,8,15); box(-4,6,10,10,26,'#b9c4b4');box(9,10,8,7,13); }
-        for(let y=-15;y<2;y+=5) { rect(-2,y,2,2,'#e4d3a5',null,0);rect(3,y+1,2,2,'#a2c2c7',null,0); }
-        flag(15,-4);
-      } else if(type==='factory') {
-        box(-18,8,28,12,13,'#829292');
-        for(let x=-16;x<9;x+=8) path([[x,-5],[x+6,-12],[x+8,-4]],'#b5bba9');
-        box(10,0,4,4,25,'#acaa9b');box(3,-2,3,4,19);
-        rect(-14,0,5,5,color);rect(-5,2,5,5,'#dfc595');flag(18,0);
-      } else if(type==='barracks' || type==='market') {
-        for(const x of [-18,1]) {
-          box(x,7,12,10,9,'#969d82');
-          path([[x-1,-2],[x+6,-11],[x+20,-7],[x+13,2]],type==='market'?'#c5ad7e':'#778567');
-          rect(x+4,0,4,7,ink);line([[x+6,-10],[x+19,-6]],light,.7);
+          rect(-21,-4,13,17,wall);roofline(-21,-4,13);
+          rect(8,-4,13,17,wall);roofline(8,-4,13);
+          rect(-7,-18,14,31,wall);roofline(-7,-18,14,6);
+          windows([-17,13],[1]);windows([-2],[-13,-6]);door(-3,3,6,10);stripe(-7,-2,14);
+        } else {
+          rect(-21,-8,13,21,wall);rect(8,-3,13,16,wall);rect(-8,-24,16,37,wall);
+          stripe(-8,-21,16);windows([-18,12],[2]);windows([-4,2],[-14,-6,2]);
+          line([[-10,-24],[10,-24]],trim,1.2);
         }
-        flag(-2,-2);
+        base();
+      } else if(type==='factory') {
+        rect(11,-24,7,29,wall);stripe(11,-20,7);
+        path([[-22,13],[-22,-4],[-11,-12],[-11,-4],[0,-12],[0,-4],[10,-12],[10,-4],[22,-4],[22,13]],wall,ink,1.2);
+        line([[-22,-4],[-11,-12],[-11,-4],[0,-12],[0,-4],[10,-12],[10,-4],[22,-4]],roof,2);
+        windows([-17,-8,1],[2]);door(12,1,6,12);base();
+      } else if(type==='barracks') {
+        rect(-21,-5,42,18,wall);roofline(-21,-5,42,11);
+        stripe(-21,-5,42);windows([-16,-9,6,13],[2]);door(-3,2,6,11);
+        pennant(0,-16);base();
+      } else if(type==='market') {
+        rect(-20,-3,40,16,wall);path([[-23,-3],[-18,-15],[18,-15],[23,-3]],roof,ink,1.2);
+        for(let x=-18;x<18;x+=12) path([[x,-15],[x+6,-15],[x+7,-3],[x-1,-3]],trim,null);
+        stripe(-21,-3,42);door(-4,3,8,10);windows([-16,12],[3]);base();
       } else if(type==='fort') {
         if(horseAge) {
-          box(-16,9,27,10,9,'#90948a');
-          for(const p of [[-18,8],[9,12],[-5,-1]]) { box(p[0],p[1],7,7,17,'#b4b6a4');rect(p[0]+2,p[1]-7,3,5,ink); }
-          flag(-1,-17);
+          rect(-14,-2,28,15,wall);
+          for(const x of [-22,12]) {
+            path([[x,13],[x,-19],[x+3,-19],[x+3,-15],[x+7,-15],[x+7,-19],[x+10,-19],[x+10,13]],wall,ink,1.2);
+            windows([x+3],[-9]);
+          }
+          door(-4,3,8,10);stripe(-12,-2,24);pennant(0,-3);
         } else {
-          box(-17,9,27,13,12,'#8b9382');path([[-15,-3],[-5,-12],[18,-7],[21,-1]],metal);
-          rect(-12,1,19,3,ink);line([[-6,3],[10,4]],'#303f37',2.5);
-          for(let x=-22;x<14;x+=7) rect(x,13,6,4,'#9e997d');flag(14,-1);
+          path([[-23,13],[-20,-3],[-12,-12],[12,-12],[20,-3],[23,13]],wall,ink,1.2);
+          rect(-15,-1,30,5,pane,null,0);stripe(-9,-9,18);line([[-20,8],[20,8]],roof,1.2);
         }
+        base();
       } else if(type==='port') {
-        for(const x of [-17,-2,13]) box(x,13,5,20,2,'#a0a394');
-        box(-21,-2,15,8,10,'#c4bca0');
-        line([[10,5],[10,-23],[21,-18],[0,-18]],'#c6b67e',2);
-        line([[21,-18],[21,-4]],light,.6); flag(-19,-10);
+        rect(-22,-3,19,14,wall);roofline(-22,-3,19);door(-17,2,9,9);
+        line([[8,11],[8,-24],[22,-24]],roof,2.5);line([[8,-24],[-2,-15],[22,-15]],roof,1.5);
+        line([[20,-23],[20,-4]],pane,1);line([[17,-4],[17,0],[20,2],[23,0]],trim,1.5);
+        stripe(-22,-3,19);base();line([[-22,18],[-11,18],[-7,16],[0,18],[7,18],[11,16],[22,18]],'#8aafbb',1.4);
       } else if(type==='airport') {
-        path([[-23,9],[11,-15],[23,-10],[-10,15]],'#273b43', '#a0b1b0');
-        line([[-17,9],[17,-10]],'#d3d8bf',1);line([[-17,11],[17,-8]],'#6b7e7e',.6);
-        box(-19,-2,10,9,7,'#9da696');box(7,13,7,7,17);box(5,-4,11,8,5,'#abc2c2');flag(-16,-9);
+        rect(-23,5,32,8,wall);rect(-18,-3,5,8,roof);rect(-21,-10,11,7,pane,ink);
+        stripe(-21,-10,11);rect(9,-21,12,34,pane);line([[15,-18],[15,-12]],trim,1.4);
+        line([[15,-6],[15,0]],trim,1.4);line([[15,6],[15,10]],trim,1.4);windows([-19,-11,-3],[7]);base();
       } else if(type==='silo') {
-        if(horseAge) { box(-15,9,20,10,5,'#877856');line([[-8,3],[9,-19]],'#c3b092',3); }
-        else {
-          for(const x of [-13,3]) { ellipse(x,3,8,5,'#c0c3ae',ink);ellipse(x,2,5,3,'#263b3f'); }
-          path([[4,2],[4,-17],[7,-24],[10,-17],[10,2]],'#c6d1c7');
-          path([[4,-4],[0,2],[4,1]],color);path([[10,-4],[14,2],[10,1]],color);
-          rect(4,-14,6,4,color,null,0);
+        rect(-22,4,44,9,roof);
+        for(const x of [-15,6]) {
+          path([[x,4],[x,-15],[x+5,-23],[x+10,-15],[x+10,4]],wall,ink,1.2);
+          stripe(x,-10,10);path([[x,-1],[x-4,6],[x,6]],roof);path([[x+10,-1],[x+14,6],[x+10,6]],roof);
         }
-        flag(-19,3);
+        base();
       } else if(type==='sam') {
-        box(-17,9,25,10,7); for(let x=-10;x<8;x+=6) { line([[x,2],[x+8,-14]],dark,5);line([[x,1],[x+8,-15]],light,2.3); }
-        line([[-13,0],[-13,-13]],steel,1.5);ellipse(-13,-15,7,3,'#a5b8ab',ink);flag(16,8);
+        rect(-22,5,44,8,roof);rect(-13,0,22,5,wall);
+        for(const x of [-9,1,11]) {
+          path([[x,0],[x+5,-18],[x+8,-23],[x+10,-17],[x+5,1]],wall,ink,1.2);
+          line([[x+5,-12],[x+8,-11]],color,2.6);
+        }
+        line([[-19,4],[-19,-17]],roof,2);ellipse(-19,-18,4,4,wall,ink);base();
+      } else if(type==='dome') {
+        c.beginPath();c.arc(0,3,20,Math.PI,0);c.closePath();c.fillStyle=wall;c.fill();c.strokeStyle=ink;c.lineWidth=1.2;c.stroke();
+        c.beginPath();c.ellipse(0,3,9,20,0,Math.PI,0);c.strokeStyle=roof;c.stroke();
+        line([[-17,-7],[17,-7]],roof,1);rect(-22,3,44,10,roof);stripe(-22,3,44);door(-4,6,8,7);base();
       } else if(type==='siege') {
-        for(const x of [-14,10]) wheel(x,9,4);
-        line([[-17,6],[16,6]],'#9e8962',4);line([[-9,5],[0,-14],[9,5]],'#c0aa7b',3);
-        line([[-9,10],[12,-23]],'#c5b185',3);rect(9,-25,7,5,'#625b46');flag(-18,4);
+        for(const x of [-15,15]) wheel(x,10,4);
+        line([[-20,6],[20,6]],roof,4);line([[-11,6],[0,-13],[11,6]],wall,3);
+        line([[-10,1],[12,-22]],trim,3);rect(9,-24,8,7,roof);stripe(-11,3,22);
+        line([[-10,1],[-10,-7]],pane,1);ellipse(-10,-9,4,3,wall,ink);
       } else if(type==='hangar') {
-        box(-20,10,29,13,14,'#889892');path([[-20,-4],[-13,-15],[10,-10],[10,8]],metal);
-        rect(-15,-2,18,11,'#26373d');flag(16,3);
+        c.beginPath();c.moveTo(-23,13);c.lineTo(-23,-1);c.arc(0,-1,23,Math.PI,0);c.lineTo(23,13);c.closePath();
+        c.fillStyle=wall;c.fill();c.strokeStyle=ink;c.lineWidth=1.2;c.stroke();
+        rect(-17,-3,34,16,pane);stripe(-17,-3,34);line([[0,1],[0,12]],roof,1);base();
       }
+
     }
   }
   function sprite(type, color) {
@@ -237,7 +257,7 @@ RA.Models = (() => {
   function preview(type,color) {
     const key=`${RA.ERA && RA.ERA.id}:${type}:${color}`;
     if(!previews.has(key)) { if(previews.size>=64) previews.clear(); previews.set(key,sprite(type,color).toDataURL()); }
-    return `<span class="model-preview" aria-hidden="true"><img alt="" src="${previews.get(key)}" width="96" height="96"></span>`;
+    return `<span class="model-preview${structures.has(type) ? ' flat-model' : ''}" aria-hidden="true"><img alt="" src="${previews.get(key)}" width="96" height="96"></span>`;
   }
   return {draw,preview};
 })();
