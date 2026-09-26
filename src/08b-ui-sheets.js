@@ -694,14 +694,20 @@ Object.assign(RA.UI.prototype, {
     for (const k of RA.RSCH_ORDER) {
       const R = RA.RSCH[k], lv = G.rsLv(me, k), cost = G.rsCost(me, k), max = lv >= R.max, busy = B && B.k === k;
       const dur = G.sub ? G.rsTime(me, k) : G.rsTime(me, k) / 10;
-      t += RA.t("<article class=\"research-card\" data-rsch-card=\"{0}\"><div class=\"research-heading\"><i>{1}</i><span>{2}<small>Level {3} / {4}</small></span></div><p>{5}</p>{6}</article>", k, RA.icon(R.icon), R.name, lv, R.max, RA.esc(R.desc), max ? RA.t("<span class=\"research-max\">Fully developed</span>") : busy ? RA.t("<span class=\"research-max\">Researching…</span>") : this.mini(RA.t("Research · {0} · {1}", RA.fmt(cost), RA.fmtTime(dur)), `data-rsch="${k}"`, 'ok', me.gold < cost || !!B));
+      const percent = busy ? Math.round(Math.max(0, Math.min(1, (G.clock() - B.from) / Math.max(1, B.done - B.from))) * 100) : 0;
+      const reason = !max && !busy ? (B ? RA.t('Another research is in progress') : me.gold < cost ? RA.t('Need {0} more gold', RA.fmt(cost - me.gold)) : '') : '';
+      const progress = this.techProgress(lv, R.max);
+      const active = busy ? `<div class="research-active"><div><span>${RA.t('Researching…')}</span><b>${RA.fmtTime(Math.max(0, secs))}</b></div><progress max="100" value="${percent}" aria-label="${RA.esc(R.name)}">${percent}%</progress><small>${RA.t('{0}% complete', percent)}</small></div>` : '';
+      const action = max ? RA.t('<span class="research-max">Fully developed</span>') : busy ? active : this.mini(RA.t('Research · {0} · {1}', RA.fmt(cost), RA.fmtTime(dur)), `data-rsch="${k}"`, 'ok', me.gold < cost || !!B);
+
+      t += RA.t("<article class=\"research-card\" data-rsch-card=\"{0}\"><div class=\"research-heading\"><i>{1}</i><span>{2}<small>Level {3} / {4}</small></span></div><p>{5}</p>{6}</article>", k, RA.icon(R.icon), R.name, lv, R.max, RA.esc(R.desc), progress + action + (reason ? `<small class="research-reason">${reason}</small>` : ''));
     }
     t += '</div>';
     const i = h.indexOf('<div class="field">');
     return i < 0 ? h + t : h.slice(0, i) + t + h.slice(i);
   },
-  techProgress(level) {
-    return `<div class="research-progress" role="img" aria-label="${RA.t('Level {0} of 5', level)}">${Array.from({length:5},(_,i)=>`<i class="${i<level?'earned':i===level?'next':''}"></i>`).join('')}</div>`;
+  techProgress(level, max = 5) {
+    return `<div class="research-progress" role="img" aria-label="${RA.t('Level {0} of {1}', level, max)}">${Array.from({length:max},(_,i)=>`<i class="${i<level?'earned':i===level?'next':''}"></i>`).join('')}</div>`;
   },
   /* resources: what you have, buy, or miss (and what missing costs you); partners' offers with their prices */
   resHtml() {

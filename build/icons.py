@@ -1,6 +1,4 @@
-"""The app icons (plan phase 18) as PNG without any image library: a light ring ("O" of Overtake) around two red
-chevrons pointing up, on the dark ground. Written to dist/icons/ by build/make.py (only when missing or this file changed).
-Codex may replace the design (C1: app icon); keep the file names and sizes."""
+"""Installable Overtake icons: same gold triangle/red slash as RA.Brand.appIcon. Keep manifest sizes and maskable safe area; no image dependency."""
 import math, struct, zlib
 
 
@@ -10,7 +8,7 @@ def png(w, h, rgba):
     return b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', struct.pack('>IIBBBBB', w, h, 8, 6, 0, 0, 0)) + chunk(b'IDAT', zlib.compress(raw, 9)) + chunk(b'IEND', b'')
 
 
-BG, RING, RED = (16, 23, 27), (232, 238, 240), (229, 72, 77)
+BG, GOLD, RED = (13, 25, 34), (223, 195, 147), (233, 99, 86)
 
 
 def seg_dist(px, py, ax, ay, bx, by):
@@ -31,12 +29,13 @@ def icon(size, maskable=False):
                     u = ((x + (sx + 0.5) / ss) / size - 0.5) / k
                     v = ((y + (sy + 0.5) / ss) / size - 0.5) / k
                     col = BG
-                    r = math.hypot(u, v)
-                    if abs(r - 0.30) < 0.055:
-                        col = RING
-                    # inside: two red chevrons pointing up (advance, take over)
-                    for dy in (-0.07, 0.07):
-                        if seg_dist(u, v, -0.14, 0.07 + dy, 0.0, -0.07 + dy) < 0.042 or seg_dist(u, v, 0.14, 0.07 + dy, 0.0, -0.07 + dy) < 0.042:
+                    # Same 64 x 64 coordinates as the vector favicon.
+                    u, v = u * 64 + 32, v * 64 + 32
+                    for ax, ay, bx, by in ((12, 49, 32, 13), (32, 13, 52, 49), (52, 49, 12, 49)):
+                        if seg_dist(u, v, ax, ay, bx, by) < 1.5:
+                            col = GOLD
+                    for ax, ay, bx, by in ((27, 43, 39, 21), (22, 49, 42, 49)):
+                        if seg_dist(u, v, ax, ay, bx, by) < 2.5:
                             col = RED
                     for i in range(3):
                         acc[i] += col[i]
