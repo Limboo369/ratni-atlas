@@ -146,6 +146,10 @@ RA.makeBaseLayers = function (map) {
       // sea
       ctx.fillStyle = S.sea;
       ctx.fillRect(0, 0, px, px);
+      // Quiet navigation grid, clipped to the water with the sea layer.
+      ctx.strokeStyle = 'rgba(161,201,204,0.055)';ctx.lineWidth = dpr * .6;ctx.beginPath();
+      for (let n=0;n<px;n+=64*dpr) {ctx.moveTo(n,0);ctx.lineTo(n,px);ctx.moveTo(0,n);ctx.lineTo(px,n);}
+      ctx.stroke();
       // shallow-water glow along coasts
       ctx.lineJoin = 'round';
       ctx.strokeStyle = S.seaGlow;

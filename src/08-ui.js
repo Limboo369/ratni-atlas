@@ -1187,7 +1187,8 @@ RA.UI = class {
     let best = null, bd = R * R;
     for (const u of me.units) {
       if (u.dead) continue;
-      const dx = v.ox + u.x * v.cell - cp.x, dy = v.oy + u.y * v.cell - cp.y;
+      const pose = this.app.fx.unitMotion ? this.app.fx.unitMotion.get(u) : u;
+      const dx = v.ox + pose.x * v.cell - cp.x, dy = v.oy + pose.y * v.cell - cp.y;
       const d = dx * dx + dy * dy;
       if (d < bd) {
         bd = d;

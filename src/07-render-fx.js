@@ -368,12 +368,16 @@ RA.FxLayer = L.Layer.extend({
     // military units (era-aware battlefield miniatures) ------------------------------------------
     const me = G.me;
     const uw = RA.unitSize(cell);
+    if (!this.unitMotion) this.unitMotion = new RA.UnitMotion();
+    const still = RA.motionPreference.matches || ui.app.paused || (!G.online && !G.long && ui.app.sheetPaused);
+    const duration = G.long ? 160 : RA.clamp(RA.CFG.TICK_MS / (ui.app.speed || 1), 25, 120);
     const selId = ui.mode && ui.mode.kind === 'unit' ? ui.mode.id : -1;
     for (const u of G.units) {
       if (u.dead) continue;
       const mine = me && u.owner === me.id;
       if (!mine && cell < 1.15) continue;
-      const x = gx(u.x), y = gy(u.y);
+      const pose = this.unitMotion.sample(u, W, now, duration, still || u.ready > G.tick || u.empUntil > G.tick);
+      const x = gx(pose.x), y = gy(pose.y);
       if (!inView(x, y, 40)) continue;
       const U = RA.UNIT[u.type];
       // an enemy submarine stays hidden until one of your warships is near
@@ -394,14 +398,13 @@ RA.FxLayer = L.Layer.extend({
         }
       }
       const moving = u.path && u.pi < u.path.length;
-      const next = moving ? u.path[u.pi] : -1;
-      const angle = moving ? Math.atan2(((next / W) | 0) + .5 - u.y, (next % W) + .5 - u.x) : -.35;
+      const angle = pose.angle;
       if (u.id === selId && moving) {
         ctx.save();ctx.beginPath();ctx.moveTo(x,y);
         for(let i=u.pi;i<u.path.length;i++) ctx.lineTo(gx((u.path[i]%W)+.5),gy(((u.path[i]/W)|0)+.5));
         ctx.strokeStyle='rgba(238,213,156,.75)';ctx.lineWidth=1.5;ctx.setLineDash([4,6]);ctx.stroke();ctx.restore();
       }
-      RA.drawUnit(ctx, U.sym || u.type, x, y, U.naval ? uw * 1.25 : uw, G.P[u.owner].hex, mine, u.hp / U.hp, u.ready > G.tick, u.empUntil > G.tick, u.id === selId, now, angle, moving, G.tick-u.lastHit<15);
+      RA.drawUnit(ctx, U.sym || u.type, x, y, U.naval ? uw * 1.25 : uw, G.P[u.owner].hex, mine, u.hp / U.hp, u.ready > G.tick, u.empUntil > G.tick, u.id === selId, now, angle, moving && !still, G.tick-u.lastHit<15);
     }
 
     // resource deposits: a small diamond per kind (bright when yours) ------------------------------------------

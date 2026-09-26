@@ -163,6 +163,7 @@ RA.App = class {
       tapTolerance: 14,
     }));
     lmap.attributionControl.setPrefix(false);
+    L.control.scale({ position: 'bottomleft', metric: true, imperial: false, maxWidth: 100 }).addTo(lmap);
     lmap.attributionControl.addAttribution('Natural Earth · NASA · <a href="https://leafletjs.com" target="_blank" rel="noopener">Leaflet</a>');
     const pane = (name, z) => {
       const p = lmap.createPane(name);
@@ -573,7 +574,9 @@ RA.App = class {
       }
       const ui = this.ui;
       const anim = moving || G.state === 'spawn' || G.boats.length || G.missiles.length || G.units.length || G.trains.length || G.planes.length || G.tships.length || (ui.mode && (ui.mode.aim >= 0 || ui.mode.kind === 'unit')) || ui.fxList.length || G.pings.some((g) => G.tick - g.tick < 60) || (ui.pingState && now - ui.pingState.t0 < 700) || (G.me && G.attacks.some((a) => !a.done && a.a === G.me.id && a.focus >= 0));
-      if (moving || now - (this.lastF || 0) > (anim ? 30 : 200)) {
+      // Cached models follow display cadence on desktop; retain the phone frame budget.
+      const fxInterval = anim ? (this.fx.w > 900 && this.simMs < 12 ? 16 : 30) : 200;
+      if (moving || now - (this.lastF || 0) >= fxInterval) {
         this.fx.draw(G, this.terr.view(), ui);
         this.lastF = now;
       }

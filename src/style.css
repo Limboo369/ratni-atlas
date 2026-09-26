@@ -1163,3 +1163,62 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
   .pace-seg button b { font-size: 12px; letter-spacing: .04em; }
   .pace-seg button small { font-size: 10px; }
 }
+/* Command-room polish: campaign, research, map instruments and restrained motion. */
+.economy-overview{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border:1px solid #d2b38333;border-radius:4px;background:linear-gradient(135deg,#d2b3830e,#8cbeb707);margin-bottom:24px}
+.economy-overview>div{padding:15px 11px;min-width:0}
+.economy-overview>div+div{border-left:1px solid #ffffff0d}
+.economy-overview span,.economy-overview small{display:block;color:#96aab7;font-size:10px;line-height:1.5}
+.economy-overview span{text-transform:uppercase;letter-spacing:.1em}
+.economy-overview strong{display:block;color:#e5c796;font-size:23px;font-weight:600;line-height:1.5;font-variant-numeric:tabular-nums}
+.research-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0 25px}
+.research-card{--branch:#d3b788;display:flex;flex-direction:column;min-width:0;padding:15px;border:1px solid #aec5d327;border-top:2px solid var(--branch);border-radius:4px;background:linear-gradient(140deg,#ffffff07,#ffffff02)}
+.research-card[data-branch=mil]{--branch:#c88a7d}.research-card[data-branch=sci]{--branch:#85aebf}.research-card[data-branch=dip]{--branch:#84b2a4}
+.research-heading{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:600}
+.research-heading i{display:grid;place-items:center;width:34px;height:34px;flex:none;background:#ffffff07;color:var(--branch);border:1px solid #ffffff0d;border-radius:3px}
+.research-heading svg{width:21px;height:21px}
+.research-heading small{display:block;font-size:10px;font-weight:400;color:#99adb9;line-height:1.7}
+.research-progress{display:flex;gap:4px;margin-top:16px}
+.research-progress i{height:4px;flex:1;border:1px solid #ffffff19;background:#ffffff08;border-radius:1px}
+.research-progress .earned{background:var(--branch);border-color:var(--branch)}
+.research-progress .next{border-color:var(--branch)}
+.research-card p{font-size:12px;line-height:1.55;color:#a9bbc5;margin:12px 0 18px;flex:1}
+#sheet .research-card .mini{width:100%;min-height:40px;background:#d2b3830b;border-color:#d2b38338;color:#e5cd9f;font-size:12px;white-space:normal}
+.research-max{font-size:11px;color:#93c3b0;padding-block:10px}
+#sheetWrap:has(.campaign-marker){align-items:center;background:#040b12df;padding:24px;box-sizing:border-box}
+#app #sheet:has(.campaign-marker){position:relative;inset:auto;width:880px;max-width:100%;max-height:calc(100dvh - 48px);padding:26px;border-radius:6px;border:1px solid #c4aa7940;box-shadow:0 28px 100px #0008}
+#sheet:has(.campaign-marker)>.sh-head{position:sticky;top:-26px;background:#101b25;z-index:2;padding-top:15px;margin-top:-15px}
+.dynasty-banner{display:flex;align-items:center;gap:20px;padding:24px;background:radial-gradient(ellipse at 0 0,#cbb3811a,transparent 70%),#ffffff03;border:1px solid #d2b3832e;border-radius:4px;margin:22px 0 28px}
+.dynasty-seal{display:grid;place-items:center;width:70px;height:80px;color:#dcc296;background:#d2b3830a;border:1px solid #d2b38340;clip-path:polygon(0 0,100% 0,100% 78%,50% 100%,0 78%);flex:none}
+.dynasty-seal svg{width:36px;height:36px}
+.dynasty-banner>div:nth-child(2){min-width:0;flex:1}
+.dynasty-banner span{font-size:9px;letter-spacing:.1em;color:#bca985}
+.dynasty-banner h3{font-size:30px;font-weight:500;line-height:1.2;overflow-wrap:anywhere;margin:7px 0;color:#efe5d2}
+.dynasty-banner p{font-size:12px;color:#9db2bc;margin:5px 0}
+.dynasty-xp{border-left:1px solid #ffffff12;padding-left:20px;text-align:right;flex:none}
+.dynasty-xp b{display:block;font-size:30px;font-weight:500;color:#e4c899}
+.dynasty-xp span{letter-spacing:0}
+.campaign-chapter{display:flex;align-items:center;gap:15px;margin:32px 0 16px;border-bottom:1px solid #d2b38329;padding-bottom:15px}
+.chapter-number{font:400 30px var(--font-ui);color:#d7b887;letter-spacing:-.05em}
+.campaign-chapter>div{min-width:0;flex:1}.campaign-chapter h3{font-size:18px;font-weight:500;margin:0 0 3px}.campaign-chapter div>span,.campaign-chapter small{font-size:10px;color:#a3b4be}
+.campaign-chapter.is-locked{opacity:.55}
+.camp-row{border-radius:3px;padding:14px;gap:15px;margin-bottom:7px;position:relative}
+.camp-row>div:not(.cr-b){min-width:0;flex:1}.camp-row .cr-d{line-height:1.5;margin-top:5px}
+.mission-number{font-size:12px;color:#d2b383;align-self:flex-start;margin-top:3px;font-variant-numeric:tabular-nums}
+.camp-row .cr-s{display:block;font-size:12px;margin-top:4px}.camp-row .mini{min-width:68px}
+.campaign-homes{grid-template-columns:repeat(3,minmax(0,1fr))}
+.campaign-homes .btn{min-height:60px!important;border-left:2px solid #bba57555!important}
+.pace-seg button{min-height:77px;background:linear-gradient(140deg,#a6c5cd0a,#0a141bd9);border-color:#b9c8cb26;padding-top:13px;position:relative}
+.pace-seg button[aria-pressed=true]{background:linear-gradient(145deg,#c8ae821a,#101b23);border-color:#d3b582;color:#f0dfc3;box-shadow:inset 0 2px #d3b582}
+.pace-seg button[aria-pressed=true] small{color:#bdb8ac}
+.leaflet-bottom.leaflet-left{bottom:calc(var(--dock-h,120px) + 18px);pointer-events:none}
+.leaflet-control-scale-line{background:#0e1a22d9!important;color:#d5dfda!important;border:1px solid #c4d1c777!important;border-top:0!important;border-radius:0!important;text-shadow:none!important;font:10px var(--font-ui)!important;padding:4px 6px!important}
+#app:has(#modeBar:not([hidden])) .leaflet-control-scale{visibility:hidden}
+@media(min-width:1200px){.leaflet-bottom.leaflet-left{bottom:20px;left:10px}}
+@keyframes sheetin{from{transform:translateY(14px)}to{transform:translateY(0)}}
+#sheet{animation:sheetin .2s cubic-bezier(.2,.8,.2,1)}
+#sheet:has(.campaign-marker){animation:sheetin .24s cubic-bezier(.2,.8,.2,1)}
+#app button:focus-visible,#app input:focus-visible,#app select:focus-visible{outline:2px solid #e5c796;outline-offset:3px}
+@media(hover:hover){#dock .act:hover{background:#c8ad7a16;box-shadow:inset 0 2px #d2b38370}.campaign-homes .btn:hover,.camp-row:not(.locked):hover{background:#c8ad7a0b!important;border-color:#d2b38350!important}}
+@media(min-width:901px){@keyframes commandSlide{from{transform:translateX(16px)}to{transform:translateX(0)}}#app:has(#hud:not([hidden])) #sheet:not(:has(.dossier-marker,.campaign-marker)){animation:commandSlide .2s cubic-bezier(.2,.8,.2,1)}}
+@media(max-width:600px){#sheetWrap:has(.campaign-marker){padding:10px}#app #sheet:has(.campaign-marker){padding:18px;max-height:calc(100dvh - 20px)}#sheet:has(.campaign-marker)>.sh-head{top:-18px}.dynasty-banner{padding:16px;gap:12px;flex-wrap:wrap}.dynasty-seal{width:45px;height:54px}.dynasty-seal svg{width:25px;height:25px}.dynasty-banner h3{font-size:25px}.dynasty-banner span{font-size:8px}.dynasty-xp{width:100%;border-left:0;border-top:1px solid #ffffff12;padding:10px 0 0;display:flex;align-items:center;gap:8px}.dynasty-xp b{font-size:22px}.research-grid{gap:8px}.research-card{padding:11px}.research-heading{font-size:13px;gap:7px}.research-heading i{width:27px;height:30px}.research-card p{font-size:11px}.campaign-homes{grid-template-columns:repeat(2,minmax(0,1fr))}.camp-row{padding:12px 9px;gap:9px}.camp-row .cr-t{font-size:13px}.camp-row .cr-d{font-size:11px}.campaign-chapter{gap:10px}.campaign-chapter h3{font-size:16px}.economy-overview strong{font-size:21px}.economy-overview>div{padding:12px 8px}}
+@media(prefers-reduced-motion:reduce){#sheet,#sheet:has(.campaign-marker),#app:has(#hud:not([hidden])) #sheet:not(:has(.dossier-marker,.campaign-marker)){animation:none!important}.pace-seg button{transition:none}}
