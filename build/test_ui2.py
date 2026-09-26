@@ -320,6 +320,34 @@ async def main():
                 print('SKIP unit move: the unit was destroyed in the war going on')
             else:
                 check(anchor == cap or anchor >= 0, 'unit got a new position')
+        # 6b. a group: long press on a unit, tap another, Move, tap the map → they line up there
+        grp = await ev('''() => { const a = window.__ra, G = a.G, me = G.me; me.gold = 5e6;
+            for (const c of [me.cells[me.tiles >> 1], me.cells[me.tiles >> 2], me.cells[me.tiles >> 3]]) G.exec(me.id, 'rec', ['inf', c]);
+            for (let i = 0; i < 40; i++) G.step(); return me.units.filter(u => !u.dead).length; }''')
+        await ev('() => { document.getElementById("toasts").innerHTML = ""; window.__ra.ui.reqToasts.clear(); window.__ra.ui.setMode(null); }')
+        await page.wait_for_timeout(1200)
+        pose = '(u) => { const a = window.__ra, v = a.terr.view(), q = a.fx.unitMotion ? a.fx.unitMotion.get(u) || u : u; return [v.ox + q.x * v.cell, v.oy + q.y * v.cell]; }'
+        pts = await ev(f'() => window.__ra.G.me.units.filter(u => !u.dead).slice(0, 2).map({pose})')
+        if grp >= 2 and len(pts) == 2:
+            if MODE == 'phone':
+                await ev(f'() => window.__ra.ui.onLong(null, L.point({pts[0][0]}, {pts[0][1]}))')
+            else:
+                await page.mouse.move(pts[0][0], pts[0][1])
+                await page.mouse.down()
+                await page.wait_for_timeout(700)
+                await page.mouse.up()
+            await page.wait_for_timeout(200)
+            await tap_xy(pts[1][0], pts[1][1])
+            await page.wait_for_timeout(300)
+            m = await ev('() => { const m = window.__ra.ui.mode; return m && [m.kind, m.ids.length]; }')
+            check(m == ['group', 2], f'long press + tap: a group of 2 units {m}')
+            await page.click('#modeExtra')
+            cap = await ev('() => window.__ra.G.me.capital')
+            await tap_cell(cap)
+            await page.wait_for_timeout(200)
+            an = await ev('() => { const G = window.__ra.G, W = G.map.W; return G.me.units.filter(u => !u.dead).slice(0, 2).map(u => [u.anchor % W, (u.anchor / W) | 0]); }')
+            ok = len(an) == 2 and an[0] != an[1] and abs(an[0][0] - an[1][0]) + abs(an[0][1] - an[1][1]) <= 12
+            check(ok and await ev('() => !window.__ra.ui.mode'), f'Move: both units go there side by side {an}')
         # 7. diplomacy: alliance offer and trade offer are separate
         # Keep the two injected offers stable while the UI responds on a slow renderer.
         offer = await ev('''() => { const app = window.__ra, G = app.G, me = G.me; app.paused = true;

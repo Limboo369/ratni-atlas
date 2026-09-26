@@ -318,6 +318,17 @@ F1 zadaci u igri (ugovori s rokom i nagradom) · F2 red proizvodnje u fabrikama/
 nenapadanju s rokom, embargo · F9 savez: zajednička kasa i zajednički cilj · F10 generali s iskustvom · F11 dnevni
 izvještaj / ratne novine · F12 neutralni pobunjenici i blago na mapi.
 
+Darkove odluke (27. 9.): **F2 da** (red proizvodnje), **F3 da** (nivoi zgrada 1–3), **F11 da** — ali pregledno i vizuelno
+sređeno, ne log od 200 redova. **F4** ideja dobra, treba razrađen koncept. **F5, F7, F8, F10, F12**: traži detaljnije
+objašnjenje prije odluke. **Odbijeno: F1, F6** (zakazane naredbe — ne zna se šta će se desiti dok nisi tu), **F9**.
+
+## Telefon i jedinice 27. 9. (Darko)
+
+- Na telefonu nema iskačućih poruka o događajima (ko je koga napao…) ni kill feeda gore lijevo — pokrivaju pola karte;
+  iskaču samo ponude (savez/trgovina). Sve ostaje u dnevniku diplomatije. Urađeno.
+- Grupa jedinica: dug klik (telefon i računar) na jedinicu → grupa, klik na druge jedinice ih dodaje, dugme **Move**,
+  klik na kartu → poredaju se u liniju poprijeko na smjer kretanja. Urađeno.
+
 ## Jezik 27. 9. (Darko): igra na engleskom — urađeno
 
 Sav tekst u igri je na engleskom (i sve što ubuduće dodamo); srpski (latinica, „Istorija“) je drugi jezik, dugme EN/SR

@@ -212,6 +212,22 @@ RA.App = class {
       rd = { p0: cpOf(e), moved: false, long: null };
       eatCtx = false;
     });
+    // a long left click on one of my units (a computer's long press) starts a group of units, like a long touch
+    let hold = null;
+    box.addEventListener('mousedown', (e) => {
+      if (e.button !== 0) return;
+      const p0 = cpOf(e);
+      clearTimeout(hold && hold.t);
+      hold = { p0, t: setTimeout(() => {
+        if (!this.ui.unitAt(p0)) return;
+        this.ui.eatTap = true;
+        this.ui.onLong(lmap.containerPointToLatLng(p0), p0);
+      }, 450) };
+    });
+    window.addEventListener('mousemove', (e) => {
+      if (hold && cpOf(e).distanceTo(hold.p0) > 6) (clearTimeout(hold.t), (hold = null));
+    });
+    window.addEventListener('mouseup', () => hold && (clearTimeout(hold.t), (hold = null)));
     window.addEventListener('mousemove', (e) => {
       if (!rd) return;
       const p = cpOf(e);
@@ -609,7 +625,7 @@ RA.App = class {
         this.lastT = now;
       }
       const ui = this.ui;
-      const anim = moving || G.state === 'spawn' || G.boats.length || G.missiles.length || G.units.length || G.trains.length || G.planes.length || G.tships.length || (ui.mode && (ui.mode.aim >= 0 || ui.mode.kind === 'unit')) || ui.fxList.length || G.pings.some((g) => G.tick - g.tick < 60) || (ui.pingState && now - ui.pingState.t0 < 700) || (G.me && G.attacks.some((a) => !a.done && a.a === G.me.id && a.focus >= 0));
+      const anim = moving || G.state === 'spawn' || G.boats.length || G.missiles.length || G.units.length || G.trains.length || G.planes.length || G.tships.length || (ui.mode && (ui.mode.aim >= 0 || ui.mode.kind === 'unit' || ui.mode.kind === 'group')) || ui.fxList.length || G.pings.some((g) => G.tick - g.tick < 60) || (ui.pingState && now - ui.pingState.t0 < 700) || (G.me && G.attacks.some((a) => !a.done && a.a === G.me.id && a.focus >= 0));
       // Cached models follow display cadence on desktop; retain the phone frame budget.
       const fxInterval = anim ? (this.fx.w > 900 && this.simMs < 12 ? 16 : 30) : 200;
       if (moving || now - (this.lastF || 0) >= fxInterval) {

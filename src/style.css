@@ -755,7 +755,8 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
 #dlogList time { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 11px; flex: none; padding-top: 1px; }
 #dlog.collapsed #dlogList { display: none; }
 #dlog.collapsed { width: auto; }
-@media (max-width: 760px) { #dlog { bottom: calc(var(--dock-h, 90px) + 64px); } .kf { font-size: 12px; } }
+/* phone: no kill feed over the map (Darko, 27. 9.); wars and falls stay in the diplomacy log */
+@media (max-width: 760px) { #dlog { bottom: calc(var(--dock-h, 90px) + 64px); } .kf { font-size: 12px; } #feed { display: none; } }
 
 /* Commander identity, dossiers and the expanded theatre selector. */
 .command-identity { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 36px; margin-bottom: 4px; }

@@ -760,7 +760,8 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
 #dlogList time { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 11px; flex: none; padding-top: 1px; }
 #dlog.collapsed #dlogList { display: none; }
 #dlog.collapsed { width: auto; }
-@media (max-width: 760px) { #dlog { bottom: calc(var(--dock-h, 90px) + 64px); } .kf { font-size: 12px; } }
+/* phone: no kill feed over the map (Darko, 27. 9.); wars and falls stay in the diplomacy log */
+@media (max-width: 760px) { #dlog { bottom: calc(var(--dock-h, 90px) + 64px); } .kf { font-size: 12px; } #feed { display: none; } }
 
 /* Commander identity, dossiers and the expanded theatre selector. */
 .command-identity { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 36px; margin-bottom: 4px; }
@@ -2846,6 +2847,7 @@ RA.SR = {
   "Mode rules": "Pravila moda",
   "Money loves peace. I love money.": "Pare vole mir. Ja volim pare.",
   "Moscow": "Moskva",
+  "Move ({0})": "Pomjeri ({0})",
   "Move the map": "Pomjeri kartu",
   "Move those ships or we'll sink them with rocks!": "Sklanjaj brodove ili ćemo ih potopiti kamenjem!",
   "Multirole fighters": "Višenamjenski lovci",
@@ -3252,9 +3254,11 @@ RA.SR = {
   "Tap the coast, not the sea.": "Dodirni obalu, ne more.",
   "Tap the map where the new state's capital is.": "Dodirni kartu gdje je prijestolnica nove države.",
   "Tap to change": "Dodirni za promjenu",
+  "Tap where the {0} units should go — they line up there": "Dodirni gdje {0} jedinica treba da ode — tamo se poredaju u liniju",
   "Tap your land (at least 5 cells from other cities): a new city": "Dodirni svoju zemlju (bar 5 polja od drugih gradova): novi grad",
   "Tap your land near the border: {0}": "Dodirni svoju zemlju uz granicu: {0}",
   "Tap your land: {0}": "Dodirni svoju zemlju: {0}",
+  "Tap your units to add them, then press Move.": "Dodirni svoje jedinice da ih dodaš, pa pritisni Pomjeri.",
   "Target out of range ({0} cells from a {1}). Build closer to the front.": "Meta je izvan dometa ({0} polja od zgrade {1}). Gradi bliže frontu.",
   "Target out of range: {0} cells from a {1}.": "Meta je izvan dometa: {0} polja od zgrade {1}.",
   "Target too far: {0} flies up to {1} cells from your border.": "Meta je predaleko: {0} leti do {1} polja od tvoje granice.",
@@ -4014,6 +4018,7 @@ RA.SR = {
   "{0} troops": "{0} vojske",
   "{0} troops in the attack · {1} come back": "U napadu je {0} vojnika · vraća se {1}",
   "{0} troops sent to an ally ({1}).": "Poslano {0} vojnika savezniku ({1}).",
+  "{0} units selected · tap more units, then Move": "{0} jedinica izabrano · dodirni još jedinica, pa Pomjeri",
   "{0} votes to surrender ({1}/{2}).": "{0} glasa za predaju ({1}/{2}).",
   "{0} wants {1} more gold for that deal (Alliances → Offers).": "{0} traži još {1} zlata za taj dogovor (Savezi → Ponude).",
   "{0} was already asked for help — wait a little.": "{0} je već pozvan u pomoć — pričekaj malo.",
@@ -11758,6 +11763,7 @@ RA.FxLayer = L.Layer.extend({
     const still = RA.motionPreference.matches || ui.app.paused || (!G.online && !G.long && ui.app.sheetPaused);
     const duration = G.long ? 160 : RA.clamp(RA.CFG.TICK_MS / (ui.app.speed || 1), 25, 120);
     const selId = ui.mode && ui.mode.kind === 'unit' ? ui.mode.id : -1;
+    const grp = ui.mode && ui.mode.kind === 'group' ? ui.mode.ids : null;
     for (const u of G.units) {
       if (u.dead) continue;
       const mine = me && u.owner === me.id;
@@ -11768,12 +11774,13 @@ RA.FxLayer = L.Layer.extend({
       const U = RA.UNIT[u.type];
       // an enemy submarine stays hidden until one of your warships is near
       if (U.sub && me && !mine && !G.isFriendly(me, G.P[u.owner]) && !G.subSeen(u, me.id)) continue;
-      if (u.id === selId || (mine && ui.mode && (ui.mode.kind === 'recruit' || ui.mode.kind === 'unit'))) {
+      const sel = u.id === selId || (grp && grp.includes(u.id));
+      if (sel || (mine && ui.mode && (ui.mode.kind === 'recruit' || ui.mode.kind === 'unit' || ui.mode.kind === 'group'))) {
         ctx.beginPath();
         ctx.arc(x, y, U.r * cell, 0, Math.PI * 2);
         ctx.setLineDash([5, 4]);
-        ctx.strokeStyle = u.id === selId ? 'rgba(242,177,52,0.95)' : 'rgba(255,255,255,0.6)';
-        ctx.lineWidth = u.id === selId ? 2 : 1.2;
+        ctx.strokeStyle = sel ? 'rgba(242,177,52,0.95)' : 'rgba(255,255,255,0.6)';
+        ctx.lineWidth = sel ? 2 : 1.2;
         ctx.stroke();
         ctx.setLineDash([]);
         if (u.type === 'art' || U.naval) {
@@ -12785,6 +12792,8 @@ RA.trDom = function (root) {
     }
 };
 
+RA.phone = () => !!(window.matchMedia && matchMedia('(max-width: 760px)').matches);
+
 RA.TERR_NAME = [RA.t("sea"), RA.t("plains"), RA.t("hills"), RA.t("mountains")];
 
 RA.UI = class {
@@ -13408,6 +13417,7 @@ RA.UI = class {
         this.updateRequests();
         this.tips();
         if (this.mode && this.mode.kind === 'unit' && !this.selUnit()) this.setMode(null);
+        if (this.mode && this.mode.kind === 'group' && this.groupUnits().length !== this.mode.ids.length) this.setMode(this.groupUnits().length ? Object.assign({}, this.mode, { ids: this.groupUnits().map((u) => u.id) }) : null);
       }
     }
   }
@@ -13549,12 +13559,15 @@ RA.UI = class {
     }
     // sounds for what happens to me
     const A = this.audio, t = e.text || '';
-    if (/leti na tebe|udar na tvoju/.test(t)) A.play(/☢/.test(t) ? 'siren' : 'rocket', 1500);
-    else if (/te napada/.test(t)) A.play('alarm', 4000);
-    else if (/^Osvojen grad/.test(t)) A.play('city', 600);
-    else if (/^Izgubljen grad|Pala je tvoja prijestolnica/.test(t)) A.play('loss', 800);
+    // (the texts are in the player's language: English or Serbian)
+    if (/flying at you|a strike on your land|leti na tebe|udar na tvoju/.test(t)) A.play(/☢/.test(t) ? 'siren' : 'rocket', 1500);
+    else if (/is attacking you!|te napada/.test(t)) A.play('alarm', 4000);
+    else if (/^(City captured|Osvojen grad)/.test(t)) A.play('city', 600);
+    else if (/^(City lost|Izgubljen grad)|^Your capital .* has fallen|Pala je tvoja prijestolnica/.test(t)) A.play('loss', 800);
     else if (e.kind === 'offer' || e.kind === 'ally') A.play('msg', 1000);
     if (e.kind === 'offer') return; // shown as an offer toast with buttons
+    // on a phone the news would cover half of the map (Darko, 27. 9.): only offers pop up there; the rest stays in the logs
+    if (RA.phone()) return;
     this.toast(e.kind, RA.esc(e.text), { cell: e.cell, ms: e.kind === 'bad' ? 5200 : 4200 });
     if (e.kind === 'bad' && navigator.vibrate) {
       try {
@@ -13860,6 +13873,47 @@ RA.UI = class {
     if (!m || m.kind !== 'unit' || !G.me) return null;
     return G.me.units.find((u) => u.id === m.id && !u.dead) || null;
   }
+  /* a group of my units (long press on a unit, then taps on more): mode {kind: 'group', ids, move} */
+  groupUnits() {
+    const G = this.G, m = this.mode;
+    if (!m || m.kind !== 'group' || !G.me) return [];
+    return G.me.units.filter((u) => !u.dead && m.ids.includes(u.id));
+  }
+  groupStart(u) {
+    const m = this.mode;
+    const ids = m && m.kind === 'unit' && m.id !== u.id ? [m.id, u.id] : [u.id];
+    this.setMode({ kind: 'group', ids, move: false });
+  }
+  /* where unit u goes when sent to cell c: my nearest land, or the sea for a ship (-1: nowhere) */
+  unitTarget(u, c) {
+    const G = this.G, me = G.me;
+    if (c < 0) return -1;
+    if (RA.UNIT[u.type].naval) return G.seaFor(c, me.id) ? c : G._bfs(c, () => true, (n) => G.seaFor(n, me.id) && !G.map.block[n], 400);
+    return this.nearestOwn(c, 4000);
+  }
+  /* send the group to c in a line across the way they go (the order along the line kept, so nobody crosses) */
+  groupMove(us, c) {
+    const G = this.G, W = G.map.W, tx = c % W, ty = (c / W) | 0;
+    let cx = 0, cy = 0;
+    for (const u of us) (cx += u.x), (cy += u.y);
+    cx /= us.length;
+    cy /= us.length;
+    let dx = tx - cx, dy = ty - cy;
+    const d = Math.hypot(dx, dy);
+    if (d < 1) (dx = 0), (dy = 1);
+    else (dx /= d), (dy /= d);
+    const px = -dy, py = dx, gap = 3;
+    const order = us.slice().sort((a, b) => (a.x - cx) * px + (a.y - cy) * py - ((b.x - cx) * px + (b.y - cy) * py));
+    let sent = 0;
+    order.forEach((u, i) => {
+      const k = (i - (order.length - 1) / 2) * gap;
+      const x = Math.round(tx + px * k), y = Math.round(ty + py * k);
+      const cell = x >= 0 && y >= 0 && x < W && y < G.map.H ? y * W + x : c;
+      const t = this.unitTarget(u, cell) >= 0 ? this.unitTarget(u, cell) : this.unitTarget(u, c);
+      if (t >= 0) this.act('mv', [u.id, t]), sent++;
+    });
+    return sent;
+  }
   setMode(m) {
     this.mode = m;
     document.getElementById('app').classList.toggle('aiming', !!m); // taps go through toasts to the map (style.css)
@@ -13901,6 +13955,19 @@ RA.UI = class {
     } else if (m.kind === 'recruit') {
       txt = RA.t("Tap your land near the border: {0}", RA.UNIT[m.type].name);
       btn = 'aArmy';
+    } else if (m.kind === 'group') {
+      const us = this.groupUnits();
+      if (!us.length) {
+        this.mode = null;
+        bar.hidden = true;
+        return;
+      }
+      txt = m.move ? RA.t("Tap where the {0} units should go — they line up there", us.length) : RA.t("{0} units selected · tap more units, then Move", us.length);
+      if (!m.move) {
+        ex.textContent = RA.t("Move ({0})", us.length);
+        ex.hidden = false;
+      }
+      btn = 'aArmy';
     } else if (m.kind === 'unit') {
       const u = this.selUnit();
       if (!u) {
@@ -13935,6 +14002,7 @@ RA.UI = class {
   }
   modeExtra() {
     const m = this.mode;
+    if (m && m.kind === 'group') return this.setMode(Object.assign({}, m, { move: true }));
     if (m && m.kind === 'missile' && m.aim >= 0) {
       this.fireMissile(m.type, m.aim);
       return;
@@ -13981,6 +14049,7 @@ RA.UI = class {
   onTap(ll, cp) {
     const G = this.G;
     if (!G) return;
+    if (this.eatTap) return void (this.eatTap = false); // the click that ends a long press
     const c = this.cellFromLatLng(ll);
     if (this.editor) return this.editor.tap(c); // the scenario editor (09i-editor.js)
     if (G.state === 'spawn') {
@@ -13998,6 +14067,15 @@ RA.UI = class {
     if (G.state !== 'play' || !G.me || !G.me.alive) return;
     const me = G.me;
     const m = this.mode;
+    // group: tapping my units adds / removes them until Move is pressed
+    if (m && m.kind === 'group' && !m.move) {
+      const u = this.unitAt(cp);
+      if (u) {
+        const ids = m.ids.includes(u.id) ? m.ids.filter((i) => i !== u.id) : m.ids.concat(u.id);
+        this.setMode(ids.length ? Object.assign({}, m, { ids }) : null);
+      } else this.toast('info', RA.t("Tap your units to add them, then press Move."));
+      return;
+    }
     // tapping one of my units selects it (tap again to deselect)
     if (!m || m.kind === 'unit') {
       const u = this.unitAt(cp);
@@ -14075,6 +14153,12 @@ RA.UI = class {
       this.ping(cp, false);
       this.act('rec', [m.type, cc]);
       this.setMode(null);
+    } else if (m.kind === 'group') {
+      const us = this.groupUnits();
+      if (!us.length) return this.setMode(null);
+      if (!this.groupMove(us, c)) return fail(RA.t("None of your land nearby."));
+      this.ping(cp, false);
+      this.setMode(null);
     } else if (m.kind === 'unit') {
       const u = this.selUnit();
       if (!u) return this.setMode(null);
@@ -14120,6 +14204,9 @@ RA.UI = class {
   onLong(ll, cp) {
     const G = this.G;
     if (!G || G.state !== 'play') return;
+    // a long press on one of my units starts a group (then taps add more units, Move sends them)
+    const u = G.me && G.me.alive && this.unitAt(cp);
+    if (u) return this.groupStart(u);
     this.cellSheet(this.cellFromLatLng(ll));
   }
   onKey(e) {
@@ -17437,6 +17524,22 @@ RA.App = class {
       rd = { p0: cpOf(e), moved: false, long: null };
       eatCtx = false;
     });
+    // a long left click on one of my units (a computer's long press) starts a group of units, like a long touch
+    let hold = null;
+    box.addEventListener('mousedown', (e) => {
+      if (e.button !== 0) return;
+      const p0 = cpOf(e);
+      clearTimeout(hold && hold.t);
+      hold = { p0, t: setTimeout(() => {
+        if (!this.ui.unitAt(p0)) return;
+        this.ui.eatTap = true;
+        this.ui.onLong(lmap.containerPointToLatLng(p0), p0);
+      }, 450) };
+    });
+    window.addEventListener('mousemove', (e) => {
+      if (hold && cpOf(e).distanceTo(hold.p0) > 6) (clearTimeout(hold.t), (hold = null));
+    });
+    window.addEventListener('mouseup', () => hold && (clearTimeout(hold.t), (hold = null)));
     window.addEventListener('mousemove', (e) => {
       if (!rd) return;
       const p = cpOf(e);
@@ -17834,7 +17937,7 @@ RA.App = class {
         this.lastT = now;
       }
       const ui = this.ui;
-      const anim = moving || G.state === 'spawn' || G.boats.length || G.missiles.length || G.units.length || G.trains.length || G.planes.length || G.tships.length || (ui.mode && (ui.mode.aim >= 0 || ui.mode.kind === 'unit')) || ui.fxList.length || G.pings.some((g) => G.tick - g.tick < 60) || (ui.pingState && now - ui.pingState.t0 < 700) || (G.me && G.attacks.some((a) => !a.done && a.a === G.me.id && a.focus >= 0));
+      const anim = moving || G.state === 'spawn' || G.boats.length || G.missiles.length || G.units.length || G.trains.length || G.planes.length || G.tships.length || (ui.mode && (ui.mode.aim >= 0 || ui.mode.kind === 'unit' || ui.mode.kind === 'group')) || ui.fxList.length || G.pings.some((g) => G.tick - g.tick < 60) || (ui.pingState && now - ui.pingState.t0 < 700) || (G.me && G.attacks.some((a) => !a.done && a.a === G.me.id && a.focus >= 0));
       // Cached models follow display cadence on desktop; retain the phone frame budget.
       const fxInterval = anim ? (this.fx.w > 900 && this.simMs < 12 ? 16 : 30) : 200;
       if (moving || now - (this.lastF || 0) >= fxInterval) {
@@ -20205,7 +20308,7 @@ Object.assign(RA.UI.prototype, {
   },
 });
 
-RA.BUILD = '329d8c9c';
+RA.BUILD = '041c6581';
 new RA.App().boot();
 }
 function __raFallback(){

@@ -83,6 +83,8 @@ RA.trDom = function (root) {
     }
 };
 
+RA.phone = () => !!(window.matchMedia && matchMedia('(max-width: 760px)').matches);
+
 RA.TERR_NAME = [RA.t("sea"), RA.t("plains"), RA.t("hills"), RA.t("mountains")];
 
 RA.UI = class {
@@ -706,6 +708,7 @@ RA.UI = class {
         this.updateRequests();
         this.tips();
         if (this.mode && this.mode.kind === 'unit' && !this.selUnit()) this.setMode(null);
+        if (this.mode && this.mode.kind === 'group' && this.groupUnits().length !== this.mode.ids.length) this.setMode(this.groupUnits().length ? Object.assign({}, this.mode, { ids: this.groupUnits().map((u) => u.id) }) : null);
       }
     }
   }
@@ -847,12 +850,15 @@ RA.UI = class {
     }
     // sounds for what happens to me
     const A = this.audio, t = e.text || '';
-    if (/leti na tebe|udar na tvoju/.test(t)) A.play(/☢/.test(t) ? 'siren' : 'rocket', 1500);
-    else if (/te napada/.test(t)) A.play('alarm', 4000);
-    else if (/^Osvojen grad/.test(t)) A.play('city', 600);
-    else if (/^Izgubljen grad|Pala je tvoja prijestolnica/.test(t)) A.play('loss', 800);
+    // (the texts are in the player's language: English or Serbian)
+    if (/flying at you|a strike on your land|leti na tebe|udar na tvoju/.test(t)) A.play(/☢/.test(t) ? 'siren' : 'rocket', 1500);
+    else if (/is attacking you!|te napada/.test(t)) A.play('alarm', 4000);
+    else if (/^(City captured|Osvojen grad)/.test(t)) A.play('city', 600);
+    else if (/^(City lost|Izgubljen grad)|^Your capital .* has fallen|Pala je tvoja prijestolnica/.test(t)) A.play('loss', 800);
     else if (e.kind === 'offer' || e.kind === 'ally') A.play('msg', 1000);
     if (e.kind === 'offer') return; // shown as an offer toast with buttons
+    // on a phone the news would cover half of the map (Darko, 27. 9.): only offers pop up there; the rest stays in the logs
+    if (RA.phone()) return;
     this.toast(e.kind, RA.esc(e.text), { cell: e.cell, ms: e.kind === 'bad' ? 5200 : 4200 });
     if (e.kind === 'bad' && navigator.vibrate) {
       try {
@@ -1158,6 +1164,47 @@ RA.UI = class {
     if (!m || m.kind !== 'unit' || !G.me) return null;
     return G.me.units.find((u) => u.id === m.id && !u.dead) || null;
   }
+  /* a group of my units (long press on a unit, then taps on more): mode {kind: 'group', ids, move} */
+  groupUnits() {
+    const G = this.G, m = this.mode;
+    if (!m || m.kind !== 'group' || !G.me) return [];
+    return G.me.units.filter((u) => !u.dead && m.ids.includes(u.id));
+  }
+  groupStart(u) {
+    const m = this.mode;
+    const ids = m && m.kind === 'unit' && m.id !== u.id ? [m.id, u.id] : [u.id];
+    this.setMode({ kind: 'group', ids, move: false });
+  }
+  /* where unit u goes when sent to cell c: my nearest land, or the sea for a ship (-1: nowhere) */
+  unitTarget(u, c) {
+    const G = this.G, me = G.me;
+    if (c < 0) return -1;
+    if (RA.UNIT[u.type].naval) return G.seaFor(c, me.id) ? c : G._bfs(c, () => true, (n) => G.seaFor(n, me.id) && !G.map.block[n], 400);
+    return this.nearestOwn(c, 4000);
+  }
+  /* send the group to c in a line across the way they go (the order along the line kept, so nobody crosses) */
+  groupMove(us, c) {
+    const G = this.G, W = G.map.W, tx = c % W, ty = (c / W) | 0;
+    let cx = 0, cy = 0;
+    for (const u of us) (cx += u.x), (cy += u.y);
+    cx /= us.length;
+    cy /= us.length;
+    let dx = tx - cx, dy = ty - cy;
+    const d = Math.hypot(dx, dy);
+    if (d < 1) (dx = 0), (dy = 1);
+    else (dx /= d), (dy /= d);
+    const px = -dy, py = dx, gap = 3;
+    const order = us.slice().sort((a, b) => (a.x - cx) * px + (a.y - cy) * py - ((b.x - cx) * px + (b.y - cy) * py));
+    let sent = 0;
+    order.forEach((u, i) => {
+      const k = (i - (order.length - 1) / 2) * gap;
+      const x = Math.round(tx + px * k), y = Math.round(ty + py * k);
+      const cell = x >= 0 && y >= 0 && x < W && y < G.map.H ? y * W + x : c;
+      const t = this.unitTarget(u, cell) >= 0 ? this.unitTarget(u, cell) : this.unitTarget(u, c);
+      if (t >= 0) this.act('mv', [u.id, t]), sent++;
+    });
+    return sent;
+  }
   setMode(m) {
     this.mode = m;
     document.getElementById('app').classList.toggle('aiming', !!m); // taps go through toasts to the map (style.css)
@@ -1199,6 +1246,19 @@ RA.UI = class {
     } else if (m.kind === 'recruit') {
       txt = RA.t("Tap your land near the border: {0}", RA.UNIT[m.type].name);
       btn = 'aArmy';
+    } else if (m.kind === 'group') {
+      const us = this.groupUnits();
+      if (!us.length) {
+        this.mode = null;
+        bar.hidden = true;
+        return;
+      }
+      txt = m.move ? RA.t("Tap where the {0} units should go — they line up there", us.length) : RA.t("{0} units selected · tap more units, then Move", us.length);
+      if (!m.move) {
+        ex.textContent = RA.t("Move ({0})", us.length);
+        ex.hidden = false;
+      }
+      btn = 'aArmy';
     } else if (m.kind === 'unit') {
       const u = this.selUnit();
       if (!u) {
@@ -1233,6 +1293,7 @@ RA.UI = class {
   }
   modeExtra() {
     const m = this.mode;
+    if (m && m.kind === 'group') return this.setMode(Object.assign({}, m, { move: true }));
     if (m && m.kind === 'missile' && m.aim >= 0) {
       this.fireMissile(m.type, m.aim);
       return;
@@ -1279,6 +1340,7 @@ RA.UI = class {
   onTap(ll, cp) {
     const G = this.G;
     if (!G) return;
+    if (this.eatTap) return void (this.eatTap = false); // the click that ends a long press
     const c = this.cellFromLatLng(ll);
     if (this.editor) return this.editor.tap(c); // the scenario editor (09i-editor.js)
     if (G.state === 'spawn') {
@@ -1296,6 +1358,15 @@ RA.UI = class {
     if (G.state !== 'play' || !G.me || !G.me.alive) return;
     const me = G.me;
     const m = this.mode;
+    // group: tapping my units adds / removes them until Move is pressed
+    if (m && m.kind === 'group' && !m.move) {
+      const u = this.unitAt(cp);
+      if (u) {
+        const ids = m.ids.includes(u.id) ? m.ids.filter((i) => i !== u.id) : m.ids.concat(u.id);
+        this.setMode(ids.length ? Object.assign({}, m, { ids }) : null);
+      } else this.toast('info', RA.t("Tap your units to add them, then press Move."));
+      return;
+    }
     // tapping one of my units selects it (tap again to deselect)
     if (!m || m.kind === 'unit') {
       const u = this.unitAt(cp);
@@ -1373,6 +1444,12 @@ RA.UI = class {
       this.ping(cp, false);
       this.act('rec', [m.type, cc]);
       this.setMode(null);
+    } else if (m.kind === 'group') {
+      const us = this.groupUnits();
+      if (!us.length) return this.setMode(null);
+      if (!this.groupMove(us, c)) return fail(RA.t("None of your land nearby."));
+      this.ping(cp, false);
+      this.setMode(null);
     } else if (m.kind === 'unit') {
       const u = this.selUnit();
       if (!u) return this.setMode(null);
@@ -1418,6 +1495,9 @@ RA.UI = class {
   onLong(ll, cp) {
     const G = this.G;
     if (!G || G.state !== 'play') return;
+    // a long press on one of my units starts a group (then taps add more units, Move sends them)
+    const u = G.me && G.me.alive && this.unitAt(cp);
+    if (u) return this.groupStart(u);
     this.cellSheet(this.cellFromLatLng(ll));
   }
   onKey(e) {

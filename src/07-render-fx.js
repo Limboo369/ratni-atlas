@@ -404,6 +404,7 @@ RA.FxLayer = L.Layer.extend({
     const still = RA.motionPreference.matches || ui.app.paused || (!G.online && !G.long && ui.app.sheetPaused);
     const duration = G.long ? 160 : RA.clamp(RA.CFG.TICK_MS / (ui.app.speed || 1), 25, 120);
     const selId = ui.mode && ui.mode.kind === 'unit' ? ui.mode.id : -1;
+    const grp = ui.mode && ui.mode.kind === 'group' ? ui.mode.ids : null;
     for (const u of G.units) {
       if (u.dead) continue;
       const mine = me && u.owner === me.id;
@@ -414,12 +415,13 @@ RA.FxLayer = L.Layer.extend({
       const U = RA.UNIT[u.type];
       // an enemy submarine stays hidden until one of your warships is near
       if (U.sub && me && !mine && !G.isFriendly(me, G.P[u.owner]) && !G.subSeen(u, me.id)) continue;
-      if (u.id === selId || (mine && ui.mode && (ui.mode.kind === 'recruit' || ui.mode.kind === 'unit'))) {
+      const sel = u.id === selId || (grp && grp.includes(u.id));
+      if (sel || (mine && ui.mode && (ui.mode.kind === 'recruit' || ui.mode.kind === 'unit' || ui.mode.kind === 'group'))) {
         ctx.beginPath();
         ctx.arc(x, y, U.r * cell, 0, Math.PI * 2);
         ctx.setLineDash([5, 4]);
-        ctx.strokeStyle = u.id === selId ? 'rgba(242,177,52,0.95)' : 'rgba(255,255,255,0.6)';
-        ctx.lineWidth = u.id === selId ? 2 : 1.2;
+        ctx.strokeStyle = sel ? 'rgba(242,177,52,0.95)' : 'rgba(255,255,255,0.6)';
+        ctx.lineWidth = sel ? 2 : 1.2;
         ctx.stroke();
         ctx.setLineDash([]);
         if (u.type === 'art' || U.naval) {
