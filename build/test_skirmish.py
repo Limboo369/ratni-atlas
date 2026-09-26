@@ -89,10 +89,18 @@ async def main():
         await A.wait_for_function(f'window.__ra.G.tick > 30 && window.__ra.G.P[{tb}].human', timeout=60000)
         teams = await A.evaluate(f'[window.__ra.G.P[{ta}].team, window.__ra.G.P[{tb}].team]')
         check(teams == [1, 2], f'each player in the team they picked {teams}')
-        await A.evaluate('() => { const G = window.__ra.G; if (G._hh) return; G._hh = {}; const s = G.step.bind(G); G.step = () => { s(); G._hh[G.tick] = G.hash(); }; }')
-        await B.evaluate('() => { const G = window.__ra.G; if (G._hh) return; G._hh = {}; const s = G.step.bind(G); G.step = () => { s(); G._hh[G.tick] = G.hash(); }; }')
-        await asyncio.sleep(3)
-        cmp = await A.evaluate('(hb) => { const h = window.__ra.G._hh; const k = Object.keys(hb).filter((t) => h[t] !== undefined); return [k.length, k.filter((t) => h[t] !== hb[t]).length]; }', await B.evaluate('window.__ra.G._hh'))
+        # record each device's checksum per tick (again if a device rebuilt its game to catch up with the server) until
+        # both have played the same ticks for a while
+        HOOK = '() => { const G = window.__ra.G; if (G._hh) return; G._hh = {}; const s = G.step.bind(G); G.step = () => { s(); G._hh[G.tick] = G.hash(); }; }'
+        CMP = '(hb) => { const h = window.__ra.G._hh || {}; const k = Object.keys(hb).filter((t) => h[t] !== undefined); return [k.length, k.filter((t) => h[t] !== hb[t]).length]; }'
+        cmp = [0, 0]
+        for _ in range(40):
+            await A.evaluate(HOOK)
+            await B.evaluate(HOOK)
+            await asyncio.sleep(0.5)
+            cmp = await A.evaluate(CMP, await B.evaluate('window.__ra.G._hh || {}'))
+            if cmp[0] >= 10 or cmp[1]:
+                break
         rate = await A.evaluate('window.__ra.G.tick')
         check(cmp[0] >= 10 and cmp[1] == 0, f'both devices play the same game at Blitz speed (ticks compared {cmp[0]}, different {cmp[1]}, tick {rate})')
         # a report needs an account (no accounts server here)
