@@ -1,0 +1,25 @@
+'use strict';
+// Fast renderer checks: no browser, no simulation or network writes.
+const assert = require('node:assert/strict');
+const vm = require('node:vm');
+const fs = require('node:fs');
+const path = require('node:path');
+const RA = { clamp:(v,a,b)=>Math.max(a,Math.min(v,b)) };
+vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../src/07c-render-motion.js'),'utf8'), {RA,matchMedia:()=>({matches:false})});
+const m=new RA.UnitMotion(), u={x:2,y:3,path:[309],pi:0};
+m.sample(u,100,0,100,false);
+u.x=3;const state=JSON.stringify(u);
+assert.equal(m.sample(u,100,100,100,false).x,2);
+assert.equal(m.sample(u,100,150,100,false).x,2.5);
+assert.equal(m.sample(u,100,200,100,false).x,3);
+assert.equal(JSON.stringify(u),state,'rendering must not mutate the unit');
+assert.equal(m.get(u).x,3,'hit testing uses the rendered position');
+u.x=4;assert.equal(m.sample(u,100,210,100,true).x,4,'pause/reduced motion snaps');
+u.x=40;assert.equal(m.sample(u,100,220,100,false).x,40,'teleports do not glide across the map');
+u.x=41;assert.equal(m.sample(u,100,1000,100,false).x,41,'resume from background snaps');
+const turn={x:3,y:3,path:[202],pi:0};
+const a=m.sample(turn,100,0,100,false).angle;turn.path=[402];
+const b=m.sample(turn,100,16,100,false).angle;
+assert.ok(Math.abs(b-a)<.4,'turn smoothly along the shortest arc');
+turn.path=[];assert.equal(m.sample(turn,100,32,100,false).angle,b,'hold heading at rest');
+console.log('PASS render interpolation, selection pose, pause, teleport, resume, turn and simulation isolation');

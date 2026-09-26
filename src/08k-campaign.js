@@ -102,22 +102,23 @@ Object.assign(RA.UI.prototype, {
     const home = RA.CAMP_HOMES.find((h) => h.id === c.home) || RA.CAMP_HOMES[0];
     const free = this.campXpFree(c), done = c.done || {};
     let h = this.head(`Kampanja: dinastija ${c.name}`, `Dom: ${RA.esc(home.name)} · iskustvo ${c.xp} (slobodno ${free}) · misija ${Object.keys(done).length}/70`);
-    if (home.map !== 'evropa' && !(this.app.mapOK && this.app.mapOK[home.map])) h += '<p class="note"><b>Karta svijeta</b> se učitava sa servera (war.deovilab.com).</p>';
-    h += '<div class="sec-t">Tehnološko stablo dinastije</div><p class="explain">Iskustvo iz misija ulažeš ovdje; poboljšanja važe u svim dobima.</p><div class="list">';
+    h += `<span class="campaign-marker" hidden></span><div class="dynasty-banner"><div class="dynasty-seal" aria-hidden="true">${RA.icon('flag')}</div><div><span>NASLIJEĐE KROZ SEDAM DOBA</span><h3>${RA.esc(c.name)}</h3><p>${RA.esc(home.name)} · ${Object.keys(done).length} od 70 misija završeno</p></div><div class="dynasty-xp"><b>${free}</b><span>slobodno XP</span></div></div>`;
+    if (home.map !== 'evropa'  && !(this.app.mapOK && this.app.mapOK[home.map])) h += '<p class="note"><b>Karta svijeta</b> se učitava sa servera (war.deovilab.com).</p>';
+    h += '<div class="sec-t">Tehnološko stablo dinastije</div><p class="explain">Iskustvo iz misija ulažeš ovdje; poboljšanja važe u svim dobima.</p><div class="research-grid">';
     for (const [k, T] of Object.entries(RA.CAMP_TREE)) {
       const l = c.tree[k] || 0, cost = 150 * (l + 1);
-      h += `<div class="camp-row"><div><div class="cr-t">${T.name} · nivo ${l}/5</div><div class="cr-d">${T.desc}</div></div><div class="cr-b">${l < 5 ? this.mini(`+1 (${cost} XP)`, `data-tree="${k}"`, 'ok', free < cost) : '<span class="tag al">max</span>'}</div></div>`;
+      h += `<article class="research-card" data-branch="${k}"><div class="research-heading"><i>${RA.icon(({mil:'army',eco:'market',dip:'ally',sci:'factory'})[k])}</i><span>${T.name}<small>Nivo ${l} / 5</small></span></div>${this.techProgress(l)}<p>${T.desc}</p>${l<5 ? this.mini(`Unaprijedi · ${cost} XP`, `data-tree="${k}"`, 'ok', free<cost) : '<span class="research-max">Potpuno razvijeno</span>'}</article>`;
     }
     h += '</div>';
     RA.CAMPAIGN.forEach((ch, ci) => {
       const open = ci === 0 || done[ci * 10 - 1] !== undefined;
-      h += `<div class="sec-t">${RA.esc(ch.name)} · ${RA.esc(RA.eraById(ch.era).name)}${open ? '' : ' 🔒'}</div>`;
+      h += `<div class="campaign-chapter${open?'':' is-locked'}"><span class="chapter-number">${String(ci+1).padStart(2,'0')}</span><div><h3>${RA.esc(ch.name)}</h3><span>${RA.esc(RA.eraById(ch.era).name)}</span></div><small>${open?'Otključano':'Zaključano'}</small></div>`;
       if (!open) return;
       h += `<p class="explain">${RA.esc(ch.intro)}</p><div class="list">`;
       for (let i = 0; i < 10; i++) {
         const m = RA.campMission(ci, i), st = done[m.id], avail = i === 0 ? true : done[m.id - 1] !== undefined;
         const stars = st !== undefined ? '★'.repeat(st) + '☆'.repeat(3 - st) : '';
-        h += `<div class="camp-row${avail ? '' : ' locked'}"><div><div class="cr-t">${i + 1}. ${RA.esc(m.title)} ${stars ? `<span class="cr-s">${stars}</span>` : ''}</div><div class="cr-d">${RA.esc(RA.campGoalText(m))}</div></div><div class="cr-b">${avail ? this.mini(st !== undefined ? 'Ponovi' : 'Igraj', `data-mis="${m.id}"`, st !== undefined ? '' : 'ok') : '🔒'}</div></div>`;
+        h += `<div class="camp-row${avail ? '' : ' locked'}"><span class="mission-number" aria-hidden="true">${String(i+1).padStart(2,'0')}</span><div><div class="cr-t">${RA.esc(m.title)} ${stars ? `<span class="cr-s">${stars}</span>` : ''}</div><div class="cr-d">${RA.esc(RA.campGoalText(m))}</div></div><div class="cr-b">${avail ? this.mini(st !== undefined ? 'Ponovi' : 'Igraj', `data-mis="${m.id}"`, st !== undefined ? '' : 'ok') : '🔒'}</div></div>`;
       }
       h += `</div><div class="btns">${this.btn({ icon: 'flag', attrs: `data-free="${ci}"`, t: 'Slobodna igra u ovom dobu', d: 'Bez cilja, s poboljšanjima dinastije' })}</div>`;
     });
@@ -144,10 +145,10 @@ Object.assign(RA.UI.prototype, {
   },
   campNew() {
     const world = !!(this.app.mapOK && this.app.mapOK.svijet);
-    let h = this.head('Nova kampanja', 'Tvoja dinastija od Rima do danas');
+    let h = this.head('Nova kampanja', 'Tvoja dinastija od Rima do danas') + '<span class="campaign-marker" hidden></span>';
     h += '<p class="explain">Izaberi dom dinastije: u svakom dobu vodiš državu koja drži taj grad. Sedam poglavlja po deset misija; iskustvo ulažeš u tehnološko stablo.</p>';
     h += `<div class="field"><span class="lab">Ime dinastije</span><input type="text" id="campName" class="sel" maxlength="18" value="${RA.esc(this.settings.name || 'Kotromanić')}"></div>`;
-    h += '<div class="sec-t">Dom</div><div class="qm-grid">';
+    h += '<div class="sec-t">Dom dinastije</div><div class="campaign-homes qm-grid">';
     for (const hm of RA.CAMP_HOMES) {
       const ok = hm.map === 'evropa' || world;
       h += `<button class="btn" data-home="${hm.id}" ${ok ? '' : 'disabled title="Karta svijeta je samo na war.deovilab.com"'}><span class="t">${RA.esc(hm.name)}</span>${hm.map === 'svijet' ? '<br><span class="d">svijet</span>' : ''}</button>`;

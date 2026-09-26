@@ -513,7 +513,8 @@ Object.assign(RA.UI.prototype, {
     const G = this.G, me = G && G.me;
     if (!me || G.state !== 'play') return;
     const T = RA.TAX, cur = RA.TAX[me.tax] || T[2], pct = (v) => (v >= 1 ? '+' : '−') + Math.round(Math.abs(v - 1) * 100) + '%';
-    const h = this.head('Ekonomija', `Zlato ${RA.fmt(me.gold)} · +${RA.fmt(me.goldRate || 0)}/s · vojska ${me.growRate >= 0 ? '+' : '−'}${RA.fmt(Math.abs(me.growRate || 0))}/s`) +
+    const h = this.head('Ekonomija', 'Riznica · razvoj · trgovina') +
+      `<div class="economy-overview"><div><span>Riznica</span><strong>${RA.fmt(me.gold)}</strong><small>raspoloživo zlato</small></div><div><span>Prihod</span><strong>+${RA.fmt(me.goldRate || 0)}</strong><small>zlata / sekundi</small></div><div><span>Vojska</span><strong>${me.growRate >= 0 ? '+' : '−'}${RA.fmt(Math.abs(me.growRate || 0))}</strong><small>vojnika / sekundi</small></div></div>` +
       `<div class="field"><span class="lab">Porez: ${RA.esc(cur.name)}</span><div class="seg wrap" id="taxSeg" role="group" aria-label="Porez">${T.map((t, i) => `<button data-v="${i}" aria-pressed="${i === me.tax}">${RA.esc(t.name)}</button>`).join('')}</div>
       <p class="note">Viši porez: više zlata, ali vojska sporije raste. Niži: vojska brže raste, zlata manje.<br>Sada: zlato ${cur.g === 1 ? 'normalno' : pct(cur.g)}, rast vojske ${cur.grow === 1 ? 'normalan' : pct(cur.grow)}.</p></div>
       <div class="field"><span class="lab">Kamata</span><p class="note">Ušteđeno zlato donosi 1% u minuti, najviše četvrtinu tvog prihoda. Sada: <b>+${RA.fmt(me.interest || 0)}/s</b>.</p></div>` +
@@ -556,15 +557,17 @@ Object.assign(RA.UI.prototype, {
   techHtml(h) {
     const G = this.G, me = G.me;
     if (!G.opts.tree) return h;
-    let t = '<div class="sec-t">Stablo tehnologija</div><p class="explain">Istraživanje za zlato: svaka grana ima 5 nivoa, svaki nivo je duplo skuplji. Traje do kraja igre.</p><div class="list">';
+    let t = '<div class="sec-t">Stablo tehnologija</div><p class="explain">Istraživanje za zlato: svaka grana ima 5 nivoa, svaki nivo je duplo skuplji. Traje do kraja igre.</p><div class="research-grid">';
     for (const k of RA.TECH_ORDER) {
       const T = RA.TECH[k], lv = G.techLv(me, k), cost = G.techCost(me, k), max = lv >= RA.TECH_MAX;
-      const pips = '●'.repeat(lv) + '○'.repeat(RA.TECH_MAX - lv);
-      t += `<div class="prow wide"><span class="sw tech-ic">${RA.icon(T.icon)}</span><div class="pn"><div class="nm">${T.name} <span class="tech-pips">${pips}</span></div><div class="d">${RA.esc(T.desc)}</div></div><div class="bb">${max ? '<span class="pos">max</span>' : this.mini(`${RA.fmt(cost)}`, `data-tech="${k}"`, 'ok', me.gold < cost)}</div></div>`;
+      t += `<article class="research-card" data-branch="${k}"><div class="research-heading"><i>${RA.icon(T.icon)}</i><span>${T.name}<small>Nivo ${lv} / ${RA.TECH_MAX}</small></span></div>${this.techProgress(lv)}<p>${RA.esc(T.desc)}</p>${max ? '<span class="research-max">Potpuno razvijeno</span>' : this.mini(`Istraži · ${RA.fmt(cost)}`, `data-tech="${k}" aria-label="Istraži ${T.name}, nivo ${lv+1}, ${RA.fmt(cost)} zlata"`, 'ok', me.gold < cost)}</article>`;
     }
     t += '</div>';
     const i = h.indexOf('<div class="field">');
     return i < 0 ? h + t : h.slice(0, i) + t + h.slice(i);
+  },
+  techProgress(level) {
+    return `<div class="research-progress" role="img" aria-label="Nivo ${level} od 5">${Array.from({length:5},(_,i)=>`<i class="${i<level?'earned':i===level?'next':''}"></i>`).join('')}</div>`;
   },
   /* resources: what you have, buy, or miss (and what missing costs you); partners' offers with their prices */
   resHtml() {
@@ -650,7 +653,7 @@ Object.assign(RA.UI.prototype, {
       <button class="btn primary" data-m="resume"><span class="t">Nastavi</span></button>
       <button class="btn" data-m="how"><span class="t">Kako se igra</span></button>
       <button class="btn" data-m="cities"><span class="t">Imena gradova</span><span class="r" style="font-size:14px">${app.fx.showCities ? 'Uključeno' : 'Isključeno'}</span></button>
-      <button class="btn" data-m="osm" ${app.osmOK ? '' : 'disabled'}><span><span class="t">Podloga: ${app.osmOn ? 'OpenStreetMap' : 'Atlas (ugrađena)'}</span><br><span class="d">${app.osmOK ? 'Dodirni za promjenu' : 'OpenStreetMap pločice rade kad igru hostamo na vlastitoj adresi — Claude pregled blokira vanjske slike.'}</span></span></button>
+      <button class="btn" data-m="osm" ${app.osmOK ? '' : 'disabled'}><span><span class="t">Podloga: ${app.osmOn ? 'OpenStreetMap' : 'Atlas (ugrađena)'}</span><br><span class="d">${app.osmOK ? 'Dodirni za promjenu' : 'Podloga trenutno nije dostupna. Ugrađeni atlas je spreman za igru.'}</span></span></button>
       <button class="btn" data-m="tips"><span class="t">Savjeti tokom igre</span><span class="r" style="font-size:14px">${this.noTips ? 'Isključeno' : 'Uključeno'}</span></button>
       <button class="btn" data-m="cb"><span class="t">Mod za daltoniste</span><span class="r" style="font-size:14px">${this.settings.cb ? 'Uključeno' : 'Isključeno'}</span></button>
       <button class="btn" data-m="sfx"><span class="t">Zvučni efekti</span><span class="r" style="font-size:14px">${this.audio.s.sfx ? 'Uključeno' : 'Isključeno'}</span></button>
