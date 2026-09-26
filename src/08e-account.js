@@ -244,6 +244,23 @@ RA.Account = class {
       this.ui.app.replayOpen(b.dataset.rp);
     }));
   }
+  async loadLeague(s) {
+    const el = s.querySelector('#accLeague');
+    if (!el) return;
+    try {
+      const j = await this.api('GET', '/api/league');
+      if (!el.isConnected) return;
+      if (!j.me) { el.innerHTML = '<p class="note">' + RA.t('Sign in to see your ranks.') + '</p>'; return; }
+      el.innerHTML = '<div class="profile-ranks">' + ['b1','b2','b5','f1','f2','f5'].map((l) => {
+        const e = j.me[l];
+        if (!e) return '';
+        const tier = RA.lgTier(e);
+        return `<div class="profile-rank-card"><span class="rank-ladder">${RA.lgName(l)}</span><span class="lg-tier lg-${tier.toLowerCase()}">${tier}</span><strong>${RA.fmt(e.elo)} <small>ELO</small></strong><span class="rank-progress">${e.games < 5 ? RA.t('Placement {0}/5', e.games) : RA.t('{0} wins · {1} games', e.wins, e.games)}</span></div>`;
+      }).join('') + '</div>';
+    } catch (_) {
+      if (el.isConnected) el.innerHTML = '<p class="note">' + RA.t('League ranks are currently unavailable.') + '</p>';
+    }
+  }
   async loadStats(s) {
     if (this.stats) this.fillStats(s, this.stats);
     try {
@@ -297,6 +314,8 @@ RA.Account = class {
       s.querySelector('#accTop').onclick = () => this.topSheet('wins');
       ui.pushButton(s.querySelector('#accPush')); // web push (src/09h-app.js)
       this.loadStats(s);
+      s.querySelector('#accStats').insertAdjacentHTML('afterend', `<section class="profile-league"><div class="sec-t">${RA.t("Conquest League · your ranks")}</div><div id="accLeague" aria-live="polite"></div></section>`);
+      this.loadLeague(s);
       const pick = s.querySelector('#embPick'), eb = s.querySelector('#embBtn');
       eb.onclick = () => {
         pick.hidden = !pick.hidden;

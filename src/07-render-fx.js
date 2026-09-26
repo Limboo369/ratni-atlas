@@ -108,7 +108,7 @@ RA.FxLayer = L.Layer.extend({
     // alliances on the map (key L): capital to capital, military solid green, trade dashed blue ----------
     if (ui && ui.showAllies) {
       const cap = (p) => [gx((p.capital % W) + 0.5), gy(Math.floor(p.capital / W) + 0.5)];
-      ctx.lineWidth = 2.5;
+      ctx.lineWidth = 1.5;
       for (const p of G.P) {
         if (!p || !p.alive || p.capital < 0 || p.type === 'bot') continue;
         const a = cap(p);
@@ -116,10 +116,10 @@ RA.FxLayer = L.Layer.extend({
           const q = G.P[oid];
           if (!q || !q.alive || q.capital < 0 || oid < p.id) continue;
           const b = cap(q);
-          ctx.strokeStyle = 'rgba(80,220,120,0.85)';
+          ctx.strokeStyle = 'rgba(136,199,174,0.8)';
           ctx.beginPath();
           ctx.moveTo(a[0], a[1]);
-          ctx.lineTo(b[0], b[1]);
+          ctx.quadraticCurveTo((a[0]+b[0])/2-(b[1]-a[1])*.1, (a[1]+b[1])/2+(b[0]-a[0])*.1, b[0], b[1]);
           ctx.stroke();
         }
         ctx.setLineDash([7, 5]);
@@ -127,10 +127,10 @@ RA.FxLayer = L.Layer.extend({
           const q = G.P[oid];
           if (!q || !q.alive || q.capital < 0 || oid < p.id || p.allies.has(oid)) continue;
           const b = cap(q);
-          ctx.strokeStyle = 'rgba(110,170,255,0.8)';
+          ctx.strokeStyle = 'rgba(130,178,207,0.7)';
           ctx.beginPath();
           ctx.moveTo(a[0], a[1]);
-          ctx.lineTo(b[0], b[1]);
+          ctx.quadraticCurveTo((a[0]+b[0])/2-(b[1]-a[1])*.1, (a[1]+b[1])/2+(b[0]-a[0])*.1, b[0], b[1]);
           ctx.stroke();
         }
         ctx.setLineDash([]);
