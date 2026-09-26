@@ -3,10 +3,10 @@
    opts.camp = { type, bonus: {mil, eco, dip, sci} } (levels 0…5 of the tech tree); the UI (08k-campaign.js) checks
    the goal. Everything here happens at the game's start from the game's own state, so a saved mission replays the same. */
 RA.CAMP_TREE = {
-  mil: { name: 'Vojska', desc: '+5% rasta vojske i +10% početne vojske po nivou' },
-  eco: { name: 'Ekonomija', desc: '+6% zlata po nivou' },
-  dip: { name: 'Diplomatija', desc: 'države te na početku više vole (+8 po nivou), lakši savezi' },
-  sci: { name: 'Nauka', desc: 'zgrade, jedinice i rakete 5% jeftinije po nivou' },
+  mil: { name: RA.t("Army"), desc: RA.t("+5% army growth and +10% starting army per level") },
+  eco: { name: RA.t("Economy"), desc: RA.t("+6% gold per level") },
+  dip: { name: RA.t("Diplomacy"), desc: RA.t("states like you more from the start (+8 per level), easier alliances") },
+  sci: { name: RA.t("Science"), desc: RA.t("buildings, units and missiles 5% cheaper per level") },
 };
 
 (function (P) {

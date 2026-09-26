@@ -2,19 +2,19 @@
 /* Interactive tutorial (plan item 66): a guided first game on the Balkans (easy, 3 minutes of peace). A card shows
    one step at a time and waits until the player really does it; the button or area the step is about glows. */
 RA.TUTORIAL = [
-  { t: 'Dobro došao, komandante! Izaberi odakle krećeš: klikni mjesto na karti ili državu sa spiska dole, pa pritisni „Kreni”.', glow: 'spawnBar',
+  { t: RA.t("Welcome, commander! Choose where you start: click a spot on the map or a state from the list below, then press “Start”."), glow: 'spawnBar',
     done: (G) => G.state === 'play' && G.me },
-  { t: 'Gore su tvoja vojska, zlato i udio kopna. Vojska raste sama — najbrže kad je oko zelene oznake na traci. Pobjeđuješ sa 70% kopna.', glow: 'hud', next: true },
-  { t: 'Sada je mirno doba: niko ne smije napadati države. Klikni sivu, slobodnu zemlju pored svoje granice da se širiš.',
+  { t: RA.t("At the top are your army, gold and share of the land. The army grows by itself — fastest around the green mark on the bar. You win with 70% of the land."), glow: 'hud', next: true },
+  { t: RA.t("It's peace time now: nobody may attack states. Click the grey, free land next to your border to expand."),
     done: (G, T) => G.attacks.some((a) => a.a === G.me.id && a.t === 0) || G.me.tiles > T.tiles0 * 1.03 },
-  { t: 'Klizač „Snaga napada” (tipke Q i E) određuje koliko vojske šalješ. Što više pošalješ, to brže osvajaš — ali ti ostaje manje za odbranu.', glow: 'ratio', next: true },
-  { t: 'Otvori „Gradi” (tipka B) i postavi grad ili kasarnu na svojoj zemlji. Gradovi donose zlato i vojsku, kasarne jedinice.', glow: 'aBuild',
+  { t: RA.t("The “Attack strength” slider (keys Q and E) sets how many troops you send. The more you send, the faster you conquer — but the less is left for defence."), glow: 'ratio', next: true },
+  { t: RA.t("Open “Build” (key B) and place a city or barracks on your land. Cities bring gold and troops, barracks bring units."), glow: 'aBuild',
     done: (G, T) => G.structs.some((s) => s.owner === G.me.id && s.id >= T.structs0) },
-  { t: 'Otvori „Savezi” (tipka S): tu sklapaš vojne i trgovinske saveze. Saveznik te brani i pušta preko svoje zemlje.', glow: 'aDiplo',
+  { t: RA.t("Open “Alliances” (key S): that's where you make military and trade alliances. An ally defends you and lets you through its land."), glow: 'aDiplo',
     done: (G, T, ui) => !!ui.$('sheet').querySelector('[data-do^="show:"]') },
-  { t: 'Kad mirno doba prođe (možeš ubrzati igru dugmetom 1×/2×/3×), klikni dio susjedne države: vojska ide s tvoje najbliže granice pravo tamo i osvaja samo taj dio. Na računaru možeš i povući strelicu desnim dugmetom miša.', glow: 'speedBtn',
+  { t: RA.t("When peace time is over (you can speed the game up with the 1×/2×/3× button), click part of a neighbouring state: the army goes from your nearest border straight there and takes only that part. On a computer you can also drag an arrow with the right mouse button."), glow: 'speedBtn',
     done: (G) => G.attacks.some((a) => a.a === G.me.id && a.t > 0 && a.corr) },
-  { t: 'Odlično! Ako ti neko otme zemlju, žuto dugme „Vrati” u traci napada vraća je jednim klikom. Desni klik (dugi dodir) na bilo koje mjesto otvara sve opcije za njega. Sretno!', next: 'Završi' },
+  { t: RA.t("Great! If someone takes your land, the yellow “Retake” button in the attack bar takes it back in one click. A right click (long press) on any spot opens every option for it. Good luck!"), next: RA.t("Finish") },
 ];
 RA.Tutorial = class {
   constructor(ui) {
@@ -39,7 +39,7 @@ RA.Tutorial = class {
     this.card.querySelector('#tutText').textContent = S.t;
     const nb = this.card.querySelector('#tutNext');
     nb.hidden = !S.next;
-    nb.textContent = typeof S.next === 'string' ? S.next : 'Dalje';
+    nb.textContent = typeof S.next === 'string' ? S.next : RA.t("Next");
     this.glowEl = S.glow ? ui.$(S.glow) : null;
     if (this.glowEl) this.glowEl.classList.add('tut-glow');
   }
@@ -55,7 +55,7 @@ RA.Tutorial = class {
     try {
       localStorage.setItem('ra_tut_done', '1');
     } catch (_) {}
-    if (done) this.ui.toast('good', 'Tutorijal je završen. Igra se nastavlja — osvoji 70% kopna!', { ms: 6000 });
+    if (done) this.ui.toast('good', RA.t("The tutorial is over. The game goes on — conquer 70% of the land!"), { ms: 6000 });
   }
 };
 Object.assign(RA.UI.prototype, {

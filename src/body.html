@@ -1,76 +1,76 @@
 <div id="app">
-  <div id="map" aria-label="Karta Evrope"></div>
+  <div id="map" aria-label="Map of Europe"></div>
 
   <header id="hud" hidden>
-    <div class="hud-identity"><span class="hud-insignia" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12 2 21 6v6c0 5-9 10-9 10S3 17 3 12V6Z"/><path d="m7 13 5-7 5 7H7Zm5-2v6"/></svg></span><div><span class="hud-eyebrow" id="hEra">TVOJA OPERACIJA</span><strong id="hNation">Komandant</strong></div></div>
+    <div class="hud-identity"><span class="hud-insignia" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12 2 21 6v6c0 5-9 10-9 10S3 17 3 12V6Z"/><path d="m7 13 5-7 5 7H7Zm5-2v6"/></svg></span><div><span class="hud-eyebrow" id="hEra">YOUR OPERATION</span><strong id="hNation">Commander</strong></div></div>
     <div class="stat troops">
-      <span class="lab">Vojska</span>
+      <span class="lab">Army</span>
       <span class="val num" id="hTroops">0</span>
-      <div class="tbar" id="hBar" title="Zelena zona: vojska najbrže raste (oko 42% kapaciteta)"><div class="zone"></div><div class="fill"></div><div class="mark"></div></div>
+      <div class="tbar" id="hBar" title="Green zone: the army grows fastest (about 42% of capacity)"><div class="zone"></div><div class="fill"></div><div class="mark"></div></div>
       <span class="sub" id="hTroopsSub">/ 0</span>
     </div>
     <div class="stat gold">
-      <span class="lab">Zlato</span>
+      <span class="lab">Gold</span>
       <span class="val num" id="hGold">0</span>
       <span class="sub" id="hGoldSub">+0/s</span>
     </div>
     <div class="stat territory">
-      <span class="lab">Kopno</span>
+      <span class="lab">Land</span>
       <span class="val num" id="hLand">0%</span>
-      <span class="sub" id="hRank">cilj 70%</span>
+      <span class="sub" id="hRank">goal 70%</span>
       <div class="objective-track" aria-hidden="true"><i id="hObjective"></i></div>
     </div>
     <div class="hud-btns">
       <div>
-        <button class="icon-btn" id="speedBtn" aria-label="Brzina igre">1×</button>
+        <button class="icon-btn" id="speedBtn" aria-label="Game speed">1×</button>
         <div id="clock">00:00</div>
       </div>
-      <button class="icon-btn" id="pauseBtn" aria-label="Pauza"></button>
-      <button class="icon-btn" id="chatBtn" aria-label="Brze poruke saveznicima (T)" title="Brze poruke saveznicima (T)" hidden></button>
-      <button class="icon-btn" id="menuBtn" aria-label="Meni"></button>
+      <button class="icon-btn" id="pauseBtn" aria-label="Pause"></button>
+      <button class="icon-btn" id="chatBtn" aria-label="Quick messages to allies (T)" title="Quick messages to allies (T)" hidden></button>
+      <button class="icon-btn" id="menuBtn" aria-label="Menu"></button>
     </div>
   </header>
 
   <aside id="board" hidden>
-    <header><span id="boardHead">Poredak</span><button id="boardToggle" aria-label="Prikaži ili sakrij poredak">▾</button></header>
+    <header><span id="boardHead">Ranking</span><button id="boardToggle" aria-label="Show or hide the ranking">▾</button></header>
     <ol id="boardList"></ol>
   </aside>
 
   <div id="status"></div>
-  <div id="feed" aria-label="Događaji"></div>
+  <div id="feed" aria-label="Events"></div>
   <div id="rulerBubble" class="ruler-bubble" role="status" aria-live="polite" hidden></div>
-  <div id="tutCard" hidden role="status"><div class="tut-head"><b>Tutorijal</b><span id="tutStep">1/8</span></div><p id="tutText"></p><div class="tut-acts"><button class="btn good" id="tutNext" hidden>Dalje</button><button class="btn" id="tutSkip">Preskoči</button></div></div>
+  <div id="tutCard" hidden role="status"><div class="tut-head"><b>Tutorial</b><span id="tutStep">1/8</span></div><p id="tutText"></p><div class="tut-acts"><button class="btn good" id="tutNext" hidden>Next</button><button class="btn" id="tutSkip">Skip</button></div></div>
   <div id="toasts" aria-live="polite"></div>
-  <aside id="dlog" hidden><header><span>Diplomatija</span><b id="dlogNew" hidden>0</b><button id="dlogToggle" aria-label="Prikaži ili sakrij diplomatiju">▾</button></header><ol id="dlogList"></ol></aside>
+  <aside id="dlog" hidden><header><span>Diplomacy</span><b id="dlogNew" hidden>0</b><button id="dlogToggle" aria-label="Show or hide diplomacy">▾</button></header><ol id="dlogList"></ol></aside>
 
-  <button class="icon-btn" id="meBtn" hidden aria-label="Prikaži moju državu"></button>
+  <button class="icon-btn" id="meBtn" hidden aria-label="Show my state"></button>
 
-  <div id="attBar" hidden aria-label="Aktivni napadi"></div>
+  <div id="attBar" hidden aria-label="Active attacks"></div>
 
-  <div id="modeBar" hidden><span id="modeText"></span><button id="modeExtra" hidden></button><button id="modeCancel">Odustani</button></div>
+  <div id="modeBar" hidden><span id="modeText"></span><button id="modeExtra" hidden></button><button id="modeCancel">Cancel</button></div>
 
   <footer id="dock" hidden>
-    <div class="dock-heading"><span>KOMANDNI CENTAR</span><span>Desni klik + povuci <b>Usmjereni napad</b></span></div>
+    <div class="dock-heading"><span>COMMAND CENTRE</span><span>Right click + drag <b>Directed attack</b></span></div>
     <div class="ratio-row">
-      <span class="lab">Snaga <br>napada</span>
-      <input type="range" id="ratio" min="5" max="100" step="5" value="30" aria-label="Snaga napada u postocima">
+      <span class="lab">Strength <br>of attack</span>
+      <input type="range" id="ratio" min="5" max="100" step="5" value="30" aria-label="Attack strength in percent">
       <span class="rv" id="ratioVal"><b>30%</b></span>
     </div>
     <div class="acts-row">
-      <button class="act" id="aArmy" data-key="V" aria-keyshortcuts="v"><i data-ic="army"></i><span>Vojska</span></button>
-      <button class="act" id="aBuild" data-key="B" aria-keyshortcuts="b"><i data-ic="build"></i><span>Gradi</span></button>
-      <button class="act" id="aLand" data-key="D" aria-keyshortcuts="d"><i data-ic="boat"></i><span>Desant</span></button>
-      <button class="act" id="aStrike" data-key="R" aria-keyshortcuts="r"><i data-ic="rocket"></i><span>Rakete</span></button>
-      <button class="act" id="aDiplo" data-key="S" aria-keyshortcuts="s"><i data-ic="ally"></i><span>Savezi</span><b class="bdg" id="diploBdg" hidden>0</b></button>
+      <button class="act" id="aArmy" data-key="V" aria-keyshortcuts="v"><i data-ic="army"></i><span>Army</span></button>
+      <button class="act" id="aBuild" data-key="B" aria-keyshortcuts="b"><i data-ic="build"></i><span>Build</span></button>
+      <button class="act" id="aLand" data-key="D" aria-keyshortcuts="d"><i data-ic="boat"></i><span>Landing</span></button>
+      <button class="act" id="aStrike" data-key="R" aria-keyshortcuts="r"><i data-ic="rocket"></i><span>Missiles</span></button>
+      <button class="act" id="aDiplo" data-key="S" aria-keyshortcuts="s"><i data-ic="ally"></i><span>Alliances</span><b class="bdg" id="diploBdg" hidden>0</b></button>
     </div>
   </footer>
 
   <div id="spawnBar" hidden>
-    <div class="deployment-label">OPERACIJA / PRIPREMA</div>
-    <h3>Odaberi početak</h3>
-    <p id="spawnText">Dodirni bilo gdje na kopnu ili izaberi državu.</p>
-    <select id="natSel" aria-label="Preuzmi državu"></select>
-    <button class="go" id="startBtn" disabled>Kreni</button>
+    <div class="deployment-label">OPERATION / PREPARATION</div>
+    <h3>Choose your start</h3>
+    <p id="spawnText">Tap anywhere on land or pick a state.</p>
+    <select id="natSel" aria-label="Take over the state"></select>
+    <button class="go" id="startBtn" disabled>Go</button>
   </div>
 
   <div id="sheetWrap" hidden><div id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle"></div></div>
@@ -92,173 +92,174 @@
     <div class="command-shell" id="commandShell">
       <header class="command-header">
         <div class="command-wordmark"><svg viewBox="0 0 36 36" fill="none" aria-hidden="true"><path d="M5 27L18 5l13 22H5Z" stroke="currentColor" stroke-width="2"/><path d="M15 24l7-12M11 27h14" stroke="currentColor" stroke-width="3"/></svg><span>OVER<em>TAKE</em></span></div>
-        <span class="command-edition">STRATEGIJA OSVAJANJA</span>
+        <span class="command-edition">A CONQUEST STRATEGY GAME</span>
         <div class="command-tools">
-          <button id="accountBtn" class="command-tool account-tool" hidden aria-label="Prijava" title="Prijava"></button>
-          <button id="motionBtn" class="command-tool" aria-label="Isključi animacije" aria-pressed="true" title="Animacije"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M9 6v12M15 6v12"/></svg></button>
-          <button id="fullscreenBtn" class="command-tool" aria-label="Cijeli ekran" title="Cijeli ekran"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M3 16v5h5M21 16v5h-5"/></svg></button>
+          <button id="accountBtn" class="command-tool account-tool" hidden aria-label="Sign in" title="Sign in"></button>
+          <button id="langBtn" class="command-tool lang-tool" aria-label="Language: English — switch to Serbian" title="Language / Jezik">EN</button>
+          <button id="motionBtn" class="command-tool" aria-label="Turn off animations" aria-pressed="true" title="Animations"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M9 6v12M15 6v12"/></svg></button>
+          <button id="fullscreenBtn" class="command-tool" aria-label="Full screen" title="Full screen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M3 16v5h5M21 16v5h-5"/></svg></button>
           <span class="command-version">V 0.5</span>
         </div>
       </header>
 
       <main class="command-main">
         <section class="command-intro" aria-labelledby="commandTitle">
-          <div class="command-kicker"><span></span> SEDAM DOBA. TVOJA HISTORIJA.</div>
+          <div class="command-kicker"><span></span> SEVEN AGES. YOUR HISTORY.</div>
           <h1 class="brand command-title" id="commandTitle">Over<em>take</em></h1>
-          <p class="command-headline">Granice se mijenjaju.<br><strong>Ti odlučuješ kako.</strong></p>
-          <p class="command-description">Izgradi carstvo. Sklopi saveze. Preuzmi kontrolu.<br> <span class="tagline">Evropa čeka tvoj prvi potez.</span></p>
+          <p class="command-headline">Borders change.<br><strong>You decide how.</strong></p>
+          <p class="command-description">Build an empire. Forge alliances. Take control.<br> <span class="tagline">Europe awaits your first move.</span></p>
           <div id="joinBanner" class="btns" hidden></div>
-          <div class="side-seg" id="sideSeg" role="group" aria-label="Kako igraš"><button data-v="solo" aria-pressed="true"><b>Conqueror</b><small>sam, protiv kompjutera</small></button><button data-v="online" aria-pressed="false"><b>Online</b><small>protiv ljudi</small></button></div>
-          <div class="pace-seg solo-only" id="paceSeg" role="group" aria-label="Mod igre"><button data-v="blitz" aria-pressed="true"><b>Blitz</b><small>brza partija, 20–40 min</small></button><button data-v="focus" aria-pressed="false"><b>Focus</b><small>igra danima, teče i bez tebe</small></button><button data-v="custom" aria-pressed="false"><b>Make your choice</b><small>sam biraš pravila</small></button></div>
+          <div class="side-seg" id="sideSeg" role="group" aria-label="How you play"><button data-v="solo" aria-pressed="true"><b>Conqueror</b><small>solo, against the computer</small></button><button data-v="online" aria-pressed="false"><b>Online</b><small>against people</small></button></div>
+          <div class="pace-seg solo-only" id="paceSeg" role="group" aria-label="Game mode"><button data-v="blitz" aria-pressed="true"><b>Blitz</b><small>a quick match, 20–40 min</small></button><button data-v="focus" aria-pressed="false"><b>Focus</b><small>lasts days, runs without you</small></button><button data-v="custom" aria-pressed="false"><b>Make your choice</b><small>you set the rules</small></button></div>
           <p class="pace-note solo-only" id="paceNote"></p>
-          <div class="pace-days solo-only" id="paceDays" hidden><span>Trajanje</span><div class="seg" id="daysSeg" role="group" aria-label="Trajanje Focus igre"><button data-v="1" aria-pressed="true">~1 dan</button><button data-v="3" aria-pressed="false">~3 dana</button><button data-v="7" aria-pressed="false">~7 dana</button></div></div>
+          <div class="pace-days solo-only" id="paceDays" hidden><span>Duration</span><div class="seg" id="daysSeg" role="group" aria-label="Focus game duration"><button data-v="1" aria-pressed="true">~1 day</button><button data-v="3" aria-pressed="false">~3 days</button><button data-v="7" aria-pressed="false">~7 days</button></div></div>
 
           <div class="command-player field">
-            <div class="command-identity"><label for="nameIn">TVOJE IME</label><button id="profileBtn" class="profile-btn" hidden aria-haspopup="dialog"></button></div>
-            <div class="command-input"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 21v-2a7 7 0 0 1 14 0v2"/></svg><input type="text" id="nameIn" maxlength="18" placeholder="Komandant" autocomplete="nickname" spellcheck="false"></div>
+            <div class="command-identity"><label for="nameIn">YOUR NAME</label><button id="profileBtn" class="profile-btn" hidden aria-haspopup="dialog"></button></div>
+            <div class="command-input"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 21v-2a7 7 0 0 1 14 0v2"/></svg><input type="text" id="nameIn" maxlength="18" placeholder="Commander" autocomplete="nickname" spellcheck="false"></div>
           </div>
-          <button class="go command-play solo-only" id="goBtn"><span>Započni osvajanje</span><span aria-hidden="true">↗</span></button>
-          <button class="command-quick solo-only" id="quickBtn"><b>Igraj odmah</b><small>Blitz · nasumična država · bez izbora</small></button>
+          <button class="go command-play solo-only" id="goBtn"><span>Start the conquest</span><span aria-hidden="true">↗</span></button>
+          <button class="command-quick solo-only" id="quickBtn"><b>Play now</b><small>Blitz · random state · no choices</small></button>
           <button class="command-resume solo-only" id="resumeBtn" hidden></button>
           <button class="command-resume focus-resume solo-only" id="focusBtn" hidden></button>
-          <button class="command-quick command-campaign solo-only" id="campBigBtn"><b>Kampanja</b><small>Tvoja dinastija kroz misije · od Bosne do cijelog svijeta</small></button>
-          <button class="command-quick command-market" id="marketBtn"><b>Community market</b><small>Scenariji igrača · napravi svoj u editoru</small></button>
-          <button class="command-quick command-install" id="installBtn" hidden><b>Instaliraj aplikaciju</b><small>Overtake kao prava aplikacija na računaru ili telefonu</small></button>
-          <button class="command-config solo-only" id="configBtn" aria-haspopup="dialog" aria-controls="operationDialog"><span><span class="command-config-label">POSTAVKE OPERACIJE</span><span id="operationSummary">Evropa · Klasično · Srednje</span></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16M9 3v6M15 9v6M8 15v6"/></svg></button>
+          <button class="command-quick command-campaign solo-only" id="campBigBtn"><b>Campaign</b><small>Your dynasty through missions · from Bosnia to the whole world</small></button>
+          <button class="command-quick command-market" id="marketBtn"><b>Community market</b><small>Players' scenarios · make your own in the editor</small></button>
+          <button class="command-quick command-install" id="installBtn" hidden><b>Install the app</b><small>Overtake as a real app on your computer or phone</small></button>
+          <button class="command-config solo-only" id="configBtn" aria-haspopup="dialog" aria-controls="operationDialog"><span><span class="command-config-label">OPERATION SETTINGS</span><span id="operationSummary">Europe · Classic · Medium</span></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16M9 3v6M15 9v6M8 15v6"/></svg></button>
           <div class="online-pane online-only" id="onlinePane">
-            <button class="online-card" id="leagueBtn"><b>Conquest League</b><small>Rangirane partije · 1v1 · 2v2 · 5v5 · uskoro</small></button>
-            <button class="online-card" id="skirmishBtn"><b>Skirmish</b><small>Javne igre s ljudima · uđi u otvorenu ili napravi svoju</small></button>
-            <button class="online-card" id="onlineToggle" aria-expanded="false" aria-controls="onlineBox"><b>Privatna soba</b><small>Igraj s prijateljima preko linka</small></button>
+            <button class="online-card" id="leagueBtn"><b>Conquest League</b><small>Ranked matches · 1v1 · 2v2 · 5v5 · soon</small></button>
+            <button class="online-card" id="skirmishBtn"><b>Skirmish</b><small>Public games with people · join an open one or create your own</small></button>
+            <button class="online-card" id="onlineToggle" aria-expanded="false" aria-controls="onlineBox"><b>Private room</b><small>Play with friends through a link</small></button>
           </div>
-          <div class="command-secondary"><button id="howBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 .5c0 1.5-2.5 1.5-2.5 3.5M12 16v1"/></svg>Kako se igra</button><button id="campBtn" class="solo-only"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M5 21V4l7 3 7-3v12l-7 3-7-3"/></svg>Kampanja</button><button id="tutBtn" class="solo-only"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3 9l9-5 9 5-9 5-9-5z"/><path d="M7 11.5V16c0 1.5 2.2 3 5 3s5-1.5 5-3v-4.5M21 9v6"/></svg>Tutorijal</button><button id="leaderboardBtn" hidden aria-haspopup="dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 4h8v6a4 4 0 0 1-8 0V4ZM8 6H4v3a4 4 0 0 0 4 4m8-7h4v3a4 4 0 0 1-4 4M12 14v6m-4 0h8"/></svg>Ljestvica</button></div>
+          <div class="command-secondary"><button id="howBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 .5c0 1.5-2.5 1.5-2.5 3.5M12 16v1"/></svg>How to play</button><button id="campBtn" class="solo-only"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M5 21V4l7 3 7-3v12l-7 3-7-3"/></svg>Campaign</button><button id="tutBtn" class="solo-only"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3 9l9-5 9 5-9 5-9-5z"/><path d="M7 11.5V16c0 1.5 2.2 3 5 3s5-1.5 5-3v-4.5M21 9v6"/></svg>Tutorial</button><button id="leaderboardBtn" hidden aria-haspopup="dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 4h8v6a4 4 0 0 1-8 0V4ZM8 6H4v3a4 4 0 0 0 4 4m8-7h4v3a4 4 0 0 1-4 4M12 14v6m-4 0h8"/></svg>Leaderboard</button></div>
           <div class="online-box command-online online-only" id="onlineBox" hidden>
-            <div class="sec-t">Igra s prijateljem</div>
-            <p class="note" id="onlineNote" aria-live="polite">Povezujem se…</p>
+            <div class="sec-t">Play with a friend</div>
+            <p class="note" id="onlineNote" aria-live="polite">Connecting…</p>
             <div class="btns" id="onlineBtns"></div>
           </div>
         </section>
-        <div class="atlas-caption" aria-hidden="true"><span class="atlas-cross">+</span><div><span>POZORNICA OSVAJANJA</span><strong id="atlasRegion">EVROPA</strong><small>STVARNA KARTA · TVOJA STRATEGIJA</small></div></div>
-        <div class="atlas-coordinate" id="atlasCoordinate" aria-hidden="true">N 48° 51′ &nbsp; E 02° 21′<span>01 / EVROPA</span></div>
+        <div class="atlas-caption" aria-hidden="true"><span class="atlas-cross">+</span><div><span>THE STAGE OF CONQUEST</span><strong id="atlasRegion">EUROPE</strong><small>A REAL MAP · YOUR STRATEGY</small></div></div>
+        <div class="atlas-coordinate" id="atlasCoordinate" aria-hidden="true">N 48° 51′ &nbsp; E 02° 21′<span>01 / EUROPE</span></div>
       </main>
 
       <section class="command-eras" aria-labelledby="eraHeading">
         <div class="command-theatres" id="mapField" hidden>
-          <div class="command-section-head"><h2 id="mapHeading">IZABERI DIO SVIJETA</h2><span>OD BALKANA DO CIJELOG SVIJETA</span></div>
+          <div class="command-section-head"><h2 id="mapHeading">CHOOSE A PART OF THE WORLD</h2><span>FROM THE BALKANS TO THE WHOLE WORLD</span></div>
           <div class="seg wrap theatre" id="mapSeg" role="group" aria-labelledby="mapHeading"></div>
         </div>
         <p class="note era-note" id="mapNote" aria-live="polite" hidden></p>
-        <div class="command-section-head"><h2 id="eraHeading">IZABERI SVOJE DOBA</h2><span>OD LEGIJA DO MODERNOG RATOVANJA</span></div>
-        <div class="seg wrap era" id="eraSeg" role="group" aria-label="Historijsko doba"></div>
+        <div class="command-section-head"><h2 id="eraHeading">CHOOSE YOUR AGE</h2><span>FROM LEGIONS TO MODERN WARFARE</span></div>
+        <div class="seg wrap era" id="eraSeg" role="group" aria-label="Historical age"></div>
         <div class="command-era-detail"><span class="command-live-dot" aria-hidden="true"></span><p id="eraNote"></p></div>
       </section>
-      <footer class="command-footer"><span>ODLUČI. OSVOJI. VLADAJ.</span><button id="creditsBtn" aria-haspopup="dialog">O igri i izvori karte <span aria-hidden="true">↗</span></button></footer>
+      <footer class="command-footer"><span>DECIDE. CONQUER. RULE.</span><button id="creditsBtn" aria-haspopup="dialog">About the game and map sources <span aria-hidden="true">↗</span></button></footer>
     </div>
 
     <dialog id="operationDialog" class="operation-dialog" aria-labelledby="operationTitle">
-      <div class="operation-head"><div><span class="command-kicker">PRIPREMA ZA OSVAJANJE</span><h2 id="operationTitle">Tvoja operacija.</h2></div><button id="configClose" class="command-tool" aria-label="Zatvori postavke"><i data-ic="close"></i></button></div>
+      <div class="operation-head"><div><span class="command-kicker">PREPARING FOR CONQUEST</span><h2 id="operationTitle">Your operation.</h2></div><button id="configClose" class="command-tool" aria-label="Close settings"><i data-ic="close"></i></button></div>
       <div class="operation-body">
-        <div class="field preset-only"><span class="lab">Pravila moda</span><p class="note era-note" id="rulesNote"></p></div>
-        <div class="field custom-only"><span class="lab" id="cPaceLabel">Tempo</span><div class="seg" id="cPaceSeg" role="group" aria-labelledby="cPaceLabel"><button data-v="blitz" aria-pressed="true">Blitz · brzo</button><button data-v="focus" aria-pressed="false">Focus · danima</button></div><p class="note era-note">Focus igra teče na serveru i dok nisi tu; trajanje biraš na početnom ekranu.</p></div>
-        <div class="field custom-only"><span class="lab" id="treeLabel">Stablo tehnologija</span><div class="seg" id="treeSeg" role="group" aria-labelledby="treeLabel"><button data-v="0" aria-pressed="true">Isključeno</button><button data-v="1" aria-pressed="false">Uključeno</button></div><p class="note era-note">Istraživanje za zlato: ekonomija, vojska, nauka i diplomatija, po 5 nivoa (Ekonomija → Stablo tehnologija).</p></div>
-        <div class="field custom-only"><span class="lab" id="nukeLabel">Nuklearno oružje</span><div class="seg" id="nukeSeg" role="group" aria-labelledby="nukeLabel"><button data-v="0" aria-pressed="true">Dozvoljeno</button><button data-v="1" aria-pressed="false">Zabranjeno</button></div></div>
-        <div class="field"><span class="lab" id="startLabel">Početak</span><div class="seg" id="startSeg" role="group" aria-labelledby="startLabel"><button data-v="granice" aria-pressed="true">Stvarne granice</button><button data-v="slobodno" aria-pressed="false">Od prijestolnice</button></div></div>
-        <div class="field"><span class="lab" id="gmLabel">Način igre</span><div class="seg" id="gmSeg" role="group" aria-labelledby="gmLabel"><button data-v="klasik" aria-pressed="true">Klasično</button><button data-v="br" aria-pressed="false">Battle royale</button><button data-v="defcon" aria-pressed="false">DEFCON</button></div><p class="note era-note" id="modeNote"></p></div>
-        <div class="field" id="regField"><span class="lab" id="regLabel">Dio Evrope</span><div class="seg wrap" id="regSeg" role="group" aria-labelledby="regLabel"></div></div>
-        <div class="field"><span class="lab" id="diffLabel">Težina</span><div class="seg" id="diffSeg" role="group" aria-labelledby="diffLabel"><button data-v="lako" aria-pressed="false">Lako</button><button data-v="srednje" aria-pressed="true">Srednje</button><button data-v="tesko" aria-pressed="false">Teško</button></div></div>
-        <div class="field custom-only"><span class="lab" id="peaceLabel">Mirno doba na početku</span><div class="seg" id="peaceSeg" role="group" aria-labelledby="peaceLabel"><button data-v="0" aria-pressed="false">Bez</button><button data-v="60" aria-pressed="true">1 min</button><button data-v="180" aria-pressed="false">3 min</button></div><p class="note era-note">Vrijeme za razvoj prije prvih napada na države.</p></div>
-        <div class="field custom-only"><span class="lab" id="resLabel">Resursi i trgovina</span><div class="seg" id="resSeg" role="group" aria-labelledby="resLabel"><button data-v="0" aria-pressed="true">Isključeno</button><button data-v="1" aria-pressed="false">Uključeno</button></div><p class="note era-note">Žito, metal i gorivo na stvarnim nalazištima; što nemaš, kupuješ od trgovinskih partnera. Isključeno: brza igra kao do sada.</p></div>
-        <div class="field" id="csField"><span class="lab" id="csLabel">Gradovi-države · mali protivnici</span><div class="seg" id="csSeg" role="group" aria-labelledby="csLabel"><button data-v="0" aria-pressed="false">Bez</button><button data-v="25" aria-pressed="false">25</button><button data-v="50" aria-pressed="true">50</button></div></div>
-        <div class="field"><span class="lab" id="colorLabel">Tvoja boja</span><div class="seg wrap swatches" id="colorSeg" role="group" aria-labelledby="colorLabel"></div></div>
-        <div class="field"><span class="lab" id="cbLabel">Mod za daltoniste</span><div class="seg" id="cbSeg" role="group" aria-labelledby="cbLabel"><button data-v="0" aria-pressed="true">Isključen</button><button data-v="1" aria-pressed="false">Uključen</button></div><p class="note era-note">Boje država koje razlikuju i ljudi s daltonizmom; susjedi nikad iste boje.</p></div>
+        <div class="field preset-only"><span class="lab">Mode rules</span><p class="note era-note" id="rulesNote"></p></div>
+        <div class="field custom-only"><span class="lab" id="cPaceLabel">Pace</span><div class="seg" id="cPaceSeg" role="group" aria-labelledby="cPaceLabel"><button data-v="blitz" aria-pressed="true">Blitz · fast</button><button data-v="focus" aria-pressed="false">Focus · days</button></div><p class="note era-note">A Focus game runs on the server even while you're away; you pick the duration on the start screen.</p></div>
+        <div class="field custom-only"><span class="lab" id="treeLabel">Tech tree</span><div class="seg" id="treeSeg" role="group" aria-labelledby="treeLabel"><button data-v="0" aria-pressed="true">Off</button><button data-v="1" aria-pressed="false">On</button></div><p class="note era-note">Research for gold: economy, army, science and diplomacy, 5 levels each (Economy → Tech tree).</p></div>
+        <div class="field custom-only"><span class="lab" id="nukeLabel">Nuclear weapons</span><div class="seg" id="nukeSeg" role="group" aria-labelledby="nukeLabel"><button data-v="0" aria-pressed="true">Allowed</button><button data-v="1" aria-pressed="false">Forbidden</button></div></div>
+        <div class="field"><span class="lab" id="startLabel">Start</span><div class="seg" id="startSeg" role="group" aria-labelledby="startLabel"><button data-v="granice" aria-pressed="true">Real borders</button><button data-v="slobodno" aria-pressed="false">From the capital</button></div></div>
+        <div class="field"><span class="lab" id="gmLabel">Game type</span><div class="seg" id="gmSeg" role="group" aria-labelledby="gmLabel"><button data-v="klasik" aria-pressed="true">Classic</button><button data-v="br" aria-pressed="false">Battle royale</button><button data-v="defcon" aria-pressed="false">DEFCON</button></div><p class="note era-note" id="modeNote"></p></div>
+        <div class="field" id="regField"><span class="lab" id="regLabel">Part of Europe</span><div class="seg wrap" id="regSeg" role="group" aria-labelledby="regLabel"></div></div>
+        <div class="field"><span class="lab" id="diffLabel">Difficulty</span><div class="seg" id="diffSeg" role="group" aria-labelledby="diffLabel"><button data-v="lako" aria-pressed="false">Easy</button><button data-v="srednje" aria-pressed="true">Medium</button><button data-v="tesko" aria-pressed="false">Hard</button></div></div>
+        <div class="field custom-only"><span class="lab" id="peaceLabel">Peace time at the start</span><div class="seg" id="peaceSeg" role="group" aria-labelledby="peaceLabel"><button data-v="0" aria-pressed="false">None</button><button data-v="60" aria-pressed="true">1 min</button><button data-v="180" aria-pressed="false">3 min</button></div><p class="note era-note">Time to develop before the first attacks on states.</p></div>
+        <div class="field custom-only"><span class="lab" id="resLabel">Resources and trade</span><div class="seg" id="resSeg" role="group" aria-labelledby="resLabel"><button data-v="0" aria-pressed="true">Off</button><button data-v="1" aria-pressed="false">On</button></div><p class="note era-note">Grain, metal and fuel at real deposits; what you lack you buy from trade partners. Off: a quick game as before.</p></div>
+        <div class="field" id="csField"><span class="lab" id="csLabel">City-states · small opponents</span><div class="seg" id="csSeg" role="group" aria-labelledby="csLabel"><button data-v="0" aria-pressed="false">None</button><button data-v="25" aria-pressed="false">25</button><button data-v="50" aria-pressed="true">50</button></div></div>
+        <div class="field"><span class="lab" id="colorLabel">Your colour</span><div class="seg wrap swatches" id="colorSeg" role="group" aria-labelledby="colorLabel"></div></div>
+        <div class="field"><span class="lab" id="cbLabel">Colour-blind mode</span><div class="seg" id="cbSeg" role="group" aria-labelledby="cbLabel"><button data-v="0" aria-pressed="true">Off</button><button data-v="1" aria-pressed="false">On</button></div><p class="note era-note">State colours that people with colour blindness can tell apart; neighbours never share a colour.</p></div>
       </div>
-      <div class="operation-foot"><button id="configDone" class="command-apply">Spremno za osvajanje <span aria-hidden="true">✓</span></button></div>
+      <div class="operation-foot"><button id="configDone" class="command-apply">Ready for conquest <span aria-hidden="true">✓</span></button></div>
     </dialog>
   </div>
 
   <div class="screen" id="lobbyScreen" hidden>
     <div class="card">
-      <h2 class="end-title lobby-title">Online soba</h2>
+      <h2 class="end-title lobby-title">Online room</h2>
       <p class="end-sub" id="lobbySub"></p>
-      <div class="link-row" id="lobbyLinkRow" hidden><code id="lobbyLink"></code><button class="btn good" id="lobbyShare">Pošalji link</button></div>
-      <div class="sec-t">Igrači</div>
+      <div class="link-row" id="lobbyLinkRow" hidden><code id="lobbyLink"></code><button class="btn good" id="lobbyShare">Send the link</button></div>
+      <div class="sec-t">Players</div>
       <div class="list" id="lobbyPlayers"></div>
       <div class="field" style="margin-top:14px">
-        <label for="lobbyNat">Tvoja država</label>
+        <label for="lobbyNat">Your state</label>
         <select id="lobbyNat" class="sel"></select>
       </div>
       <div id="lobbyHost">
         <div class="field" id="lMapField" hidden>
-          <span class="lab">Karta</span>
+          <span class="lab">Map</span>
           <div class="seg wrap" id="lMapSeg"></div>
         </div>
         <div class="field">
-          <span class="lab">Način igre</span>
+          <span class="lab">Game type</span>
           <div class="seg" id="modeSeg">
-            <button data-v="coop" aria-pressed="true">Zajedno protiv svih</button>
-            <button data-v="vs" aria-pressed="false">Jedan protiv drugog</button>
+            <button data-v="coop" aria-pressed="true">Together against everyone</button>
+            <button data-v="vs" aria-pressed="false">One against another</button>
           </div>
         </div>
         <div class="field">
-          <span class="lab">Doba</span>
+          <span class="lab">Age</span>
           <div class="seg wrap era" id="lEraSeg"></div>
         </div>
         <div class="field">
-          <span class="lab">Početak</span>
+          <span class="lab">Start</span>
           <div class="seg" id="lStartSeg">
-            <button data-v="granice" aria-pressed="true">Stvarne granice</button>
-            <button data-v="slobodno" aria-pressed="false">Od prijestolnice</button>
+            <button data-v="granice" aria-pressed="true">Real borders</button>
+            <button data-v="slobodno" aria-pressed="false">From the capital</button>
           </div>
         </div>
         <div class="field">
-          <span class="lab">Način igre</span>
+          <span class="lab">Game type</span>
           <div class="seg" id="lGmSeg">
-            <button data-v="klasik" aria-pressed="true">Klasično</button>
+            <button data-v="klasik" aria-pressed="true">Classic</button>
             <button data-v="br" aria-pressed="false">Battle royale</button>
             <button data-v="defcon" aria-pressed="false">DEFCON</button>
           </div>
         </div>
         <div class="field">
-          <span class="lab">Dio karte</span>
+          <span class="lab">Part of the map</span>
           <div class="seg wrap" id="lRegSeg"></div>
         </div>
         <div class="field">
-          <span class="lab">Težina (kompjuter)</span>
+          <span class="lab">Difficulty (computer)</span>
           <div class="seg" id="lDiffSeg">
-            <button data-v="lako" aria-pressed="false">Lako</button>
-            <button data-v="srednje" aria-pressed="true">Srednje</button>
-            <button data-v="tesko" aria-pressed="false">Teško</button>
+            <button data-v="lako" aria-pressed="false">Easy</button>
+            <button data-v="srednje" aria-pressed="true">Medium</button>
+            <button data-v="tesko" aria-pressed="false">Hard</button>
           </div>
         </div>
         <div class="field">
-          <span class="lab">Mirno doba na početku</span>
+          <span class="lab">Peace time at the start</span>
           <div class="seg" id="lPeaceSeg">
-            <button data-v="0" aria-pressed="false">Bez</button>
+            <button data-v="0" aria-pressed="false">None</button>
             <button data-v="60" aria-pressed="true">1 min</button>
             <button data-v="180" aria-pressed="false">3 min</button>
           </div>
         </div>
       </div>
       <p class="note" id="lobbyInfo"></p>
-      <button class="go" id="lobbyGo">Počni igru</button>
-      <div class="small-links"><button id="lobbyLeave">Izađi iz sobe</button><span id="lobbyCount"></span></div>
+      <button class="go" id="lobbyGo">Start the game</button>
+      <div class="small-links"><button id="lobbyLeave">Leave the room</button><span id="lobbyCount"></span></div>
     </div>
   </div>
 
   <div class="screen" id="endScreen" hidden>
     <div class="card">
-      <div class="deployment-label">IZVJEŠTAJ OPERACIJE</div>
-      <h2 class="end-title" id="endTitle">Pobjeda</h2>
+      <div class="deployment-label">OPERATION REPORT</div>
+      <h2 class="end-title" id="endTitle">Victory</h2>
       <p class="end-sub" id="endSub"></p>
       <div class="kv" id="endStats"></div>
-      <div class="sec-t">Udio kopna kroz vrijeme</div>
+      <div class="sec-t">Share of land over time</div>
       <canvas id="chart"></canvas>
       <div class="legend" id="legend"></div>
-      <button class="go" id="againBtn">Nova igra</button>
-      <button class="btn" id="rematchBtn" hidden><span><span class="t">Revanš</span><br><span class="d">Iste postavke i ista država, odmah u igru</span></span></button>
-      <button class="btn good cont-btn" id="contBtn" hidden><span><span class="t">Nastavi igru</span><br><span class="d">Pobjeda ostaje zapisana — osvoji i ostatak karte</span></span></button>
-      <div class="small-links"><button id="watchBtn">Gledaj dalje</button><span id="endTime"></span></div>
+      <button class="go" id="againBtn">New game</button>
+      <button class="btn" id="rematchBtn" hidden><span><span class="t">Rematch</span><br><span class="d">Same settings and the same state, straight into the game</span></span></button>
+      <button class="btn good cont-btn" id="contBtn" hidden><span><span class="t">Continue the game</span><br><span class="d">The victory stays on record — conquer the rest of the map</span></span></button>
+      <div class="small-links"><button id="watchBtn">Keep watching</button><span id="endTime"></span></div>
     </div>
   </div>
 
-  <div id="loading"><div><h1 class="brand">Over<em>take</em></h1><p id="loadMsg">Učitavam kartu Evrope…</p></div></div>
+  <div id="loading"><div><h1 class="brand">Over<em>take</em></h1><p id="loadMsg">Loading the map of Europe…</p></div></div>
 </div>

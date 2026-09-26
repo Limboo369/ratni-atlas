@@ -44,7 +44,7 @@ async def main():
             await page.click('#peaceSeg [data-v="180"]')
             # Native dialog interactions are checked below; capture the launcher at each size.
             await page.click('#configDone')
-            assert await page.locator('#operationSummary').inner_text() == 'Balkan · Battle royale · Teško'
+            assert await page.locator('#operationSummary').inner_text() == 'Balkans · Battle royale · Hard'
             await page.click('#configBtn')
             await page.keyboard.press('Escape')
             assert not await page.locator('#operationDialog').evaluate('(e)=>e.open')

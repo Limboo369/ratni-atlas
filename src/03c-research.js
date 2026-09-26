@@ -3,12 +3,12 @@
    then a weapon is better for the rest of the game. One research at a time; command 'rsch' [key].
    The combat code asks: G.wRange / G.wRad / G.droneMul / G.samR / G.samCd / G.unitSpd / G.armor. */
 RA.RSCH = {
-  drone: { name: 'Dronovi', icon: 'drone', max: 3, desc: '+25% štete dronova po nivou' },
-  range: { name: 'Domet', icon: 'rocket', max: 3, desc: '+20% dometa raketa i dronova po nivou' },
-  blast: { name: 'Razorna moć', icon: 'nuke', max: 2, desc: '+1 polje kruga udara raketa i dronova lovaca' },
-  sam: { name: 'Protivvazdušna odbrana', icon: 'sam', max: 3, desc: '+20% dometa i 15% brže punjenje PVO po nivou' },
-  armor: { name: 'Oklop', icon: 'tank', max: 3, desc: 'jedinice gube 12% manje snage u borbi i od udara po nivou' },
-  speed: { name: 'Pokretljivost', icon: 'send', max: 3, desc: 'jedinice se kreću 15% brže po nivou' },
+  drone: { name: RA.t("Drones"), icon: 'drone', max: 3, desc: RA.t("+25% drone damage per level") },
+  range: { name: RA.t("Range"), icon: 'rocket', max: 3, desc: RA.t("+20% missile and drone range per level") },
+  blast: { name: RA.t("Blast power"), icon: 'nuke', max: 2, desc: RA.t("+1 cell of blast radius for missiles and hunter drones") },
+  sam: { name: RA.t("Air defence{=2}"), icon: 'sam', max: 3, desc: RA.t("+20% range and 15% faster air-defence reload per level") },
+  armor: { name: RA.t("Armour"), icon: 'tank', max: 3, desc: RA.t("units lose 12% less strength in battle and from strikes per level") },
+  speed: { name: RA.t("Mobility"), icon: 'send', max: 3, desc: RA.t("units move 15% faster per level") },
 };
 RA.RSCH_ORDER = ['drone', 'range', 'blast', 'sam', 'armor', 'speed'];
 Object.assign(RA.CFG, {
@@ -30,14 +30,14 @@ Object.assign(RA.CFG, {
   };
   P.startResearch = function (pid, k) {
     const p = this.P[pid], R = RA.RSCH[k];
-    if (!this.opts.tree) return 'Istraživanje je uz stablo tehnologija — nije uključeno u ovoj igri.';
-    if (!p || !p.alive) return 'Nisi u igri.';
-    if (!R) return 'Nepoznato istraživanje.';
-    if (p.rsBusy) return `Već istražuješ: ${RA.RSCH[p.rsBusy.k].name}.`;
+    if (!this.opts.tree) return RA.t("Research comes with the tech tree — it is off in this game.");
+    if (!p || !p.alive) return RA.t("You are not in the game.");
+    if (!R) return RA.t("Unknown research.");
+    if (p.rsBusy) return RA.t("Already researching: {0}.", RA.RSCH[p.rsBusy.k].name);
     const lv = this.rsLv(p, k);
-    if (lv >= R.max) return `${R.name} je već na najvišem nivou.`;
+    if (lv >= R.max) return RA.t("{0} is already at the top level.", R.name);
     const cost = this.rsCost(p, k);
-    if (p.gold < cost) return `Za ${R.name} ${lv + 1} treba ${RA.fmt(cost)} zlata.`;
+    if (p.gold < cost) return RA.t("{0} {1} needs {2} gold.", R.name, lv + 1, RA.fmt(cost));
     p.gold -= cost;
     p.rsBusy = { k, lv: lv + 1, from: this.clock(), done: this.clock() + this.rsTime(p, k) };
     return { k, lv: lv + 1, done: p.rsBusy.done };
@@ -50,7 +50,7 @@ Object.assign(RA.CFG, {
       const { k, lv } = p.rsBusy;
       (p.rs || (p.rs = {}))[k] = lv;
       p.rsBusy = null;
-      this.tell(p, 'good', `Istraženo: ${RA.RSCH[k].name} ${lv} (${RA.RSCH[k].desc}).`, p.id);
+      this.tell(p, 'good', RA.t("Researched: {0} {1} ({2}).", RA.RSCH[k].name, lv, RA.RSCH[k].desc), p.id);
     }
   };
   // what the research changes

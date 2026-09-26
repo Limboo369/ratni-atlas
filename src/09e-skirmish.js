@@ -6,14 +6,14 @@
 Object.assign(RA.UI.prototype, {
   skirmishSheet() {
     const net = this.app.net;
-    if (!net || !net.wsUrl) return this.toast('info', 'Skirmish radi na war.deovilab.com.', { ms: 4000 });
+    if (!net || !net.wsUrl) return this.toast('info', RA.t("Skirmish works on war.deovilab.com."), { ms: 4000 });
     const S = (this.skirm = this.skirm || { teams: '0', aw: 0 });
-    let h = '<div id="skirmSheet"></div>' + this.head('Skirmish', 'Javne igre s ljudima · ostale države vodi kompjuter');
-    h += '<div class="sec-t">Otvorene igre</div><div class="list" id="skirmList"><p class="note">Tražim igre…</p></div>';
-    h += `<div class="sec-t">Napravi javnu igru</div><p class="explain">Postavke s početnog ekrana (${RA.esc(this.playSet().pace === 'focus' ? 'Focus' : 'Blitz')}, mapa, doba, pravila), plus:</p>`;
-    h += `<div class="field"><span class="lab">Timovi</span><div class="seg wrap" id="skTeams">${[['0', 'Svako za sebe'], ['2', '2 tima'], ['3', '3 tima'], ['hvs', 'Ljudi protiv država']].map(([v, t]) => `<button data-v="${v}" aria-pressed="${S.teams === v}">${t}</button>`).join('')}</div></div>`;
-    h += `<div class="field"><span class="lab">Saveznici pobjeđuju zajedno</span><div class="seg" id="skAw"><button data-v="0" aria-pressed="${!S.aw}">Ne</button><button data-v="1" aria-pressed="${!!S.aw}">Da</button></div></div>`;
-    h += '<div class="btns"><button class="btn primary" data-sknew><span class="t">Napravi javnu igru</span><br><span class="d">Počinje za 60 s — dok čekaš, drugi ulaze</span></button></div>';
+    let h = '<div id="skirmSheet"></div>' + this.head(RA.t("Skirmish"), RA.t("Public games with people · the computer leads the other states"));
+    h += RA.t("<div class=\"sec-t\">Open games</div><div class=\"list\" id=\"skirmList\"><p class=\"note\">Looking for games…</p></div>");
+    h += RA.t("<div class=\"sec-t\">Create a public game</div><p class=\"explain\">Settings from the start screen ({0}, map, age, rules), plus:</p>", RA.esc(this.playSet().pace === 'focus' ? RA.t("Focus") : RA.t("Blitz")));
+    h += RA.t("<div class=\"field\"><span class=\"lab\">Teams</span><div class=\"seg wrap\" id=\"skTeams\">{0}</div></div>", [['0', RA.t("Free for all")], ['2', RA.t("2 teams")], ['3', RA.t("3 teams")], ['hvs', RA.t("Humans vs states")]].map(([v, t]) => `<button data-v="${v}" aria-pressed="${S.teams === v}">${t}</button>`).join(''));
+    h += RA.t("<div class=\"field\"><span class=\"lab\">Allies win together</span><div class=\"seg\" id=\"skAw\"><button data-v=\"0\" aria-pressed=\"{0}\">No</button><button data-v=\"1\" aria-pressed=\"{1}\">Yes</button></div></div>", !S.aw, !!S.aw);
+    h += RA.t("<div class=\"btns\"><button class=\"btn primary\" data-sknew><span class=\"t\">Create public game</span><br><span class=\"d\">Starts in 60 s — others join while you wait</span></button></div>");
     this.openSheet(h, (s) => {
       for (const [id, k] of [['skTeams', 'teams'], ['skAw', 'aw']]) s.querySelectorAll(`#${id} button`).forEach((b) => (b.onclick = () => {
         S[k] = k === 'aw' ? +b.dataset.v : b.dataset.v;
@@ -58,25 +58,25 @@ Object.assign(RA.UI.prototype, {
     }
   },
   skirmishRows(games) {
-    if (!games.length) return '<p class="note">Nema otvorenih igara — napravi jednu.</p>';
-    const TN = { 0: 'svako za sebe', 2: '2 tima', 3: '3 tima', hvs: 'ljudi protiv država' };
+    if (!games.length) return RA.t("<p class=\"note\">No open games — create one.</p>");
+    const TN = { 0: RA.t("free for all"), 2: RA.t("2 teams"), 3: RA.t("3 teams"), hvs: RA.t("humans vs states") };
     return games.map((g) => {
       const s = g.set, reg = RA.REGIONS.find((r) => r.id === s.reg && r.map === s.map);
-      const when = g.wait > 0 ? `počinje za ${Math.ceil(g.wait / 1000)} s` : `traje ${g.tickMs <= 100 ? RA.fmtTime(g.tick / 10) : Math.round((g.tick * g.tickMs) / 60000) + ' min'}`;
-      const d = `${s.fast ? 'Blitz' : 'Focus'} · ${RA.esc(reg ? reg.name : RA.mapInfo(s.map).all)} · ${RA.esc(RA.eraById(s.era).short)} · ${TN[s.teams] || ''} · ${when}`;
-      return `<div class="prow wide"><div class="pn"><div class="nm">Igrača ${g.humans}/${g.max}</div><div class="d">${d}</div></div><div class="bb">${this.mini('Uđi', `data-skjoin="${g.code}"`, 'ok', g.humans >= g.max)}</div></div>`;
+      const when = g.wait > 0 ? RA.t("starts in {0} s", Math.ceil(g.wait / 1000)) : RA.t("running for {0}", g.tickMs <= 100 ? RA.fmtTime(g.tick / 10) : Math.round((g.tick * g.tickMs) / 60000) + ' min');
+      const d = `${s.fast ? RA.t("Blitz") : RA.t("Focus")} · ${RA.esc(reg ? reg.name : RA.mapInfo(s.map).all)} · ${RA.esc(RA.eraById(s.era).short)} · ${TN[s.teams] || ''} · ${when}`;
+      return RA.t("<div class=\"prow wide\"><div class=\"pn\"><div class=\"nm\">Players {0}/{1}</div><div class=\"d\">{2}</div></div><div class=\"bb\">{3}</div></div>", g.humans, g.max, d, this.mini(RA.t("Join"), `data-skjoin="${g.code}"`, 'ok', g.humans >= g.max));
     }).join('');
   },
   /* report a player (plan 25): teaming, a rude name, cheating — the owner sees the reports */
   reportSheet(O) {
     const G = this.G, L = this.app.long;
-    let h = this.head(`Prijavi: ${RA.esc(O.nick || O.name)}`, 'Prijava ide administratoru igre');
-    h += '<div class="btns">' + [['team', 'Timovanje u igri svako za sebe'], ['name', 'Uvredljivo ime'], ['cheat', 'Varanje'], ['grief', 'Namjerno kvari igru']].map(([k, t]) => this.btn({ attrs: `data-rep="${k}"`, t })).join('') + '</div>';
+    let h = this.head(`Prijavi: ${RA.esc(O.nick || O.name)}`, RA.t("The report goes to the game's administrator"));
+    h += '<div class="btns">' + [['team', RA.t("Teaming in a free-for-all game")], ['name', RA.t("Offensive name")], ['cheat', RA.t("Cheating")], ['grief', RA.t("Deliberately ruining the game")]].map(([k, t]) => this.btn({ attrs: `data-rep="${k}"`, t })).join('') + '</div>';
     this.openSheet(h, (s) => s.querySelectorAll('[data-rep]').forEach((b) => (b.onclick = () => {
       const A = this.account;
       const body = { game: (L && L.code) || G.gid || '', name: String(O.nick || O.name).slice(0, 30), reason: b.dataset.rep };
-      (A && A.user ? A.api('POST', '/api/report', body) : Promise.reject(new Error('Prijava traži nalog.'))).then(
-        () => this.toast('good', 'Prijava je poslana. Hvala!'),
+      (A && A.user ? A.api('POST', '/api/report', body) : Promise.reject(new Error(RA.t("Reporting requires an account.")))).then(
+        () => this.toast('good', RA.t("Report sent. Thank you!")),
         (e) => this.toast('bad', RA.esc(e.message))
       );
       this.closeSheet();

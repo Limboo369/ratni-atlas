@@ -3,9 +3,9 @@
    Design rule: the AI chooses targets by opportunity and grudges, never by "is it the human". */
 
 RA.PERS = {
-  osvajac: { label: 'Osvajač', trig: -0.06, reserve: -0.05, boat: 1.4, fort: 0.6, port: 0.6, nuke: 1.4 },
-  trgovac: { label: 'Trgovac', trig: 0.06, reserve: 0.05, boat: 0.8, fort: 0.9, port: 2.0, nuke: 0.7 },
-  graditelj: { label: 'Graditelj', trig: 0.02, reserve: 0.08, boat: 0.7, fort: 1.8, port: 1.0, nuke: 1.0 },
+  osvajac: { label: RA.t("Conqueror"), trig: -0.06, reserve: -0.05, boat: 1.4, fort: 0.6, port: 0.6, nuke: 1.4 },
+  trgovac: { label: RA.t("Trader"), trig: 0.06, reserve: 0.05, boat: 0.8, fort: 0.9, port: 2.0, nuke: 0.7 },
+  graditelj: { label: RA.t("Builder"), trig: 0.02, reserve: 0.08, boat: 0.7, fort: 1.8, port: 1.0, nuke: 1.0 },
 };
 
 RA.AI = {
@@ -108,7 +108,7 @@ RA.AI = {
       if (G.tick > h.until || !X || !X.alive || !F || !F.alive || !G.isFriendly(p, F) || G.isFriendly(p, X) || (X.human && G.tick < G.diff.grace)) ai.help = null;
       else if (info.nb.has(X.id) && ratio > 0.22) {
         G.launchAttack(p.id, X.id, p.troops * 0.35, RA.AI.focusOn(G, p, X));
-        G.tell(F, 'ally', `Saveznik ti pomaže: ${p.name} napada neprijatelja (${X.name})!`, p.id, p.capital);
+        G.tell(F, 'ally', RA.t("An ally helps you: {0} attacks the enemy ({1})!", p.name, X.name), p.id, p.capital);
         ai.help = null;
         return;
       } else if (!h.donated && ratio > 0.3) {
@@ -116,7 +116,7 @@ RA.AI = {
         G.donateTroops(p.id, F.id, p.troops * 0.15);
       } else if (h.asked && F.human && !h.told) {
         h.told = true;
-        G.tell(F, 'info', `${p.name} nema granicu s neprijateljem (${X.name}) i ne može poslati više pomoći.`, p.id);
+        G.tell(F, 'info', RA.t("{0} has no border with the enemy ({1}) and can't send more help.", p.name, X.name), p.id);
       }
     }
     let active = 0;

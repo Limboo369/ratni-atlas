@@ -44,7 +44,7 @@ function __raFallback(){{
   var s=document.createElement('script');
   s.src='{LEAFLET_ALT}';
   s.onload=__raMain;
-  s.onerror=function(){{document.getElementById('loadMsg').textContent='Ne mogu učitati kartu (Leaflet). Provjeri internet vezu pa osvježi stranicu.';}};
+  s.onerror=function(){{document.getElementById('loadMsg').textContent='Cannot load the map (Leaflet). Check your internet connection and refresh the page.';}};
   document.head.appendChild(s);
 }}
 </script>
@@ -58,7 +58,7 @@ APP_HEAD = ('<link rel="manifest" href="/manifest.webmanifest"><meta name="theme
             '<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">'
             # the install offer can come before the game has loaded: keep it for src/09h-app.js
             '<script>addEventListener("beforeinstallprompt",function(e){e.preventDefault();window.__raInstall=e;});</script>')
-test = '<!doctype html><html lang="bs"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">' + APP_HEAD + '</head><body>' + page + '</body></html>'
+test = '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">' + APP_HEAD + '</head><body>' + page + '</body></html>'
 open(R + 'dist/test.html', 'w').write(test)
 shutil.copyfile(R + 'build/pwa/manifest.webmanifest', R + 'dist/manifest.webmanifest')
 open(R + 'dist/sw.js', 'w').write(open(R + 'build/pwa/sw.js').read().replace('__BUILD__', BUILD))

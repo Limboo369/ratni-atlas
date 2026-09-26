@@ -3,7 +3,7 @@
    strike weapons. RA.applyEra() swaps the global unit/building/weapon tables (one game runs at a time, and in an
    online game every device applies the same era). */
 
-RA.MISSILE.rocket2 = { name: 'Teška raketa', kind: 'conv', cost: 300000, r: 4, speed: 3.0, cd: 70, na: true, desc: '' };
+RA.MISSILE.rocket2 = { name: RA.t("Heavy missile"), kind: 'conv', cost: 300000, r: 4, speed: 3.0, cd: 70, na: true, desc: '' };
 RA.MISSILE_ORDER = ['drone', 'hdrone', 'rocket', 'rocket2', 'emp', 'atom', 'hydro', 'mirv'];
 RA.UNIT.inf.needs = null;
 RA.UNIT.tank.needs = 'factory';
@@ -24,130 +24,130 @@ RA.UNIT.art.sym = 'art';
 
 RA.ERAS = [
   {
-    id: 'rim', name: 'Antički Rim', sub: '100. godina', short: 'Rim',
-    blurb: 'Rimsko carstvo protiv germanskih, sarmatskih i keltskih plemena. Legije, konjica, strijelci i opsadne sprave — bez baruta, aviona i bombi.',
-    blurbW: 'Svijet oko 100. godine: Rim, Partija, kineska dinastija Han, Kušani i plemena oko njih. Legije, konjica, strijelci i opsadne sprave — bez baruta, aviona i bombi.',
-    strikeTab: 'Opsada', strikeIcon: 'siege', road: true, para: false,
+    id: 'rim', name: RA.t("Ancient Rome"), sub: RA.t("Year 100"), short: RA.t("Rome"),
+    blurb: RA.t("The Roman Empire against Germanic, Sarmatian and Celtic tribes. Legions, cavalry, archers and siege engines — no gunpowder, planes or bombs."),
+    blurbW: RA.t("The world around the year 100: Rome, Parthia, China's Han dynasty, the Kushans and the tribes around them. Legions, cavalry, archers and siege engines — no gunpowder, planes or bombs."),
+    strikeTab: RA.t("Siege"), strikeIcon: 'siege', road: true, para: false,
     units: {
-      inf: { name: 'Legija', desc: 'Čvrsta odbrana granice u krugu od 6 polja.' },
-      tank: { name: 'Konjica', pl: false, sym: 'cav', needs: 'barracks', desc: 'Brzi proboj: tvoji napadi pored konjice su jeftiniji i brži.' },
-      art: { name: 'Strijelci', pl: true, needs: null, range: 8, desc: 'Gađaju neprijateljske jedinice i vojsku do 8 polja. Drže se iza linije.' },
-      ship: { name: 'Trirema', m: false, range: 5, desc: 'Ratna galija: potapa desante i trgovačke brodove, blokira luke i napada obalu do 5 polja.' },
-      sub: { name: 'Liburna', sub: false, range: 5, speed: 0.6, desc: 'Brza galija: lovi desante i trgovačke brodove do 5 polja.' },
+      inf: { name: RA.t("Legion"), desc: RA.t("A solid border defence within 6 cells.") },
+      tank: { name: RA.t("Cavalry"), pl: false, sym: 'cav', needs: 'barracks', desc: RA.t("Fast breakthroughs: your attacks next to cavalry are cheaper and faster.") },
+      art: { name: RA.t("Archers"), pl: true, needs: null, range: 8, desc: RA.t("Shoot at enemy units and troops up to 8 cells away. They stay behind the line.") },
+      ship: { name: RA.t("Trireme"), m: false, range: 5, desc: RA.t("A war galley: sinks landings and trade ships, blockades ports and attacks the coast up to 5 cells.") },
+      sub: { name: RA.t("Liburna"), sub: false, range: 5, speed: 0.6, desc: RA.t("A fast galley: hunts landings and trade ships up to 5 cells away.") },
     },
     structs: {
-      factory: { name: 'Tržnica', short: 'Tržnica', icon: 'market', cost: (n) => Math.min(1.5e6, 150000 * RA.dpow(2, n)), desc: 'Karavani do tvojih gradova (18 polja) donose zlato.' },
-      barracks: { name: 'Vojni logor', short: 'Logor', desc: '+160k kapaciteta vojske i +2 mjesta za jedinice. Potreban za konjicu.' },
-      fort: { name: 'Kastrum', short: 'Kastrum', desc: 'Utvrđeni logor: napadači u krugu od 8 polja gube 3× više vojske i sporiji su.' },
-      silo: { name: 'Opsadna radionica', short: 'Opsada', icon: 'siege', cost: () => 180000, time: 45, desc: 'Gradi onagre: kamenje na neprijatelja do 16 polja daleko.' },
+      factory: { name: RA.t("Market"), short: RA.t("Market"), icon: 'market', cost: (n) => Math.min(1.5e6, 150000 * RA.dpow(2, n)), desc: RA.t("Caravans to your cities (18 cells) bring gold.") },
+      barracks: { name: RA.t("Military camp"), short: RA.t("Camp"), desc: RA.t("+160k army capacity and +2 unit slots. Needed for cavalry.") },
+      fort: { name: RA.t("Castrum"), short: RA.t("Castrum"), desc: RA.t("A fortified camp: attackers within 8 cells lose 3× more troops and are slower.") },
+      silo: { name: RA.t("Siege workshop"), short: RA.t("Siege"), icon: 'siege', cost: () => 180000, time: 45, desc: RA.t("Builds onagers: stones at the enemy up to 16 cells away.") },
       sam: false, airport: false, dome: false,
     },
     missiles: {
-      rocket: { name: 'Onager', icon: 'siege', r: 2, range: 16, cost: 45000, speed: 1.2, cd: 50, desc: 'Kamenje do 16 polja od radionice: ruši zgrade, ranjava jedinice i vojsku.' },
+      rocket: { name: RA.t("Onager"), icon: 'siege', r: 2, range: 16, cost: 45000, speed: 1.2, cd: 50, desc: RA.t("Stones up to 16 cells from the workshop: destroy buildings, wound units and troops.") },
       rocket2: false, emp: false, atom: false, hydro: false, mirv: false, drone: false, hdrone: false,
     },
   },
   {
-    id: 'srednji', name: 'Srednji vijek', sub: '1400. godina', short: 'Srednji vijek',
-    blurb: 'Kraljevina Bosna, Srpska despotovina, Ugarska, Venecija, Osmanlije, Sveto Rimsko Carstvo… Vitezovi, strijelci, trebušei i prve bombarde.',
-    blurbW: 'Svijet oko 1400: Timuridi, Ming Kina, Mameluci, Osmanlije, evropska kraljevstva, Asteci i Inke. Vitezovi, strijelci, trebušei i prve bombarde.',
-    strikeTab: 'Opsada', strikeIcon: 'siege', road: true, para: false,
+    id: 'srednji', name: RA.t("Middle Ages"), sub: RA.t("Year 1400"), short: RA.t("Middle Ages"),
+    blurb: RA.t("The Kingdom of Bosnia, the Serbian Despotate, Hungary, Venice, the Ottomans, the Holy Roman Empire… Knights, archers, trebuchets and the first bombards."),
+    blurbW: RA.t("The world around 1400: the Timurids, Ming China, the Mamluks, the Ottomans, European kingdoms, the Aztecs and the Inca. Knights, archers, trebuchets and the first bombards."),
+    strikeTab: RA.t("Siege"), strikeIcon: 'siege', road: true, para: false,
     units: {
-      inf: { name: 'Pješaci', pl: true, desc: 'Kopljanici čvrsto drže granicu u krugu od 6 polja.' },
-      tank: { name: 'Vitezovi', pl: true, sym: 'cav', needs: 'barracks', desc: 'Oklopna konjica: tvoji napadi pored vitezova su jeftiniji i brži.' },
-      art: { name: 'Strijelci', pl: true, needs: null, range: 9, desc: 'Samostreličari gađaju jedinice i vojsku do 9 polja.' },
-      ship: { name: 'Karaka', m: false, range: 6, desc: 'Ratni jedrenjak: potapa desante i trgovačke brodove, blokira luke i napada obalu do 6 polja.' },
-      sub: { name: 'Galija', sub: false, range: 5, speed: 0.6, desc: 'Brza galija na vesla: lovi desante i trgovačke brodove do 5 polja.' },
+      inf: { name: RA.t("Foot soldiers"), pl: true, desc: RA.t("Spearmen hold the border firmly within 6 cells.") },
+      tank: { name: RA.t("Knights"), pl: true, sym: 'cav', needs: 'barracks', desc: RA.t("Armoured cavalry: your attacks next to knights are cheaper and faster.") },
+      art: { name: RA.t("Archers"), pl: true, needs: null, range: 9, desc: RA.t("Crossbowmen shoot at units and troops up to 9 cells away.") },
+      ship: { name: RA.t("Carrack"), m: false, range: 6, desc: RA.t("A sailing warship: sinks landings and trade ships, blockades ports and attacks the coast up to 6 cells.") },
+      sub: { name: RA.t("Galley"), sub: false, range: 5, speed: 0.6, desc: RA.t("A fast rowed galley: hunts landings and trade ships up to 5 cells away.") },
     },
     structs: {
-      factory: { name: 'Tržnica', short: 'Tržnica', icon: 'market', cost: (n) => Math.min(1.5e6, 150000 * RA.dpow(2, n)), desc: 'Karavani do tvojih gradova (18 polja) donose zlato.' },
-      barracks: { name: 'Kasarna', desc: '+160k kapaciteta vojske i +2 mjesta za jedinice. Potrebna za vitezove.' },
-      fort: { name: 'Tvrđava', short: 'Tvrđava', desc: 'Zamak: napadači u krugu od 8 polja gube 3× više vojske i sporiji su.' },
-      silo: { name: 'Opsadna radionica', short: 'Opsada', icon: 'siege', cost: () => 220000, time: 50, desc: 'Trebušei i bombarde: udari na neprijatelja do 24 polja daleko.' },
+      factory: { name: RA.t("Market"), short: RA.t("Market"), icon: 'market', cost: (n) => Math.min(1.5e6, 150000 * RA.dpow(2, n)), desc: RA.t("Caravans to your cities (18 cells) bring gold.") },
+      barracks: { name: RA.t("Barracks"), desc: RA.t("+160k army capacity and +2 unit slots. Needed for knights.") },
+      fort: { name: RA.t("Castle"), short: RA.t("Castle"), desc: RA.t("Castle: attackers within 8 cells lose 3× more troops and are slower.") },
+      silo: { name: RA.t("Siege workshop"), short: RA.t("Siege"), icon: 'siege', cost: () => 220000, time: 50, desc: RA.t("Trebuchets and bombards: strikes on the enemy up to 24 cells away.") },
       sam: false, airport: false, dome: false,
     },
     missiles: {
-      rocket: { name: 'Trebušet', icon: 'siege', r: 2, range: 18, cost: 50000, speed: 1.3, cd: 50, desc: 'Teško kamenje do 18 polja: ruši zgrade, ranjava jedinice i vojsku.' },
-      rocket2: { name: 'Bombarda', icon: 'siege', na: false, r: 3, range: 24, cost: 140000, speed: 1.8, cd: 70, desc: 'Prvi topovi: jači udar (krug 3 polja) do 24 polja daleko.' },
+      rocket: { name: RA.t("Trebuchet"), icon: 'siege', r: 2, range: 18, cost: 50000, speed: 1.3, cd: 50, desc: RA.t("Heavy stones up to 18 cells: destroy buildings, wound units and troops.") },
+      rocket2: { name: RA.t("Bombard"), icon: 'siege', na: false, r: 3, range: 24, cost: 140000, speed: 1.8, cd: 70, desc: RA.t("The first cannons: a stronger strike (3-cell radius) up to 24 cells away.") },
       emp: false, atom: false, hydro: false, mirv: false, drone: false, hdrone: false,
     },
   },
   {
-    id: 'napoleon', name: 'Napoleonovo doba', sub: '1815. godina', short: 'Napoleon',
-    blurb: 'Carstva i kraljevine poslije Napoleona, desetine njemačkih i italijanskih država. Mušketari, konjica, topovi i Kongreveove rakete.',
-    blurbW: 'Svijet poslije Napoleona: Britanija, Rusija, Osmanlije, Kina dinastije Ćing, mlade američke republike. Mušketari, konjica, topovi i Kongreveove rakete.',
-    strikeTab: 'Rakete', strikeIcon: 'rocket', road: true, para: false,
+    id: 'napoleon', name: RA.t("Napoleonic era"), sub: RA.t("Year 1815"), short: RA.t("Napoleon"),
+    blurb: RA.t("Empires and kingdoms after Napoleon, dozens of German and Italian states. Musketeers, cavalry, cannons and Congreve rockets."),
+    blurbW: RA.t("The world after Napoleon: Britain, Russia, the Ottomans, Qing China, the young American republics. Musketeers, cavalry, cannons and Congreve rockets."),
+    strikeTab: RA.t("Rockets"), strikeIcon: 'rocket', road: true, para: false,
     units: {
-      inf: { name: 'Pješadija', desc: 'Mušketari čvrsto drže granicu u krugu od 6 polja.' },
-      tank: { name: 'Konjica', pl: false, sym: 'cav', needs: 'barracks', desc: 'Husari i kirasiri: tvoji napadi pored konjice su jeftiniji i brži.' },
-      art: { name: 'Topovi', pl: true, needs: 'factory', range: 12, desc: 'Gađaju neprijateljske jedinice i vojsku do 12 polja. Traže manufakturu.' },
-      ship: { name: 'Linijski brod', range: 7, desc: 'Brod sa 74 topa: potapa desante i trgovačke brodove, blokira luke i gađa obalu do 7 polja.' },
-      sub: { name: 'Fregata', sub: false, range: 6, speed: 0.62, desc: 'Brza fregata: lovi desante i trgovačke brodove do 6 polja.' },
+      inf: { name: RA.t("Infantry"), desc: RA.t("Musketeers hold the border firmly within 6 cells.") },
+      tank: { name: RA.t("Cavalry"), pl: false, sym: 'cav', needs: 'barracks', desc: RA.t("Hussars and cuirassiers: your attacks next to cavalry are cheaper and faster.") },
+      art: { name: RA.t("Cannons"), pl: true, needs: 'factory', range: 12, desc: RA.t("Shoot at enemy units and troops up to 12 cells away. Need a manufactory.") },
+      ship: { name: RA.t("Ship of the line"), range: 7, desc: RA.t("A 74-gun ship: sinks landings and trade ships, blockades ports and shells the coast up to 7 cells.") },
+      sub: { name: RA.t("Frigate"), sub: false, range: 6, speed: 0.62, desc: RA.t("A fast frigate: hunts landings and trade ships up to 6 cells away.") },
     },
     structs: {
-      factory: { name: 'Manufaktura', short: 'Manufaktura', desc: 'Kočije do tvojih gradova (18 polja) donose zlato. Potrebna za topove.' },
-      barracks: { desc: '+160k kapaciteta vojske i +2 mjesta za jedinice. Potrebna za konjicu.' },
-      silo: { name: 'Raketna baterija', short: 'Baterija', cost: () => 350000, time: 60, desc: 'Kongreveove rakete: udar do 40 polja daleko.' },
+      factory: { name: RA.t("Manufactory"), short: RA.t("Manufactory"), desc: RA.t("Coaches to your cities (18 cells) bring gold. Needed for cannons.") },
+      barracks: { desc: RA.t("+160k army capacity and +2 unit slots. Needed for cavalry.{=2}") },
+      silo: { name: RA.t("Rocket battery"), short: RA.t("Battery"), cost: () => 350000, time: 60, desc: RA.t("Congreve rockets: strikes up to 40 cells away.") },
       sam: false, airport: false, dome: false,
     },
     missiles: {
-      rocket: { name: 'Kongreveova raketa', r: 3, range: 40, cost: 80000, speed: 2.4, cd: 45, desc: 'Neprecizna ali strašna: udar u krugu 3 polja, do 40 polja od baterije.' },
+      rocket: { name: RA.t("Congreve rocket"), r: 3, range: 40, cost: 80000, speed: 2.4, cd: 45, desc: RA.t("Inaccurate but terrifying: a 3-cell strike up to 40 cells from the battery.") },
       rocket2: false, emp: false, atom: false, hydro: false, mirv: false, drone: false, hdrone: false,
     },
   },
   {
-    id: 'ww1', name: 'Prvi svjetski rat', sub: '1914. godina', short: '1914.',
-    blurb: 'Antanta protiv Centralnih sila: Austro-Ugarska, Njemačko i Rusko carstvo, Srbija, Osmanlije… Rovovi, teška artiljerija, prvi tenkovi i cepelini.',
-    blurbW: 'Svijet 1914: kolonijalna carstva Britanije, Francuske i Njemačke, Rusko i Osmansko carstvo, SAD, Japan, Kina… Rovovi, teška artiljerija, prvi tenkovi i cepelini.',
-    strikeTab: 'Udari', strikeIcon: 'zeppelin', road: false, para: false,
+    id: 'ww1', name: RA.t("World War I"), sub: RA.t("Year 1914"), short: '1914.',
+    blurb: RA.t("The Entente against the Central Powers: Austria-Hungary, the German and Russian empires, Serbia, the Ottomans… Trenches, heavy artillery, the first tanks and zeppelins."),
+    blurbW: RA.t("The world in 1914: the colonial empires of Britain, France and Germany, the Russian and Ottoman empires, the USA, Japan, China… Trenches, heavy artillery, the first tanks and zeppelins."),
+    strikeTab: RA.t("Strikes"), strikeIcon: 'zeppelin', road: false, para: false,
     units: {
-      tank: { name: 'Tenkovi', desc: 'Prvi tenkovi (od 1916.): tvoji napadi pored njih su jeftiniji i brži. Traže fabriku.' },
-      art: { desc: 'Teška artiljerija gađa jedinice i vojsku do 12 polja. Traži fabriku.' },
-      ship: { name: 'Drednot', desc: 'Bojni brod: potapa desante, trgovačke i ratne brodove, blokira luke i gađa obalu do 8 polja.' },
+      tank: { name: RA.t("Tanks"), desc: RA.t("The first tanks (from 1916): your attacks next to them are cheaper and faster. Need a factory.") },
+      art: { desc: RA.t("Heavy artillery hits units and troops up to 12 cells away. Needs a factory.") },
+      ship: { name: RA.t("Dreadnought"), desc: RA.t("A battleship: sinks landings, trade ships and warships, blockades ports and shells the coast up to 8 cells.") },
     },
     structs: {
-      fort: { name: 'Rovovi i utvrde', short: 'Rovovi' },
-      silo: { name: 'Hangar za cepeline', short: 'Hangar', icon: 'hangar', cost: () => 500000, time: 70, desc: 'Cepelini i teški topovi: udari do 120 polja daleko.' },
-      sam: { name: 'Protivavionski topovi', short: 'PA topovi', desc: 'Obaraju cepeline koji ciljaju u krugu od 28 polja.' },
+      fort: { name: RA.t("Trenches and forts"), short: RA.t("Trenches") },
+      silo: { name: RA.t("Zeppelin hangar"), short: RA.t("Hangar"), icon: 'hangar', cost: () => 500000, time: 70, desc: RA.t("Zeppelins and heavy guns: strikes up to 120 cells away.") },
+      sam: { name: RA.t("Anti-aircraft guns"), short: RA.t("AA guns"), desc: RA.t("Shoot down zeppelins aimed within 28 cells.") },
       airport: false, dome: false,
     },
     missiles: {
-      rocket: { name: 'Debela Berta', icon: 'rocket', r: 3, range: 30, cost: 110000, speed: 2.6, cd: 40, desc: 'Najveći top rata: udar u krugu 3 polja do 30 polja daleko.' },
-      rocket2: { name: 'Cepelin', icon: 'zeppelin', na: false, r: 4, range: 120, cost: 260000, speed: 1.1, cd: 90, desc: 'Vazdušni brod bombarduje metu (krug 4 polja) do 120 polja daleko. Spor — PA topovi ga mogu oboriti.' },
+      rocket: { name: RA.t("Big Bertha"), icon: 'rocket', r: 3, range: 30, cost: 110000, speed: 2.6, cd: 40, desc: RA.t("The war's biggest gun: a 3-cell strike up to 30 cells away.") },
+      rocket2: { name: RA.t("Zeppelin"), icon: 'zeppelin', na: false, r: 4, range: 120, cost: 260000, speed: 1.1, cd: 90, desc: RA.t("An airship bombs a target (4-cell radius) up to 120 cells away. Slow — AA guns can shoot it down.") },
       emp: false, atom: false, hydro: false, mirv: false, drone: false, hdrone: false,
     },
   },
   {
-    id: 'ww2', name: 'Drugi svjetski rat', sub: '1938. godina', short: '1938.',
-    blurb: 'Evropa uoči rata: Njemačka, SSSR, Italija, Kraljevina Jugoslavija… Tenkovi, avioni i padobranci, V-2 rakete — a atomska bomba stiže tek od 10. minute.',
-    blurbW: 'Svijet uoči rata: Njemačka, SSSR, Japan, SAD, Britansko i Francusko carstvo… Tenkovi, avioni i padobranci, V-2 rakete — a atomska bomba stiže tek od 10. minute.',
-    strikeTab: 'Rakete', strikeIcon: 'rocket', road: false, para: true,
-    units: { ship: { name: 'Bojni brod' } },
+    id: 'ww2', name: RA.t("World War II"), sub: RA.t("Year 1938"), short: '1938.',
+    blurb: RA.t("Europe on the eve of war: Germany, the USSR, Italy, the Kingdom of Yugoslavia… Tanks, planes and paratroopers, V-2 rockets — and the atomic bomb only from minute 10."),
+    blurbW: RA.t("The world on the eve of war: Germany, the USSR, Japan, the USA, the British and French empires… Tanks, planes and paratroopers, V-2 rockets — and the atomic bomb only from minute 10."),
+    strikeTab: RA.t("Rockets"), strikeIcon: 'rocket', road: false, para: true,
+    units: { ship: { name: RA.t("Battleship") } },
     structs: {
-      silo: { name: 'Raketna baza', short: 'Baza', desc: 'Lansira V-2 rakete, a od 10. minute i atomsku bombu.' },
-      sam: { name: 'Protivavionska odbrana', short: 'PAO', desc: 'Obara neprijateljske rakete i avione koji ciljaju u krugu od 28 polja.' },
+      silo: { name: RA.t("Rocket base"), short: RA.t("Base"), desc: RA.t("Launches V-2 rockets, and from minute 10 the atomic bomb.") },
+      sam: { name: RA.t("Anti-aircraft defence"), short: 'PAO', desc: RA.t("Shoots down enemy missiles and planes aimed within 28 cells.") },
     },
     missiles: {
-      rocket: { name: 'V-2 raketa', desc: 'Prva balistička raketa: ruši zgrade, uništava jedinice i ubija vojsku.' },
-      atom: { from: 6000, desc: 'Razvoj traje: dostupna od 10. minute. Briše teritoriju, sve zgrade i jedinice u krugu od 9 polja.' },
+      rocket: { name: RA.t("V-2 rocket"), desc: RA.t("The first ballistic missile: destroys buildings and units and kills troops.") },
+      atom: { from: 6000, desc: RA.t("In development: available from minute 10. Wipes out land, every building and unit within 9 cells.") },
       rocket2: false, emp: false, hydro: false, mirv: false, drone: false, hdrone: false,
     },
   },
   {
-    id: 'hladni', name: 'Hladni rat', sub: '1960. godina', short: 'Hladni rat',
-    blurb: 'NATO i Varšavski pakt: dvije Njemačke, SSSR, Jugoslavija između blokova. Tenkovi, padobranci, balističke rakete i hidrogenske bombe.',
-    blurbW: 'SAD i SSSR dijele svijet: NATO, Varšavski pakt, Kina, nesvrstani i kolonije pred nezavisnošću. Tenkovi, padobranci, balističke rakete i hidrogenske bombe.',
-    strikeTab: 'Rakete', strikeIcon: 'rocket', road: false, para: true,
-    units: { ship: { name: 'Razarač' } },
+    id: 'hladni', name: RA.t("Cold War"), sub: RA.t("Year 1960"), short: RA.t("Cold War"),
+    blurb: RA.t("NATO and the Warsaw Pact: two Germanys, the USSR, Yugoslavia between the blocs. Tanks, paratroopers, ballistic missiles and hydrogen bombs."),
+    blurbW: RA.t("The USA and the USSR divide the world: NATO, the Warsaw Pact, China, the non-aligned and colonies on the eve of independence. Tanks, paratroopers, ballistic missiles and hydrogen bombs."),
+    strikeTab: RA.t("Rockets"), strikeIcon: 'rocket', road: false, para: true,
+    units: { ship: { name: RA.t("Destroyer") } },
     structs: {},
     missiles: { rocket2: false, emp: false, drone: false, hdrone: false },
   },
   {
-    id: 'danas', name: 'Danas', sub: 'današnje granice', short: 'Danas',
-    blurb: 'Današnja Evropa. Sve jedinice i oružje: rakete, EMP, atomske i hidrogenske bombe, MIRV.',
-    blurbW: 'Današnji svijet. Sve jedinice i oružje: rakete, EMP, atomske i hidrogenske bombe, MIRV.',
-    strikeTab: 'Rakete', strikeIcon: 'rocket', road: false, para: true,
-    units: { ship: { name: 'Razarač' }, sub: { name: 'Nuklearna podmornica' } }, structs: {}, missiles: {},
+    id: 'danas', name: RA.t("Today"), sub: RA.t("today's borders"), short: RA.t("Today"),
+    blurb: RA.t("Today's Europe. Every unit and weapon: missiles, EMP, atomic and hydrogen bombs, MIRV."),
+    blurbW: RA.t("Today's world. Every unit and weapon: missiles, EMP, atomic and hydrogen bombs, MIRV."),
+    strikeTab: RA.t("Rockets"), strikeIcon: 'rocket', road: false, para: true,
+    units: { ship: { name: RA.t("Destroyer") }, sub: { name: RA.t("Nuclear submarine") } }, structs: {}, missiles: {},
   },
 ];
 RA.eraById = (id) => RA.ERAS.find((e) => e.id === id) || RA.ERAS[RA.ERAS.length - 1];
@@ -173,14 +173,14 @@ RA.applyEra = function (id) {
   RA.STRUCT_ORDER = RA.BASE.STRUCT_ORDER.filter((k) => !RA.STRUCT[k].na);
   for (const k in RA.UNIT) {
     const U = RA.UNIT[k];
-    U.lost = U.naval ? `${U.name} je potopljen${U.m ? '' : 'a'}` : `${U.name} ${U.pl ? 'su uništeni' : 'je uništena'}`;
+    U.lost = U.naval ? (U.m ? RA.t("{0} was sunk", U.name) : RA.t("{0} was sunk{=2}", U.name)) : U.pl ? RA.t("{0} were destroyed", U.name) : RA.t("{0} was destroyed", U.name);
   }
   RA.UNIT_TXT = {};
   for (const k in RA.UNIT) {
     const U = RA.UNIT[k];
     RA.UNIT_TXT[k] = U.naval
-      ? { gone: `${U.name} je rashodovan${U.m ? '' : 'a'}`, move: `${U.name} plovi na novi položaj` }
-      : { gone: `${U.name} ${U.pl ? 'su raspušteni' : 'je raspuštena'}`, move: `${U.name} ${U.pl ? 'kreću' : 'kreće'} na novi položaj` };
+      ? { gone: U.m ? RA.t("{0} was decommissioned", U.name) : RA.t("{0} was decommissioned{=2}", U.name), move: RA.t("{0} sails to a new position", U.name) }
+      : U.pl ? { gone: RA.t("{0} were disbanded", U.name), move: RA.t("{0} move to a new position", U.name) } : { gone: RA.t("{0} was disbanded", U.name), move: RA.t("{0} moves to a new position", U.name) };
   }
   return E;
 };
@@ -237,7 +237,7 @@ RA.eraMap = function (base, id, start) {
   const W = base.W, N = base.N;
   m.era = id;
   m.eraOwn = E.own;
-  const cities = base.cities.map((c) => Object.assign({}, c, { name: E.ren[c.name] || c.name, owner: 0, tier: c.tier === 3 ? 2 : c.tier }));
+  const cities = base.cities.map((c) => Object.assign({}, c, { name: E.ren[c.raw] ? RA.tn(E.ren[c.raw]) : c.name, owner: 0, tier: c.tier === 3 ? 2 : c.tier }));
   const cityAt = new Int16Array(N).fill(-1);
   cities.forEach((c) => (cityAt[c.c] = c.i));
   const nations = [];
@@ -254,15 +254,15 @@ RA.eraMap = function (base, id, start) {
       }
     }
     if (!cap && p.cap && p.cap !== '—' && base.land[c0] && cityAt[c0] < 0) {
-      cap = { i: cities.length, name: p.cap, x: p.x, y: p.y, c: c0, tier: 3, pop: 0, rank: 5, iso: p.k, owner: 0, era: true };
+      cap = { i: cities.length, name: RA.tn(p.cap), raw: p.cap, x: p.x, y: p.y, c: c0, tier: 3, pop: 0, rank: 5, iso: p.k, owner: 0, era: true };
       cities.push(cap);
       cityAt[c0] = cap.i;
     }
     if (cap) {
       cap.tier = 3;
-      if (p.cap && p.cap !== '—') cap.name = p.cap;
+      if (p.cap && p.cap !== '—') cap.name = RA.tn(p.cap);
     }
-    nations.push({ iso: p.k, name: p.n, x: cap ? cap.x : p.x, y: cap ? cap.y : p.y, c: cap ? cap.c : c0, color: p.c, capital: cap ? cap.name : p.cap, k });
+    nations.push({ iso: p.k, name: RA.tn(p.n), x: cap ? cap.x : p.x, y: cap ? cap.y : p.y, c: cap ? cap.c : c0, color: p.c, capital: cap ? cap.name : RA.tn(p.cap), k });
   });
   m.cities = cities;
   m.cityAt = cityAt;
@@ -281,7 +281,7 @@ RA.eraMap = function (base, id, start) {
   }
   m.urban = urban;
   m.nations = nations;
-  m.cityStates = base.cityStates.map((s) => Object.assign({}, s, { name: E.ren[s.name] || s.name }));
+  m.cityStates = base.cityStates.map((s) => Object.assign({}, s, { name: E.ren[s.raw] ? RA.tn(E.ren[s.raw]) : s.name }));
   return m;
 };
 

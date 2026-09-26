@@ -6,8 +6,8 @@
    there and comes back. Drones ("danas" only) are cheap missiles launched from your own border in a straight line:
    the kamikaze drone hits a small spot, the hunter drone hits units; a few per player at a time. */
 RA.AIR = {
-  fighter: { name: 'Lovci', cost: 300000, desc: 'Brane nebo oko aerodroma: obaraju neprijateljske bombardere i avione s padobrancima; prate tvoje avione.' },
-  bomber: { name: 'Bombarderi', cost: 450000, desc: 'Let na metu do 70 polja od aerodroma: ruše zgrade, jedinice i vojsku u krugu 2 polja, pa se vraćaju.' },
+  fighter: { name: RA.t("Fighters"), cost: 300000, desc: RA.t("Guard the sky around the airfield: shoot down enemy bombers and paratroop planes; escort your planes.") },
+  bomber: { name: RA.t("Bombers"), cost: 450000, desc: RA.t("Fly to a target up to 70 cells from the airfield: destroy buildings, units and troops within 2 cells, then return.") },
 };
 Object.assign(RA.CFG, {
   AIR_PER_AIRPORT: 2, // squadrons of each kind per airport
@@ -22,17 +22,17 @@ Object.assign(RA.CFG, {
   DRONE_MAX: 6, // drones in the air per player
 });
 Object.assign(RA.MISSILE, {
-  drone: { name: 'Kamikaza dron', kind: 'drone', cost: 45000, r: 1, range: 45, speed: 1.4, cd: 0, icon: 'drone',
-    desc: 'Jeftin mali udar (krug 1 polja) do 45 polja od tvoje granice. Leti pravo — PVO ga može oboriti.' },
-  hdrone: { name: 'Dron lovac', kind: 'drone', hunt: true, cost: 110000, r: 3, range: 60, speed: 1.8, cd: 0, icon: 'drone',
-    desc: 'Napada neprijateljske jedinice u krugu 3 polja, do 60 polja od tvoje granice.' },
+  drone: { name: RA.t("Kamikaze drone"), kind: 'drone', cost: 45000, r: 1, range: 45, speed: 1.4, cd: 0, icon: 'drone',
+    desc: RA.t("A cheap small strike (1-cell radius) up to 45 cells from your border. Flies straight — air defence can shoot it down.") },
+  hdrone: { name: RA.t("Hunter drone"), kind: 'drone', hunt: true, cost: 110000, r: 3, range: 60, speed: 1.8, cd: 0, icon: 'drone',
+    desc: RA.t("Attacks enemy units within 3 cells, up to 60 cells from your border.") },
 });
 RA.airOn = () => !RA.STRUCT.airport.na && !!RA.ERA.para;
 /* the era's names of the two squadrons */
 RA.airName = (k) => {
   const e = RA.ERA ? RA.ERA.id : 'danas';
-  if (k === 'fighter') return e === 'ww2' ? 'Lovci' : e === 'hladni' ? 'Mlazni lovci' : 'Višenamjenski lovci';
-  return e === 'danas' ? 'Strateški bombarderi' : 'Bombarderi';
+  if (k === 'fighter') return e === 'ww2' ? RA.t("Fighters") : e === 'hladni' ? RA.t("Jet fighters") : RA.t("Multirole fighters");
+  return e === 'danas' ? RA.t("Strategic bombers") : RA.t("Bombers");
 };
 
 (function (P) {
@@ -41,14 +41,14 @@ RA.airName = (k) => {
   };
   P.buyAir = function (pid, type) {
     const p = this.P[pid], A = RA.AIR[type];
-    if (!A || !Object.prototype.hasOwnProperty.call(RA.AIR, type)) return 'Nepoznata vrsta aviona.';
-    if (!RA.airOn()) return 'U ovom dobu nema vojnih aviona.';
+    if (!A || !Object.prototype.hasOwnProperty.call(RA.AIR, type)) return RA.t("Unknown aircraft type.");
+    if (!RA.airOn()) return RA.t("There are no military aircraft in this era.");
     const aps = this.airportsOf(p);
-    if (!aps.length) return 'Treba ti aerodrom.';
+    if (!aps.length) return RA.t("You need an airfield.");
     const sq = p.air || (p.air = []);
     const have = sq.filter((q) => q.type === type).length;
-    if (have >= aps.length * RA.CFG.AIR_PER_AIRPORT) return `Najviše ${RA.CFG.AIR_PER_AIRPORT} po aerodromu — izgradi još jedan aerodrom.`;
-    if (p.gold < A.cost) return 'Nemaš dovoljno zlata.';
+    if (have >= aps.length * RA.CFG.AIR_PER_AIRPORT) return RA.t("At most {0} per airfield — build another airfield.", RA.CFG.AIR_PER_AIRPORT);
+    if (p.gold < A.cost) return RA.t("Not enough gold.");
     p.gold -= A.cost;
     // the airport with the fewest squadrons
     const load = (s) => sq.filter((q) => q.base === s.id).length;
@@ -60,11 +60,11 @@ RA.airName = (k) => {
   /* a bomber mission at cell c */
   P.bombRaid = function (pid, c) {
     const p = this.P[pid];
-    if (!RA.airOn()) return 'U ovom dobu nema vojnih aviona.';
-    if (c < 0 || !this.map.land[c]) return 'Bombarduje se samo kopno.';
+    if (!RA.airOn()) return RA.t("There are no military aircraft in this era.");
+    if (c < 0 || !this.map.land[c]) return RA.t("Only land can be bombed.");
     const o = this.owner[c];
-    if (!o || o === pid || this.isFriendly(p, this.P[o])) return 'Izaberi neprijateljsku teritoriju.';
-    if (this.tick < this.peaceUntil) return `Mirno doba — napadi su dozvoljeni za ${this.peaceLeft()}.`;
+    if (!o || o === pid || this.isFriendly(p, this.P[o])) return RA.t("Choose enemy land.");
+    if (this.tick < this.peaceUntil) return RA.t("Peace time — attacks are allowed in {0}.", this.peaceLeft());
     if (this.defconErr('air')) return this.defconErr('air');
     const W = this.map.W, tx = c % W, ty = (c / W) | 0, tk = this.tick;
     let best = null, bd = 1e9, base = null;
@@ -79,7 +79,7 @@ RA.airName = (k) => {
         base = s;
       }
     }
-    if (!best) return (p.air || []).some((q) => q.type === 'bomber') ? `Nijedan spreman bombarder u dometu (${RA.CFG.BOMB_RANGE} polja od aerodroma).` : 'Nemaš bombardera (Desant → Avijacija).';
+    if (!best) return (p.air || []).some((q) => q.type === 'bomber') ? RA.t("No ready bomber in range ({0} cells from an airfield).", RA.CFG.BOMB_RANGE) : RA.t("You have no bombers (Landing → Air force).");
     const dur = Math.max(15, Math.round(bd / RA.CFG.BOMB_SPEED));
     best.readyAt = Infinity; // in the air
     const pl = { id: this.nextId++, kind: 'bomb', sq: best.id, owner: pid, sx: base.x + 0.5, sy: base.y + 0.5, tx: tx + 0.5, ty: ty + 0.5, c, t: 0, dur, troops: 0, sam: null, samAt: 2, done: false, from: base.id };
@@ -87,7 +87,7 @@ RA.airName = (k) => {
     this.planes.push(pl);
     const V = this.P[o];
     this.relTo(V, pid, Math.max(-100, V.rel[pid] - 15), 'bomb');
-    this.tell(V, 'bad', `✈ Bombarderi (${p.name}) lete na tvoju zemlju!`, pid, c);
+    this.tell(V, 'bad', RA.t("✈ Bombers ({0}) are flying at your land!", p.name), pid, c);
     return { sq: best.id };
   };
   /* enemy fighters near the target try to shoot a plane down (once per flight) */
@@ -109,11 +109,11 @@ RA.airName = (k) => {
           pl.done = true;
           this.fx.push({ kind: 'intercept', x: pl.sx + (pl.tx - pl.sx) * pl.t, y: pl.sy + (pl.ty - pl.sy) * pl.t, sx: s.x + 0.5, sy: s.y + 0.5, tick: tk });
           if (pl.kind === 'bomb') p.air = p.air.filter((e) => e.id !== pl.sq);
-          this.tell(p, 'bad', pl.kind === 'bomb' ? `Lovci (${o.name}) su oborili tvoje bombardere.` : `Lovci (${o.name}) su oborili tvoj avion — izgubljeno ${RA.fmt(pl.troops)} padobranaca.`, o.id, pl.c);
-          this.tell(o, 'good', `Tvoji lovci su oborili neprijateljski ${pl.kind === 'bomb' ? 'bombarder' : 'avion s padobrancima'} (${p.name})!`, p.id, pl.c);
+          this.tell(p, 'bad', pl.kind === 'bomb' ? RA.t("Fighters ({0}) shot down your bombers.", o.name) : RA.t("Fighters ({0}) shot down your plane — {1} paratroopers lost.", o.name, RA.fmt(pl.troops)), o.id, pl.c);
+          this.tell(o, 'good', RA.t("Your fighters shot down an enemy {0} ({1})!", pl.kind === 'bomb' ? RA.t("bomber") : RA.t("paratroop plane"), p.name), p.id, pl.c);
           return true;
         }
-        this.tell(o, 'info', `Tvoji lovci nisu uspjeli oboriti neprijateljski avion${esc ? ' (imao je pratnju)' : ''}.`, p.id, pl.c);
+        this.tell(o, 'info', RA.t("Your fighters failed to shoot down the enemy plane{0}.", esc ? RA.t(" (it had an escort)") : ''), p.id, pl.c);
         return false;
       }
     }
@@ -141,10 +141,10 @@ RA.airName = (k) => {
       const v = this.P[o], n = cnt.get(o) || 0, a = assets.get(o) || { structs: 0, units: 0 };
       const kill = Math.min(v.troops * 0.15, n * (v.troops / Math.max(1, v.tiles)) * 2.5);
       v.troops = Math.max(0, v.troops - kill);
-      this.tell(v, 'bad', `✈ Bombardovanje (${p.name}): −${RA.fmt(kill)} vojske${a.structs ? ', ' + a.structs + ' zgrada' : ''}${a.units ? ', ' + a.units + ' jedinica' : ''}.`, p.id, pl.c);
-      if (o === tgt) msg = `${v.name}: −${RA.fmt(kill)} vojske${a.structs ? ', ' + a.structs + ' zgrada' : ''}${a.units ? ', ' + a.units + ' jedinica' : ''}`;
+      this.tell(v, 'bad', RA.t("✈ Bombing ({0}): −{1} troops{2}{3}.", p.name, RA.fmt(kill), a.structs ? ', ' + a.structs + RA.t(" buildings") : '', a.units ? ', ' + a.units + RA.t(" units") : ''), p.id, pl.c);
+      if (o === tgt) msg = RA.t("{0}: −{1} troops{2}{3}", v.name, RA.fmt(kill), a.structs ? ', ' + a.structs + RA.t(" buildings") : '', a.units ? ', ' + a.units + RA.t(" units") : '');
     }
-    this.tell(p, msg ? 'good' : 'info', msg ? `✈ Bombarderi su pogodili metu — ${msg}.` : '✈ Bombarderi nisu našli ništa vrijedno na meti.', tgt || p.id, pl.c);
+    this.tell(p, msg ? 'good' : 'info', msg ? RA.t("✈ The bombers hit the target — {0}.", msg) : RA.t("✈ The bombers found nothing of value at the target."), tgt || p.id, pl.c);
     this.fx.push({ kind: 'conv', x: pl.tx, y: pl.ty, r: R + 0.5, tick: this.tick });
   };
   /* squadrons whose airport was lost go down with it */
@@ -160,7 +160,7 @@ RA.airName = (k) => {
       });
       if (p.air.length < before) {
         // a squadron in the air whose airport fell moves to another airport
-        this.tell(p, 'bad', `Izgubio si ${before - p.air.length} ${before - p.air.length === 1 ? 'eskadrilu' : 'eskadrile'} s aerodromom.`, p.id);
+        this.tell(p, 'bad', RA.t("You lost {0} {1} with the airfield.", before - p.air.length, before - p.air.length === 1 ? RA.t("squadron") : RA.t("squadrons")), p.id);
       }
       const aps = this.airportsOf(p);
       for (const q of p.air) {
@@ -194,9 +194,9 @@ RA.airName = (k) => {
       u.hp -= 90 * this.droneMul(p) * this.armor(this.P[u.owner]);
       u.lastHit = this.tick;
       n++;
-      if (u.hp <= 0) this._unitDied(u, 'dron');
+      if (u.hp <= 0) this._unitDied(u, RA.t("drone"));
     }
-    this.tell(p, n ? 'good' : 'info', n ? `Dron lovac je pogodio ${n} ${n === 1 ? 'jedinicu' : 'jedinice'}.` : 'Dron lovac nije našao jedinice na meti.', p.id, m.c);
+    this.tell(p, n ? 'good' : 'info', n ? RA.t("The hunter drone hit {0} {1}.", n, n === 1 ? RA.t("unit") : RA.t("units")) : RA.t("The hunter drone found no units at the target."), p.id, m.c);
     this.fx.push({ kind: 'conv', x: m.tx, y: m.ty, r: M.r, tick: this.tick });
   };
 })(RA.Game.prototype);

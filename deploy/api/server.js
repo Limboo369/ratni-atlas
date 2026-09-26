@@ -166,9 +166,9 @@ const routes = {
       c = await verifyGoogle(b.credential);
     } catch (e) {
       console.warn('login refused:', e.message);
-      return [401, { e: 'Google prijava nije uspjela. Pokušaj ponovo.' }];
+      return [401, { e: 'Google sign-in failed. Try again.' }];
     }
-    const name = clean(c.given_name || c.name || (c.email || '').split('@')[0], 18) || 'Komandant';
+    const name = clean(c.given_name || c.name || (c.email || '').split('@')[0], 18) || 'Commander';
     const r = await db.query(
       `insert into users (google_sub, email, name, pic) values ($1, $2, $3, $4)
        on conflict (google_sub) do update set email = excluded.email, pic = excluded.pic, seen = now()
@@ -187,22 +187,22 @@ const routes = {
   },
   'POST /api/name': async (req, b) => {
     const u = await sessionUser(req);
-    if (!u) return [401, { e: 'Nisi prijavljen.' }];
+    if (!u) return [401, { e: 'You are not signed in.' }];
     const name = clean(b.name, 18);
-    if (name.length < 2) return [400, { e: 'Ime treba bar 2 slova.' }];
+    if (name.length < 2) return [400, { e: 'The name needs at least 2 letters.' }];
     const r = await db.query('update users set name = $1 where id = $2 returning *', [name, u.id]);
     return { user: pub(r.rows[0]) };
   },
   'POST /api/icon': async (req, b) => {
     const u = await sessionUser(req);
-    if (!u) return [401, { e: 'Nisi prijavljen.' }];
-    if (typeof b.icon !== 'string' || !ICONS.has(b.icon) || (b.icon === 'google' && !u.pic)) return [400, { e: 'Nepoznata ikonica.' }];
+    if (!u) return [401, { e: 'You are not signed in.' }];
+    if (typeof b.icon !== 'string' || !ICONS.has(b.icon) || (b.icon === 'google' && !u.pic)) return [400, { e: 'Unknown emblem.' }];
     const r = await db.query('update users set icon = $1 where id = $2 returning *', [b.icon, u.id]);
     return { user: pub(r.rows[0]) };
   },
   'POST /api/delete': async (req, b, res) => {
     const u = await sessionUser(req);
-    if (!u) return [401, { e: 'Nisi prijavljen.' }];
+    if (!u) return [401, { e: 'You are not signed in.' }];
     await db.query('delete from users where id = $1', [u.id]);
     res.setHeader('Set-Cookie', cookie('', 0));
     return { ok: true };
@@ -229,14 +229,14 @@ const INT_PORT = +process.env.INT_PORT || 8082;
 const internal = http.createServer(async (req, res) => {
   const fn = INTERNAL[req.method + ' ' + (req.url || '').split('?')[0]];
   try {
-    if (!fn || req.method !== 'POST') return send(res, 404, { e: 'nema' });
+    if (!fn || req.method !== 'POST') return send(res, 404, { e: 'not found' });
     const b = await body(req);
     const out = await fn(req, b && typeof b === 'object' ? b : {}, res);
     if (Array.isArray(out)) send(res, out[0], out[1]);
     else send(res, 200, out);
   } catch (e) {
     console.error('int', req.url, e);
-    if (!res.headersSent) send(res, e.code === 413 || e.code === 400 ? e.code : 500, { e: 'greška' });
+    if (!res.headersSent) send(res, e.code === 413 || e.code === 400 ? e.code : 500, { e: 'error' });
   }
 });
 
@@ -245,8 +245,8 @@ const server = http.createServer(async (req, res) => {
   const path = (req.url || '').split('?')[0];
   const fn = routes[req.method + ' ' + path];
   try {
-    if (!fn) return send(res, 404, { e: 'nema' });
-    if (limited(ip, 'all', 120) || (path === '/api/login' && limited(ip, 'login', 10))) return send(res, 429, { e: 'Previše zahtjeva, sačekaj minut.' });
+    if (!fn) return send(res, 404, { e: 'not found' });
+    if (limited(ip, 'all', 120) || (path === '/api/login' && limited(ip, 'login', 10))) return send(res, 429, { e: 'Too many requests, wait a minute.' });
     let b = {};
     if (req.method === 'POST') {
       const origin = req.headers.origin || '';
@@ -261,7 +261,7 @@ const server = http.createServer(async (req, res) => {
   } catch (e) {
     if (e.code === 413 || e.code === 400) return send(res, e.code, { e: e.message }, { Connection: 'close' });
     console.error(req.method, path, e);
-    if (!res.headersSent) send(res, 500, { e: 'Greška na serveru.' });
+    if (!res.headersSent) send(res, 500, { e: 'Server error.' });
   }
 });
 

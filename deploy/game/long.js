@@ -62,15 +62,15 @@ function archive(gm) {
 }
 function replay(ws, code) {
   const send = (m) => ws.readyState === 1 && ws.send(JSON.stringify(m), () => ws.close());
-  if (!/^[a-z0-9]{6}$/.test(code || '')) return send({ t: 'err', e: 'Nevažeći kod.' });
+  if (!/^[a-z0-9]{6}$/.test(code || '')) return send({ t: 'err', e: 'Invalid code.' });
   const gm = games.get(code);
   if (gm && gm.rec.over) return send({ t: 'replay', rec: { ...pub(gm.rec), over: gm.rec.over } });
   fs.readFile(path.join(RDIR, code + '.json'), 'utf8', (e, txt) => {
-    if (e) return send({ t: 'err', e: gm ? 'Igra još traje — snimak je dostupan kad se završi.' : 'Snimak te igre ne postoji (ili je istekao).' });
+    if (e) return send({ t: 'err', e: gm ? 'The game is still on — the replay is available when it ends.' : 'That game\'s replay doesn\'t exist (or has expired).' });
     try {
       send({ t: 'replay', rec: JSON.parse(txt) });
     } catch {
-      send({ t: 'err', e: 'Snimak je oštećen.' });
+      send({ t: 'err', e: 'The replay is damaged.' });
     }
   });
 }
@@ -101,7 +101,7 @@ if (process.env.LONG_SIM !== '0') {
           save(gm);
           archive(gm);
           // the players who are not looking hear it on their phone / computer (Focus games)
-          if (!gm.rec.set.fast) gm.rec.slots.forEach((s, i) => note({ code: gm.rec.code, slot: i, kind: 'over', text: `Focus igra je završena${m.st.wname ? ' — pobjednik: ' + m.st.wname : ''}. Pogledaj snimak.` }));
+          if (!gm.rec.set.fast) gm.rec.slots.forEach((s, i) => note({ code: gm.rec.code, slot: i, kind: 'over', text: `The Focus game is over${m.st.wname ? ' — winner: ' + m.st.wname : ''}. Watch the replay.` }));
           // Conquest League: the ratings change (league.js), everyone in the game hears it
           if (hooks.over) Promise.resolve(hooks.over(gm, m.st)).then((res) => {
             if (!res) return;
@@ -319,18 +319,18 @@ function handle(ws, q, account) {
   });
   function first(m, h) {
     {
-      const name = str(h.name, 18) || 'Igrač';
+      const name = str(h.name, 18) || 'Player';
       if (m.create && want === 'new') {
         const set = cleanSet(m.create.set);
-        if (!set) return send({ t: 'err', e: 'Nevažeće postavke.' });
-        if (games.size >= MAX_GAMES) return send({ t: 'err', e: 'Server ima previše Focus igara — pokušaj kasnije.' });
+        if (!set) return send({ t: 'err', e: 'Invalid settings.' });
+        if (games.size >= MAX_GAMES) return send({ t: 'err', e: 'The server has too many Focus games — try later.' });
         let code;
         do code = crypto.randomBytes(6).toString('base64').replace(/[^a-z0-9]/gi, '').toLowerCase().slice(0, 6);
         while (code.length < 6 || games.has(code));
         return enter(newGame(set), name);
       }
       const g = /^[a-z0-9]{6}$/.test(want || '') && games.get(want);
-      if (!g) return send({ t: 'err', e: 'Ta Focus igra ne postoji (ili je istekla).', gone: 1 });
+      if (!g) return send({ t: 'err', e: 'That Focus game doesn\'t exist (or has expired).', gone: 1 });
       return enter(g, name);
     }
   }
@@ -339,10 +339,10 @@ function handle(ws, q, account) {
       // take over a computer state: a new seat, or my seat again after my state fell
       const id = m.join[0];
       if (!Number.isInteger(id) || id < 1 || id > 4000) return;
-      if (gm.rec.league) return send({ t: 'err', e: 'U ligi su mjesta određena prije igre.' });
+      if (gm.rec.league) return send({ t: 'err', e: 'In the league the seats are set before the game.' });
       if (slot < 0) {
-        if (gm.rec.slots.length >= MAX_SLOTS) return send({ t: 'err', e: `Igra je puna (${MAX_SLOTS} igrača).` });
-        gm.rec.slots.push({ uid, name: str(m.join[1], 18) || 'Igrač', away: false });
+        if (gm.rec.slots.length >= MAX_SLOTS) return send({ t: 'err', e: `The game is full (${MAX_SLOTS} players).` });
+        gm.rec.slots.push({ uid, name: str(m.join[1], 18) || 'Player', away: false });
         slot = gm.rec.slots.length - 1;
       }
       add(gm, slot, 'join', [id, gm.rec.slots[slot].name, Number.isInteger(m.join[2]) && m.join[2] >= 0 && m.join[2] <= 3 ? m.join[2] : 0]);

@@ -20,45 +20,45 @@ Object.assign(RA.CFG, {
 });
 
 RA.STRUCT.silo.cost = () => 800000;
-RA.STRUCT.silo.desc = 'Lansira rakete, EMP i nuklearne bombe. Više silosa = brža paljba.';
-RA.STRUCT.barracks.desc = '+160k kapaciteta vojske i +2 mjesta za vojne jedinice.';
+RA.STRUCT.silo.desc = RA.t("Launches missiles, EMP and nuclear bombs. More silos = faster fire.");
+RA.STRUCT.barracks.desc = RA.t("+160k army capacity and +2 slots for military units.");
 RA.STRUCT.city = {
-  name: 'Grad', short: 'Grad', cost: (n) => Math.min(2e6, 150000 * RA.dpow(2, n)), time: 40,
-  desc: 'Novi grad: +90k kapaciteta vojske, +80 zlata/s, brži rast vojske i jača odbrana oko njega.',
+  name: RA.t("City"), short: RA.t("City"), cost: (n) => Math.min(2e6, 150000 * RA.dpow(2, n)), time: 40,
+  desc: RA.t("A new city: +90k army capacity, +80 gold/s, faster army growth and a stronger defence around it."),
 };
 RA.STRUCT.factory = {
-  name: 'Fabrika', short: 'Fabrika', cost: (n) => Math.min(2e6, 200000 * RA.dpow(2, n)), time: 60,
-  desc: 'Pruge do tvojih gradova (18 polja) — vozovi donose zlato. Potrebna za tenkove i artiljeriju.',
+  name: RA.t("Factory"), short: RA.t("Factory"), cost: (n) => Math.min(2e6, 200000 * RA.dpow(2, n)), time: 60,
+  desc: RA.t("Railways to your cities (18 cells) — trains bring gold. Needed for tanks and artillery."),
 };
 /* the iron dome (plan 50): automatic retaliation — when somebody launches a nuclear weapon at you, every ready dome
    fires an atomic bomb at their country (the capital first, then their biggest cities) */
 RA.STRUCT.dome = {
-  name: 'Gvozdena kupola', short: 'Kupola', icon: 'dome', cost: (n) => Math.min(7.5e6, 2500000 * (n + 1)), time: 90,
-  desc: 'Automatski uzvrat: kad neko lansira nuklearku na tebe, svaka spremna kupola ispali atomsku bombu na njegovu prijestolnicu i gradove. Puni se 60 s.',
+  name: RA.t("Iron Dome"), short: RA.t("Dome"), icon: 'dome', cost: (n) => Math.min(7.5e6, 2500000 * (n + 1)), time: 90,
+  desc: RA.t("Automatic retaliation: when someone launches a nuke at you, every ready dome fires an atomic bomb at their capital and cities. Reloads in 60 s."),
 };
 RA.CFG.DOME_CD = 600;
 RA.STRUCT_ORDER = ['city', 'factory', 'barracks', 'port', 'fort', 'sam', 'silo', 'dome', 'airport'];
-RA.CITY_NAMES = ['Novigrad', 'Zlatograd', 'Belograd', 'Kamengrad', 'Svetigrad', 'Jezerograd', 'Brdovac', 'Orlovac', 'Hrastovac',
-  'Bukovac', 'Javorje', 'Vidikovac', 'Zorograd', 'Sunčanik', 'Gorograd', 'Riječac', 'Mirograd', 'Slavograd', 'Dubravac', 'Lipovac',
-  'Borovo Polje', 'Srebrnik', 'Kosovac', 'Vjetrograd', 'Plavnica', 'Zelengrad', 'Tvrđavac', 'Stijena', 'Dolina', 'Sokolac Novi'];
+RA.CITY_NAMES = [RA.t("Newbury"), RA.t("Goldcrest"), RA.t("Whitefield"), RA.t("Stonebridge"), RA.t("Holyport"), RA.t("Lakeside"), RA.t("Hillford"), RA.t("Eaglecliff"), RA.t("Oakridge"),
+  RA.t("Beechwood"), RA.t("Maplewood"), RA.t("Lookout"), RA.t("Dawnford"), RA.t("Sunnyvale"), RA.t("Highmoor"), RA.t("Rivermouth"), RA.t("Peaceford"), RA.t("Glorytown"), RA.t("Oakdale"), RA.t("Lindenfield"),
+  RA.t("Pinefield"), RA.t("Silverton"), RA.t("Blackbird Hill"), RA.t("Windham"), RA.t("Bluewater"), RA.t("Greenfield"), RA.t("Fort Hill"), RA.t("Rockhaven"), RA.t("Valley"), RA.t("New Falconer")];
 Object.assign(RA.CFG, { TRAIN_RANGE: 18, TRAIN_EVERY: 140, TRAIN_SPEED: 0.55 });
 RA.STRUCT.airport = {
-  name: 'Aerodrom', short: 'Aerodrom', cost: (n) => Math.min(1.6e6, 400000 * (n + 1)), time: 70,
-  desc: 'Padobranski desant bilo gdje na kopnu, do 42 polja od aerodroma.',
+  name: RA.t("Airfield"), short: RA.t("Airfield"), cost: (n) => Math.min(1.6e6, 400000 * (n + 1)), time: 70,
+  desc: RA.t("Paratroop drops anywhere on land, up to 42 cells from the airfield."),
 };
 
 RA.UNIT = {
   inf: {
-    name: 'Pješadija', gold: 90000, troops: 12000, hp: 100, r: 6, ro: 4, def: 2.0, defSpd: 1.7, off: 0.86, offSpd: 0.9,
-    speed: 0.22, deploy: 25, dmg: 2.4, lost: 'Pješadija je uništena', desc: 'Jeftina, čvrsta odbrana granice u krugu od 6 polja.',
+    name: RA.t("Infantry"), gold: 90000, troops: 12000, hp: 100, r: 6, ro: 4, def: 2.0, defSpd: 1.7, off: 0.86, offSpd: 0.9,
+    speed: 0.22, deploy: 25, dmg: 2.4, lost: RA.t("The infantry was destroyed"), desc: RA.t("Cheap, solid border defence within 6 cells."),
   },
   tank: {
-    name: 'Tenkovi', gold: 320000, troops: 20000, hp: 170, r: 5, ro: 6, def: 2.2, defSpd: 1.8, off: 0.58, offSpd: 0.6,
-    speed: 0.42, deploy: 45, dmg: 1.5, lost: 'Tenkovi su uništeni', desc: 'Proboj: tvoji napadi pored tenkova su upola jeftiniji i brži. Brzo prate front.',
+    name: RA.t("Tanks"), gold: 320000, troops: 20000, hp: 170, r: 5, ro: 6, def: 2.2, defSpd: 1.8, off: 0.58, offSpd: 0.6,
+    speed: 0.42, deploy: 45, dmg: 1.5, lost: RA.t("The tanks were destroyed"), desc: RA.t("Breakthrough: your attacks next to tanks are half the price and faster. They follow the front quickly."),
   },
   art: {
-    name: 'Artiljerija', gold: 220000, troops: 8000, hp: 70, r: 4, ro: 10, def: 1.35, defSpd: 1.25, off: 0.8, offSpd: 0.88,
-    speed: 0.16, deploy: 35, dmg: 3.6, range: 12, fireCd: 25, lost: 'Artiljerija je uništena', desc: 'Gađa neprijateljske jedinice i vojsku do 12 polja. Drži se iza linije.',
+    name: RA.t("Artillery"), gold: 220000, troops: 8000, hp: 70, r: 4, ro: 10, def: 1.35, defSpd: 1.25, off: 0.8, offSpd: 0.88,
+    speed: 0.16, deploy: 35, dmg: 3.6, range: 12, fireCd: 25, lost: RA.t("The artillery was destroyed"), desc: RA.t("Hits enemy units and troops up to 12 cells away. Stays behind the line."),
   },
 };
 
@@ -67,30 +67,30 @@ RA.UNIT = {
    the coast; the raider (a submarine from 1914: unseen until an enemy warship is near) hunts boats and trade ships. */
 Object.assign(RA.UNIT, {
   ship: {
-    name: 'Ratni brod', m: true, naval: true, needs: 'port', gold: 380000, troops: 6000, hp: 200, r: 0, ro: 0, def: 1, defSpd: 1, off: 1, offSpd: 1,
-    speed: 0.55, deploy: 40, dmg: 0, range: 8, fireCd: 22, lost: 'Ratni brod je potopljen',
-    desc: 'Plovi morem: potapa desante, trgovačke i ratne brodove, blokira neprijateljske luke i gađa obalu do 8 polja.',
+    name: RA.t("Warship"), m: true, naval: true, needs: 'port', gold: 380000, troops: 6000, hp: 200, r: 0, ro: 0, def: 1, defSpd: 1, off: 1, offSpd: 1,
+    speed: 0.55, deploy: 40, dmg: 0, range: 8, fireCd: 22, lost: RA.t("The warship was sunk"),
+    desc: RA.t("Sails the sea: sinks landings, trade ships and warships, blockades enemy ports and shells the coast up to 8 cells."),
   },
   sub: {
-    name: 'Podmornica', naval: true, sub: true, needs: 'port', gold: 280000, troops: 4000, hp: 110, r: 0, ro: 0, def: 1, defSpd: 1, off: 1, offSpd: 1,
-    speed: 0.5, deploy: 40, dmg: 0, range: 6, fireCd: 16, lost: 'Podmornica je potopljena',
-    desc: 'Nevidljiva dok joj neprijateljski ratni brod ne priđe: lovi desante i trgovačke brodove do 6 polja.',
+    name: RA.t("Submarine"), naval: true, sub: true, needs: 'port', gold: 280000, troops: 4000, hp: 110, r: 0, ro: 0, def: 1, defSpd: 1, off: 1, offSpd: 1,
+    speed: 0.5, deploy: 40, dmg: 0, range: 6, fireCd: 16, lost: RA.t("The submarine was sunk"),
+    desc: RA.t("Invisible until an enemy warship comes close: hunts landings and trade ships up to 6 cells away."),
   },
 });
 Object.assign(RA.CFG, { NAVY_BLOCK_R: 7, SUB_SEEN_R: 5 });
 
 RA.MISSILE = {
-  rocket: { name: 'Raketa', kind: 'conv', cost: 150000, r: 3, speed: 3.8, cd: 45,
-    desc: 'Precizan udar: ruši zgrade, uništava jedinice i ubija vojsku. Bez radijacije.' },
-  emp: { name: 'EMP bomba', kind: 'emp', cost: 900000, r: 14, speed: 3.2, cd: 100,
-    desc: 'Gasi sve zgrade i jedinice u krugu od 14 polja na 35 s (i tvoje!).' },
-  atom: { name: 'Atomska bomba', kind: 'nuke', cost: 750000, r1: 5, r2: 9, speed: 3.0, cd: 100, kill: 4, shock: 0.12,
-    desc: 'Briše teritoriju, sve zgrade i jedinice u krugu od 9 polja i lomi vojsku mete.' },
-  hydro: { name: 'Hidrogenska bomba', kind: 'nuke', cost: 4000000, r1: 13, r2: 19, speed: 2.4, cd: 100, kill: 5, shock: 0.22,
-    desc: 'Ogromna eksplozija (19 polja). Meta gubi velik dio vojske.' },
+  rocket: { name: RA.t("Missile"), kind: 'conv', cost: 150000, r: 3, speed: 3.8, cd: 45,
+    desc: RA.t("A precise strike: destroys buildings and units and kills troops. No radiation.") },
+  emp: { name: RA.t("EMP bomb"), kind: 'emp', cost: 900000, r: 14, speed: 3.2, cd: 100,
+    desc: RA.t("Shuts down every building and unit within 14 cells for 35 s (yours too!).") },
+  atom: { name: RA.t("Atomic bomb"), kind: 'nuke', cost: 750000, r1: 5, r2: 9, speed: 3.0, cd: 100, kill: 4, shock: 0.12,
+    desc: RA.t("Wipes out land, every building and unit within 9 cells and breaks the target's army.") },
+  hydro: { name: RA.t("Hydrogen bomb"), kind: 'nuke', cost: 4000000, r1: 13, r2: 19, speed: 2.4, cd: 100, kill: 5, shock: 0.22,
+    desc: RA.t("A huge explosion (19 cells). The target loses a large part of its army.") },
   mirv: { name: 'MIRV', kind: 'mirv', cost: 12000000, heads: 12, spread: 55, speed: 2.2, cd: 150,
-    desc: '12 bojevih glava po teritoriji mete. Pogađa samo nju. Cijena raste sa svakim MIRV-om.' },
-  warhead: { name: 'Bojeva glava', kind: 'nuke', cost: 0, r1: 3, r2: 6, speed: 4, cd: 0, kill: 4, shock: 0.02, hidden: true },
+    desc: RA.t("12 warheads across the target's land. Hits only the target. The price rises with every MIRV.") },
+  warhead: { name: RA.t("Warhead"), kind: 'nuke', cost: 0, r1: 3, r2: 6, speed: 4, cd: 0, kill: 4, shock: 0.02, hidden: true },
 };
 RA.NUKE = RA.MISSILE;
 
@@ -131,9 +131,9 @@ RA.NUKE = RA.MISSILE;
     this.wLevel = this.winterLevel();
     const t = this.tick % C.WINTER_CYCLE;
     const start = C.WINTER_CYCLE - C.WINTER_LEN;
-    if (t === start - 300) this.tellAll('info', '❄ Zima stiže na sjever za 30 s — napadi preko snijega biće sporiji i skuplji.');
-    if (t === start) this.tellAll('info', '❄ Zima je na sjeveru! Napadi preko snijega su sporiji, jedinice se teže kreću.');
-    if (t === 0 && this.tick > 0) this.tellAll('info', 'Proljeće — snijeg se otopio.');
+    if (t === start - 300) this.tellAll('info', RA.t("❄ Winter reaches the north in 30 s — attacks over snow will be slower and costlier."));
+    if (t === start) this.tellAll('info', RA.t("❄ Winter is in the north! Attacks over snow are slower, units move with difficulty."));
+    if (t === 0 && this.tick > 0) this.tellAll('info', RA.t("Spring — the snow has melted."));
   };
 
   /* ---------------- units ---------------- */
@@ -142,19 +142,19 @@ RA.NUKE = RA.MISSILE;
   };
   P.recruitUnit = function (pid, type, c) {
     const p = this.P[pid], U = RA.UNIT[type];
-    if (!p || !p.alive) return 'Nisi u igri.';
-    if (c < 0 || this.owner[c] !== pid) return 'Jedinicu postavi na svoju teritoriju (najbolje uz granicu).';
+    if (!p || !p.alive) return RA.t("You are not in the game.");
+    if (c < 0 || this.owner[c] !== pid) return RA.t("Place the unit on your own land (best near the border).");
     const cap = this.unitCap(p);
-    if (p.units.length >= cap) return `Limit jedinica je ${cap}. Svaka kasarna daje još ${RA.CFG.UNIT_PER_BARRACKS}.`;
-    if (U.na) return 'Ta jedinica ne postoji u ovom dobu.';
-    if (U.needs && !p.n[U.needs]) return `${U.name} ${U.pl ? 'traže' : 'traži'} zgradu: ${RA.STRUCT[U.needs].name}.`;
+    if (p.units.length >= cap) return RA.t("The unit limit is {0}. Every barracks adds {1}.", cap, RA.CFG.UNIT_PER_BARRACKS);
+    if (U.na) return RA.t("That unit doesn't exist in this era.");
+    if (U.needs && !p.n[U.needs]) return RA.t("{0} {1} a building: {2}.", U.name, U.pl ? RA.t("need") : RA.t("needs"), RA.STRUCT[U.needs].name);
     const gold = this.unitCost(p, type);
-    if (p.gold < gold) return 'Nemaš dovoljno zlata.';
-    if (p.troops < U.troops * 1.2) return 'Nemaš dovoljno vojnika za tu jedinicu.';
+    if (p.gold < gold) return RA.t("Not enough gold.");
+    if (p.troops < U.troops * 1.2) return RA.t("Not enough troops for that unit.");
     if (U.naval) {
       // ships are launched at your port nearest to the tapped place
       c = this._portLaunch(p, c);
-      if (c < 0) return 'Treba ti spremna luka na moru.';
+      if (c < 0) return RA.t("You need a ready port on the sea.");
     }
     p.gold -= gold;
     p.troops -= U.troops;
@@ -186,14 +186,14 @@ RA.NUKE = RA.MISSILE;
   P.moveUnit = function (pid, uid, c) {
     const p = this.P[pid];
     const u = p && p.units.find((x) => x.id === uid);
-    if (!u) return 'Jedinica ne postoji.';
+    if (!u) return RA.t("The unit doesn't exist.");
     if (RA.UNIT[u.type].naval) {
-      if (c < 0 || !this.seaFor(c, pid) || this.map.block[c]) return 'Brod plovi samo morem — dodirni more.';
+      if (c < 0 || !this.seaFor(c, pid) || this.map.block[c]) return RA.t("Ships sail only on the sea — tap the sea.");
       u.anchor = c;
       u.retargetNow = true;
       return true;
     }
-    if (c < 0 || this.owner[c] !== pid) return 'Jedinicu možeš poslati samo na svoju teritoriju — sama će pratiti front.';
+    if (c < 0 || this.owner[c] !== pid) return RA.t("You can only send a unit within your own land — it follows the front by itself.");
     u.anchor = c;
     u.retargetNow = true;
     return true;
@@ -254,7 +254,7 @@ RA.NUKE = RA.MISSILE;
       const f = this._bfs(cur, (c) => land[c], (c) => this._friendlyCell(p, c), 700);
       if (f < 0) {
         u.hp = 0;
-        u.why = 'opkoljena';
+        u.why = RA.t("encircled");
         return;
       }
       u.path = [f];
@@ -326,7 +326,7 @@ RA.NUKE = RA.MISSILE;
         u.lastHit = tk;
       }
       if (u.hp <= 0) {
-        this._unitDied(u, u.why || (friendly ? '' : 'pregažena'));
+        this._unitDied(u, u.why || (friendly ? '' : RA.t("overrun")));
         continue;
       }
       if (tk < u.ready || u.empUntil > tk) continue;
@@ -368,7 +368,7 @@ RA.NUKE = RA.MISSILE;
   P._stepShip = function (u, U, p, c) {
     const tk = this.tick, W = this.map.W;
     if (u.hp <= 0) {
-      this._unitDied(u, u.why || 'potopljen');
+      this._unitDied(u, u.why || RA.t("sunk"));
       return;
     }
     if (tk < u.ready || u.empUntil > tk) return;
@@ -448,8 +448,8 @@ RA.NUKE = RA.MISSILE;
       b.done = true;
       this.P[b.owner].boats--;
       hit(x, y);
-      this.tell(this.P[b.owner], 'bad', `${U.name} (${p.name}) je potopio tvoj desant.`, p.id, bc);
-      this.tell(p, 'good', `${U.name}: potopljen desant (${this.P[b.owner].name}).`, b.owner, bc);
+      this.tell(this.P[b.owner], 'bad', RA.t("{0} ({1}) sank your landing.", U.name, p.name), p.id, bc);
+      this.tell(p, 'good', RA.t("{0}: landing sunk ({1}).", U.name, this.P[b.owner].name), b.owner, bc);
       return;
     }
     for (const s of this.tships) {
@@ -499,7 +499,7 @@ RA.NUKE = RA.MISSILE;
         by = u.owner;
         break;
       }
-      if (by && !s.blocked && s.empUntil <= tk) this.tell(o, 'bad', `Luka je u blokadi (${this.P[by].name}): ne donosi zlato ni trgovinu.`, by, s.c);
+      if (by && !s.blocked && s.empUntil <= tk) this.tell(o, 'bad', RA.t("The port is blockaded ({0}): no gold and no trade.", this.P[by].name), by, s.c);
       s.blocked = by;
       if (by && s.empUntil <= tk) o.portsOff++; // (an EMP'd port is already off)
     }
@@ -589,13 +589,13 @@ RA.NUKE = RA.MISSILE;
   /* ---------------- mobilisation ---------------- */
   P.mobilize = function (pid) {
     const p = this.P[pid];
-    if (!p || !p.alive) return 'Nisi u igri.';
-    if (this.tick < (p.mobReady || 0)) return `Mobilizacija će biti spremna za ${RA.dur(p.mobReady - this.tick)}.`;
+    if (!p || !p.alive) return RA.t("You are not in the game.");
+    if (this.tick < (p.mobReady || 0)) return RA.t("Mobilisation will be ready in {0}.", RA.dur(p.mobReady - this.tick));
     const add = p.maxT * RA.CFG.MOB_SHARE;
     p.troops += add;
     p.mobReady = this.tick + RA.CFG.MOB_CD;
     p.growPause = this.tick + RA.CFG.MOB_PAUSE;
-    this.tell(p, 'good', `Mobilizacija! +${RA.fmt(add)} vojnika. Iskoristi ih brzo — rast vojske stoji 45 s.`, pid);
+    this.tell(p, 'good', RA.t("Mobilisation! +{0} troops. Use them fast — army growth stops for 45 s.", RA.fmt(add)), pid);
     return add;
   };
 
@@ -615,8 +615,8 @@ RA.NUKE = RA.MISSILE;
     }
     v.capCity = best ? best.i : -1;
     if (best) v.capital = best.c;
-    this.tell(v, 'bad', `Pala je tvoja prijestolnica ${city.name}! Kriza 60 s: −25% vojske, pola prihoda.${best ? ' Nova prijestolnica: ' + best.name + '.' : ''}`, by ? by.id : 0, city.c);
-    if (by) this.tell(by, 'good', `Zauzeta prijestolnica: ${city.name}! Plijen ${RA.fmt(plunder)} zlata — ${v.name} je u krizi.`, v.id, city.c);
+    this.tell(v, 'bad', RA.t("Your capital {0} has fallen! Crisis for 60 s: −25% troops, half income.{1}", city.name, best ? RA.t(" New capital: ") + best.name + '.' : ''), by ? by.id : 0, city.c);
+    if (by) this.tell(by, 'good', RA.t("Capital taken: {0}! Loot {1} gold — {2} is in crisis.", city.name, RA.fmt(plunder), v.name), v.id, city.c);
   };
 
   /* ---------------- missiles ---------------- */
@@ -641,18 +641,18 @@ RA.NUKE = RA.MISSILE;
   P.launchMissile = function (pid, type, c) {
     const p = this.P[pid];
     const M = RA.MISSILE[type];
-    if (!p || !p.alive || !M) return 'Nisi u igri.';
-    if (M.na) return 'To oružje ne postoji u ovom dobu.';
-    if (c < 0) return 'Nevažeća meta.';
-    if (this.opts.noNuke && (M.kind === 'nuke' || M.kind === 'mirv')) return 'Nuklearno oružje je isključeno u ovoj igri.';
+    if (!p || !p.alive || !M) return RA.t("You are not in the game.");
+    if (M.na) return RA.t("That weapon doesn't exist in this era.");
+    if (c < 0) return RA.t("Invalid target.");
+    if (this.opts.noNuke && (M.kind === 'nuke' || M.kind === 'mirv')) return RA.t("Nuclear weapons are turned off in this game.");
     const shM = this.shieldErr(p, this.P[this.owner[c]]);
     if (shM) return shM;
     const de = this.defconErr(M.kind === 'nuke' || M.kind === 'mirv' ? 'nuke' : 'conv');
     if (de) return de;
-    if (this.tick < this.peaceUntil) return `Mirno doba — udari su dozvoljeni za ${this.peaceLeft()}.`;
-    if (M.from && this.tick < M.from) return `${M.name}: razvoj još traje — dostupna od ${Math.round(M.from / 600)}. minute (još ${RA.dur(M.from - this.tick)}).`;
+    if (this.tick < this.peaceUntil) return RA.t("Peace time — strikes are allowed in {0}.", this.peaceLeft());
+    if (M.from && this.tick < M.from) return RA.t("{0}: still in development — available from minute {1} ({2} to go).", M.name, Math.round(M.from / 600), RA.dur(M.from - this.tick));
     const cost = this.missileCost(type, p);
-    if (p.gold < cost) return 'Nemaš dovoljno zlata.';
+    if (p.gold < cost) return RA.t("Not enough gold.");
     if (M.kind === 'drone') return this._launchDrone(p, type, M, c, cost);
     const W = this.map.W, tk = this.tick;
     const tx = c % W, ty = (c / W) | 0;
@@ -660,9 +660,9 @@ RA.NUKE = RA.MISSILE;
     const bd = this._strikeDist;
     const SN = RA.STRUCT.silo.name;
     if (!best) {
-      if (!p.n.silo) return `Treba ti zgrada: ${SN}.`;
-      if (M.range && !this.strikeSilo(p, type, c, true)) return `Meta je izvan dometa: ${Math.round(this.wRange(p, type))} polja od zgrade ${SN}.`;
-      return `Zgrada ${SN} se puni (ili je pod EMP-om) — pričekaj.`;
+      if (!p.n.silo) return RA.t("You need a building: {0}.", SN);
+      if (M.range && !this.strikeSilo(p, type, c, true)) return RA.t("Target out of range: {0} cells from a {1}.", Math.round(this.wRange(p, type)), SN);
+      return RA.t("The {0} is reloading (or under EMP) — wait.", SN);
     }
     p.gold -= cost;
     best.cd = tk + M.cd;
@@ -681,7 +681,7 @@ RA.NUKE = RA.MISSILE;
     const victim = victimId ? this.P[victimId] : null;
     if (victim && (M.kind === 'nuke' || M.kind === 'mirv') && !this.isFriendly(victim, p)) this._retaliate(victim, p);
     if (victim && victim.human) {
-      const msg = { conv: `💥 ${M.name} — udar na tvoju teritoriju (${p.name})!`, emp: `⚡ EMP leti na tebe (${p.name})!`, nuke: `☢ ${M.name} leti na tebe (${p.name})! Krug udara je označen crveno.`, mirv: `☢☢ MIRV leti na tebe (${p.name})!` }[M.kind];
+      const msg = { conv: RA.t("💥 {0} — a strike on your land ({1})!", M.name, p.name), emp: RA.t("⚡ An EMP is flying at you ({0})!", p.name), nuke: RA.t("☢ {0} is flying at you ({1})! The blast area is marked in red.", M.name, p.name), mirv: RA.t("☢☢ A MIRV is flying at you ({0})!", p.name) }[M.kind];
       this.tell(victim, 'bad', msg, pid, c);
     }
     const hate = { conv: [20, 1], emp: [25, 3], nuke: [60, 8], mirv: [100, 20] }[M.kind];
@@ -691,12 +691,12 @@ RA.NUKE = RA.MISSILE;
   P.launchNuke = P.launchMissile;
   P._launchDrone = function (p, type, M, c, cost) {
     const W = this.map.W;
-    if ((p.drones || 0) >= RA.CFG.DRONE_MAX) return `Najviše ${RA.CFG.DRONE_MAX} drona u zraku odjednom.`;
+    if ((p.drones || 0) >= RA.CFG.DRONE_MAX) return RA.t("At most {0} drones in the air at once.", RA.CFG.DRONE_MAX);
     const src = this._droneSource(p, c);
-    if (src < 0) return 'Nemaš odakle lansirati dron.';
+    if (src < 0) return RA.t("Nowhere to launch a drone from.");
     const sx = (src % W) + 0.5, sy = ((src / W) | 0) + 0.5, tx = (c % W) + 0.5, ty = ((c / W) | 0) + 0.5;
     const d = RA.dist(tx - sx, ty - sy);
-    if (d > this.wRange(p, type)) return `Meta je predaleko: ${M.name} leti do ${Math.round(this.wRange(p, type))} polja od tvoje granice.`;
+    if (d > this.wRange(p, type)) return RA.t("Target too far: {0} flies up to {1} cells from your border.", M.name, Math.round(this.wRange(p, type)));
     p.gold -= cost;
     p.drones = (p.drones || 0) + 1;
     const victimId = this.owner[c];
@@ -725,8 +725,8 @@ RA.NUKE = RA.MISSILE;
       d.cd = tk + RA.CFG.DOME_CD;
       V.stats.nukes++;
     });
-    this.tell(V, 'good', `Gvozdena kupola uzvraća: ${domes.length} ${domes.length === 1 ? 'atomska bomba leti' : 'atomske bombe lete'} na ${A.name}!`, A.id, A.capital);
-    this.tell(A, 'bad', `☢ ${V.name} automatski uzvraća (gvozdena kupola): ${domes.length} ${domes.length === 1 ? 'atomska bomba leti' : 'atomske bombe lete'} na tebe!`, V.id, A.capital);
+    this.tell(V, 'good', RA.t("Iron Dome strikes back: {0} {1} at {2}!", domes.length, domes.length === 1 ? RA.t("atomic bomb flies") : RA.t("atomic bombs fly"), A.name), A.id, A.capital);
+    this.tell(A, 'bad', RA.t("☢ {0} strikes back automatically (Iron Dome): {1} {2} at you!", V.name, domes.length, domes.length === 1 ? RA.t("atomic bomb flies") : RA.t("atomic bombs fly")), V.id, A.capital);
     this.news('dome', V.id, A.id);
   };
   P._assignSam = function (m, p) {
@@ -754,11 +754,11 @@ RA.NUKE = RA.MISSILE;
       const vo = this.P[m.sam.owner];
       if (m.kind === 'warhead') {
         this._mirvHead(m, null);
-        this.tell(vo, 'good', 'PVO je oborio bojevu glavu!', vo.id, m.sam.c);
+        this.tell(vo, 'good', RA.t("Air defence shot down a warhead!"), vo.id, m.sam.c);
         return;
       }
-      this.tell(vo, 'good', `${RA.STRUCT.sam.name} — oboren projektil: ${RA.MISSILE[m.type].name}!`, vo.id, m.sam.c);
-      this.tell(this.P[m.owner], 'bad', `Projektil je oborio PVO (${vo.name}).`, vo.id, m.c);
+      this.tell(vo, 'good', RA.t("{0} — missile shot down: {1}!", RA.STRUCT.sam.name, RA.MISSILE[m.type].name), vo.id, m.sam.c);
+      this.tell(this.P[m.owner], 'bad', RA.t("The missile was shot down by air defence ({0}).", vo.name), vo.id, m.c);
       return;
     }
     if (m.t >= 1) {
@@ -792,7 +792,7 @@ RA.NUKE = RA.MISSILE;
         u.lastHit = this.tick;
         if (u.hp <= 0) {
           add(u.owner, 'units');
-          this._unitDied(u, 'bombardovana');
+          this._unitDied(u, RA.t("bombed"));
         }
       }
     }
@@ -873,12 +873,12 @@ RA.NUKE = RA.MISSILE;
       if (o !== m.owner && (!main || n > main.n)) main = rep;
       if (o !== m.owner && this.isFriendly(attacker, v) && (n >= 5 || a.structs || a.units)) this.breakAlliance(m.owner, o, true);
       if (m.kind === 'warhead') this._mirvAcc(m, rep);
-      else if (o !== m.owner) this.tell(v, 'bad', `☢ Nuklearni udar! Izgubio si ${n} polja, ${RA.fmt(kill)} vojske${rep.structs ? ', ' + rep.structs + ' zgrada' : ''}${rep.units ? ', ' + rep.units + ' jedinica' : ''}${razed && o === this.owner[m.c] ? ', gradovi su razoreni' : ''}${n >= 4 ? ' — privreda u krizi 30 s' : ''}.`, m.owner, m.c);
+      else if (o !== m.owner) this.tell(v, 'bad', RA.t("☢ Nuclear strike! You lost {0} cells, {1} troops{2}{3}{4}{5}.", n, RA.fmt(kill), rep.structs ? ', ' + rep.structs + RA.t(" buildings") : '', rep.units ? ', ' + rep.units + RA.t(" units") : '', razed && o === this.owner[m.c] ? RA.t(", cities destroyed") : '', n >= 4 ? RA.t(" — economy in crisis for 30 s") : ''), m.owner, m.c);
     }
     if (m.kind === 'warhead') this._mirvHead(m, true);
     else if (attacker.human) {
-      if (main) this.tell(attacker, 'good', `☢ Pogodak! ${main.v.name}: −${RA.fmt(main.kill)} vojske, ${main.n} polja, ${main.structs} zgrada${main.units ? ', ' + main.units + ' jedinica' : ''} uništeno.`, main.v.id, m.c);
-      else this.tell(attacker, 'info', 'Bomba je pala na pustu zemlju.', attacker.id, m.c);
+      if (main) this.tell(attacker, 'good', RA.t("☢ Hit! {0}: −{1} troops, {2} cells, {3} buildings{4} destroyed.", main.v.name, RA.fmt(main.kill), main.n, main.structs, main.units ? ', ' + main.units + RA.t(" units") : ''), main.v.id, m.c);
+      else this.tell(attacker, 'info', RA.t("The bomb fell on empty land."), attacker.id, m.c);
     }
     this.fx.push({ kind: 'nuke', x: m.tx, y: m.ty, r: nk.r2, type: m.type, tick: this.tick });
   };
@@ -909,11 +909,11 @@ RA.NUKE = RA.MISSILE;
       const rep = { v, kill, structs: a.structs, units: a.units };
       if (!main || kill > main.kill) main = rep;
       if (this.isFriendly(attacker, v) && (a.structs || a.units || kill > 0)) this.breakAlliance(m.owner, o, true);
-      this.tell(v, 'bad', `💥 Udar (${M.name}): −${RA.fmt(kill)} vojske${a.structs ? ', ' + a.structs + ' zgrada' : ''}${a.units ? ', ' + a.units + ' jedinica' : ''}.`, m.owner, m.c);
+      this.tell(v, 'bad', RA.t("💥 Strike ({0}): −{1} troops{2}{3}.", M.name, RA.fmt(kill), a.structs ? ', ' + a.structs + RA.t(" buildings") : '', a.units ? ', ' + a.units + RA.t(" units") : ''), m.owner, m.c);
     }
     if (attacker.human) {
-      if (main) this.tell(attacker, 'good', `Pogodak (${M.name}) — ${main.v.name}: −${RA.fmt(main.kill)} vojske${main.structs ? ', ' + main.structs + ' zgrada' : ''}${main.units ? ', ' + main.units + ' jedinica' : ''}.`, main.v.id, m.c);
-      else this.tell(attacker, 'info', `${M.name}: udar u prazno, ništa vrijedno nije pogođeno.`, attacker.id, m.c);
+      if (main) this.tell(attacker, 'good', RA.t("Hit ({0}) — {1}: −{2} troops{3}{4}.", M.name, main.v.name, RA.fmt(main.kill), main.structs ? ', ' + main.structs + RA.t(" buildings") : '', main.units ? ', ' + main.units + RA.t(" units") : ''), main.v.id, m.c);
+      else this.tell(attacker, 'info', RA.t("{0}: a strike into nothing, nothing of value was hit.", M.name), attacker.id, m.c);
     }
     this.fx.push({ kind: 'conv', x: m.tx, y: m.ty, r: R + 0.5, tick: this.tick });
   };
@@ -940,10 +940,10 @@ RA.NUKE = RA.MISSILE;
     }
     for (const o of hit) {
       const v = this.P[o];
-      if (o !== m.owner) this.tell(v, 'bad', '⚡ EMP! Zgrade i jedinice u tom području ne rade 35 s.', m.owner, m.c);
+      if (o !== m.owner) this.tell(v, 'bad', RA.t("⚡ EMP! Buildings and units in that area are down for 35 s."), m.owner, m.c);
       if (o !== m.owner && this.isFriendly(this.P[m.owner], v)) this.breakAlliance(m.owner, o, true);
     }
-    this.tell(this.P[m.owner], 'good', `⚡ EMP: ugašeno ${ns} zgrada i ${nu} jedinica na 35 s.`, m.owner, m.c);
+    this.tell(this.P[m.owner], 'good', RA.t("⚡ EMP: {0} buildings and {1} units shut down for 35 s.", ns, nu), m.owner, m.c);
     this.fx.push({ kind: 'emp', x: cx, y: cy, r: R, tick: tk });
   };
   P._splitMirv = function (m) {
@@ -970,7 +970,7 @@ RA.NUKE = RA.MISSILE;
       this._assignSam(w, p);
       this.missiles.push(w);
     }
-    this.tell(v, 'bad', `☢☢ MIRV se rasprsnuo iznad tvoje zemlje — ${picks.length} bojevih glava!`, m.owner, m.c);
+    this.tell(v, 'bad', RA.t("☢☢ A MIRV split over your land — {0} warheads!", picks.length), m.owner, m.c);
   };
   P._mirvAcc = function (m, rep) {
     const R = this._mirvRep && this._mirvRep[m.parent];
@@ -987,8 +987,8 @@ RA.NUKE = RA.MISSILE;
     if (R.left > 0) return;
     delete this._mirvRep[m.parent];
     const o = this.P[R.owner];
-    this.tell(o, 'good', `☢☢ MIRV je pogodio metu (${R.v.name}): −${R.n} polja, −${RA.fmt(R.kill)} vojske, uništeno ${R.structs} zgrada i ${R.units} jedinica.`, R.v.id, R.c);
-    this.tell(R.v, 'bad', `☢☢ MIRV: izgubio si ${R.n} polja, ${RA.fmt(R.kill)} vojske i ${R.structs} zgrada.`, R.owner, R.c);
+    this.tell(o, 'good', RA.t("☢☢ The MIRV hit its target ({0}): −{1} cells, −{2} troops, {3} buildings and {4} units destroyed.", R.v.name, R.n, RA.fmt(R.kill), R.structs, R.units), R.v.id, R.c);
+    this.tell(R.v, 'bad', RA.t("☢☢ MIRV: you lost {0} cells, {1} troops and {2} buildings.", R.n, RA.fmt(R.kill), R.structs), R.owner, R.c);
   };
 
   /* ---------------- factories & trains ---------------- */
@@ -1055,21 +1055,21 @@ RA.NUKE = RA.MISSILE;
     const shP = c >= 0 && this.shieldErr(this.P[pid], this.P[this.owner[c]]);
     if (shP) return shP;
     const p = this.P[pid];
-    if (!p || !p.alive) return 'Nisi u igri.';
-    if (!RA.ERA.para || RA.STRUCT.airport.na) return 'U ovom dobu nema padobranaca.';
+    if (!p || !p.alive) return RA.t("You are not in the game.");
+    if (!RA.ERA.para || RA.STRUCT.airport.na) return RA.t("There are no paratroopers in this era.");
     if (this.defconErr('air')) return this.defconErr('air');
-    if (c < 0 || !this.map.land[c]) return 'Padobranci skaču samo na kopno.';
-    if (this.zone && this.zoneOut(c)) return 'To je u radioaktivnoj zoni.';
+    if (c < 0 || !this.map.land[c]) return RA.t("Paratroopers jump only onto land.");
+    if (this.zone && this.zoneOut(c)) return RA.t("That's in the radioactive zone.");
     const o = this.owner[c];
-    if (o === pid) return 'To je tvoja teritorija.';
-    if (o && this.isFriendly(p, this.P[o])) return 'To je teritorija saveznika.';
-    if (o && this.tick < this.peaceUntil) return 'Mirno doba — padobranci zasad smiju samo na slobodnu zemlju.';
-    if (!p.n.airport) return 'Treba ti aerodrom.';
+    if (o === pid) return RA.t("That's your own land.");
+    if (o && this.isFriendly(p, this.P[o])) return RA.t("That's an ally's land.");
+    if (o && this.tick < this.peaceUntil) return RA.t("Peace time — for now paratroopers may only land on free land.");
+    if (!p.n.airport) return RA.t("You need an airfield.");
     const ap = this.paraAirport(p, c);
-    if (!ap) return `Nijedan spreman aerodrom nije u dometu (${RA.CFG.PARA_RANGE} polja).`;
-    if (p.gold < RA.CFG.PARA_GOLD) return `Padobranski desant košta ${RA.fmt(RA.CFG.PARA_GOLD)} zlata.`;
+    if (!ap) return RA.t("No ready airfield in range ({0} cells).", RA.CFG.PARA_RANGE);
+    if (p.gold < RA.CFG.PARA_GOLD) return RA.t("A paratroop drop costs {0} gold.", RA.fmt(RA.CFG.PARA_GOLD));
     troops = Math.floor(Math.min(troops, p.troops));
-    if (troops < 500) return 'Premalo vojske za desant.';
+    if (troops < 500) return RA.t("Too few troops for a landing.");
     p.troops -= troops;
     p.gold -= RA.CFG.PARA_GOLD;
     ap.cd = this.tick + RA.CFG.PARA_CD;
@@ -1079,7 +1079,7 @@ RA.NUKE = RA.MISSILE;
     this._assignSam(pl, p);
     this.planes.push(pl);
     const victim = o ? this.P[o] : null;
-    if (victim) this.tell(victim, 'bad', `🪂 ${p.name} spušta padobrance iza tvojih linija!`, pid, c);
+    if (victim) this.tell(victim, 'bad', RA.t("🪂 {0} is dropping paratroopers behind your lines!", p.name), pid, c);
     if (victim) this.relTo(victim, pid, Math.max(-100, victim.rel[pid] - 20), 'para');
     return pl;
   };
@@ -1093,12 +1093,12 @@ RA.NUKE = RA.MISSILE;
         this.fx.push({ kind: 'intercept', x: pl.sx + (pl.tx - pl.sx) * pl.t, y: pl.sy + (pl.ty - pl.sy) * pl.t, sx: pl.sam.x + 0.5, sy: pl.sam.y + 0.5, tick: this.tick });
         if (pl.kind === 'bomb') {
           p.air = (p.air || []).filter((e) => e.id !== pl.sq);
-          this.tell(p, 'bad', 'PVO je oborio tvoje bombardere.', pl.sam.owner, pl.c);
-          this.tell(this.P[pl.sam.owner], 'good', 'PVO je oborio neprijateljske bombardere!', pl.owner, pl.c);
+          this.tell(p, 'bad', RA.t("Air defence shot down your bombers."), pl.sam.owner, pl.c);
+          this.tell(this.P[pl.sam.owner], 'good', RA.t("Air defence shot down enemy bombers!"), pl.owner, pl.c);
           continue;
         }
-        this.tell(p, 'bad', `PVO je oborio tvoj avion — izgubljeno ${RA.fmt(pl.troops)} padobranaca.`, pl.sam.owner, pl.c);
-        this.tell(this.P[pl.sam.owner], 'good', 'PVO je oborio neprijateljski avion s padobrancima!', pl.owner, pl.c);
+        this.tell(p, 'bad', RA.t("Air defence shot down your plane — {0} paratroopers lost.", RA.fmt(pl.troops)), pl.sam.owner, pl.c);
+        this.tell(this.P[pl.sam.owner], 'good', RA.t("Air defence shot down an enemy plane with paratroopers!"), pl.owner, pl.c);
         continue;
       }
       // enemy fighters meet it over the target area
@@ -1117,7 +1117,7 @@ RA.NUKE = RA.MISSILE;
         continue;
       }
       this.launchAttack(pl.owner, o, pl.troops, pl.c, pl.c);
-      if (o) this.tell(this.P[o], 'bad', `🪂 Padobranci su se spustili na tvoju zemlju (${p.name})!`, pl.owner, pl.c);
+      if (o) this.tell(this.P[o], 'bad', RA.t("🪂 Paratroopers have landed on your land ({0})!", p.name), pl.owner, pl.c);
     }
     if (this.tick % 20 === 0) this.planes = this.planes.filter((x) => !x.done);
   };

@@ -4,10 +4,10 @@
    campaign's dynasty tree (RA.CAMP_TREE), which is bought with XP between missions and stacks with this one.
    Every level multiplies p.bGold / p.bGrow / p.bCost (read by the economy and the costs), diplomacy warms every state. */
 RA.TECH = {
-  eco: { name: 'Ekonomija', icon: 'market', step: 0.08, desc: '+8% zlata po nivou' },
-  mil: { name: 'Vojska', icon: 'army', step: 0.06, desc: '+6% rasta vojske po nivou' },
-  sci: { name: 'Nauka', icon: 'factory', step: 0.06, desc: 'zgrade, jedinice i rakete 6% jeftinije po nivou' },
-  dip: { name: 'Diplomatija', icon: 'ally', step: 10, desc: 'sve države te vole više (+10 po nivou)' },
+  eco: { name: RA.t("Economy"), icon: 'market', step: 0.08, desc: RA.t("+8% gold per level") },
+  mil: { name: RA.t("Army"), icon: 'army', step: 0.06, desc: RA.t("+6% army growth per level") },
+  sci: { name: RA.t("Science"), icon: 'factory', step: 0.06, desc: RA.t("buildings, units and missiles 6% cheaper per level") },
+  dip: { name: RA.t("Diplomacy"), icon: 'ally', step: 10, desc: RA.t("every state likes you more (+10 per level)") },
 };
 RA.TECH_ORDER = ['eco', 'mil', 'sci', 'dip'];
 RA.TECH_MAX = 5;
@@ -21,13 +21,13 @@ RA.TECH_MAX = 5;
   };
   P.buyTech = function (pid, k) {
     const p = this.P[pid], T = RA.TECH[k];
-    if (!this.opts.tree) return 'Stablo tehnologija nije uključeno u ovoj igri.';
-    if (!p || !p.alive) return 'Nisi u igri.';
-    if (!T) return 'Nepoznata grana.';
+    if (!this.opts.tree) return RA.t("The tech tree is off in this game.");
+    if (!p || !p.alive) return RA.t("You are not in the game.");
+    if (!T) return RA.t("Unknown branch.");
     const lv = this.techLv(p, k);
-    if (lv >= RA.TECH_MAX) return `${T.name} je već na najvišem nivou.`;
+    if (lv >= RA.TECH_MAX) return RA.t("{0} is already at the top level.", T.name);
     const cost = this.techCost(p, k);
-    if (p.gold < cost) return `Za ${T.name} ${lv + 1} treba ${RA.fmt(cost)} zlata.`;
+    if (p.gold < cost) return RA.t("{0} {1} needs {2} gold.", T.name, lv + 1, RA.fmt(cost));
     p.gold -= cost;
     if (!p.tech) p.tech = { eco: 0, mil: 0, sci: 0, dip: 0 };
     p.tech[k] = lv + 1;
@@ -35,7 +35,7 @@ RA.TECH_MAX = 5;
     else if (k === 'mil') p.bGrow = ((p.bGrow || 1) * (1 + T.step * (lv + 1))) / (1 + T.step * lv);
     else if (k === 'sci') p.bCost = ((p.bCost || 1) * (1 - T.step * (lv + 1))) / (1 - T.step * lv);
     else for (const o of this.P) if (o && o !== p && o.rel) this.relTo(o, p.id, Math.min(100, o.rel[p.id] + T.step), 'tech');
-    if (p.human) this.tell(p, 'good', `Istraženo: ${T.name} ${lv + 1} (${T.desc}).`);
+    if (p.human) this.tell(p, 'good', RA.t("Researched: {0} {1} ({2}).", T.name, lv + 1, T.desc));
     return { k, lv: lv + 1 };
   };
 })(RA.Game.prototype);

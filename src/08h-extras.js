@@ -64,7 +64,7 @@ Object.assign(RA.UI.prototype, {
       if (!G2 || G2.state !== 'spawn') return setTimeout(go, 200); // the map may still be loading
       const n = iso && G2.P.find((p) => p && p.alive && p.type === 'nation' && p.iso === iso);
       if (n) this.pickNation(String(n.id));
-      else if (cell >= 0) RA.placeHuman(G2, cell, this.settings.name || 'Ti');
+      else if (cell >= 0) RA.placeHuman(G2, cell, this.settings.name || RA.t("You"));
       if (G2.me && G2.me.spawned) app.start();
     };
     go();

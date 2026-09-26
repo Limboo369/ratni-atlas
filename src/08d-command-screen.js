@@ -25,7 +25,13 @@ RA.CommandScreen = class {
       this.$('onlineToggle').setAttribute('aria-expanded', String(!box.hidden));
       if (!box.hidden) box.scrollIntoView({ block: 'nearest', behavior: this.motion ? 'smooth' : 'instant' });
     });
-    this.$('creditsBtn').onclick = () => ui.openSheet(ui.head('O igri i izvori karte') + '<div class="howto"><p><strong>Overtake</strong> — strateška igra osvajanja Evrope i svijeta kroz sedam historijskih doba.</p><p>Karta: Natural Earth (javno vlasništvo). Historijske granice: historical-basemaps, A. Ourednik (GPL-3.0). Reljef: NASA. Motor karte: Leaflet.</p><p>Verzija 0.5 · doba i battle royale.</p></div>');
+    this.$('creditsBtn').onclick = () => ui.openSheet(ui.head(RA.t("About the game and map sources")) + RA.t("<div class=\"howto\"><p><strong>Overtake</strong> — a strategy game of conquering Europe and the world through seven historical eras.</p><p>Map: Natural Earth (public domain). Historical borders: historical-basemaps, A. Ourednik (GPL-3.0). Relief: NASA. Map engine: Leaflet.</p><p>Version 0.5 · eras and battle royale.</p></div>"));
+    const lb = this.$('langBtn');
+    if (lb) {
+      lb.textContent = RA.LANG.toUpperCase();
+      lb.setAttribute('aria-label', RA.t('Language: English — switch to Serbian'));
+      lb.onclick = () => RA.setLang(RA.LANG === 'en' ? 'sr' : 'en');
+    }
     this.$('motionBtn').onclick = () => {
       this.motion = !this.motion;
       try { localStorage.setItem('ra_menu_motion', this.motion ? 'on' : 'off'); } catch (_) {}
@@ -44,7 +50,7 @@ RA.CommandScreen = class {
       } catch (_) { full.hidden = true; }
     };
     document.addEventListener('fullscreenchange', () => {
-      const label = document.fullscreenElement ? 'Izađi iz cijelog ekrana' : 'Cijeli ekran';
+      const label = document.fullscreenElement ? RA.t("Exit full screen") : RA.t("Full screen");
       full.setAttribute('aria-label', label);
       full.title = label;
     });
@@ -78,8 +84,8 @@ RA.CommandScreen = class {
     this.screen.classList.toggle('command-still', still);
     const b = this.$('motionBtn'), active = this.motion && !this.reduced.matches;
     b.setAttribute('aria-pressed', String(active));
-    b.setAttribute('aria-label', active ? 'Isključi animacije' : 'Uključi animacije');
-    b.title = this.reduced.matches ? 'Smanjene animacije prema postavkama uređaja' : b.getAttribute('aria-label');
+    b.setAttribute('aria-label', active ? RA.t("Turn animations off") : RA.t("Turn animations on"));
+    b.title = this.reduced.matches ? RA.t("Reduced animations per the device settings") : b.getAttribute('aria-label');
     b.disabled = this.reduced.matches;
     b.innerHTML = RA.icon(active ? 'pause' : 'play');
   }
@@ -105,7 +111,7 @@ RA.CommandScreen = class {
     }
     const reg = RA.regionsOf(s.map).find((r) => r.id === s.region);
     const region = s.region === s.map || !reg ? RA.mapInfo(s.map).name : reg.name;
-    this.$('operationSummary').textContent = `${region} · ${s.gm === 'br' ? 'Battle royale' : s.gm === 'defcon' ? 'DEFCON' : 'Klasično'} · ${{lako:'Lako',srednje:'Srednje',tesko:'Teško'}[s.difficulty] || 'Srednje'}`;
+    this.$('operationSummary').textContent = `${region} · ${s.gm === 'br' ? RA.t("Battle royale") : s.gm === 'defcon' ? 'DEFCON' : RA.t("Classic")} · ${{lako:RA.t("Easy"),srednje:RA.t("Medium"),tesko:RA.t("Hard")}[s.difficulty] || RA.t("Medium")}`;
     this.$('atlasRegion').textContent = region.toUpperCase();
     const map = this.ui.app.maps[s.map];
     if (!map) return; // The map loader calls startNotes/refresh again when the data arrives.

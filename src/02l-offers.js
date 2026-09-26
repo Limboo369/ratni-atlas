@@ -22,18 +22,18 @@ Object.assign(RA.CFG, {
   P.offerEmpty = (b) => !b.g && !b.t && b.c < 0 && b.r < 0 && b.s < 0;
   /* can `from` give bundle b to `to` now? null or the reason why not */
   P.offerErr = function (from, to, b) {
-    if (b.g && from.gold < b.g) return `${from.name} nema ${RA.fmt(b.g)} zlata.`;
-    if (b.t && !from.allies.has(to.id)) return 'Vojsku može slati samo vojni saveznik.';
-    if (b.t && from.troops * 0.9 < b.t) return `${from.name} nema toliko vojske.`;
+    if (b.g && from.gold < b.g) return RA.t("{0} doesn't have {1} gold.", from.name, RA.fmt(b.g));
+    if (b.t && !from.allies.has(to.id)) return RA.t("Only a military ally can send troops.");
+    if (b.t && from.troops * 0.9 < b.t) return RA.t("{0} doesn't have that many troops.", from.name);
     if (b.c >= 0) {
       const ct = this.cities[b.c];
-      if (!ct || ct.owner !== from.id) return 'Taj grad nije njihov.';
-      if (from.capCity === ct.i) return 'Prijestolnica se ne daje.';
+      if (!ct || ct.owner !== from.id) return RA.t("That city isn't theirs.");
+      if (from.capCity === ct.i) return RA.t("A capital can't be given away.");
     }
-    if (b.r >= 0 && (!this.deps || !from.res || !from.res[b.r])) return `${from.name} nema taj resurs.`;
+    if (b.r >= 0 && (!this.deps || !from.res || !from.res[b.r])) return RA.t("{0} doesn't have that resource.", from.name);
     if (b.s >= 0) {
       const st = this.straits[b.s];
-      if (!st || st.closed !== from.id) return `${from.name} nije zatvorio taj moreuz.`;
+      if (!st || st.closed !== from.id) return RA.t("{0} hasn't closed that strait.", from.name);
     }
     return null;
   };
@@ -76,18 +76,18 @@ Object.assign(RA.CFG, {
   /* a new offer from pid: give = what pid gives, want = what pid demands */
   P.makeOffer = function (pid, to, give, want, round) {
     const p = this.P[pid], q = this.P[to];
-    if (!q || !q.alive || q === p || q.type === 'bot') return 'Nevažeća država.';
+    if (!q || !q.alive || q === p || q.type === 'bot') return RA.t("Invalid state.");
     give = this.offerClean(give);
     want = this.offerClean(want);
-    if (this.offerEmpty(give) && this.offerEmpty(want)) return 'Izaberi šta zahtijevaš ili nudiš.';
+    if (this.offerEmpty(give) && this.offerEmpty(want)) return RA.t("Choose what you demand or offer.");
     const e = this.offerErr(p, q, give) || this.offerErr(q, p, want);
     if (e) return e;
-    if (this.offers.filter((o) => o.from === pid).length >= RA.CFG.OFFER_MAX) return 'Već čekaš odgovor na tri ponude.';
+    if (this.offers.filter((o) => o.from === pid).length >= RA.CFG.OFFER_MAX) return RA.t("You are already waiting for an answer to three offers.");
     this.offers = this.offers.filter((o) => !(o.from === pid && o.to === to));
     const o = { id: this.nextId++, from: pid, to, give, want, tick: this.tick, round: round || 1 };
     if (q.ai && !q.human) return this._aiAnswer(o);
     this.offers.push(o);
-    this.tell(q, 'info', `${p.name} ti šalje ponudu (Savezi → Ponude).`, pid, p.capital);
+    this.tell(q, 'info', RA.t("{0} sends you an offer (Alliances → Offers).", p.name), pid, p.capital);
     return { st: 'sent', id: o.id };
   };
   /* the computer's answer: accept, a counter-offer (it asks for more gold) or no */
@@ -96,17 +96,17 @@ Object.assign(RA.CFG, {
     const rel = q.rel[p.id];
     const need = this.offerValue(o.want) * (1.15 - rel * 0.003); // what it gives, weighted by what it thinks of you
     const get = this.offerValue(o.give);
-    if (rel < -40) return this._offerEnd(o, 'no', `${q.name} ne želi ni razgovarati s tobom.`);
+    if (rel < -40) return this._offerEnd(o, 'no', RA.t("{0} won't even talk to you.", q.name));
     if (get >= need) return this._offerDeal(o);
     const more = Math.ceil((need - get) / 1000) * 1000;
     if (o.round < 3 && p.gold >= o.give.g + more) {
       // a counter-offer: the same deal for more of your gold
       const c = { id: this.nextId++, from: q.id, to: p.id, give: o.want, want: Object.assign({}, o.give, { g: o.give.g + more }), tick: this.tick, round: o.round + 1 };
       this.offers.push(c);
-      this.tell(p, 'info', `${q.name} traži još ${RA.fmt(more)} zlata za taj dogovor (Savezi → Ponude).`, q.id, q.capital);
+      this.tell(p, 'info', RA.t("{0} wants {1} more gold for that deal (Alliances → Offers).", q.name, RA.fmt(more)), q.id, q.capital);
       return { st: 'counter', id: c.id, more };
     }
-    return this._offerEnd(o, 'no', `${q.name} odbija ponudu — nije im dovoljno.`);
+    return this._offerEnd(o, 'no', RA.t("{0} declines the offer — it's not enough for them.", q.name));
   };
   P._offerEnd = function (o, st, msg) {
     this.offers = this.offers.filter((x) => x.id !== o.id);
@@ -117,7 +117,7 @@ Object.assign(RA.CFG, {
   P._offerDeal = function (o) {
     const p = this.P[o.from], q = this.P[o.to];
     const e = this.offerErr(p, q, o.give) || this.offerErr(q, p, o.want);
-    if (e) return this._offerEnd(o, 'no', `Dogovor propao: ${e}`);
+    if (e) return this._offerEnd(o, 'no', RA.t("Deal failed: {0}", e));
     this._dealGive(p, q, o.give);
     this._dealGive(q, p, o.want);
     this.offers = this.offers.filter((x) => x.id !== o.id);
@@ -130,31 +130,31 @@ Object.assign(RA.CFG, {
   /* the answer to an offer made to pid: yes / no / counter (give, want of the counter-offer from pid) */
   P.answerOffer = function (pid, id, ans, give, want) {
     const o = this.offers.find((x) => x.id === id && x.to === pid);
-    if (!o) return 'Ta ponuda više ne važi.';
+    if (!o) return RA.t("That offer is no longer valid.");
     if (ans === 'yes') return this._offerDeal(o);
     if (ans === 'no') {
       this.offers = this.offers.filter((x) => x.id !== id);
       this.relTo(this.P[o.from], pid, this.P[o.from].rel[pid] - 2, 'tdecl');
-      if (this.P[o.from].human) this.tell(this.P[o.from], 'info', `${this.P[pid].name} odbija tvoju ponudu.`, pid);
+      if (this.P[o.from].human) this.tell(this.P[o.from], 'info', RA.t("{0} declines your offer.", this.P[pid].name), pid);
       return { st: 'no' };
     }
     if (ans === 'counter') {
       this.offers = this.offers.filter((x) => x.id !== id);
       return this.makeOffer(pid, o.from, give, want, o.round + 1);
     }
-    return 'Nevažeći odgovor.';
+    return RA.t("Invalid answer.");
   };
   P._stepOffers = function () {
     if (this.offers.length && this.tick % 50 === 0) this.offers = this.offers.filter((o) => this.tick - o.tick < RA.CFG.OFFER_TTL && this.P[o.from].alive && this.P[o.to].alive);
   };
   P.offerText = function (b) {
     const out = [];
-    if (b.g) out.push(`${RA.fmt(b.g)} zlata`);
-    if (b.t) out.push(`${RA.fmt(b.t)} vojske`);
-    if (b.c >= 0) out.push(`grad ${this.cities[b.c] ? this.cities[b.c].name : '?'} sa okolinom`);
-    if (b.r >= 0) out.push(`${RA.resKind(b.r, this.era).name} (5 min)`);
-    if (b.s >= 0) out.push(`otvaranje: ${this.straits[b.s] ? this.straits[b.s].name : 'moreuz'}`);
-    return out.join(', ') || 'ništa';
+    if (b.g) out.push(RA.t("{0} gold", RA.fmt(b.g)));
+    if (b.t) out.push(RA.t("{0} troops", RA.fmt(b.t)));
+    if (b.c >= 0) out.push(RA.t("the city of {0} with its surroundings", this.cities[b.c] ? this.cities[b.c].name : '?'));
+    if (b.r >= 0) out.push(RA.t("{0} (5 min)", RA.resKind(b.r, this.era).name));
+    if (b.s >= 0) out.push(RA.t("opening: {0}", this.straits[b.s] ? this.straits[b.s].name : RA.t("strait")));
+    return out.join(', ') || RA.t("nothing");
   };
   P.EMPTY_OFFER = EMPTY;
 })(RA.Game.prototype);

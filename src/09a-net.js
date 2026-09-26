@@ -168,7 +168,7 @@ RA.Net = class {
       this.catchUp = Number.isInteger(prev.T) ? prev.T : 0;
       this.inGame = true;
       this.app.startOnline(r.st, 0);
-      this.app.ui.toast('good', 'Vratio si se u svoju igru.');
+      this.app.ui.toast('good', RA.t("You are back in your game."));
     } else if (prev.r === 'g' && typeof prev.g === 'string') {
       const host = this.others().find((p) => p.presence && p.presence.r === 'h' && p.presence.g === prev.g);
       if (!host) return this.leave();
@@ -197,7 +197,7 @@ RA.Net = class {
       this.inGame = true;
       this.publish({ r: 'g', g: this.gid, q: [], ak: this.log.length, t: 0, hs: null });
       this.app.startOnline(r.st, slot);
-      this.app.ui.toast('good', 'Vratio si se u igru — sustižem ostale…');
+      this.app.ui.toast('good', RA.t("You are back in the game — catching up with the others…"));
     } else if (prev.r === 's' && typeof prev.g === 'string') {
       const host = this.others().find((p) => p.presence && p.presence.r === 'h' && p.presence.g === prev.g);
       if (host) this.watch(host.peer);
@@ -228,7 +228,7 @@ RA.Net = class {
   }
   myName() {
     const s = this.app.ui && this.app.ui.settings;
-    return PEER_STR(s && s.name, '') || 'Igrač';
+    return PEER_STR(s && s.name, '') || RA.t("Player");
   }
   peers() {
     return this.room ? this.room.peers() : [];
@@ -320,13 +320,13 @@ RA.Net = class {
       const p = this.peerBy(peer);
       const isMe = !!(p && p.isMe && p.sameTab);
       const pr = isMe ? this.pres : (p && p.presence) || {};
-      return { peer, name: PEER_STR(pr.n, '') || 'Igrač', pick: PEER_STR(pr.pk, ''), ld: typeof pr.ld === 'string' ? pr.ld.slice(0, 40) : '', isMe, here: !!p };
+      return { peer, name: PEER_STR(pr.n, '') || RA.t("Player"), pick: PEER_STR(pr.pk, ''), ld: typeof pr.ld === 'string' ? pr.ld.slice(0, 40) : '', isMe, here: !!p };
     });
   }
   /* host: start the game for everyone in the lobby */
   start(set, nations) {
     const mem = this.members();
-    if (mem.length < 2) return 'Čeka se bar jedan prijatelj.';
+    if (mem.length < 2) return RA.t("Waiting for at least one friend.");
     // unique countries: first come keeps its pick, others get a free random one
     const used = new Set();
     const free = nations.map((n) => n.iso);
@@ -468,7 +468,7 @@ RA.Net = class {
           gi.goneAt = gi.stallAt = 0;
           gi.t = pr.t;
           this.schedule(s, 'back', [], 0);
-          this.app.ui.toast('good', `${RA.esc(st.slots[s].name)} se vratio u igru.`);
+          this.app.ui.toast('good', RA.t("{0} is back in the game.", RA.esc(st.slots[s].name)));
         }
         continue;
       }
@@ -479,7 +479,7 @@ RA.Net = class {
           // gone for good: the computer takes over their country
           gi.ai = true;
           this.schedule(s, 'ai', [], 0);
-          this.app.ui.toast('bad', `${RA.esc(st.slots[s].name)} je napustio igru — kompjuter preuzima njegovu državu.`);
+          this.app.ui.toast('bad', RA.t("{0} left the game — the computer takes over their state.", RA.esc(st.slots[s].name)));
         }
         continue;
       }
@@ -500,7 +500,7 @@ RA.Net = class {
       if (Array.isArray(pr.hs) && this.myHashes.has(pr.hs[0]) && this.myHashes.get(pr.hs[0]) !== pr.hs[1] && this.desync < 0) {
         this.desync = pr.hs[0];
         this.publish({ ds: pr.hs[0] });
-        this.app.ui.toast('bad', 'Upozorenje: igre na vašim uređajima su se razišle. Rezultati se mogu razlikovati — najbolje je početi novu partiju.');
+        this.app.ui.toast('bad', RA.t("Warning: the games on your devices have drifted apart. Results may differ — it is best to start a new match."));
       }
     }
     this.waiting = false;
@@ -517,7 +517,7 @@ RA.Net = class {
         else if (performance.now() - gi.stallAt > 30000) {
           gi.ai = true;
           this.schedule(s, 'ai', [], 0);
-          this.app.ui.toast('bad', `${RA.esc(st.slots[s].name)} ne odgovara — kompjuter igra umjesto njega dok se ne vrati.`);
+          this.app.ui.toast('bad', RA.t("{0} is not responding — the computer plays for them until they return.", RA.esc(st.slots[s].name)));
           continue;
         }
         this.waiting = true;
@@ -548,14 +548,14 @@ RA.Net = class {
       if (!this.hostGoneAt) this.hostGoneAt = performance.now();
       else if (!this.hostGone && performance.now() - this.hostGoneAt > 8000) {
         this.hostGone = true;
-        this.app.ui.toast('bad', 'Domaćin je napustio igru — partija je stala. Meni → Nova igra.', { sticky: true });
+        this.app.ui.toast('bad', RA.t("The host left the game — the match has stopped. Menu → New game."), { sticky: true });
       }
       return;
     }
     this.hostGoneAt = 0;
     if (this.hostGone) {
       this.hostGone = false;
-      this.app.ui.toast('good', 'Domaćin se vratio — igra se nastavlja.');
+      this.app.ui.toast('good', RA.t("The host is back — the game continues."));
     }
     if (Array.isArray(hp.c)) {
       if (hp.c.length && Array.isArray(hp.c[0]) && hp.c[0][0] > this.log.length) this.fillGap();
@@ -582,7 +582,7 @@ RA.Net = class {
     this.hostPz = !!hp.pz;
     if (Number.isInteger(hp.ds) && this.desync < 0) {
       this.desync = hp.ds;
-      this.app.ui.toast('bad', 'Upozorenje: igre na vašim uređajima su se razišle. Rezultati se mogu razlikovati — najbolje je početi novu partiju.');
+      this.app.ui.toast('bad', RA.t("Warning: the games on your devices have drifted apart. Results may differ — it is best to start a new match."));
     }
   }
   guestPublish() {

@@ -141,9 +141,9 @@ function client(url) {
     await P1.wait((m) => m.t === 'party' && m.members.length === 2, 5000, 'party 2 lead');
     check(true, `party ${pt.code}: two players`);
     P2.send({ queue: { m: 'b', n: 2 } });
-    check(/vođa/.test((await P2.wait((m) => m.t === 'err', 5000, 'not lead')).e), 'only the party leader starts the search');
+    check(/leader/.test((await P2.wait((m) => m.t === 'err', 5000, 'not lead')).e), 'only the party leader starts the search');
     P1.send({ queue: { m: 'b', n: 1 } });
-    check(/najviše 1/.test((await P1.wait((m) => m.t === 'err' && /najviše/.test(m.e), 5000, 'too big')).e), 'a party of 2 cannot search 1v1');
+    check(/at most 1 /.test((await P1.wait((m) => m.t === 'err' && /at most/.test(m.e), 5000, 'too big')).e), 'a party of 2 cannot search 1v1');
     P1.send({ queue: { m: 'b', n: 2 } });
     await P2.wait((m) => m.t === 'queue' && m.l === 'b2', 5000, 'party queued');
     S1.send({ queue: { m: 'b', n: 2 } });

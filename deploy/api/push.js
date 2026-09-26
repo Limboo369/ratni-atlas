@@ -93,10 +93,10 @@ module.exports = function pushRoutes(db, sessionUser) {
       'GET /api/push/key': async () => ({ key: (await vapid()).pub }),
       'POST /api/push/sub': async (req, b) => {
         const u = await sessionUser(req);
-        if (!u) return [401, { e: 'Nisi prijavljen.' }];
+        if (!u) return [401, { e: 'You are not signed in.' }];
         const s = b.sub || {};
         const p = s.keys && typeof s.keys.p256dh === 'string' ? s.keys.p256dh : '', a = s.keys && typeof s.keys.auth === 'string' ? s.keys.auth : '';
-        if (typeof s.endpoint !== 'string' || !okEndpoint(s.endpoint) || unb64(p).length !== 65 || unb64(a).length < 16 || p.length > 200 || a.length > 60) return [400, { e: 'Nevažeća pretplata.' }];
+        if (typeof s.endpoint !== 'string' || !okEndpoint(s.endpoint) || unb64(p).length !== 65 || unb64(a).length < 16 || p.length > 200 || a.length > 60) return [400, { e: 'Invalid subscription.' }];
         await db.query(
           `insert into push_subs (endpoint, user_id, p256dh, auth) values ($1, $2, $3, $4)
            on conflict (endpoint) do update set user_id = $2, p256dh = $3, auth = $4, at = now()`, [s.endpoint, u.id, p, a]);
@@ -106,7 +106,7 @@ module.exports = function pushRoutes(db, sessionUser) {
       },
       'POST /api/push/unsub': async (req, b) => {
         const u = await sessionUser(req);
-        if (!u) return [401, { e: 'Nisi prijavljen.' }];
+        if (!u) return [401, { e: 'You are not signed in.' }];
         await db.query('delete from push_subs where user_id = $1 and endpoint = $2', [u.id, String(b.endpoint || '')]);
         return { ok: true };
       },

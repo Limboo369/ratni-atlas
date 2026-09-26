@@ -12,6 +12,7 @@ RA.App = class {
   }
 
   async boot() {
+    RA.trDom(document.body);
     const msg = document.getElementById('loadMsg');
     try {
       const eu = await RA.loadMap();
@@ -19,7 +20,7 @@ RA.App = class {
       this.maps = { evropa: eu }; // other maps (the world) are fetched from our server when chosen
       this.map = eu; // the map shown now (layers are built for it)
     } catch (e) {
-      msg.textContent = e && e.message === 'no-decompression' ? 'Preglednik je prestar za ovu igru. Ažuriraj Chrome/Safari.' : 'Greška pri učitavanju karte: ' + (e && e.message);
+      msg.textContent = e && e.message === 'no-decompression' ? RA.t("This browser is too old for the game. Update Chrome/Safari.") : RA.t("Error loading the map: ") + (e && e.message);
       console.error(e);
       return;
     }
@@ -76,7 +77,7 @@ RA.App = class {
   }
   loadProgress(id, n, tot) {
     const base = RA.mapInfo(id).load;
-    const txt = n < 0 ? base.replace('Učitavam', 'Pripremam') : n > 0 ? `${base} ${tot ? Math.round((n / tot) * 100) + '%' : (n / 1048576).toFixed(1).replace('.', ',') + ' MB'}` : base;
+    const txt = n < 0 ? base.replace(RA.t("Loading"), RA.t("Preparing")) : n > 0 ? `${base} ${tot ? Math.round((n / tot) * 100) + '%' : (n / 1048576).toFixed(1).replace('.', ',') + ' MB'}` : base;
     document.getElementById('loadMsg').textContent = txt;
   }
   /* run fn once the map and era are there (at once for Europe); loading shows the full-screen loading overlay */
@@ -169,7 +170,7 @@ RA.App = class {
     }));
     lmap.attributionControl.setPrefix(false);
     L.control.scale({ position: 'bottomleft', metric: true, imperial: false, maxWidth: 100 }).addTo(lmap);
-    lmap.attributionControl.addAttribution('Natural Earth · NASA · <a href="https://leafletjs.com" target="_blank" rel="noopener">Leaflet</a>');
+    lmap.attributionControl.addAttribution(RA.t("Natural Earth · NASA · <a href=\"https://leafletjs.com\" target=\"_blank\" rel=\"noopener\">Leaflet</a>"));
     const pane = (name, z) => {
       const p = lmap.createPane(name);
       p.style.zIndex = z;
@@ -184,7 +185,7 @@ RA.App = class {
     this.terr = new RA.TerritoryLayer(M);
     this.terr.addTo(lmap);
     if (!this.terr.ok) {
-      document.getElementById('loadMsg').textContent = 'Ovaj uređaj ne podržava WebGL.';
+      document.getElementById('loadMsg').textContent = RA.t("This device does not support WebGL.");
     }
     this.fx = new RA.FxLayer(M);
     this.fx.addTo(lmap);
@@ -370,7 +371,7 @@ RA.App = class {
     if (!G.me || !G.me.spawned) return;
     if (G.rec) {
       G.rec.picks = (G.picks || []).slice();
-      G.rec.name = this.ui.settings.name || 'Ti';
+      G.rec.name = this.ui.settings.name || RA.t("You");
     }
     RA.startGame(G);
     if (this.ui.settings.cb) RA.applyColorblind(G, true); // the player's own colour too
@@ -408,7 +409,7 @@ RA.App = class {
         if (this.net.st === st && this.net.inGame) this.startOnline(st, mySlot);
       }).then((ok) => {
         if (ok || !this.net.inGame) return;
-        this.ui.toast('bad', 'Karta ove igre se ne može učitati — online igra nije moguća.', { ms: 6000 });
+        this.ui.toast('bad', RA.t("This game's map cannot be loaded — online play is not possible."), { ms: 6000 });
         this.showStart();
       });
       return;
@@ -439,7 +440,7 @@ RA.App = class {
     this.lmap.setMaxBounds(reg ? L.latLngBounds([[reg.box[1], reg.box[0]], [reg.box[3], reg.box[2]]]).pad(0.7) : this.defBounds);
     if (G.me) this.lmap.setView(this.map.latLngOfCell(G.me.capital), this.zoomAt(5), { animate: false });
     const others = G.humans.filter((p) => p !== G.me).map((p) => p.nick).join(', ');
-    ui.toast('good', `Online igra je počela — ${st.set.mode === 'coop' ? 'zajedno s: ' : 'protiv: '}${RA.esc(others)}.`, { ms: 6000 });
+    ui.toast('good', RA.t("The online game has started — {0}{1}.", st.set.mode === 'coop' ? RA.t("together with: ") : RA.t("against: "), RA.esc(others)), { ms: 6000 });
   }
   gameOver(kind) {
     if (this.attractMode) {
@@ -464,11 +465,11 @@ RA.App = class {
   guestLocked() {
     const net = this.net;
     if (this.G && this.G.long) {
-      this.ui.toast('info', 'U dugoj igri vrijeme teče na serveru: jedan potez svakih nekoliko sekundi.');
+      this.ui.toast('info', RA.t("In a long game time runs on the server: one move every few seconds."));
       return true;
     }
     if (this.G && this.G.online && net && net.inGame && net.role !== 'host') {
-      this.ui.toast('info', 'Brzinu i pauzu kontroliše domaćin igre.');
+      this.ui.toast('info', RA.t("The game's host controls speed and pause."));
       return true;
     }
     return false;
@@ -488,7 +489,7 @@ RA.App = class {
   updatePauseBtn() {
     const b = document.getElementById('pauseBtn');
     b.innerHTML = RA.icon(this.paused ? 'play' : 'pause');
-    b.setAttribute('aria-label', this.paused ? 'Nastavi' : 'Pauza');
+    b.setAttribute('aria-label', this.paused ? RA.t("Resume") : RA.t("Pause"));
   }
   sheetPause(on) {
     // a shared online world never pauses because one player opened a menu

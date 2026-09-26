@@ -41,7 +41,7 @@ async def main():
             }''')
             assert all(x['inside'] and not x['overflow'] for x in geometry),geometry
             assert all(x['hit'] for x in geometry if x['id'] not in ['hud','dock']),geometry
-            assert 'Bosna' in await pg.locator('#hNation').inner_text()
+            assert 'Bosnia' in await pg.locator('#hNation').inner_text()
             print('HUD fits',width,height,flush=True)
             if width in [1440,375]: await pg.screenshot(path=str(OUT/f'tactical-hud-{width}.png'))
             await pg.click('#aArmy')

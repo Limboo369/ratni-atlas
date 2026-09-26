@@ -21,11 +21,11 @@ Object.assign(RA.CFG, {
     return Math.max(1, Math.ceil(n * 0.8));
   };
   P.lgSurr = function (p) {
-    if (p.surrVote) return 'Već si glasao/la za predaju.';
+    if (p.surrVote) return RA.t("You already voted to surrender.");
     p.surrVote = true;
     const team = this.lgTeam(p.team).filter((q) => q.alive && !q.kicked);
     const votes = team.filter((q) => q.surrVote).length, need = this.lgNeed(team.length);
-    for (const q of team) this.tell(q, 'info', `${p.nick || p.name} glasa za predaju (${votes}/${need}).`, p.id);
+    for (const q of team) this.tell(q, 'info', RA.t("{0} votes to surrender ({1}/{2}).", p.nick || p.name, votes, need), p.id);
     if (votes >= need) {
       for (const q of this.lgTeam(p.team)) q.surr = true;
       this._lgEnd(3 - p.team, 'surr');
@@ -35,9 +35,9 @@ Object.assign(RA.CFG, {
   /* vote kick (5v5 only): the other players of the team vote; 4 votes (or all of them, when fewer are left) */
   P.lgKick = function (p, tid) {
     const t = this.P[tid];
-    if (this.opts.league !== 5) return 'Izbacivanje glasanjem je samo u 5v5.';
-    if (!t || t === p || !t.human || t.team !== p.team || !t.alive) return 'Izaberi igrača iz svog tima.';
-    if (t.kicked) return 'Već je izbačen/a.';
+    if (this.opts.league !== 5) return RA.t("Vote kick is only in 5v5.");
+    if (!t || t === p || !t.human || t.team !== p.team || !t.alive) return RA.t("Choose a player from your team.");
+    if (t.kicked) return RA.t("Already kicked.");
     p.kickVote = tid;
     const voters = this.lgTeam(p.team).filter((q) => q.alive && !q.kicked && q !== t);
     const votes = voters.filter((q) => q.kickVote === tid).length, need = Math.min(4, voters.length);
@@ -46,8 +46,8 @@ Object.assign(RA.CFG, {
       t.kicked = true;
       if (!t.ai) RA.AI.init(this, t);
       for (const q of voters) if (q.kickVote === tid) q.kickVote = 0;
-      this.tell(t, 'bad', 'Tim te je izbacio iz igre — tvoju državu vodi kompjuter.', t.id);
-      this.tellAll('info', `${t.nick || t.name} je izbačen/a glasanjem tima; državu vodi kompjuter.`, t.id);
+      this.tell(t, 'bad', RA.t("Your team kicked you out — the computer plays your state."), t.id);
+      this.tellAll('info', RA.t("{0} was kicked by a team vote; the computer plays the state.", t.nick || t.name), t.id);
     }
     return { kicked: !!t.kicked, votes, need };
   };
@@ -71,13 +71,13 @@ Object.assign(RA.CFG, {
       if (tot > 0 && a[t] / tot < C.LG_CAP) {
         if (!L.low[t]) {
           L.low[t] = this.tick;
-          for (const q of this.lgTeam(t)) this.tell(q, 'bad', `Tvoj tim ima manje od ${Math.round(C.LG_CAP * 100)}% zemlje igrača: za ${RA.dur(C.LG_CAP_T)} kapitulira ako se ne oporavi.`, q.id);
+          for (const q of this.lgTeam(t)) this.tell(q, 'bad', RA.t("Your team has less than {0}% of the players' land: it capitulates in {1} unless it recovers.", Math.round(C.LG_CAP * 100), RA.dur(C.LG_CAP_T)), q.id);
         } else if (this.tick - L.low[t] >= C.LG_CAP_T) return this._lgEnd(3 - t, 'cap');
       } else L.low[t] = 0;
     }
     if (!L.warned && this.tick >= C.LG_WARN) {
       L.warned = true;
-      this.tellAll('info', `Još ${RA.dur(C.LG_END - C.LG_WARN)}: tada pobjeđuje tim s više zemlje.`, 0);
+      this.tellAll('info', RA.t("{0} left: then the team with more land wins.", RA.dur(C.LG_END - C.LG_WARN)), 0);
     }
     if (this.tick >= C.LG_END) this._lgEnd(a[1] > a[2] ? 1 : a[2] > a[1] ? 2 : this._lgTroops(1) >= this._lgTroops(2) ? 1 : 2, 'time');
   };
@@ -91,7 +91,7 @@ Object.assign(RA.CFG, {
     this.winner = best || null;
     this.state = 'over';
     this._history();
-    const W = { elim: 'protivnici su uništeni', cap: 'protivnički tim je kapitulirao', time: 'više zemlje nakon 45 min', surr: 'protivnički tim se predao', vote: 'glasanje za kraj' };
-    this.tellAll('over', `Pobjeđuje tim ${team} — ${W[why] || ''}.`, best ? best.id : 0);
+    const W = { elim: RA.t("the enemies are destroyed"), cap: RA.t("the enemy team capitulated"), time: RA.t("more land after 45 min"), surr: RA.t("the enemy team surrendered"), vote: RA.t("a vote to end") };
+    this.tellAll('over', RA.t("Team {0} wins — {1}.", team, W[why] || ''), best ? best.id : 0);
   };
 })(RA.Game.prototype);

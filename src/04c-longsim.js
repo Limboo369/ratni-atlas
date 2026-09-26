@@ -49,7 +49,7 @@ RA.leagueSetup = function (G, slots) {
   slots.forEach((sl, i) => {
     const t = sl.team === 2 ? 2 : 1;
     const nat = half[t - 1][used[t - 1]++] || pick.find((q) => q.alive);
-    const p = RA.addHuman(G, typeof sl.name === 'string' ? sl.name.slice(0, 18) : 'Igrač', RA.LG_COLORS[t - 1][(used[t - 1] - 1) % 5]);
+    const p = RA.addHuman(G, typeof sl.name === 'string' ? sl.name.slice(0, 18) : RA.t("Player"), RA.LG_COLORS[t - 1][(used[t - 1] - 1) % 5]);
     p.slot = i;
     p.team = t;
     if (nat) RA.takeOverNation(G, p, nat);
@@ -71,7 +71,7 @@ RA.longJoin = function (G, slot, id, name, team) {
   p.human = true;
   p.ai = null;
   p.slot = slot;
-  p.nick = typeof name === 'string' && name ? name.slice(0, 18) : 'Igrač';
+  p.nick = typeof name === 'string' && name ? name.slice(0, 18) : RA.t("Player");
   G.slotPid[slot] = p.id;
   if (!G.humans.includes(p)) G.humans.push(p);
   // a late player in a Focus game (plan 21): up to ~3 h safe from other players (until it attacks one), and gold and an
@@ -82,7 +82,7 @@ RA.longJoin = function (G, slot, id, name, team) {
     const ns = G.P.filter((q) => q && q.alive && q.type === 'nation' && q !== p);
     const avg = ns.reduce((a, q) => a + q.troops, 0) / Math.max(1, ns.length);
     p.troops = Math.max(p.troops, Math.min(p.maxT || Infinity, avg * 0.8));
-    G.tell(p, 'good', `Kasni ulazak: zaštita od napada igrača ${RA.dur(p.shieldUntil - G.tick)} (dok ne napadneš igrača) i pomoć od ${RA.fmt(Math.min(2e6, G.tick * 40))} zlata.`, p.id);
+    G.tell(p, 'good', RA.t("Late entry: protected from players for {0} (until you attack a player) and {1} gold to catch up.", RA.dur(p.shieldUntil - G.tick), RA.fmt(Math.min(2e6, G.tick * 40))), p.id);
   }
   // teams (Skirmish): humans vs states = one team of all players; 2 / 3 teams = the team the player chose
   const T = G.opts.teams;
@@ -110,9 +110,9 @@ RA.longNotes = function (G, from) {
   for (const f of G.feed) {
     if (f.tick <= from) continue;
     const A = G.P[f.a], B = f.b ? G.P[f.b] : null;
-    if (f.t === 'war' && B && B.human && B.alive && B.slot >= 0) out.push({ slot: B.slot, kind: 'war', text: `${A.name} je napao/la tvoju državu (${B.name}).` });
+    if (f.t === 'war' && B && B.human && B.alive && B.slot >= 0) out.push({ slot: B.slot, kind: 'war', text: RA.t("{0} attacked your state ({1}).", A.name, B.name) });
     const V = f.t === 'fall' ? B || A : null;
-    if (V && V.human && V.slot >= 0) out.push({ slot: V.slot, kind: 'fall', text: `Tvoja država (${V.name}) je pala${B && A ? ' — osvajač: ' + A.name : ''}.` });
+    if (V && V.human && V.slot >= 0) out.push({ slot: V.slot, kind: 'fall', text: RA.t("Your state ({0}) has fallen{1}.", V.name, B && A ? RA.t(" — conqueror: ") + A.name : '') });
   }
   return out;
 };

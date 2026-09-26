@@ -73,7 +73,7 @@ async def main():
         check('Blitz 1v1' in txt and 'ELO 500' in txt and 'Unranked' in txt, 'the league sheet: my ladder, ELO 500, placement')
         await A.click('#lgFind')
         await A.wait_for_function('window.__ra.league.queue', timeout=10000)
-        check('Tražim' in await A.evaluate('document.getElementById("lgFind").textContent'), 'Find match: searching…')
+        check('Searching' in await A.evaluate('document.getElementById("lgFind").textContent'), 'Find match: searching…')
         await B.click('#lgFind')
         for pg in (A, B):
             await pg.wait_for_selector('#lgPick', state='attached', timeout=15000)
@@ -100,7 +100,7 @@ async def main():
         await B.wait_for_function('window.__ra.league.elo.b1.elo !== 500', timeout=30000)
         eb = await B.evaluate('window.__ra.league.elo.b1')
         toast = await B.evaluate('document.body.textContent')
-        check(eb['elo'] == 520 and 'pobjeda' in toast and '+20' in toast, f'surrender → Marko wins, ELO 520 (+20) {eb}')
+        check(eb['elo'] == 520 and 'victory' in toast and '+20' in toast, f'surrender → Marko wins, ELO 520 (+20) {eb}')
         # the replay (plan phase 17): the server kept the record; played from the start it ends the same way
         code = await B.evaluate('window.__ra.long.code')
         endB = await B.evaluate('[window.__ra.G.tick, window.__ra.G.hash(), window.__ra.G.lgWin.team]')

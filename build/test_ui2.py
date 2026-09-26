@@ -107,9 +107,9 @@ async def main():
         # 4. peace: attacking a state is refused, free land is fine
         other = await ev('() => { const G = window.__ra.G, me = G.me; const o = G.P.find(p => p && p.alive && p.type === "nation" && p !== me); return o.cells[0]; }')
         r = await ev(f'() => window.__ra.G.cmdAttack(window.__ra.G.me.id, {other}, 0.3)')
-        check('err' in r and 'Mirno doba' in r['err'], 'attack on a state refused in peace: ' + str(r.get('err', r))[:70])
+        check('err' in r and 'Peace time' in r['err'], 'attack on a state refused in peace: ' + str(r.get('err', r))[:70])
         pill = await ev('() => document.getElementById("status").textContent')
-        check('Mirno doba' in pill, 'peace pill shown: ' + pill)
+        check('Peace time' in pill, 'peace pill shown: ' + pill)
         await page.screenshot(path=OUT + f'{MODE}_v3_4_peace.png')
         # expand a few times into free land during the peace
         for k in range(4):

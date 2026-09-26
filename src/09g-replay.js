@@ -9,12 +9,12 @@ RA.RP_SPEEDS = [1, 4, 8, 16];
 Object.assign(RA.App.prototype, {
   replayOpen(code) {
     const url = this.net && this.net.wsUrl;
-    if (!url) return this.ui.toast('info', 'Snimci rade na war.deovilab.com.', { ms: 4000 });
+    if (!url) return this.ui.toast('info', RA.t("Replays work on war.deovilab.com."), { ms: 4000 });
     if (!/^[a-z0-9]{6}$/.test(code || '')) return;
     const ws = new WebSocket(url + '?replay=' + code);
     const ov = document.getElementById('loading');
     ov.hidden = false;
-    document.getElementById('loadMsg').textContent = 'Učitavam snimak…';
+    document.getElementById('loadMsg').textContent = RA.t("Loading replay…");
     let got = false;
     ws.onmessage = (ev) => {
       let m;
@@ -26,12 +26,12 @@ Object.assign(RA.App.prototype, {
       got = true;
       if (m.t === 'replay' && m.rec && m.rec.set) return this.replayStart(m.rec);
       ov.hidden = true;
-      this.ui.toast('bad', RA.esc(String(m.e || 'Snimak nije dostupan.')), { ms: 6000 });
+      this.ui.toast('bad', RA.esc(RA.t(String(m.e || "Replay not available."))), { ms: 6000 });
     };
     ws.onclose = () => {
       if (got) return;
       ov.hidden = true;
-      this.ui.toast('bad', 'Server snimaka nije dostupan.', { ms: 5000 });
+      this.ui.toast('bad', RA.t("The replay server is not available."), { ms: 5000 });
     };
   },
   /* build the game at tick 0 (the same as every player's device had it) */
@@ -71,7 +71,7 @@ Object.assign(RA.App.prototype, {
     } else this.lmap.setMaxBounds(this.defBounds);
     if (/^https?:$/.test(location.protocol)) history.replaceState(null, '', '/replay-' + rec.code);
     const who = (rec.slots || []).map((x) => x.name).filter(Boolean);
-    ui.toast('info', `Snimak ${s.lg ? `lige ${s.lg}v${s.lg}` : s.fast ? 'Skirmish igre' : 'Focus igre'}${who.length ? ': ' + who.map(RA.esc).join(', ') : ''}`, { ms: 6000 });
+    ui.toast('info', RA.t("Replay {0}{1}", s.lg ? RA.t("league {0}v{1}", s.lg, s.lg) : s.fast ? RA.t("Skirmish games") : RA.t("Focus games"), who.length ? ': ' + who.map(RA.esc).join(', ') : ''), { ms: 6000 });
     ui.replayBar();
   },
   /* one tick of the replay: the record's commands of this tick, then the step */
@@ -99,7 +99,7 @@ Object.assign(RA.App.prototype, {
       while (G.clock() < t && G.state === 'play' && performance.now() - t0 < 60) this.replayStep(G);
       if (G.clock() >= t) while (G.rp.q.length && G.rp.q[0][0] <= G.clock()) RA.longApply(G, G.rp.q.shift()); // this tick's commands too
       if (G.clock() < t && G.state === 'play') {
-        msg.textContent = `Premotavam… ${Math.round((G.clock() / Math.max(1, t)) * 100)}%`;
+        msg.textContent = RA.t("Seeking… {0}%", Math.round((G.clock() / Math.max(1, t)) * 100));
         return setTimeout(slice, 0);
       }
       this.replaying = false;
@@ -131,16 +131,12 @@ Object.assign(RA.UI.prototype, {
     b = document.createElement('div');
     b.id = 'replayBar';
     b.className = 'replay-bar';
-    b.innerHTML = `<button class="btn" id="rpPlay" aria-label="Pauza">${RA.icon('pause')}</button>
-      <div class="seg" id="rpSpeed">${RA.RP_SPEEDS.map((v) => `<button data-v="${v}" aria-pressed="${v === app.speed}">${v}×</button>`).join('')}</div>
-      <input type="range" id="rpSeek" min="0" max="${app.G.rp.end}" value="0" step="1" aria-label="Vrijeme snimka">
-      <span id="rpTime">0:00</span>
-      <button class="btn" id="rpExit">Izađi</button>`;
+    b.innerHTML = RA.t("<button class=\"btn\" id=\"rpPlay\" aria-label=\"Pause\">{0}</button>\n      <div class=\"seg\" id=\"rpSpeed\">{1}</div>\n      <input type=\"range\" id=\"rpSeek\" min=\"0\" max=\"{2}\" value=\"0\" step=\"1\" aria-label=\"Replay time\">\n      <span id=\"rpTime\">0:00</span>\n      <button class=\"btn\" id=\"rpExit\">Exit</button>", RA.icon('pause'), RA.RP_SPEEDS.map((v) => `<button data-v="${v}" aria-pressed="${v === app.speed}">${v}×</button>`).join(''), app.G.rp.end);
     document.body.appendChild(b);
     const play = b.querySelector('#rpPlay'), seek = b.querySelector('#rpSeek'), time = b.querySelector('#rpTime');
     const syncPlay = () => {
       play.innerHTML = RA.icon(app.paused ? 'play' : 'pause');
-      play.setAttribute('aria-label', app.paused ? 'Nastavi' : 'Pauza');
+      play.setAttribute('aria-label', app.paused ? RA.t("Resume") : RA.t("Pause"));
     };
     play.onclick = () => {
       app.paused = !app.paused;

@@ -36,7 +36,7 @@ RA.Long = class {
   }
   name() {
     const inp = document.getElementById('nameIn');
-    return ((inp && inp.value) || this.app.ui.settings.name || '').trim().slice(0, 18) || 'Igrač';
+    return ((inp && inp.value) || this.app.ui.settings.name || '').trim().slice(0, 18) || RA.t("Player");
   }
   /* a new long game with the start screen's settings */
   create(extra) {
@@ -48,7 +48,7 @@ RA.Long = class {
     this.connect(code, { hello: { name: this.name(), uid: this.uid() } });
   }
   connect(code, first) {
-    if (!this.url) return this.app.ui.toast('bad', 'Focus igra radi samo na war.deovilab.com.', { ms: 5000 });
+    if (!this.url) return this.app.ui.toast('bad', RA.t("Focus games only work on war.deovilab.com."), { ms: 5000 });
     this.close();
     this.code = code === 'new' ? '' : code;
     this.first = first;
@@ -74,7 +74,7 @@ RA.Long = class {
     ws.onclose = () => {
       if (this.ws !== ws || this.closed) return;
       // the connection dropped: try again (the game goes on on the server)
-      if (++this.tries > 20) return this.app.ui.toast('bad', 'Veza sa serverom Focus igre je prekinuta.', { ms: 6000 });
+      if (++this.tries > 20) return this.app.ui.toast('bad', RA.t("The connection to the Focus game server was lost."), { ms: 6000 });
       setTimeout(() => this.ws === ws && !this.closed && this.dial(this.code), Math.min(15000, 1000 * this.tries));
     };
   }
@@ -106,7 +106,7 @@ RA.Long = class {
   onMsg(m) {
     const ui = this.app.ui;
     if (m.t === 'err') {
-      ui.toast('bad', RA.esc(String(m.e || 'Greška Focus igre.')), { ms: 6000 });
+      ui.toast('bad', RA.esc(RA.t(String(m.e || "Focus game error."))), { ms: 6000 });
       if (m.gone && this.code) RA.focusDrop(this.code);
       if (!this.rec) this.app.showStart();
       return;
@@ -147,7 +147,7 @@ RA.Long = class {
       const e = q.shift();
       if (e[0] < G.clock()) {
         // a command for a tick we already played: this device fell out of step — replay from the start
-        this.app.ui.toast('info', 'Usklađujem igru sa serverom…', { ms: 3000 });
+        this.app.ui.toast('info', RA.t("Syncing the game with the server…"), { ms: 3000 });
         setTimeout(() => this.open(this.code), 300);
         return false;
       }
@@ -247,7 +247,7 @@ Object.assign(RA.App.prototype, {
         if (!LG.applyDue(G)) return;
         G.step();
       }
-      msg.textContent = `Focus: sustižem server… ${Math.round((G.clock() / Math.max(1, LG.T - 1)) * 100)}%`;
+      msg.textContent = RA.t("Focus: catching up with the server… {0}%", Math.round((G.clock() / Math.max(1, LG.T - 1)) * 100));
       setTimeout(slice, 0);
     };
     const done = () => {
@@ -271,11 +271,11 @@ Object.assign(RA.App.prototype, {
       if (mine && mine.alive) {
         this.longJoined(mine);
         if (was && was.snap && G.tick - was.tick > 20) ui.focusReport(was, r);
-      } else if (r.set.lg) ui.toast('info', 'Gledaš ligašku partiju.', { ms: 4000 });
+      } else if (r.set.lg) ui.toast('info', RA.t("You are watching a league match."), { ms: 4000 });
       else ui.longPick();
-      if (r.set.lg && LG.startAt > Date.now()) ui.toast('info', `Conquest League ${r.set.lg}v${r.set.lg}: počinje za ${Math.ceil((LG.startAt - Date.now()) / 1000)} s — uništi protivnički tim.`, { ms: 6000 });
+      if (r.set.lg && LG.startAt > Date.now()) ui.toast('info', RA.t("Conquest League {0}v{1}: starts in {2} s — destroy the enemy team.", r.set.lg, r.set.lg, Math.ceil((LG.startAt - Date.now()) / 1000)), { ms: 6000 });
       if (G.state === 'over' && !G.continued) RA.focusDrop(r.code);
-      if (!r.set.fast) ui.toast('info', `Focus: zlato i naredbe svake sekunde, vojske se pomjeraju svakih ${Math.round((r.tickMs * (r.sub || 1)) / 1000)} s — igra teče i kad nisi tu. Link: <b>${RA.esc(location.origin + '/long-' + r.code)}</b>`, { ms: 9000 });
+      if (!r.set.fast) ui.toast('info', RA.t("Focus: gold and orders every second, armies move every {0} s — the game goes on while you're away. Link: <b>{1}</b>", Math.round((r.tickMs * (r.sub || 1)) / 1000), RA.esc(location.origin + '/long-' + r.code)), { ms: 9000 });
     };
     slice();
   },
@@ -308,15 +308,11 @@ Object.assign(RA.UI.prototype, {
     const pc = (v) => (v * 100).toFixed(1).replace('.', ',') + '%';
     const d = (x, y, f) => `${f(x)} → <b>${f(y)}</b>${y > x ? ' <span class="pos">▲</span>' : y < x ? ' <span class="neg">▼</span>' : ''}`;
     const ev = G.feed.filter((f) => f.tick > was.tick && (f.a === me.id || f.b === me.id)).slice(-10);
-    const what = { war: '⚔ rat', fall: '☠ pala država', ally: '🤝 savez', break: '✂ savez raskinut', allyEnd: 'savez istekao', trade: '⚖ trgovina', vassal: 'vazal', pledge: 'zakletva', rebel: 'pobuna', dome: '☢ kupola', strait: 'moreuz', straitO: 'moreuz otvoren' };
-    let h = this.head('Dok te nije bilo', `${RA.fmtTime(secs)} stvarnog vremena · ${G.tick - was.tick} poteza · kompjuter je vodio ${RA.esc(me.name)}`);
-    h += `<div class="list"><div class="prow wide"><div class="pn"><div class="nm">Teritorija</div><div class="d">${d(a.share, b.share, pc)}</div></div></div>
-      <div class="prow wide"><div class="pn"><div class="nm">Gradovi</div><div class="d">${d(a.cities, b.cities, String)}</div></div></div>
-      <div class="prow wide"><div class="pn"><div class="nm">Vojska</div><div class="d">${d(a.troops, b.troops, RA.fmt)}</div></div></div>
-      <div class="prow wide"><div class="pn"><div class="nm">Zlato</div><div class="d">${d(a.gold, b.gold, RA.fmt)}</div></div></div>
-      <div class="prow wide"><div class="pn"><div class="nm">Saveznici</div><div class="d">${d(a.allies, b.allies, String)}</div></div></div></div>`;
-    h += ev.length ? `<div class="sec-t">Događaji</div><div class="list">${ev.map((f) => `<div class="prow wide"><div class="pn"><div class="d">${what[f.t] || f.t}: ${this.feedName(f.a)}${f.b ? ' · ' + this.feedName(f.b) : ''}</div></div></div>`).join('')}</div>` : '<p class="note">Nijedan rat ni savez s tvojom državom u međuvremenu.</p>';
-    h += '<div class="btns"><button class="btn primary" data-ok><span class="t">Nastavi</span></button></div>';
+    const what = { war: RA.t("⚔ war"), fall: RA.t("☠ state fell"), ally: RA.t("🤝 alliance"), break: RA.t("✂ alliance broken"), allyEnd: RA.t("alliance expired"), trade: RA.t("⚖ trade"), vassal: RA.t("vassal"), pledge: RA.t("oath"), rebel: RA.t("revolt"), dome: RA.t("☢ dome"), strait: RA.t("strait"), straitO: RA.t("strait opened") };
+    let h = this.head(RA.t("While you were away"), RA.t("{0} of real time · {1} moves · the computer led {2}", RA.fmtTime(secs), G.tick - was.tick, RA.esc(me.name)));
+    h += RA.t("<div class=\"list\"><div class=\"prow wide\"><div class=\"pn\"><div class=\"nm\">Territory</div><div class=\"d\">{0}</div></div></div>\n      <div class=\"prow wide\"><div class=\"pn\"><div class=\"nm\">Cities</div><div class=\"d\">{1}</div></div></div>\n      <div class=\"prow wide\"><div class=\"pn\"><div class=\"nm\">Army</div><div class=\"d\">{2}</div></div></div>\n      <div class=\"prow wide\"><div class=\"pn\"><div class=\"nm\">Gold</div><div class=\"d\">{3}</div></div></div>\n      <div class=\"prow wide\"><div class=\"pn\"><div class=\"nm\">Allies</div><div class=\"d\">{4}</div></div></div></div>", d(a.share, b.share, pc), d(a.cities, b.cities, String), d(a.troops, b.troops, RA.fmt), d(a.gold, b.gold, RA.fmt), d(a.allies, b.allies, String));
+    h += ev.length ? RA.t("<div class=\"sec-t\">Events</div><div class=\"list\">{0}</div>", ev.map((f) => `<div class="prow wide"><div class="pn"><div class="d">${what[f.t] || f.t}: ${this.feedName(f.a)}${f.b ? ' · ' + this.feedName(f.b) : ''}</div></div></div>`).join('')) : RA.t("<p class=\"note\">No wars or alliances with your state in the meantime.</p>");
+    h += RA.t("<div class=\"btns\"><button class=\"btn primary\" data-ok><span class=\"t\">Continue</span></button></div>");
     this.openSheet(h, (s) => (s.querySelector('[data-ok]').onclick = () => this.closeSheet()));
   },
   /* signed in: my Focus games also live on the account (plan 3) — every change goes there (a snapshot at most once a
@@ -352,13 +348,13 @@ Object.assign(RA.UI.prototype, {
     b.hidden = !l.length || !(net && net.wsUrl);
     if (b.hidden) return;
     const e = l[0];
-    b.innerHTML = `<span class="t">Nastavi Focus igru${l.length > 1 ? ` (${l.length})` : ''}</span><span class="d">${RA.esc(e.title || 'Focus · ' + e.code)} · ~${e.days || 1} ${(e.days || 1) === 1 ? 'dan' : 'dana'}</span>`;
+    b.innerHTML = RA.t("<span class=\"t\">Continue Focus game{0}</span><span class=\"d\">{1} · ~{2} {3}</span>", l.length > 1 ? ` (${l.length})` : '', RA.esc(e.title || 'Focus · ' + e.code), e.days || 1, (e.days || 1) === 1 ? RA.t('day') : RA.t('days'));
     b.onclick = () => {
       this.settings.name = this.$('nameIn').value.trim().slice(0, 18);
       this._save();
       if (l.length === 1) return this.app.long.open(e.code);
-      let h = this.head('Tvoje Focus igre', 'Igre teku i dok nisi tu — kompjuter vodi tvoju državu') + '<div class="list">';
-      for (const x of l) h += `<div class="prow wide"><div class="pn"><div class="nm">${RA.esc(x.title || x.code)}</div><div class="d">~${x.days || 1} ${(x.days || 1) === 1 ? 'dan' : 'dana'} · zadnji put ${new Date(x.at || 0).toLocaleString('bs')}</div></div><div class="bb">${this.mini('Nastavi', `data-fo="${x.code}"`, 'ok')}</div></div>`;
+      let h = this.head(RA.t("Your Focus games"), RA.t("Games go on while you're away — the computer leads your state")) + '<div class="list">';
+      for (const x of l) h += RA.t("<div class=\"prow wide\"><div class=\"pn\"><div class=\"nm\">{0}</div><div class=\"d\">~{1} {2} · last seen {3}</div></div><div class=\"bb\">{4}</div></div>", RA.esc(x.title || x.code), x.days || 1, (x.days || 1) === 1 ? RA.t('day') : RA.t('days'), new Date(x.at || 0).toLocaleString(RA.LOCALE), this.mini(RA.t("Continue"), `data-fo="${x.code}"`, 'ok'));
       this.openSheet(h + '</div>', (s) => s.querySelectorAll('[data-fo]').forEach((q) => (q.onclick = () => {
         this.closeSheet();
         this.app.long.open(q.dataset.fo);
@@ -373,19 +369,19 @@ Object.assign(RA.UI.prototype, {
     const humans = G.P.filter((p) => p && p.alive && p.human);
     const set = L.rec.set, fast = set.fast === 1, T = set.teams || '0';
     const wait = Math.max(0, Math.ceil(((L.startAt || 0) - Date.now()) / 1000));
-    let h = this.head(fast ? 'Skirmish' : 'Focus igra', fast ? `Javna igra · igrača ${humans.length}${wait ? ` · počinje za <span id="longWait">${wait}</span> s` : ` · traje ${RA.fmtTime(G.tick / 10)}`}` : `Vojske se pomjeraju svakih ${Math.round((L.rec.tickMs * (L.rec.sub || 1)) / 1000)} s · igrača ${humans.length} · tik ${G.tick}`);
-    h += fast ? '<p class="explain">Izaberi državu i preuzmi je. Ostale države vodi kompjuter; ko dođe kasnije, preuzme neku od njih.</p>' : `<p class="explain">Izaberi državu kojom upravlja kompjuter i preuzmi je. Kad zatvoriš igru, kompjuter igra za tebe dok se ne vratiš (preko istog linka).</p>`;
+    let h = this.head(fast ? RA.t("Skirmish") : RA.t("Focus game"), fast ? RA.t("Public game · {0} players{1}", humans.length, wait ? RA.t(" · starts in <span id=\"longWait\">{0}</span> s", wait) : RA.t(" · running for {0}", RA.fmtTime(G.tick / 10))) : RA.t("Armies move every {0} s · {1} players · tick {2}", Math.round((L.rec.tickMs * (L.rec.sub || 1)) / 1000), humans.length, G.tick));
+    h += fast ? RA.t("<p class=\"explain\">Pick a state and take it over. The computer leads the other states; whoever comes later takes one of them.</p>") : RA.t("<p class=\"explain\">Pick a state led by the computer and take it over. When you close the game, the computer plays for you until you return (through the same link).</p>");
     // teams: pick one (the smaller one first); humans vs states: everybody on the players' team
     let team = 1;
     if (T === '2' || T === '3') {
       const n = +T, cnt = (t) => humans.filter((p) => p.team === t).length;
       for (let t = 2; t <= n; t++) if (cnt(t) < cnt(team)) team = t;
-      h += `<div class="field"><span class="lab">Tvoj tim</span><div class="seg" id="teamSeg">${Array.from({ length: n }, (_, i) => `<button data-v="${i + 1}" aria-pressed="${i + 1 === team}">Tim ${i + 1} · ${cnt(i + 1)}</button>`).join('')}</div></div>`;
-    } else if (T === 'hvs') h += '<p class="note">Ljudi protiv država: svi igrači su jedan tim.</p>';
-    h += `<div class="btns"><button class="btn" data-copy><span class="t">Kopiraj link igre</span><br><span class="d">${RA.esc(location.origin + '/long-' + L.code)}</span></button></div><div class="list">`;
-    for (const p of nats.slice(0, 40)) h += `<div class="prow wide"><span class="sw" style="background:${p.hex}"></span><div class="pn"><div class="nm">${RA.esc(p.name)}</div><div class="d">${((p.area / G.landTotal()) * 100).toFixed(1).replace('.', ',')}% kopna · vojska ${RA.fmt(p.troops)}</div></div><div class="bb">${this.mini('Preuzmi', `data-take="${p.id}"`, 'ok')}</div></div>`;
+      h += RA.t("<div class=\"field\"><span class=\"lab\">Your team</span><div class=\"seg\" id=\"teamSeg\">{0}</div></div>", Array.from({ length: n }, (_, i) => RA.t("<button data-v=\"{0}\" aria-pressed=\"{1}\">Team {2} · {3}</button>", i + 1, i + 1 === team, i + 1, cnt(i + 1))).join(''));
+    } else if (T === 'hvs') h += RA.t("<p class=\"note\">Humans against states: all players are one team.</p>");
+    h += RA.t("<div class=\"btns\"><button class=\"btn\" data-copy><span class=\"t\">Copy game link</span><br><span class=\"d\">{0}</span></button></div><div class=\"list\">", RA.esc(location.origin + '/long-' + L.code));
+    for (const p of nats.slice(0, 40)) h += RA.t("<div class=\"prow wide\"><span class=\"sw\" style=\"background:{0}\"></span><div class=\"pn\"><div class=\"nm\">{1}</div><div class=\"d\">{2}% of the land · army {3}</div></div><div class=\"bb\">{4}</div></div>", p.hex, RA.esc(p.name), ((p.area / G.landTotal()) * 100).toFixed(1).replace('.', ','), RA.fmt(p.troops), this.mini(RA.t("Take over"), `data-take="${p.id}"`, 'ok'));
     h += '</div>';
-    if (humans.length) h += `<p class="note">Igrači: ${humans.map((p) => RA.esc(p.nick || p.name) + ' (' + RA.esc(p.name) + ')').join(', ')}</p>`;
+    if (humans.length) h += RA.t("<p class=\"note\">Players: {0}</p>", humans.map((p) => RA.esc(p.nick || p.name) + ' (' + RA.esc(p.name) + ')').join(', '));
     this.openSheet(h, (s) => {
       s.querySelectorAll('#teamSeg button').forEach((b) => (b.onclick = () => {
         team = +b.dataset.v;
@@ -401,14 +397,14 @@ Object.assign(RA.UI.prototype, {
       }
       s.querySelectorAll('[data-take]').forEach((b) => (b.onclick = () => {
         L.join(+b.dataset.take, team);
-        this.toast('info', 'Preuzimaš državu — potvrda stiže sa sljedećim potezom servera.', { ms: 4000 });
+        this.toast('info', RA.t("Taking over the state — confirmation comes with the server's next move."), { ms: 4000 });
         b.disabled = true;
       }));
       const c = s.querySelector('[data-copy]');
       if (c) c.onclick = () => {
         try {
           navigator.clipboard.writeText(location.origin + '/long-' + L.code);
-          this.toast('good', 'Link je kopiran.');
+          this.toast('good', RA.t("Link copied."));
         } catch (_) {}
       };
     });

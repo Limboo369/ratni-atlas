@@ -5,8 +5,8 @@ RA.ME_COLOR = '#2f7bff';
 RA.SLOT_COLORS = ['#2f7bff', '#ff4fc3', '#ffd23f', '#6ee05a'];
 
 RA.addHuman = function (G, name, color) {
-  const p = G.addPlayer({ name: name || 'Ti', type: 'human', color: color || RA.ME_COLOR });
-  p.nick = name || 'Ti';
+  const p = G.addPlayer({ name: name || RA.t("You"), type: 'human', color: color || RA.ME_COLOR });
+  p.nick = name || RA.t("You");
   p.troops = 25000;
   p.gold = 60000;
   G.humans = (G.humans || []).concat([p]);
@@ -61,12 +61,12 @@ RA.setupOnline = function (baseMap, st, mySlot) {
 
 /* The maps: Europe is embedded in the page; the world is fetched from our server (data/svijet/) on first use. */
 RA.MAPS = [
-  { id: 'evropa', name: 'Evropa', sub: 'detaljno', all: 'Cijela Evropa', aria: 'Karta Evrope', load: 'Učitavam kartu Evrope…',
-    tag: 'Osvajaj Evropu na stvarnoj karti — grad po grad, preko rijeka i planina.',
-    winter: 'Zima na sjeveru', winterHow: 'sjever (iznad ~51°)' },
-  { id: 'svijet', name: 'Svijet', sub: 'svi kontinenti', all: 'Cijeli svijet', aria: 'Karta svijeta', load: 'Učitavam kartu svijeta…',
-    tag: 'Osvajaj cijeli svijet na stvarnoj karti — kontinent po kontinent, preko okeana.',
-    winter: 'Zima na dalekom sjeveru', winterHow: 'daleki sjever svijeta (iznad ~51° sjeverne širine: Kanada, sjever Evrope, Rusija)' },
+  { id: 'evropa', name: RA.t("Europe"), sub: 'detaljno', all: RA.t("All of Europe"), aria: RA.t("Map of Europe"), load: RA.t("Loading the map of Europe…"),
+    tag: RA.t("Conquer Europe on a real map — city by city, across rivers and mountains."),
+    winter: RA.t("Winter in the north"), winterHow: RA.t("the north (above ~51°)") },
+  { id: 'svijet', name: RA.t("World"), sub: RA.t("all continents"), all: RA.t("The whole world"), aria: RA.t("Map of the world"), load: RA.t("Loading the world map…"),
+    tag: RA.t("Conquer the whole world on a real map — continent by continent, across the oceans."),
+    winter: RA.t("Winter in the far north"), winterHow: RA.t("the far north of the world (above ~51° north: Canada, northern Europe, Russia)") },
 ];
 RA.mapInfo = (id) => RA.MAPS.find((m) => m.id === id) || RA.MAPS[0];
 /* what a device must have downloaded to play a room's game (lobby presence ld) */
@@ -77,38 +77,38 @@ RA.mapKey = (set) => RA.mapInfo(set.map).id + ':' + RA.eraById(set.era).id;
    capital lies outside the region starts from its biggest city inside it. Regions without a nation list (the
    world) take every country with enough land inside from the era raster. The first region of a map is all of it. */
 RA.REGIONS = [
-  { id: 'evropa', name: 'Cijela Evropa' },
-  { id: 'balkan', name: 'Balkan', nations: ['SVN', 'HRV', 'BIH', 'SRB', 'MNE', 'ALB', 'MKD', 'GRC', 'BGR', 'ROU', 'MDA', 'HUN'],
+  { id: 'evropa', name: RA.t("All of Europe") },
+  { id: 'balkan', name: RA.t("Balkans"), nations: ['SVN', 'HRV', 'BIH', 'SRB', 'MNE', 'ALB', 'MKD', 'GRC', 'BGR', 'ROU', 'MDA', 'HUN'],
     poly: [[13.1, 46.6], [14.6, 46.75], [16.1, 47.2], [17.1, 48.0], [22.9, 48.2], [26.6, 48.4], [28.5, 48.6], [30.3, 46.8], [30.3, 45.0], [30.0, 42.0],
       [29.6, 41.3], [27.0, 40.0], [26.7, 38.3], [27.9, 36.6], [28.4, 35.8], [28.4, 34.6], [19.0, 34.6], [19.0, 40.3], [12.9, 45.3]] },
-  { id: 'zapad', name: 'Zapadna Evropa', nations: ['PRT', 'ESP', 'FRA', 'GBR', 'IRL', 'NLD', 'BEL', 'CHE', 'DEU'],
+  { id: 'zapad', name: RA.t("Western Europe"), nations: ['PRT', 'ESP', 'FRA', 'GBR', 'IRL', 'NLD', 'BEL', 'CHE', 'DEU'],
     poly: [[-11.0, 36.0], [-5.4, 36.0], [-2.0, 36.6], [1.0, 38.5], [4.5, 39.8], [9.7, 41.3], [9.7, 43.4], [7.5, 43.8], [7.0, 45.9], [10.5, 46.4],
       [12.2, 47.6], [12.2, 54.5], [8.6, 54.9], [4.0, 57.5], [0.0, 61.2], [-11.0, 61.2]] },
-  { id: 'centar', name: 'Srednja Evropa', nations: ['DEU', 'POL', 'CZE', 'SVK', 'AUT', 'HUN', 'CHE', 'SVN', 'HRV', 'NLD', 'BEL', 'DNK'],
+  { id: 'centar', name: RA.t("Central Europe"), nations: ['DEU', 'POL', 'CZE', 'SVK', 'AUT', 'HUN', 'CHE', 'SVN', 'HRV', 'NLD', 'BEL', 'DNK'],
     poly: [[2.5, 51.1], [3.2, 50.7], [4.2, 50.0], [5.8, 49.5], [6.5, 49.2], [8.2, 49.0], [7.6, 47.6], [5.9, 47.3], [6.0, 46.2], [6.9, 45.9], [8.9, 45.85],
       [10.5, 46.5], [12.3, 46.6], [13.0, 45.6], [13.2, 45.0], [19.1, 45.0], [18.9, 45.9], [20.3, 46.1], [21.2, 46.2], [21.7, 46.9], [22.9, 48.1],
       [22.6, 49.0], [24.2, 50.5], [23.6, 52.8], [22.8, 54.4], [19.6, 54.5], [14.8, 54.3], [14.8, 55.3], [12.75, 55.3], [12.75, 56.1], [10.7, 57.9],
       [8.0, 57.2], [7.8, 55.0], [7.0, 53.7], [4.6, 53.2], [3.3, 51.4]] },
-  { id: 'sjever', name: 'Sjever i Baltik', nations: ['NOR', 'SWE', 'FIN', 'DNK', 'EST', 'LVA', 'LTU', 'RUS'],
+  { id: 'sjever', name: RA.t("North and Baltic"), nations: ['NOR', 'SWE', 'FIN', 'DNK', 'EST', 'LVA', 'LTU', 'RUS'],
     poly: [[4.0, 57.8], [4.0, 63.0], [12.0, 71.3], [32.5, 71.3], [32.5, 58.0], [28.2, 56.1], [26.8, 55.3], [25.8, 54.8], [25.6, 54.2], [23.5, 53.9],
       [22.8, 54.4], [19.6, 54.5], [14.8, 54.3], [12.0, 54.3], [9.8, 54.6], [8.3, 54.9], [7.8, 55.1], [7.8, 57.2]] },
-  { id: 'istok', name: 'Istočna Evropa', nations: ['UKR', 'BLR', 'RUS', 'POL', 'LTU', 'LVA', 'EST', 'FIN', 'MDA', 'ROU'],
+  { id: 'istok', name: RA.t("Eastern Europe"), nations: ['UKR', 'BLR', 'RUS', 'POL', 'LTU', 'LVA', 'EST', 'FIN', 'MDA', 'ROU'],
     poly: [[14.2, 55.0], [20.8, 55.0], [20.8, 61.0], [41.0, 61.0], [41.0, 43.3], [36.5, 44.2], [33.0, 44.2], [29.5, 44.0], [28.6, 43.7], [27.0, 44.1],
       [26.0, 43.9], [24.0, 43.7], [22.7, 44.5], [21.4, 45.2], [20.3, 46.1], [21.2, 46.4], [21.7, 47.0], [22.1, 47.6], [22.9, 48.1], [22.2, 48.4],
       [22.6, 49.1], [18.8, 49.5], [16.0, 50.6], [14.8, 50.9], [14.7, 52.1], [14.2, 53.3]] },
-  { id: 'jug', name: 'Mediteran', nations: ['PRT', 'ESP', 'FRA', 'ITA', 'SVN', 'HRV', 'BIH', 'SRB', 'MNE', 'ALB', 'MKD', 'GRC', 'BGR', 'TUR', 'CYP', 'MAR', 'DZA', 'TUN', 'SYR'],
+  { id: 'jug', name: RA.t("Mediterranean"), nations: ['PRT', 'ESP', 'FRA', 'ITA', 'SVN', 'HRV', 'BIH', 'SRB', 'MNE', 'ALB', 'MKD', 'GRC', 'BGR', 'TUR', 'CYP', 'MAR', 'DZA', 'TUN', 'SYR'],
     poly: [[-11.0, 33.0], [36.8, 33.0], [36.8, 42.0], [31.0, 43.0], [28.6, 43.7], [27.0, 44.1], [26.0, 43.9], [24.0, 43.7], [22.7, 44.5], [21.4, 45.2],
       [19.0, 45.9], [16.5, 46.5], [13.0, 46.5], [9.0, 46.0], [7.0, 45.9], [4.5, 45.9], [0.0, 44.2], [-11.0, 44.2]] },
 ].map((r) => Object.assign(r, { map: 'evropa' })).concat([
-  { id: 'svijet', name: 'Cijeli svijet' },
-  { id: 'bliski', name: 'Bliski istok i Mediteran',
+  { id: 'svijet', name: RA.t("The whole world") },
+  { id: 'bliski', name: RA.t("Middle East and Mediterranean"),
     poly: [[-10, 29], [-10, 44.5], [3, 44.5], [15, 47], [30, 46.5], [41, 44.5], [50, 45], [63, 42], [63, 23], [57, 12], [43, 11], [34.5, 28], [32, 30], [10, 28]] },
-  { id: 'afrika', name: 'Afrika', poly: [[-19, 37], [-6, 36.2], [11, 38], [32.3, 31.6], [34.3, 29.5], [43.2, 12.6], [52, 12.5], [52, -36], [-19, -36]] },
-  { id: 'azija', name: 'Azija',
+  { id: 'afrika', name: RA.t("Africa"), poly: [[-19, 37], [-6, 36.2], [11, 38], [32.3, 31.6], [34.3, 29.5], [43.2, 12.6], [52, 12.5], [52, -36], [-19, -36]] },
+  { id: 'azija', name: RA.t("Asia"),
     poly: [[26, 36], [26, 42], [40, 42], [40, 50], [60, 50], [60, 72], [180, 72], [180, 60], [165, 50], [150, 30], [155, -11], [95, -11], [75, 5], [60, 22], [48, 12], [43.5, 12.5], [34.5, 28], [34.5, 36]] },
-  { id: 'sam', name: 'Sjeverna Amerika', poly: [[-180, 72], [-12, 72], [-12, 58], [-50, 45], [-58, 10], [-77, 7.5], [-83, 7], [-120, 20], [-180, 50]] },
-  { id: 'jam', name: 'Južna Amerika', poly: [[-82, 13], [-58, 13], [-34, -5], [-34, -56], [-82, -56]] },
-  { id: 'okeanija', name: 'Okeanija', poly: [[110, -20], [112, -9], [130, -9], [140, -1], [180, 0], [180, -50], [110, -50]] },
+  { id: 'sam', name: RA.t("North America"), poly: [[-180, 72], [-12, 72], [-12, 58], [-50, 45], [-58, 10], [-77, 7.5], [-83, 7], [-120, 20], [-180, 50]] },
+  { id: 'jam', name: RA.t("South America"), poly: [[-82, 13], [-58, 13], [-34, -5], [-34, -56], [-82, -56]] },
+  { id: 'okeanija', name: RA.t("Oceania"), poly: [[110, -20], [112, -9], [130, -9], [140, -1], [180, 0], [180, -50], [110, -50]] },
 ].map((r) => Object.assign(r, { map: 'svijet' })));
 for (const r of RA.REGIONS) {
   if (!r.poly) continue;
@@ -119,14 +119,14 @@ RA.regionsOf = (mapId) => RA.REGIONS.filter((r) => r.map === mapId);
 /* the start screen's "part of the world": Evropa is its own detailed map (with its own parts), the rest are regions
    of the world map. Settings keep map + region as before (saves, online lobby). */
 RA.THEATRES = [
-  { id: 'svijet', map: 'svijet', region: 'svijet', name: 'Cijeli svijet' },
-  { id: 'evropa', map: 'evropa', region: null, name: 'Evropa' },
-  { id: 'bliski', map: 'svijet', region: 'bliski', name: 'Bliski istok i Mediteran' },
-  { id: 'afrika', map: 'svijet', region: 'afrika', name: 'Afrika' },
-  { id: 'azija', map: 'svijet', region: 'azija', name: 'Azija' },
-  { id: 'sam', map: 'svijet', region: 'sam', name: 'Sjeverna Amerika' },
-  { id: 'jam', map: 'svijet', region: 'jam', name: 'Južna Amerika' },
-  { id: 'okeanija', map: 'svijet', region: 'okeanija', name: 'Okeanija' },
+  { id: 'svijet', map: 'svijet', region: 'svijet', name: RA.t("The whole world") },
+  { id: 'evropa', map: 'evropa', region: null, name: RA.t("Europe") },
+  { id: 'bliski', map: 'svijet', region: 'bliski', name: RA.t("Middle East and Mediterranean") },
+  { id: 'afrika', map: 'svijet', region: 'afrika', name: RA.t("Africa") },
+  { id: 'azija', map: 'svijet', region: 'azija', name: RA.t("Asia") },
+  { id: 'sam', map: 'svijet', region: 'sam', name: RA.t("North America") },
+  { id: 'jam', map: 'svijet', region: 'jam', name: RA.t("South America") },
+  { id: 'okeanija', map: 'svijet', region: 'okeanija', name: RA.t("Oceania") },
 ];
 RA.theatreOf = (s) => (s.map === 'evropa' ? 'evropa' : s.region);
 RA.regionOf = (base, id) => RA.REGIONS.find((r) => r.id === id && r.map === base.id);
@@ -319,18 +319,18 @@ RA.newGame = function (map, opts) {
 RA.placeHuman = function (G, cell, name, inner) {
   const map = G.map, W = map.W;
   if (!inner) (G.picks || (G.picks = [])).push(cell); // a saved game repeats every pick (09b-save.js)
-  if (cell >= 0 && map.block[cell]) return { err: 'To je izvan odabrane regije — izaberi mjesto unutar žutog okvira.' };
-  if (cell < 0 || !map.land[cell]) return { err: G.borders ? 'Dodirni državu na kopnu.' : 'Izaberi kopno.' };
+  if (cell >= 0 && map.block[cell]) return { err: RA.t("That's outside the chosen region — pick a spot inside the yellow frame.") };
+  if (cell < 0 || !map.land[cell]) return { err: G.borders ? RA.t("Tap a state on land.") : RA.t("Choose land.") };
   if (G.borders) {
     // real borders: you take over a whole country
     if (G.me && G.owner[cell] === G.me.id) return { ok: true, took: G.me.took };
     const n = G.owner[cell] ? G.P[G.owner[cell]] : null;
-    if (!n || n.type !== 'nation') return { err: 'Tu nema države — dodirni obojenu teritoriju.' };
+    if (!n || n.type !== 'nation') return { err: RA.t("No state there — tap coloured land.") };
     const sl = G.map.scenSlots; // a scenario may name the states players take
-    if (sl && sl.length && !sl.includes(n.nation.k)) return { err: `U ovom scenariju igraš jednu od: ${G.P.filter((q) => q && q.nation && sl.includes(q.nation.k)).map((q) => q.name).join(', ')}.` };
+    if (sl && sl.length && !sl.includes(n.nation.k)) return { err: RA.t("In this scenario you play one of: {0}.", G.P.filter((q) => q && q.nation && sl.includes(q.nation.k)).map((q) => q.name).join(', ')) };
     if (G.me) RA.giveBack(G, G.me);
     else G.me = RA.addHuman(G, name, RA.ME_COLOR);
-    G.me.nick = name || 'Ti';
+    G.me.nick = name || RA.t("You");
     RA.takeBorders(G, G.me, n);
     return { ok: true, took: n };
   }
@@ -366,8 +366,8 @@ RA.placeHuman = function (G, cell, name, inner) {
     me.took = take;
     center = take.nation.c;
   } else {
-    me.name = name || 'Ti';
-    me.nick = name || 'Ti';
+    me.name = name || RA.t("You");
+    me.nick = name || RA.t("You");
     me.took = null;
     // push away city-states that are too close
     for (const p of G.P) {
@@ -385,7 +385,7 @@ RA.placeHuman = function (G, cell, name, inner) {
     }
   }
   const n = G.spawnDisk(me, center, 3);
-  if (!n) return { err: 'Tu nema slobodnog kopna.' };
+  if (!n) return { err: RA.t("No free land there.") };
   // capital: the nation's capital, otherwise the nearest real city inside the start area
   me.capCity = -1;
   if (take) me.capCity = take.capCity;

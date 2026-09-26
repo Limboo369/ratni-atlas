@@ -82,14 +82,14 @@ async def main():
         if START == 'granice':
             txt = await ev('document.getElementById("sheet").textContent')
             dep = await ev('window.__ra.G.deps ? window.__ra.G.deps.length : 0')
-            check('Resursi' in txt and dep > 0 and ('imaš' in txt), f'resources on: deposits ({dep}) and the Resursi section')
+            check('Resources' in txt and dep > 0 and ('you have it' in txt), f'resources on: deposits ({dep}) and the Resursi section')
         await page.keyboard.press('Escape')
         # aggressive expansion (plan 36): a conqueror becomes the coalition's target, the AI refuses to ally with it
         ae = await ev('''() => { const G = window.__ra.G, me = G.me, C = RA.CFG;
           const ai = G.P.find(p => p && p.alive && p.type === 'nation' && p !== me);
           const lead = G.leader && G.leader.share > 0.3;
           G.addAE(me, C.AE_COALITION + 5);
-          const warned = G.events.some(e => e.kind === 'bad' && /udružuju/.test(e.text));
+          const warned = G.events.some(e => e.kind === 'bad' && /joining forces/.test(e.text));
           const r = [RA.AI.menace(G) === me || lead, RA.AI.considerAlliance(G, ai, me), warned];
           for (let i = 0; i < 3000; i++) me.ae *= C.AE_DECAY;
           G._menaceT = -1;
@@ -120,7 +120,7 @@ async def main():
         await page.wait_for_function('document.getElementById("loading").hidden', timeout=60_000)
         await page.wait_for_function('!document.getElementById("resumeBtn").hidden', timeout=10_000)
         txt = await ev('document.getElementById("resumeBtn").textContent')
-        check('Nastavi igru' in txt and 'Balkan' in txt, f'start screen offers the saved game: {txt!r}')
+        check('Continue game' in txt and 'Balkan' in txt, f'start screen offers the saved game: {txt!r}')
         await shot(page, 'save_start.png')
         await page.click('#resumeBtn')
         await page.wait_for_function('window.__ra.G && window.__ra.G.rec && !window.__ra.replaying && document.getElementById("loading").hidden && document.getElementById("startScreen").hidden', timeout=60_000)
@@ -163,11 +163,11 @@ async def main():
               for (let i = 0; i < 120; i++) G.step();
               r.push(Math.round(me.tributeRate || 0), Math.round(o.tribute || 0));
               return r; }}''')
-            check(v[0] and v[1] and v[2] == 0 and 'vazal' in str(v[3]).lower() and v[4] > 0 and v[5] > 0, f'vassal: permanent, not counted, no other alliances, tribute flows {v}')
+            check(v[0] and v[1] and v[2] == 0 and 'vassal' in str(v[3]).lower() and v[4] > 0 and v[5] > 0, f'vassal: permanent, not counted, no other alliances, tribute flows {v}')
             await page.wait_for_timeout(200)
             await ev('window.__ra.ui.diploSheet(true)')
             txt = await ev('document.getElementById("sheet").textContent')
-            check('vazal · danak' in txt and 'Oslobodi' in txt, 'Savezi shows the vassal with its tribute and "Oslobodi"')
+            check('vassal · tribute' in txt and 'Release' in txt, 'Savezi shows the vassal with its tribute and "Oslobodi"')
             await page.click(f'[data-do="brk:{vid}"]')
             await page.click('#sheet [data-y]')
             f = await ev(f'() => {{ const G = window.__ra.G, me = G.me, o = G.P[{vid}]; return [o.lord, me.allies.has(o.id), me.traitorUntil > G.tick]; }}')
@@ -194,7 +194,7 @@ async def main():
             check(ln and ln[3] >= g0 + ln[0] - 1 and ln[1] > ln[0] and ln[2] > 0, f'loan taken: gold {g0:.0f} -> {ln and ln[3]:.0f}, {ln}')
             await ev('window.__ra.ui.econSheet(true)')
             txt = await ev('document.getElementById("sheet").textContent')
-            check('duguješ' in txt and 'Vrati' in txt, 'Ekonomija lists the loan with "Vrati"')
+            check('you owe' in txt and 'Repay' in txt, 'Ekonomija lists the loan with "Vrati"')
             await ev('window.__ra.G.me.gold = Math.max(window.__ra.G.me.gold, window.__ra.G.loans[0].owed + 1)')
             await page.click('[data-pay]')
             check(await ev('window.__ra.G.loans.length') == 0, 'the loan is repaid')

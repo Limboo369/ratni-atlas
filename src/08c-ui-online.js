@@ -46,21 +46,21 @@ Object.assign(RA.UI.prototype, {
     $('lobbyGo').onclick = () => {
       const L = this.lobbySet;
       const nats = this.regionNations(L);
-      const r = !nats ? 'Karta se još učitava…' : !this.lobbyReady(L) ? 'Čeka se da svi učitaju kartu.' : this.app.net.start(Object.assign({}, L), nats);
+      const r = !nats ? RA.t("The map is still loading…") : !this.lobbyReady(L) ? RA.t("Waiting for everyone to load the map.") : this.app.net.start(Object.assign({}, L), nats);
       if (typeof r === 'string') this.toast('info', RA.esc(r));
     };
     $('lobbyShare').onclick = async () => {
       const url = this.app.net.link();
       try {
-        if (navigator.share) return await navigator.share({ title: 'Overtake', text: 'Igraj sa mnom Overtake:', url });
+        if (navigator.share) return await navigator.share({ title: 'Overtake', text: RA.t("Play Overtake with me:"), url });
       } catch (e) {
         if (e && e.name === 'AbortError') return;
       }
       try {
         await navigator.clipboard.writeText(url);
-        this.toast('good', 'Link je kopiran — pošalji ga prijatelju.');
+        this.toast('good', RA.t("Link copied — send it to a friend."));
       } catch (e) {
-        this.toast('info', 'Kopiraj link iznad i pošalji ga prijatelju.');
+        this.toast('info', RA.t("Copy the link above and send it to a friend."));
       }
     };
     $('lobbyLeave').onclick = () => {
@@ -73,7 +73,7 @@ Object.assign(RA.UI.prototype, {
       const w = e.target.closest('[data-watch]');
       if (w)
         this.app.net.watch(w.dataset.watch).then((ok) => {
-          if (!ok) this.toast('info', 'Ta igra se više ne može gledati.');
+          if (!ok) this.toast('info', RA.t("That game can't be watched any more."));
         });
       const b = e.target.closest('[data-on]');
       if (!b) return;
@@ -82,7 +82,7 @@ Object.assign(RA.UI.prototype, {
       this._save();
       if (b.dataset.on === 'code') {
         const m = /(?:game-)?([a-z0-9]{6})\s*$/i.exec($('codeIn').value.trim());
-        if (!m) return this.toast('info', 'Upiši kod igre (6 znakova) ili zalijepi link koji ti je poslao prijatelj.');
+        if (!m) return this.toast('info', RA.t("Type the game code (6 characters) or paste the link a friend sent you."));
         net.enterRoom(m[1].toLowerCase(), true);
         return;
       }
@@ -125,7 +125,7 @@ Object.assign(RA.UI.prototype, {
     if (!this.natCache[key]) {
       if (!this.app.mapReady(map, era)) return null;
       const nats = RA.regionNations(RA.eraMap(this.app.maps[map], era, st), set.reg);
-      this.natCache[key] = nats.map((n) => ({ iso: n.iso, name: n.name, capital: n.capital })).sort((a, b) => a.name.localeCompare(b.name, 'bs'));
+      this.natCache[key] = nats.map((n) => ({ iso: n.iso, name: n.name, capital: n.capital })).sort((a, b) => a.name.localeCompare(b.name, RA.LOCALE));
     }
     return this.natCache[key];
   },
@@ -146,27 +146,27 @@ Object.assign(RA.UI.prototype, {
     const net = this.app.net, $ = this.$;
     let h = '', txt = '';
     if (!net.code) {
-      txt = 'Napravi igru i pošalji link prijatelju. Svaka igra ima svoj link: preko njega se prijatelj priključuje, a ti se vraćaš u igru ako zatvoriš stranicu.';
-      h = `<button class="btn" data-on="host">${RA.icon('flag')}<span><span class="t">Napravi igru</span><br><span class="d">Ti si domaćin: biraš kartu i način igre</span></span></button>`
-        + `<div class="code-row"><input id="codeIn" aria-label="Kod ili link igre" class="sel" maxlength="60" placeholder="kod ili link igre" autocomplete="off" autocapitalize="off"><button class="btn good" data-on="code">Uđi</button></div>`;
+      txt = RA.t("Create a game and send the link to a friend. Every game has its own link: your friend joins through it, and you come back to the game if you close the page.");
+      h = RA.t("<button class=\"btn\" data-on=\"host\">{0}<span><span class=\"t\">Create a game</span><br><span class=\"d\">You are the host: you pick the map and the game type</span></span></button>", RA.icon('flag'))
+        + RA.t("<div class=\"code-row\"><input id=\"codeIn\" aria-label=\"Game code or link\" class=\"sel\" maxlength=\"60\" placeholder=\"game code or link\" autocomplete=\"off\" autocapitalize=\"off\"><button class=\"btn good\" data-on=\"code\">Join</button></div>");
     } else if (net.status !== 'ready') {
-      txt = 'Povezujem se s igrom…';
+      txt = RA.t("Connecting to the game…");
     } else if (!net.role) {
       const hosts = net.others().filter((p) => p.presence && p.presence.r === 'h');
       const lobby = hosts.find((p) => p.presence.ph === 'lobby');
       const play = hosts.find((p) => p.presence.ph === 'play');
-      if (lobby && lobby.presence.v !== RA.BUILD) txt = 'Ova igra je napravljena na drugoj verziji igre — osvježi stranicu (i ti i domaćin).';
+      if (lobby && lobby.presence.v !== RA.BUILD) txt = RA.t("This game was made on another version of the game — reload the page (both you and the host).");
       else if (lobby && net.arriving) {
         net.arriving = false;
         net.join(lobby.peer);
         this.showLobby();
         return;
       } else if (play && play.presence.v === RA.BUILD) {
-        txt = `Igra je u toku (domaćin: ${RA.esc(RA.Net.str(play.presence.n, 'igrač'))}). Možeš je gledati uživo.`;
-        h = `<button class="btn" data-watch="${RA.esc(play.peer)}">${RA.icon('flag')}<span><span class="t">Gledaj igru</span><br><span class="d">Vidiš sve što se dešava, bez igranja</span></span></button>`;
-      } else if (performance.now() - net.arrivedAt > 2500) txt = 'Ova igra ne postoji ili je završena.';
-      else txt = 'Tražim igru…';
-      h += `<button class="btn" data-on="close">Nazad</button>`;
+        txt = RA.t("The game is in progress (host: {0}). You can watch it live.", RA.esc(RA.Net.str(play.presence.n, RA.t("player"))));
+        h = RA.t("<button class=\"btn\" data-watch=\"{0}\">{1}<span><span class=\"t\">Watch the game</span><br><span class=\"d\">See everything that happens, without playing</span></span></button>", RA.esc(play.peer), RA.icon('flag'));
+      } else if (performance.now() - net.arrivedAt > 2500) txt = RA.t("This game doesn't exist or is over.");
+      else txt = RA.t("Looking for the game…");
+      h += RA.t("<button class=\"btn\" data-on=\"close\">Back</button>");
     }
     $('joinBanner').hidden = true;
     return { h, txt };
@@ -182,25 +182,25 @@ Object.assign(RA.UI.prototype, {
       ({ h, txt } = r);
       if (net.code && !net.role && net.status === 'ready' && performance.now() - net.arrivedAt <= 2600) setTimeout(() => net.changed(), 700);
     } else if (net.status === 'unavailable') {
-      txt = 'Online igru pokreni na war.deovilab.com. Napravi igru i pošalji njen link prijatelju.';
+      txt = RA.t("Start an online game on war.deovilab.com. Create a game and send its link to a friend.");
     } else if (net.status !== 'ready') {
-      txt = 'Povezujem se s online serverom…';
+      txt = RA.t("Connecting to the online server…");
     } else {
       const others = net.others();
       const lobbies = net.openLobbies();
       txt = others.length
-        ? `Na stranici su sada: ${others.map((p) => RA.esc(RA.Net.str(p.presence && p.presence.n, 'igrač'))).join(', ')}.`
-        : 'Trenutno si sam ovdje. Kad prijatelj otvori war.deovilab.com, pojaviće se ovdje.';
-      for (const p of lobbies) h += `<button class="btn good" data-on="${RA.esc(p.peer)}">${RA.icon('ally')}<span><span class="t">Pridruži se: ${RA.esc(p.presence.n || 'igrač')}</span><br><span class="d">Soba je otvorena — uđi i izaberi državu</span></span></button>`;
+        ? RA.t("On the page right now: {0}.", others.map((p) => RA.esc(RA.Net.str(p.presence && p.presence.n, RA.t("player")))).join(', '))
+        : RA.t("You are alone here right now. When a friend opens war.deovilab.com, they will show up here.");
+      for (const p of lobbies) h += RA.t("<button class=\"btn good\" data-on=\"{0}\">{1}<span><span class=\"t\">Join: {2}</span><br><span class=\"d\">The room is open — go in and pick a state</span></span></button>", RA.esc(p.peer), RA.icon('ally'), RA.esc(p.presence.n || RA.t("player")));
       // a friend who just opened the link sees the invitation at the top of the screen
-      const banner = lobbies.map((p) => `<button class="btn primary" data-on="${RA.esc(p.peer)}">${RA.icon('ally')}<span><span class="t">${RA.esc(p.presence.n || 'Prijatelj')} te čeka u online sobi</span><br><span class="d">Dodirni da se pridružiš</span></span></button>`).join('');
+      const banner = lobbies.map((p) => RA.t("<button class=\"btn primary\" data-on=\"{0}\">{1}<span><span class=\"t\">{2} is waiting for you in an online room</span><br><span class=\"d\">Tap to join</span></span></button>", RA.esc(p.peer), RA.icon('ally'), RA.esc(p.presence.n || RA.t("Friend")))).join('');
       // compare with what we rendered last (innerHTML never reads back identical), so buttons are not replaced under a finger
       if (this._bannerH !== banner) $('joinBanner').innerHTML = this._bannerH = banner;
       $('joinBanner').hidden = !lobbies.length;
       // games in progress (same build): watch them live
       for (const p of others.filter((q) => q.presence && q.presence.r === 'h' && q.presence.ph === 'play' && q.presence.v === RA.BUILD))
-        h += `<button class="btn" data-watch="${RA.esc(p.peer)}">${RA.icon('flag')}<span><span class="t">Gledaj: ${RA.esc(p.presence.n || 'igra')}</span><br><span class="d">Igra je u toku — gledaš uživo</span></span></button>`;
-      h += `<button class="btn" data-on="host">${RA.icon('flag')}<span><span class="t">Napravi sobu</span><br><span class="d">Ti si domaćin: biraš kartu i način igre</span></span></button>`;
+        h += RA.t("<button class=\"btn\" data-watch=\"{0}\">{1}<span><span class=\"t\">Watch: {2}</span><br><span class=\"d\">The game is in progress — you watch live</span></span></button>", RA.esc(p.peer), RA.icon('flag'), RA.esc(p.presence.n || RA.t("game")));
+      h += RA.t("<button class=\"btn\" data-on=\"host\">{0}<span><span class=\"t\">Create a room</span><br><span class=\"d\">You are the host: you pick the map and the game type</span></span></button>", RA.icon('flag'));
     }
     if (this._noteH !== txt) note.innerHTML = this._noteH = txt;
     if (this._onlineH !== h) btns.innerHTML = this._onlineH = h;
@@ -217,7 +217,7 @@ Object.assign(RA.UI.prototype, {
   confirmLong() {
     const s = this.settings, reg = RA.REGIONS.find((r) => r.id === s.region && r.map === s.map);
     const d = [1, 3, 7].includes(s.days) ? s.days : 1;
-    this.confirm('Napraviti Focus igru?', `${reg ? reg.name : RA.mapInfo(s.map).all} · ${RA.eraById(s.era).name}${s.gm === 'defcon' ? ' · DEFCON' : ''} · ~${d} ${d === 1 ? 'dan' : 'dana'}. Igra teče na serveru i dok nisi tu (tada kompjuter vodi tvoju državu): jedan potez svakih ${5 * d} sekundi. Dobićeš link — pošalji ga prijateljima (do 8 igrača), preko njega se i ti vraćaš.`, 'Napravi', () => this.app.long.create());
+    this.confirm(RA.t("Create a Focus game?"), RA.t("{0} · {1}{2} · ~{3} {4}. The game runs on the server even when you are away (then the computer plays your state): armies move every {5} seconds. You get a link — send it to friends (up to 8 players); you come back through it too.", reg ? reg.name : RA.mapInfo(s.map).all, RA.eraById(s.era).name, s.gm === 'defcon' ? ' · DEFCON' : '', d, d === 1 ? RA.t("day") : RA.t("days"), 5 * d), RA.t("Create"), () => this.app.long.create());
   },
   renderLobby() {
     const net = this.app.net, $ = this.$;
@@ -229,7 +229,7 @@ Object.assign(RA.UI.prototype, {
       net.leave();
       $('lobbyScreen').hidden = true;
       $('startScreen').hidden = false;
-      this.toast('info', 'Domaćin je zatvorio sobu.');
+      this.toast('info', RA.t("The host closed the room."));
       return;
     }
     const set = isHost ? this.lobbySet : (hp && hp.set) || this.lobbySet;
@@ -244,25 +244,25 @@ Object.assign(RA.UI.prototype, {
         (e) => {
           this._lobbyFail = key; // once: renderLobby runs on every change in the room
           if (e && e.message === 'no-era') this.eraMissing(mapId, era); // the host picks another era
-          else this.toast('bad', `${RA.esc(RA.mapInfo(mapId).aria)} se ne može učitati — provjeri vezu i uđi ponovo.`);
+          else this.toast('bad', RA.t("{0} can't be loaded — check your connection and join again.", RA.esc(RA.mapInfo(mapId).aria)));
         }
       ).finally(() => (this._lobbyLoad = null));
     }
     const mem = net.members();
-    const hostName = mem[0] ? mem[0].name : 'domaćin';
+    const hostName = mem[0] ? mem[0].name : RA.t("host");
     $('lobbySub').textContent = isHost
-      ? (net.own ? 'Ti si domaćin. Pošalji link igre prijatelju — kad ga otvori, pojaviće se ovdje.' : 'Ti si domaćin. Prijatelj otvara isti link i bira „Pridruži se”.')
-      : `Domaćin: ${hostName}. Postavke bira domaćin.`;
+      ? (net.own ? RA.t("You are the host. Send the game link to a friend — when they open it, they show up here.") : RA.t("You are the host. Your friend opens the same link and picks “Join”."))
+      : RA.t("Host: {0}. The host picks the settings.", hostName);
     $('lobbyLinkRow').hidden = !net.code;
     if (net.code && $('lobbyLink').textContent !== net.link()) $('lobbyLink').textContent = net.link();
     const nats = this.regionNations(set) || [];
     const natName = (iso) => (nats.find((n) => n.iso === iso) || {}).name;
     const far = mapId !== 'evropa';
-    $('lobbyPlayers').innerHTML = mem.map((m, i) => `<div class="prow"><span class="sw" style="background:${RA.SLOT_COLORS[i]}"></span><div class="pn"><div class="nm">${RA.esc(m.name)}${m.isMe ? ' <span class="tag">ti</span>' : ''}${i === 0 ? ' <span class="tag tr">domaćin</span>' : ''}</div><div class="d">${far && m.ld !== key ? 'učitava kartu…' : m.pick && natName(m.pick) ? RA.esc(natName(m.pick)) : 'država: nasumično'}</div></div><div></div></div>`).join('')
-      + (mem.length < 2 ? '<p class="note" style="margin:2px">Čeka se prijatelj…</p>' : '');
+    $('lobbyPlayers').innerHTML = mem.map((m, i) => `<div class="prow"><span class="sw" style="background:${RA.SLOT_COLORS[i]}"></span><div class="pn"><div class="nm">${RA.esc(m.name)}${m.isMe ? RA.t(" <span class=\"tag\">you</span>") : ''}${i === 0 ? RA.t(" <span class=\"tag tr\">host</span>") : ''}</div><div class="d">${far && m.ld !== key ? RA.t("loading the map…") : m.pick && natName(m.pick) ? RA.esc(natName(m.pick)) : RA.t("state: random")}</div></div><div></div></div>`).join('')
+      + (mem.length < 2 ? RA.t("<p class=\"note\" style=\"margin:2px\">Waiting for a friend…</p>") : '');
     // my country
     const sel = $('lobbyNat');
-    const opts = '<option value="">Nasumično</option>' + nats.map((n) => `<option value="${n.iso}">${RA.esc(n.name)} — ${RA.esc(n.capital)}</option>`).join('');
+    const opts = RA.t("<option value=\"\">Random</option>") + nats.map((n) => `<option value="${n.iso}">${RA.esc(n.name)} — ${RA.esc(n.capital)}</option>`).join('');
     const natKey = `${key}|${set.reg}|${set.st}|${nats.length}`;
     if (sel.dataset.reg !== natKey) {
       sel.innerHTML = opts;
@@ -275,15 +275,15 @@ Object.assign(RA.UI.prototype, {
     for (const b of $('lEraSeg').querySelectorAll('button')) b.disabled = !!(lm && lm.eraOK && !lm.eraOK[b.dataset.v]);
     const reg = RA.regionsOf(mapId).find((r) => r.id === set.reg);
     const E = RA.eraById(set.era);
-    const summary = `${E.name} (${E.sub}) · ${set.st === 'granice' ? 'stvarne granice' : 'od prijestolnice'}${set.gm === 'br' ? ' · battle royale' : set.gm === 'defcon' ? ' · DEFCON' : ''} · ${reg ? reg.name : RA.mapInfo(mapId).all} · ${RA.DIFF[set.dif] ? RA.DIFF[set.dif].label : ''} · mirno doba ${set.peace ? Math.round(set.peace / 60) + ' min' : 'bez'} · ${set.mode === 'vs' ? 'jedan protiv drugog' : 'zajedno protiv svih'}`;
+    const summary = RA.t("{0} ({1}) · {2}{3} · {4} · {5} · peace time {6} · {7}", E.name, E.sub, set.st === 'granice' ? RA.t("real borders") : RA.t("from the capital"), set.gm === 'br' ? RA.t(" · battle royale") : set.gm === 'defcon' ? ' · DEFCON' : '', reg ? reg.name : RA.mapInfo(mapId).all, RA.DIFF[set.dif] ? RA.DIFF[set.dif].label : '', set.peace ? Math.round(set.peace / 60) + RA.t(" min") : RA.t("none"), set.mode === 'vs' ? RA.t("against each other") : RA.t("together against everyone"));
     const ready = loaded && this.lobbyReady(set);
     $('lobbyInfo').innerHTML = !loaded
       ? RA.esc(RA.mapInfo(mapId).load)
       : isHost
-      ? (ready ? `Kad svi izaberu države, pritisni „Počni igru”. Ista država se ne može uzeti dvaput.` : 'Čeka se da svi učitaju kartu…')
-      : `${RA.esc(summary)}<br>Čeka se da domaćin pokrene igru…`;
+      ? (ready ? RA.t("When everyone has picked a state, press “Start game”. A state can't be taken twice.") : RA.t("Waiting for everyone to load the map…"))
+      : RA.t("{0}<br>Waiting for the host to start the game…", RA.esc(summary));
     $('lobbyGo').hidden = !isHost;
     $('lobbyGo').disabled = mem.length < 2 || !ready;
-    $('lobbyCount').textContent = `${mem.length}/4 igrača`;
+    $('lobbyCount').textContent = RA.t("{0}/4 players", mem.length);
   },
 });

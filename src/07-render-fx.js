@@ -486,7 +486,7 @@ RA.FxLayer = L.Layer.extend({
             ctx.textAlign = 'left';
             ctx.lineWidth = 3;
             ctx.strokeStyle = 'rgba(0,0,0,0.65)';
-            const t = st.name + (C ? ' · zatvoren' : '');
+            const t = st.name + (C ? RA.t(" · closed") : '');
             ctx.strokeText(t, lx, ly);
             ctx.fillStyle = C ? '#ff8f86' : '#cfe6ff';
             ctx.fillText(t, lx, ly);
@@ -984,7 +984,7 @@ RA.drawBlast = function (ctx, M, x, y, cell, now, secs) {
   ctx.lineWidth = 2;
   ctx.strokeStyle = '#fff';
   ctx.stroke();
-  const label = secs >= 0 ? `${M.name} · ${Math.ceil(secs)} s` : `${M.name} · ${M.kind === 'nuke' ? M.r2 : M.kind === 'mirv' ? M.spread : M.r} polja`;
+  const label = secs >= 0 ? `${M.name} · ${Math.ceil(secs)} s` : RA.t("{0} · {1} cells", M.name, M.kind === 'nuke' ? M.r2 : M.kind === 'mirv' ? M.spread : M.r);
   ctx.font = `700 11.5px ${RA.FONT_UI}`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'bottom';

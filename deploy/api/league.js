@@ -127,7 +127,7 @@ module.exports = function leagueRoutes(db, sessionUser) {
       },
       'GET /api/league/top': async (req) => {
         const l = new URL(req.url, 'http://x').searchParams.get('l');
-        if (!LADDERS.includes(l)) return [400, { e: 'Nepoznata ljestvica.' }];
+        if (!LADDERS.includes(l)) return [400, { e: 'Unknown ladder.' }];
         // world ranking: the top 100 players who finished their placement games
         const q = await db.query(
           `select g.user_id, u.name, u.icon, u.pic, g.elo, g.games, g.wins, rank() over (order by g.elo desc, g.wins desc) rk
@@ -146,7 +146,7 @@ module.exports = function leagueRoutes(db, sessionUser) {
       },
       'GET /api/league/history': async (req) => {
         const u = await sessionUser(req);
-        if (!u) return [401, { e: 'Nisi prijavljen.' }];
+        if (!u) return [401, { e: 'You are not signed in.' }];
         const q = await db.query(
           `select g.code, g.ladder, g.at, g.data from league_players p join league_games g on g.id = p.game_id
             where p.user_id = $1 order by g.id desc limit 30`, [u.id]);

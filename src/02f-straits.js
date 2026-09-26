@@ -7,26 +7,26 @@
    `from`: the first era it exists in (canals). */
 RA.STRAITS = {
   evropa: [
-    { id: 'tur', name: 'Bosfor i Dardaneli', lines: [[[366, 532], [366, 535], [364, 538]], [[352, 544], [347, 547], [343, 550]]], a: [[362, 537], [345, 547]], b: [[371, 538], [349, 551]] },
-    { id: 'gib', name: 'Gibraltar', lines: [[[49, 590], [49, 600]]], a: [[50, 591]], b: [[49, 600]] },
-    { id: 'dan', name: 'Danski moreuzi', lines: [[[214, 328], [222, 328]], [[199, 338], [206, 338]], [[190, 336], [194, 336]]], a: [[213, 330]], b: [[224, 331]] },
-    { id: 'otr', name: 'Otranto', lines: [[[270, 553], [285, 545]]], a: [[270, 552]], b: [[285, 545]] },
-    { id: 'mes', name: 'Mesina', lines: [[[243, 571], [248, 571]]], a: [[244, 573]], b: [[247, 569]] },
-    { id: 'ker', name: 'Kerč', lines: [[[438, 480], [438, 487]]], a: [[435, 483]], b: [[441, 484]] },
+    { id: 'tur', name: RA.t("Bosporus and Dardanelles"), lines: [[[366, 532], [366, 535], [364, 538]], [[352, 544], [347, 547], [343, 550]]], a: [[362, 537], [345, 547]], b: [[371, 538], [349, 551]] },
+    { id: 'gib', name: RA.t("Gibraltar"), lines: [[[49, 590], [49, 600]]], a: [[50, 591]], b: [[49, 600]] },
+    { id: 'dan', name: RA.t("Danish straits"), lines: [[[214, 328], [222, 328]], [[199, 338], [206, 338]], [[190, 336], [194, 336]]], a: [[213, 330]], b: [[224, 331]] },
+    { id: 'otr', name: RA.t("Otranto"), lines: [[[270, 553], [285, 545]]], a: [[270, 552]], b: [[285, 545]] },
+    { id: 'mes', name: RA.t("Messina"), lines: [[[243, 571], [248, 571]]], a: [[244, 573]], b: [[247, 569]] },
+    { id: 'ker', name: RA.t("Kerch"), lines: [[[438, 480], [438, 487]]], a: [[435, 483]], b: [[441, 484]] },
   ],
   // the world grid had closed Gibraltar, the Bosporus, the Dardanelles and Kerch too (the Mediterranean was a lake)
   svijet: [
-    { id: 'tur', name: 'Bosfor i Dardaneli', lines: [[[929, 267], [928, 269]], [[915, 271], [921, 271]]], a: [[926, 268], [917, 272]], b: [[931, 269], [918, 270]] },
-    { id: 'gib', name: 'Gibraltar', lines: [[[775, 295], [775, 299]]], a: [[775, 294]], b: [[775, 299]] },
-    { id: 'dan', name: 'Danski moreuzi', lines: [[[845, 171], [850, 171]]], a: [[845, 170]], b: [[851, 172]] },
-    { id: 'otr', name: 'Otranto', lines: [[[881, 273], [886, 273]]], a: [[880, 273]], b: [[886, 272]] },
-    { id: 'mes', name: 'Mesina', lines: [[[869, 284], [869, 287]]], a: [[868, 286]], b: [[870, 285]] },
-    { id: 'ker', name: 'Kerč', lines: [[[962, 241], [962, 245]]], a: [[960, 243]], b: [[964, 243]] },
-    { id: 'hor', name: 'Hormuški moreuz', lines: [[[1051, 350], [1055, 345]]], a: [[1049, 349]], b: [[1055, 343]] },
-    { id: 'bab', name: 'Bab el-Mandeb', lines: [[[990, 413], [994, 410]]], a: [[989, 413]], b: [[995, 412]] },
-    { id: 'mal', name: 'Malajski moreuz', lines: [[[1245, 458], [1254, 458]]], a: [[1244, 459]], b: [[1255, 457]] },
-    { id: 'sue', name: 'Suecki kanal', from: 'ww1', lines: [[[943, 322], [945, 332]]], a: [[942, 325]], b: [[947, 329]] },
-    { id: 'pan', name: 'Panamski kanal', from: 'ww1', lines: [[[445, 426], [447, 429]]], a: [[444, 428]], b: [[448, 427]] },
+    { id: 'tur', name: RA.t("Bosporus and Dardanelles"), lines: [[[929, 267], [928, 269]], [[915, 271], [921, 271]]], a: [[926, 268], [917, 272]], b: [[931, 269], [918, 270]] },
+    { id: 'gib', name: RA.t("Gibraltar"), lines: [[[775, 295], [775, 299]]], a: [[775, 294]], b: [[775, 299]] },
+    { id: 'dan', name: RA.t("Danish straits"), lines: [[[845, 171], [850, 171]]], a: [[845, 170]], b: [[851, 172]] },
+    { id: 'otr', name: RA.t("Otranto"), lines: [[[881, 273], [886, 273]]], a: [[880, 273]], b: [[886, 272]] },
+    { id: 'mes', name: RA.t("Messina"), lines: [[[869, 284], [869, 287]]], a: [[868, 286]], b: [[870, 285]] },
+    { id: 'ker', name: RA.t("Kerch"), lines: [[[962, 241], [962, 245]]], a: [[960, 243]], b: [[964, 243]] },
+    { id: 'hor', name: RA.t("Strait of Hormuz"), lines: [[[1051, 350], [1055, 345]]], a: [[1049, 349]], b: [[1055, 343]] },
+    { id: 'bab', name: RA.t("Bab el-Mandeb"), lines: [[[990, 413], [994, 410]]], a: [[989, 413]], b: [[995, 412]] },
+    { id: 'mal', name: RA.t("Strait of Malacca"), lines: [[[1245, 458], [1254, 458]]], a: [[1244, 459]], b: [[1255, 457]] },
+    { id: 'sue', name: RA.t("Suez Canal"), from: 'ww1', lines: [[[943, 322], [945, 332]]], a: [[942, 325]], b: [[947, 329]] },
+    { id: 'pan', name: RA.t("Panama Canal"), from: 'ww1', lines: [[[445, 426], [447, 429]]], a: [[444, 428]], b: [[448, 427]] },
   ],
 };
 
@@ -149,9 +149,9 @@ RA.STRAITS = {
       this.news('strait', pid, 0, st.name);
       this.addAE(this.P[pid], RA.CFG.AE_STRAIT);
       for (const o of this.P) if (o && o.alive && o.id !== pid && !o.human && o.type !== 'bot' && !o.allies.has(pid)) this.relTo(o, pid, Math.max(-100, o.rel[pid] - 15), 'strait');
-      for (const h of this.P) if (h && h.human && h.alive && h.id !== pid) this.tell(h, 'bad', `${this.P[pid].name} je zatvorio/la ${st.name} za tuđe brodove.`, pid, st.cells[0]);
+      for (const h of this.P) if (h && h.human && h.alive && h.id !== pid) this.tell(h, 'bad', RA.t("{0} closed the {1} to foreign ships.", this.P[pid].name, st.name), pid, st.cells[0]);
     } else if (why === 'lost') {
-      for (const h of this.P) if (h && h.human && h.alive) this.tell(h, 'info', `${st.name} je ponovo otvoren${H ? ' (novi vlasnik obala: ' + H.name + ')' : ''}.`, 0, st.cells[0]);
+      for (const h of this.P) if (h && h.human && h.alive) this.tell(h, 'info', RA.t("The {0} is open again{1}.", st.name, H ? RA.t(" (new owner of the shores: ") + H.name + ')' : ''), 0, st.cells[0]);
     } else {
       if (H) this.news('straitOpen', H.id, 0, st.name);
     }
@@ -159,8 +159,8 @@ RA.STRAITS = {
   /* the holder opens or closes a strait (command 'str') */
   P.cmdStrait = function (pid, i, close) {
     const st = this.straits[i];
-    if (!st) return 'Nema tog moreuza.';
-    if (st.holder !== pid) return `Moraš držati obje obale (${st.name}).`;
+    if (!st) return RA.t("No such strait.");
+    if (st.holder !== pid) return RA.t("You must hold both shores ({0}).", st.name);
     if (!!st.closed === close) return null;
     this._setStrait(st, close ? pid : 0);
     return { name: st.name, closed: close };

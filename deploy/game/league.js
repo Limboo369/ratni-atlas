@@ -104,18 +104,18 @@ function unqueue(ids) {
 async function enqueue(id, m, n) {
   const l = m + n, pt = partyOf(id);
   const ids = pt ? pt.members.slice() : [id];
-  if (pt && pt.lead !== id) return send(id, { t: 'err', e: 'Traženje pokreće vođa partyja.' });
-  if (ids.length > n) return send(id, { t: 'err', e: `Party ima ${ids.length} igrača — za ${n}v${n} najviše ${n}.` });
-  if (ids.some((x) => (players.get(x) || {}).match)) return send(id, { t: 'err', e: 'Neko iz partyja je već u meču.' });
+  if (pt && pt.lead !== id) return send(id, { t: 'err', e: 'The party\'s leader starts the search.' });
+  if (ids.length > n) return send(id, { t: 'err', e: `The party has ${ids.length} players — at most ${n} for ${n}v${n}.` });
+  if (ids.some((x) => (players.get(x) || {}).match)) return send(id, { t: 'err', e: 'Someone in the party is already in a match.' });
   let el;
   try {
     el = await elos(ids, l);
   } catch (e) {
     console.warn('league elo', e.message);
-    return send(id, { t: 'err', e: 'Liga trenutno ne radi — pokušaj malo kasnije.' });
+    return send(id, { t: 'err', e: 'The league isn\'t working right now — try a bit later.' });
   }
   const v = ids.map((x) => (el[x] || { elo: 500 }).elo);
-  if (Math.max(...v) - Math.min(...v) > SPREAD) return send(id, { t: 'err', e: `U partyju razlika ELO smije biti najviše ${SPREAD} (sada ${Math.max(...v) - Math.min(...v)}).` });
+  if (Math.max(...v) - Math.min(...v) > SPREAD) return send(id, { t: 'err', e: `In a party the ELO difference may be at most ${SPREAD} (now ${Math.max(...v) - Math.min(...v)}).` });
   unqueue(ids);
   const e = { ids, since: Date.now(), avg: v.reduce((a, b) => a + b, 0) / v.length, elos: el };
   if (!queues.has(l)) queues.set(l, []);
@@ -162,7 +162,7 @@ function startMatch(l, n, teams) {
   }));
   M.timer = setTimeout(() => resolve(M), PICK_S * 1000);
   // a match found while the tab is in the background: a notification (the page ignores it when it is in front)
-  long.pushTo(teams.flat().map((p) => p.id).filter((x) => /^\d+$/.test(x)), `Meč je nađen (${l[0] === 'f' ? 'Focus' : 'Blitz'} ${n}v${n}) — pick & ban traje ${PICK_S} s.`, '/', 'match');
+  long.pushTo(teams.flat().map((p) => p.id).filter((x) => /^\d+$/.test(x)), `Match found (${l[0] === 'f' ? 'Focus' : 'Blitz'} ${n}v${n}) — pick & ban lasts ${PICK_S} s.`, '/', 'match');
 }
 function teamOf(M, id) {
   return M.teams[0].some((p) => p.id === id) ? 1 : M.teams[1].some((p) => p.id === id) ? 2 : 0;
@@ -196,7 +196,7 @@ function resolve(M) {
   const slots = [];
   M.teams.forEach((t, i) => t.forEach((p) => {
     const pl = players.get(p.id);
-    slots.push({ uid: /^\d+$/.test(p.id) ? 'acct' + p.id : p.id.replace(/^dev/, ''), lid: p.id, name: (pl && pl.name) || 'Igrač', team: i + 1, away: true });
+    slots.push({ uid: /^\d+$/.test(p.id) ? 'acct' + p.id : p.id.replace(/^dev/, ''), lid: p.id, name: (pl && pl.name) || 'Player', team: i + 1, away: true });
   }));
   const gm = long.newLeague(set, slots, { l: M.l, match: M.id }, WAIT_S * 1000);
   const msg = { t: 'reveal', picks: { 1: P[0], 2: P[1] }, bans, chosen: { map, era }, code: gm.rec.code, at: gm.rec.start };
@@ -254,7 +254,7 @@ function handle(ws, q, account) {
       clearTimeout(bye);
       const old = players.get(id);
       if (old && old.ws && old.ws !== ws) old.ws.close(4000, 'other tab');
-      const pl = Object.assign(old || { id, party: '', match: '' }, { ws, name: (typeof h.name === 'string' && h.name.replace(/[\u0000-\u001f<>]/g, '').slice(0, 18)) || 'Igrač' });
+      const pl = Object.assign(old || { id, party: '', match: '' }, { ws, name: (typeof h.name === 'string' && h.name.replace(/[\u0000-\u001f<>]/g, '').slice(0, 18)) || 'Player' });
       players.set(id, pl);
       let el = {};
       try {
@@ -280,9 +280,9 @@ function handle(ws, q, account) {
         return partyCast(pt);
       }
       const pt = parties.get(m.party);
-      if (!pt) return send(id, { t: 'err', e: 'Taj party više ne postoji.' });
+      if (!pt) return send(id, { t: 'err', e: 'That party no longer exists.' });
       if (pt.members.includes(id)) return partyCast(pt);
-      if (pt.members.length >= 5) return send(id, { t: 'err', e: 'Party je pun (5).' });
+      if (pt.members.length >= 5) return send(id, { t: 'err', e: 'The party is full (5).' });
       leaveParty(id);
       unqueue(pt.members);
       pt.members.push(id);

@@ -31,12 +31,12 @@ Object.assign(RA.CFG, {
   P.requestTrade = function (fromId, toId) {
     const a = this.P[fromId], b = this.P[toId];
     const MAX = RA.CFG.TRADE_MAX;
-    if (!a || !b || !a.alive || !b.alive || a === b) return 'Nevažeći igrač.';
-    if (a.trade.has(toId)) return 'Već imate trgovinski savez.';
-    if (a.trade.size >= MAX) return `Najviše ${MAX} trgovinskih saveza.`;
-    if (b.trade.size >= MAX) return `${b.name} već ima ${MAX} trgovinskih saveza.`;
-    if (this.atWar(a, b)) return 'Ne možete trgovati dok ratujete.';
-    if (this.tradeReqs.some((r) => r.from === fromId && r.to === toId)) return 'Ponuda je već poslana.';
+    if (!a || !b || !a.alive || !b.alive || a === b) return RA.t("Invalid player.");
+    if (a.trade.has(toId)) return RA.t("You already have a trade pact.");
+    if (a.trade.size >= MAX) return RA.t("At most {0} trade pacts.", MAX);
+    if (b.trade.size >= MAX) return RA.t("{0} already has {1} trade pacts.", b.name, MAX);
+    if (this.atWar(a, b)) return RA.t("You can't trade while at war.");
+    if (this.tradeReqs.some((r) => r.from === fromId && r.to === toId)) return RA.t("Offer already sent.");
     if (b.human && !b.ai) {
       this.tradeReqs.push({ from: fromId, to: toId, exp: this.tick + RA.CFG.ALLY_REQ_DUR });
       return true;
@@ -45,7 +45,7 @@ Object.assign(RA.CFG, {
       this.makeTrade(a, b);
       return true;
     }
-    this.tell(a, 'info', `${b.name} ne želi trgovati s tobom.`, toId, b.capital);
+    this.tell(a, 'info', RA.t("{0} doesn't want to trade with you.", b.name), toId, b.capital);
     return 'declined';
   };
   P.respondTrade = function (fromId, toId, accept) {
@@ -55,7 +55,7 @@ Object.assign(RA.CFG, {
     const a = this.P[fromId], b = this.P[toId];
     if (!accept) {
       this.relTo(a, toId, Math.max(-100, a.rel[toId] - 5), 'tdecl');
-      this.tell(a, 'info', `Ponuda za trgovinski savez odbijena (${b.name}).`, toId, b.capital);
+      this.tell(a, 'info', RA.t("Trade pact offer declined ({0}).", b.name), toId, b.capital);
       return;
     }
     if (a.trade.size >= RA.CFG.TRADE_MAX || b.trade.size >= RA.CFG.TRADE_MAX) return;
@@ -68,8 +68,8 @@ Object.assign(RA.CFG, {
     this.relTo(a, b.id, Math.min(100, a.rel[b.id] + 12), 'trade');
     this.relTo(b, a.id, Math.min(100, b.rel[a.id] + 12), 'trade');
     this.tradeReqs = this.tradeReqs.filter((r) => !((r.from === a.id && r.to === b.id) || (r.from === b.id && r.to === a.id)));
-    this.tell(a, 'good', `Trgovinski savez sklopljen: ${b.name} — brodovi i karavani donose zlato objema stranama.`, b.id, b.capital);
-    this.tell(b, 'good', `Trgovinski savez sklopljen: ${a.name} — brodovi i karavani donose zlato objema stranama.`, a.id, a.capital);
+    this.tell(a, 'good', RA.t("Trade pact made: {0} — ships and caravans bring gold to both sides.", b.name), b.id, b.capital);
+    this.tell(b, 'good', RA.t("Trade pact made: {0} — ships and caravans bring gold to both sides.", a.name), a.id, a.capital);
   };
   P.cancelTrade = function (aid, bid, why) {
     const a = this.P[aid], b = this.P[bid];
@@ -78,8 +78,8 @@ Object.assign(RA.CFG, {
     b.trade.delete(aid);
     this.relTo(b, aid, Math.max(-100, b.rel[aid] - 10), 'tcancel');
     for (const s of this.tships) if (!s.done && ((s.owner === aid && s.partner === bid) || (s.owner === bid && s.partner === aid))) s.done = true;
-    this.tell(a, 'info', `Trgovinski savez je prekinut: ${b.name}${why ? ' (' + why + ')' : ''}.`, b.id);
-    this.tell(b, 'info', `Trgovinski savez je prekinut: ${a.name}${why ? ' (' + why + ')' : ''}.`, a.id);
+    this.tell(a, 'info', RA.t("Trade pact ended: {0}{1}.", b.name, why ? ' (' + why + ')' : ''), b.id);
+    this.tell(b, 'info', RA.t("Trade pact ended: {0}{1}.", a.name, why ? ' (' + why + ')' : ''), a.id);
   };
   P._portWater = function (s) {
     const map = this.map, W = map.W, H = map.H;
@@ -215,14 +215,14 @@ Object.assign(RA.CFG, {
   /* ---------------- military help ---------------- */
   P.donateTroops = function (fromId, toId, amount) {
     const a = this.P[fromId], b = this.P[toId];
-    if (!a || !b || !a.alive || !b.alive) return 'Nevažeći igrač.';
-    if (!a.allies.has(toId)) return 'Vojsku možeš slati samo vojnom savezniku.';
+    if (!a || !b || !a.alive || !b.alive) return RA.t("Invalid player.");
+    if (!a.allies.has(toId)) return RA.t("You can send troops only to a military ally.");
     const amt = Math.floor(Math.min(amount, a.troops * 0.9));
-    if (amt < 100) return 'Premalo vojske.';
+    if (amt < 100) return RA.t("Too few troops.");
     a.troops -= amt;
     b.troops += amt;
     this.relTo(b, fromId, Math.min(100, b.rel[fromId] + 10), 'gift');
-    this.tell(b, 'good', `${a.name} ti šalje ${RA.fmt(amt)} vojske.`, fromId, a.capital);
+    this.tell(b, 'good', RA.t("{0} sends you {1} troops.", a.name, RA.fmt(amt)), fromId, a.capital);
     this.fx.push({ kind: 'donate', from: a.capital, to: b.capital, tick: this.tick });
     return amt;
   };
@@ -248,16 +248,16 @@ Object.assign(RA.CFG, {
   };
   P.requestHelp = function (fromId, allyId) {
     const a = this.P[fromId], L = this.P[allyId];
-    if (!a || !L || !a.allies.has(allyId)) return 'To nije tvoj vojni saveznik.';
-    if (this.tick < this.peaceUntil) return 'Mirno doba — još niko ne ratuje.';
+    if (!a || !L || !a.allies.has(allyId)) return RA.t("That's not your military ally.");
+    if (this.tick < this.peaceUntil) return RA.t("Peace time — nobody is at war yet.");
     const enemy = this.mainEnemy(a);
-    if (!enemy) return 'Trenutno ne ratuješ ni s kim.';
+    if (!enemy) return RA.t("You are not at war with anyone right now.");
     if (!L.ai) {
       // a human ally just gets the call
-      this.tell(L, 'ally', `${a.nick || a.name} traži pomoć! Neprijatelj: ${enemy.name}.`, a.id, enemy.capital);
+      this.tell(L, 'ally', RA.t("{0} asks for help! Enemy: {1}.", a.nick || a.name, enemy.name), a.id, enemy.capital);
       return enemy;
     }
-    if (L.ai.helpAsked && this.tick - L.ai.helpAsked < 300) return `${L.name} je već pozvan u pomoć — pričekaj malo.`;
+    if (L.ai.helpAsked && this.tick - L.ai.helpAsked < 300) return RA.t("{0} was already asked for help — wait a little.", L.name);
     L.ai.helpAsked = this.tick;
     L.ai.help = { target: enemy.id, forId: fromId, until: this.tick + RA.CFG.HELP_WINDOW, donated: false, asked: true };
     L.ai.next = Math.min(L.ai.next, this.tick + 5);
@@ -270,17 +270,17 @@ Object.assign(RA.CFG, {
      weaker than it, or when the lord releases it (Raskini). Humans are never vassals. */
   P.vassalErr = function (a, b) {
     const C = RA.CFG;
-    if (!a || !b || !a.alive || !b.alive || a === b) return 'Nevažeći igrač.';
-    if (b.human && !b.ai) return 'Igrač ne može biti vazal.';
-    if (this.opts.league) return 'U ligi nema vazala.';
-    if (b.lord === a.id) return `${b.name} ti je već vazal.`;
-    if (b.lord) return `${b.name} je već vazal (${this.P[b.lord].name}).`;
-    if (a.lord) return 'Vazal ne može imati vazale.';
-    if (this.vassalsOf(b).length) return `${b.name} ima svoje vazale.`;
-    if (this.vassalsOf(a).length >= C.VASSAL_MAX) return `Najviše ${C.VASSAL_MAX} vazala.`;
-    if (this.sameTeam(a, b)) return 'To je tvoj tim.';
-    if (!this.atWar(a, b) && !this.hasBorderWith(a, b.id)) return `${b.name} ti nije susjed.`;
-    if (b.troops > a.troops * C.VASSAL_TROOPS || b.area > a.area * C.VASSAL_AREA) return `${b.name} je prejak/a za vazala: treba imati najviše ${Math.round(C.VASSAL_TROOPS * 100)}% tvoje vojske i ${Math.round(C.VASSAL_AREA * 100)}% zemlje.`;
+    if (!a || !b || !a.alive || !b.alive || a === b) return RA.t("Invalid player.");
+    if (b.human && !b.ai) return RA.t("A player can't be a vassal.");
+    if (this.opts.league) return RA.t("No vassals in the league.");
+    if (b.lord === a.id) return RA.t("{0} is already your vassal.", b.name);
+    if (b.lord) return RA.t("{0} is already a vassal ({1}).", b.name, this.P[b.lord].name);
+    if (a.lord) return RA.t("A vassal can't have vassals.");
+    if (this.vassalsOf(b).length) return RA.t("{0} has vassals of its own.", b.name);
+    if (this.vassalsOf(a).length >= C.VASSAL_MAX) return RA.t("At most {0} vassals.", C.VASSAL_MAX);
+    if (this.sameTeam(a, b)) return RA.t("That's your team.");
+    if (!this.atWar(a, b) && !this.hasBorderWith(a, b.id)) return RA.t("{0} is not your neighbour.", b.name);
+    if (b.troops > a.troops * C.VASSAL_TROOPS || b.area > a.area * C.VASSAL_AREA) return RA.t("{0} is too strong to be a vassal: it may have at most {1}% of your troops and {2}% of your land.", b.name, Math.round(C.VASSAL_TROOPS * 100), Math.round(C.VASSAL_AREA * 100));
     return '';
   };
   P.vassalsOf = function (p) {
@@ -298,7 +298,7 @@ Object.assign(RA.CFG, {
       return true;
     }
     this.relTo(b, aid, Math.max(-100, b.rel[aid] - 10), 'vdecl');
-    this.tell(a, 'info', `${b.name} odbija da ti bude vazal. Oslabi je još pa pokušaj ponovo.`, bid, b.capital);
+    this.tell(a, 'info', RA.t("{0} refuses to be your vassal. Weaken it more and try again.", b.name), bid, b.capital);
     return 'declined';
   };
   P.makeVassal = function (a, b) {
@@ -316,7 +316,7 @@ Object.assign(RA.CFG, {
     this.addAE(a, RA.CFG.AE_WAR);
     this.news('vassal', a.id, b.id);
     this.alliancesChanged = true;
-    this.tell(a, 'good', `${b.name} je sada tvoj vazal: plaća danak i bori se uz tebe.`, b.id, b.capital);
+    this.tell(a, 'good', RA.t("{0} is now your vassal: it pays tribute and fights at your side.", b.name), b.id, b.capital);
   };
   P.freeVassal = function (b, why) {
     const a = this.P[b.lord];
@@ -328,8 +328,8 @@ Object.assign(RA.CFG, {
     if (why === 'rebel') {
       this.relTo(b, a.id, Math.min(b.rel[a.id], -30), 'rebel');
       this.news('rebel', b.id, a.id);
-      this.tell(a, 'bad', `${b.name} se oslobodio/la tvoje vlasti — više nisi dovoljno jak.`, b.id, b.capital);
-    } else if (why === 'free') this.tell(a, 'info', `${b.name} više nije tvoj vazal.`, b.id, b.capital);
+      this.tell(a, 'bad', RA.t("{0} has broken free of your rule — you are no longer strong enough.", b.name), b.id, b.capital);
+    } else if (why === 'free') this.tell(a, 'info', RA.t("{0} is no longer your vassal.", b.name), b.id, b.capital);
   };
   P._vassals = function () {
     for (const b of this.P) {
@@ -351,17 +351,17 @@ Object.assign(RA.CFG, {
   };
   P.loanErr = function (p, L, size) {
     const C = RA.CFG;
-    if (!p || !L || !p.alive || !L.alive || p === L) return 'Nevažeći igrač.';
-    if (!Number.isInteger(size) || size < 0 || size >= C.LOAN_SECS.length) return 'Nevažeći zajam.';
-    if (L.human && !L.ai) return 'Zajam daju samo države kompjutera.';
-    if (L.type === 'bot') return 'Grad-država nema toliko zlata.';
+    if (!p || !L || !p.alive || !L.alive || p === L) return RA.t("Invalid player.");
+    if (!Number.isInteger(size) || size < 0 || size >= C.LOAN_SECS.length) return RA.t("Invalid loan.");
+    if (L.human && !L.ai) return RA.t("Only computer states give loans.");
+    if (L.type === 'bot') return RA.t("A city-state doesn't have that much gold.");
     const mine = this.loans.filter((l) => l.to === p.id);
-    if (mine.some((l) => l.from === L.id)) return `Već duguješ državi ${L.name}.`;
-    if (mine.length >= C.LOAN_MAX) return `Najviše ${C.LOAN_MAX} zajma odjednom.`;
-    if (this.atWar(p, L)) return 'Ne daju zajam dok ratujete.';
-    if (p.tiles < 12) return 'Nemaš dovoljno zemlje za zalog.';
+    if (mine.some((l) => l.from === L.id)) return RA.t("You already owe {0}.", L.name);
+    if (mine.length >= C.LOAN_MAX) return RA.t("At most {0} loans at once.", C.LOAN_MAX);
+    if (this.atWar(p, L)) return RA.t("No loans while you are at war.");
+    if (p.tiles < 12) return RA.t("Not enough land to pledge.");
     const o = this.loanOffer(p, L, size);
-    if (L.gold < o.amount * 1.2) return `${L.name} nema toliko zlata.`;
+    if (L.gold < o.amount * 1.2) return RA.t("{0} doesn't have that much gold.", L.name);
     return '';
   };
   P.requestLoan = function (pid, lid, size) {
@@ -372,7 +372,7 @@ Object.assign(RA.CFG, {
     // the lender trusts friends and trade partners; a trader likes to lend
     const trust = L.rel[pid] / 100 + (L.trade.has(pid) ? 0.25 : 0) + (L.allies.has(pid) ? 0.3 : 0) + (L.ai && L.ai.pers === 'trgovac' ? 0.2 : 0);
     if (L.rel[pid] < -15 || this.rng() > 0.6 + trust) {
-      this.tell(p, 'info', `${L.name} ti ne želi dati zajam.`, lid, L.capital);
+      this.tell(p, 'info', RA.t("{0} won't give you a loan.", L.name), lid, L.capital);
       return 'declined';
     }
     // the pledge: your land nearest to the lender (never your capital)
@@ -390,21 +390,21 @@ Object.assign(RA.CFG, {
     p.gold += o.amount;
     const loan = { id: ++this.loanSeq, from: lid, to: pid, amount: o.amount, owed: o.owed, due: this.tick + RA.CFG.LOAN_DUE, cells };
     this.loans.push(loan);
-    this.tell(p, 'good', `Zajam od ${L.name}: +${RA.fmt(o.amount)} zlata. Vrati ${RA.fmt(o.owed)} za ${Math.round(RA.CFG.LOAN_DUE / 600)} min, inače ${L.name} uzima založenu zemlju (${cells.length} polja).`, lid, L.capital);
+    this.tell(p, 'good', RA.t("Loan from {0}: +{1} gold. Repay {2} within {3} min, or {4} takes the pledged land ({5} cells).", L.name, RA.fmt(o.amount), RA.fmt(o.owed), Math.round(RA.CFG.LOAN_DUE / 600), L.name, cells.length), lid, L.capital);
     return { loan: loan.id, amount: o.amount };
   };
   P.repayLoan = function (pid, id, auto) {
     const i = this.loans.findIndex((l) => l.id === id && l.to === pid);
-    if (i < 0) return 'Nema tog zajma.';
+    if (i < 0) return RA.t("No such loan.");
     const l = this.loans[i], p = this.P[pid], L = this.P[l.from];
-    if (p.gold < l.owed) return `Treba ti ${RA.fmt(l.owed)} zlata.`;
+    if (p.gold < l.owed) return RA.t("You need {0} gold.", RA.fmt(l.owed));
     p.gold -= l.owed;
     if (L && L.alive) {
       L.gold += l.owed;
       this.relTo(L, pid, Math.min(100, L.rel[pid] + 10), 'loan');
     }
     this.loans.splice(i, 1);
-    this.tell(p, 'good', `${auto ? 'Rok je stigao: z' : 'Z'}ajam vraćen (${L ? L.name : ''}, ${RA.fmt(l.owed)} zlata). Zalog je slobodan.`, l.from);
+    this.tell(p, 'good', auto ? RA.t("Due date: loan repaid ({0}, {1} gold). The pledge is free.", L ? L.name : '', RA.fmt(l.owed)) : RA.t("Loan repaid ({0}, {1} gold). The pledge is free.", L ? L.name : '', RA.fmt(l.owed)), l.from);
     return true;
   };
   P._loans = function () {
@@ -412,7 +412,7 @@ Object.assign(RA.CFG, {
       const l = this.loans[i], p = this.P[l.to], L = this.P[l.from];
       if (!p.alive || !L || !L.alive) {
         this.loans.splice(i, 1);
-        if (p.alive) this.tell(p, 'info', `Dug je nestao: ${L ? L.name : 'država'} je pala.`, l.from);
+        if (p.alive) this.tell(p, 'info', RA.t("The debt is gone: {0} has fallen.", L ? L.name : RA.t("state")), l.from);
         continue;
       }
       if (l.due > this.tick) continue;
@@ -426,7 +426,7 @@ Object.assign(RA.CFG, {
       this.loans.splice(i, 1);
       this.relTo(L, p.id, Math.max(-100, L.rel[p.id] - 25), 'pledge');
       this.news('pledge', L.id, p.id);
-      this.tell(p, 'bad', `Nisi vratio zajam: ${L.name} uzima založenu zemlju (${n} polja).`, L.id, L.capital);
+      this.tell(p, 'bad', RA.t("You didn't repay the loan: {0} takes the pledged land ({1} cells).", L.name, n), L.id, L.capital);
     }
   };
 

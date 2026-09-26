@@ -317,3 +317,9 @@ F1 zadaci u igri (ugovori s rokom i nagradom) · F2 red proizvodnje u fabrikama/
 (suša, pobuna, izbjeglice) · F6 zakazane naredbe („u 21:00 napadni…“) · F7 utvrde i rovovi na granici · F8 pakt o
 nenapadanju s rokom, embargo · F9 savez: zajednička kasa i zajednički cilj · F10 generali s iskustvom · F11 dnevni
 izvještaj / ratne novine · F12 neutralni pobunjenici i blago na mapi.
+
+## Jezik 27. 9. (Darko): igra na engleskom — urađeno
+
+Sav tekst u igri je na engleskom (i sve što ubuduće dodamo); srpski (latinica, „Istorija“) je drugi jezik, dugme EN/SR
+na početnom ekranu. Nazivi država, gradova i mora imaju engleska imena (`src/00c-names.js`), poruke servera su na
+engleskom. `build/test_lang.py` (i u CI-ju) pada ako na engleskoj stranici ostane bosanska/srpska riječ.

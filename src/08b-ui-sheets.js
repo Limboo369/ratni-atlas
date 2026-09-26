@@ -3,16 +3,16 @@
 
 /* key moments on the end-of-game chart (G.marks) */
 RA.MARKS = {
-  war: { s: '⚔', c: '#ff6b6b', n: 'rat' }, ally: { s: '⛨', c: '#6fdc8c', n: 'savez' }, break: { s: '✂', c: '#ffb04a', n: 'izdaja' },
-  cap: { s: '♛', c: '#f2c14e', n: 'pala prijestolnica' }, fall: { s: '☠', c: '#b9c3cc', n: 'pala država' }, nuke: { s: '☢', c: '#ff3df0', n: 'nuklearka' },
+  war: { s: '⚔', c: '#ff6b6b', n: RA.t("war") }, ally: { s: '⛨', c: '#6fdc8c', n: RA.t("alliance") }, break: { s: '✂', c: '#ffb04a', n: RA.t("betrayal") },
+  cap: { s: '♛', c: '#f2c14e', n: RA.t("capital fell") }, fall: { s: '☠', c: '#b9c3cc', n: RA.t("state fell") }, nuke: { s: '☢', c: '#ff3df0', n: RA.t("nuke") },
 };
 /* reasons of a state's opinion of you (keys of G.relTo) */
 RA.WHY = {
-  atk: 'napadi na njih', boat: 'desant na njihovu obalu', offer: 'ponudio si savez', decl: 'odbio si njihov savez', ally: 'vojni savez',
-  betray: 'izdao si ih', traitor: 'izdao si saveznika', nuke: 'nuklearke', strike: 'raketni udari', para: 'padobranci na njihovu zemlju',
-  tdecl: 'odbio si trgovinu', trade: 'trgovinski savez', tcancel: 'prekinuo si trgovinu', gift: 'poslao si im vojsku', vdecl: 'tražio si da budu vazal',
-  vassal: 'vazal', rebel: 'pobuna protiv tebe', loan: 'vratio si zajam', pledge: 'nisi vratio zajam', strait: 'zatvoren moreuz', bomb: 'bombardovanje',
-  hegemon: 'previše si jak', deal: 'dogovori', ae: 'agresivna ekspanzija', tech: 'diplomatija (istraživanje)', camp: 'misija kampanje',
+  atk: RA.t("attacks on them"), boat: RA.t("a landing on their coast"), offer: RA.t("you offered an alliance"), decl: RA.t("you declined their alliance"), ally: RA.t("military alliance"),
+  betray: RA.t("you betrayed them"), traitor: RA.t("you betrayed an ally"), nuke: RA.t("nukes"), strike: RA.t("missile strikes"), para: RA.t("paratroopers on their land"),
+  tdecl: RA.t("you declined trade"), trade: RA.t("trade pact"), tcancel: RA.t("you stopped trading"), gift: RA.t("you sent them troops"), vdecl: RA.t("you asked them to be a vassal"),
+  vassal: RA.t("vassal"), rebel: RA.t("a revolt against you"), loan: RA.t("you repaid a loan"), pledge: RA.t("you didn't repay a loan"), strait: RA.t("a closed strait"), bomb: RA.t("bombing"),
+  hegemon: RA.t("you are too strong"), deal: RA.t("deals"), ae: RA.t("aggressive expansion"), tech: RA.t("diplomacy (research)"), camp: RA.t("campaign mission"),
 };
 
 Object.assign(RA.UI.prototype, {
@@ -20,21 +20,21 @@ Object.assign(RA.UI.prototype, {
   unitWhy(type) {
     const G = this.G, me = G.me, U = RA.UNIT[type];
     const cap = G.unitCap(me);
-    if (me.units.length >= cap) return `Limit ${cap} jedinica — svaka kasarna daje još ${RA.CFG.UNIT_PER_BARRACKS}`;
-    if (U.na) return 'Ne postoji u ovom dobu';
-    if (U.needs && !me.n[U.needs]) return `Treba zgrada: ${RA.STRUCT[U.needs].name}`;
-    if (U.naval && G._portLaunch(me, me.capital) < 0) return 'Treba ti spremna luka na moru';
-    if (me.gold < G.unitCost(me, type)) return 'Nemaš dovoljno zlata';
-    if (me.troops < U.troops * 1.2) return 'Premalo vojnika';
+    if (me.units.length >= cap) return RA.t("Limit of {0} units — every barracks adds {1}", cap, RA.CFG.UNIT_PER_BARRACKS);
+    if (U.na) return RA.t("Doesn't exist in this era");
+    if (U.needs && !me.n[U.needs]) return RA.t("Needs a building: {0}", RA.STRUCT[U.needs].name);
+    if (U.naval && G._portLaunch(me, me.capital) < 0) return RA.t("You need a ready port on the sea");
+    if (me.gold < G.unitCost(me, type)) return RA.t("Not enough gold{=2}");
+    if (me.troops < U.troops * 1.2) return RA.t("Too few troops");
     return '';
   },
   unitStatus(u) {
     const tk = this.G.tick;
-    if (u.ready > tk) return 'raspoređuje se';
-    if (u.empUntil > tk) return 'EMP — ne radi';
-    if (tk - u.lastHit < 20) return 'u borbi';
-    if (u.path && u.pi < u.path.length) return 'u pokretu';
-    return 'na položaju';
+    if (u.ready > tk) return RA.t("deploying");
+    if (u.empUntil > tk) return RA.t("EMP — out of action");
+    if (tk - u.lastHit < 20) return RA.t("in combat");
+    if (u.path && u.pi < u.path.length) return RA.t("moving");
+    return RA.t("in position");
   },
 
   /* ---------------- army ---------------- */
@@ -43,39 +43,39 @@ Object.assign(RA.UI.prototype, {
     if (!me || G.state !== 'play') return;
     if (this.mode && (this.mode.kind === 'recruit' || this.mode.kind === 'unit')) this.setMode(null);
     const C = RA.CFG, tk = G.tick, cap = G.unitCap(me);
-    let h = this.head('Vojska', `Jedinica ${me.units.length}/${cap} · vojnika ${RA.fmt(me.troops)} · zlato ${RA.fmt(me.gold)}`);
+    let h = this.head(RA.t("Army"), RA.t("Units {0}/{1} · troops {2} · gold {3}", me.units.length, cap, RA.fmt(me.troops), RA.fmt(me.gold)));
     const ready = tk >= me.mobReady;
     const add = me.maxT * C.MOB_SHARE;
     h += '<div class="btns">' + this.btn({
       icon: 'mob', cls: ready ? 'primary' : '', attrs: 'data-mob', dis: !ready,
-      t: 'Mobilizacija',
-      d: ready ? `Odmah +${RA.fmt(add)} vojnika. Rast vojske zatim stoji 45 s.` : `Ponovo spremna za ${RA.dur(me.mobReady - tk)}`,
+      t: RA.t("Mobilisation"),
+      d: ready ? RA.t("Instantly +{0} troops. Army growth then stops for 45 s.", RA.fmt(add)) : RA.t("Ready again in {0}", RA.dur(me.mobReady - tk)),
       r: '+' + RA.fmt(add),
     }) + '</div>';
-    h += '<div class="sec-t">Regrutuj jedinicu</div><p class="explain">Postavi je uz granicu — sama prati front. Neprijatelju otežava proboj, a tvoje napade u blizini čini jeftinijim.</p><div class="btns">';
+    h += RA.t("<div class=\"sec-t\">Recruit a unit</div><p class=\"explain\">Place it along the border — it follows the front by itself. It makes enemy breakthroughs harder and your attacks nearby cheaper.</p><div class=\"btns\">");
     for (const type of ['inf', 'tank', 'art', 'ship', 'sub']) {
       const U = RA.UNIT[type];
       if (U.na) continue;
-      if (type === 'ship') h += '</div><div class="sec-t">Mornarica</div><p class="explain">Brodovi isplovljavaju iz tvoje luke. Dodirni brod pa more da ga pošalješ. Ratni brod blokira neprijateljske luke u blizini i gađa obalu.</p><div class="btns">';
+      if (type === 'ship') h += RA.t("</div><div class=\"sec-t\">Navy</div><p class=\"explain\">Ships sail out of your port. Tap a ship, then the sea, to send it. A warship blockades enemy ports nearby and shells the coast.</p><div class=\"btns\">");
       const why = this.unitWhy(type);
       h += this.btn({
         model: U.sym || type, cls: 'model-btn', icon: U.sym || type, attrs: `data-rec="${type}"`, dis: !!why,
         t: U.name, d: RA.esc(why || U.desc),
-        r: `${RA.fmt(G.unitCost(me, type))}<small>−${RA.fmt(U.troops)} vojnika</small>`,
+        r: RA.t("{0}<small>−{1} troops</small>", RA.fmt(G.unitCost(me, type)), RA.fmt(U.troops)),
       });
     }
-    h += '</div><div class="sec-t">Tvoje jedinice</div>';
-    if (!me.units.length) h += '<p class="note" style="margin-top:0">Još nemaš jedinica.</p>';
+    h += RA.t("</div><div class=\"sec-t\">Your units</div>");
+    if (!me.units.length) h += RA.t("<p class=\"note\" style=\"margin-top:0\">You have no units yet.</p>");
     else {
       h += '<div class="list">';
       for (const u of me.units) {
         const U = RA.UNIT[u.type];
-        h += `<div class="prow hasu"><span class="sw u">${RA.Models.preview(U.sym || u.type, me.hex)}</span><div class="pn" data-sel="${u.id}"><div class="nm">${U.name}</div><div class="d">${Math.round((u.hp / U.hp) * 100)}% snage · ${this.unitStatus(u)}</div></div><div class="bb">${this.mini('Prikaži', `data-sel="${u.id}"`, '', false, 'eye')}${this.mini('Raspusti', `data-dis="${u.id}"`, 'warn')}</div></div>`;
+        h += RA.t("<div class=\"prow hasu\"><span class=\"sw u\">{0}</span><div class=\"pn\" data-sel=\"{1}\"><div class=\"nm\">{2}</div><div class=\"d\">{3}% strength · {4}</div></div><div class=\"bb\">{5}{6}</div></div>", RA.Models.preview(U.sym || u.type, me.hex), u.id, U.name, Math.round((u.hp / U.hp) * 100), this.unitStatus(u), this.mini(RA.t("Show"), `data-sel="${u.id}"`, '', false, 'eye'), this.mini(RA.t("Disband"), `data-dis="${u.id}"`, 'warn'));
       }
       h += '</div>';
     }
-    const needs = ['inf', 'tank', 'art'].map((t) => RA.UNIT[t]).filter((U) => !U.na && U.needs).map((U) => `${U.name} ${U.pl ? 'traže' : 'traži'}: ${RA.STRUCT[U.needs].name}`).join('. ');
-    h += `<p class="note">Limit: ${C.UNIT_BASE_CAP} + ${C.UNIT_PER_BARRACKS} po zgradi „${RA.STRUCT.barracks.name}”. ${needs ? needs + '. ' : ''}Dodirni svoju jedinicu na mapi pa novo mjesto da je premjestiš. Raspuštanjem se vraća 60% vojnika.</p>`;
+    const needs = ['inf', 'tank', 'art'].map((t) => RA.UNIT[t]).filter((U) => !U.na && U.needs).map((U) => `${U.name} ${U.pl ? RA.t("need") : RA.t("needs")}: ${RA.STRUCT[U.needs].name}`).join('. ');
+    h += RA.t("<p class=\"note\">Limit: {0} + {1} per “{2}”. {3}Tap your unit on the map, then a new spot, to move it. Disbanding returns 60% of the troops.</p>", C.UNIT_BASE_CAP, C.UNIT_PER_BARRACKS, RA.STRUCT.barracks.name, needs ? needs + '. ' : '');
     this.openSheet(h, (s) => {
       const mb = s.querySelector('[data-mob]');
       if (mb) mb.onclick = () => {
@@ -108,7 +108,7 @@ Object.assign(RA.UI.prototype, {
     const G = this.G, me = G && G.me;
     if (!me || G.state !== 'play') return;
     if (this.mode && this.mode.kind === 'build') this.setMode(null);
-    let h = this.head('Gradnja', `Zlato ${RA.fmt(me.gold)} · cijena raste sa svakom zgradom istog tipa`);
+    let h = this.head(RA.t("Build"), RA.t("Gold {0} · the price rises with every building of the same type", RA.fmt(me.gold)));
     h += '<div class="btns">';
     for (const t of RA.STRUCT_ORDER) {
       const S = RA.STRUCT[t];
@@ -118,7 +118,7 @@ Object.assign(RA.UI.prototype, {
         t: `${S.name} <span class="d">(${me.n[t]})</span>`, d: RA.esc(S.desc), r: RA.fmt(cost),
       });
     }
-    h += '</div><p class="note">Poslije izbora dodirni mjesto na svojoj teritoriji. Zgrade moraju biti bar 4 polja jedna od druge, a novi grad bar 5 polja od postojećih gradova.</p>';
+    h += RA.t("</div><p class=\"note\">After choosing, tap a spot on your land. Buildings must be at least 4 cells apart, and a new city at least 5 cells from existing cities.</p>");
     this.openSheet(h, (s) => {
       s.querySelectorAll('[data-t]').forEach((b) => (b.onclick = () => {
         this.closeSheet();
@@ -140,21 +140,21 @@ Object.assign(RA.UI.prototype, {
       this.setMode({ kind: 'boat' });
       if (!this.paraHint && RA.ERA.para) {
         this.paraHint = true;
-        this.toast('tip', 'Sa aerodromom (Gradi → Aerodrom) ovdje dobijaš i padobranski desant.', { ms: 5000 });
+        this.toast('tip', RA.t("With an airfield (Build → Airfield) you also get paratroop drops here."), { ms: 5000 });
       }
       return;
     }
     const C = RA.CFG, ap = this.readyAirports();
     const troops = RA.fmt(me.troops * this.ratio);
-    let h = this.head('Desant', `Brodova ${me.boats}/${C.BOAT_MAX} · spremnih aerodroma ${ap.ready}/${ap.all}`);
+    let h = this.head(RA.t("Landing"), RA.t("Ships {0}/{1} · ready airfields {2}/{3}", me.boats, C.BOAT_MAX, ap.ready, ap.all));
     h += '<div class="btns">';
-    h += this.btn({ model: 'boat', cls: 'model-btn', icon: 'boat', attrs: 'data-l="boat"', dis: me.boats >= C.BOAT_MAX, t: 'Brodom', d: 'Dodirni tuđu ili slobodnu obalu. Brod plovi oko kopna.', r: troops });
+    h += this.btn({ model: 'boat', cls: 'model-btn', icon: 'boat', attrs: 'data-l="boat"', dis: me.boats >= C.BOAT_MAX, t: RA.t("By ship"), d: RA.t("Tap a foreign or free coast. The ship sails around the land."), r: troops });
     h += this.btn({
-      model: 'plane', cls: 'model-btn', icon: 'para', attrs: 'data-l="para"', dis: !ap.ready || me.gold < C.PARA_GOLD, t: 'Padobranci',
-      d: ap.ready ? `Skok do ${C.PARA_RANGE} polja od aerodroma · ${RA.fmt(C.PARA_GOLD)} zlata · PVO ih može oboriti` : 'Aerodromi se pune — pričekaj',
+      model: 'plane', cls: 'model-btn', icon: 'para', attrs: 'data-l="para"', dis: !ap.ready || me.gold < C.PARA_GOLD, t: RA.t("Paratroopers"),
+      d: ap.ready ? RA.t("Jump up to {0} cells from an airfield · {1} gold · air defence can shoot them down", C.PARA_RANGE, RA.fmt(C.PARA_GOLD)) : RA.t("The airfields are reloading — wait"),
       r: troops,
     });
-    h += `</div><p class="note">Šalješ ${Math.round(this.ratio * 100)}% vojske (klizač „Snaga napada”).</p>`;
+    h += RA.t("</div><p class=\"note\">You send {0}% of your troops (the “Attack strength” slider).</p>", Math.round(this.ratio * 100));
     h += this.airHtml();
     this.openSheet(h, (s) => {
       s.querySelectorAll('[data-l]').forEach((b) => (b.onclick = () => {
@@ -175,12 +175,12 @@ Object.assign(RA.UI.prototype, {
     if (!RA.airOn()) return '';
     const sq = me.air || [], aps = G.airportsOf(me).length;
     const cnt = (k) => sq.filter((q) => q.type === k).length, rdy = (k) => sq.filter((q) => q.type === k && q.readyAt <= tk).length;
-    let h = `<div class="sec-t">Avijacija · tipka A</div><p class="explain">Eskadrile čekaju na aerodromu (najviše ${C.AIR_PER_AIRPORT} svake vrste po aerodromu). Lovci obaraju neprijateljske avione iznad mjesta do ${C.FIGHT_R} polja od aerodroma i prate tvoje; PVO obara sve.</p><div class="btns">`;
+    let h = RA.t("<div class=\"sec-t\">Air force · key A</div><p class=\"explain\">Squadrons wait at the airfield (at most {0} of each type per airfield). Fighters shoot down enemy planes over places up to {1} cells from the airfield and escort yours; air defence shoots down everything.</p><div class=\"btns\">", C.AIR_PER_AIRPORT, C.FIGHT_R);
     for (const k of ['fighter', 'bomber']) {
       const A = RA.AIR[k], full = cnt(k) >= aps * C.AIR_PER_AIRPORT;
-      h += this.btn({ model: 'plane', cls: 'model-btn', icon: 'para', attrs: `data-air="${k}"`, dis: full || me.gold < A.cost, t: `${RA.airName(k)} · ${rdy(k)}/${cnt(k)} spremno`, d: full ? 'Aerodromi su puni — izgradi još jedan.' : A.desc, r: RA.fmt(A.cost) });
+      h += this.btn({ model: 'plane', cls: 'model-btn', icon: 'para', attrs: `data-air="${k}"`, dis: full || me.gold < A.cost, t: RA.t("{0} · {1}/{2} ready", RA.airName(k), rdy(k), cnt(k)), d: full ? RA.t("The airfields are full — build another one.") : A.desc, r: RA.fmt(A.cost) });
     }
-    h += this.btn({ icon: 'attack', cls: 'primary', attrs: 'data-bomb', dis: !rdy('bomber') || G.inPeace(), t: 'Bombarduj', d: rdy('bomber') ? `Dodirni neprijateljsku zemlju do ${C.BOMB_RANGE} polja od aerodroma.` : cnt('bomber') ? 'Bombarderi su u zraku ili se pune.' : 'Prvo kupi bombardere.' });
+    h += this.btn({ icon: 'attack', cls: 'primary', attrs: 'data-bomb', dis: !rdy('bomber') || G.inPeace(), t: RA.t("Bomb"), d: rdy('bomber') ? RA.t("Tap enemy land up to {0} cells from an airfield.", C.BOMB_RANGE) : cnt('bomber') ? RA.t("The bombers are in the air or reloading.") : RA.t("Buy bombers first.") });
     return h + '</div>';
   },
 
@@ -193,11 +193,11 @@ Object.assign(RA.UI.prototype, {
     const SN = RA.STRUCT.silo;
     const silos = G.structs.filter((s) => !s.dead && s.ready && s.owner === me.id && s.type === 'silo');
     const ready = silos.filter((s) => s.cd <= tk && s.empUntil <= tk).length;
-    let h = this.head(RA.ERA.strikeTab, silos.length ? `${SN.name}: ${silos.length} · spremnih ${ready} · zlato ${RA.fmt(me.gold)}` : `Treba ti zgrada: ${SN.name}`);
+    let h = this.head(RA.ERA.strikeTab, silos.length ? RA.t("{0}: {1} · {2} ready · gold {3}", SN.name, silos.length, ready, RA.fmt(me.gold)) : RA.t("You need a building: {0}", SN.name));
     h += '<div class="btns">';
     if (!me.n.silo) {
       const cost = G.structCost(me, 'silo');
-      h += this.btn({ icon: SN.icon || 'silo', cls: 'primary', attrs: 'data-silo', dis: me.gold < cost, t: `Izgradi: ${SN.name}`, d: me.gold >= cost ? 'Zatim dodirni mjesto na svojoj teritoriji' : 'Nedovoljno zlata', r: RA.fmt(cost) });
+      h += this.btn({ icon: SN.icon || 'silo', cls: 'primary', attrs: 'data-silo', dis: me.gold < cost, t: `Izgradi: ${SN.name}`, d: me.gold >= cost ? RA.t("Then tap a spot on your land") : RA.t("Not enough gold"), r: RA.fmt(cost) });
     }
     const peace = G.inPeace();
     for (const t of RA.missileTypes()) {
@@ -208,11 +208,11 @@ Object.assign(RA.UI.prototype, {
       h += this.btn({
         model: M.icon === 'siege' ? 'siege' : M.icon === 'zeppelin' ? 'zeppelin' : 'missile', icon: RA.missileIcon(t), cls: M.kind === 'conv' ? 'model-btn' : 'model-btn danger', attrs: `data-m="${t}"`,
         dis: (!me.n.silo && M.kind !== 'drone') || me.gold < cost || peace || wait, t: M.name,
-        d: RA.esc(wait ? `Razvoj traje — dostupna za ${RA.dur(M.from - tk)}.` : M.desc) + (M.range ? ` <b>Domet ${M.range} polja.</b>` : '') + this.nukeBar(M), r: RA.fmt(cost),
+        d: RA.esc(wait ? RA.t("In development — available in {0}.", RA.dur(M.from - tk)) : M.desc) + (M.range ? RA.t(" <b>Range {0} cells.</b>", M.range) : '') + this.nukeBar(M), r: RA.fmt(cost),
       });
     }
     const sam = RA.STRUCT.sam;
-    h += `</div><p class="note">${peace ? `<b>Mirno doba:</b> udari su dozvoljeni za ${G.peaceLeft()}. ` : ''}Prvi dodir na mapu nišani i pokazuje krug udara, drugi dodir (ili „Lansiraj”) ispaljuje.${RA.missileTypes().some((t) => RA.MISSILE[t].range) ? ' Bijeli krugovi pokazuju domet tvojih zgrada — gradi ih bliže frontu.' : ''}${sam.na ? '' : ` Neprijateljska „${sam.name}” obara projektile u krugu od ${RA.CFG.SAM_R} polja (crveni krugovi pri ciljanju).`}${RA.MISSILE.atom.na ? '' : ' Nuklearke kvare odnose sa svima; pogođeni saveznik raskida savez.'}</p>`;
+    h += RA.t("</div><p class=\"note\">{0}The first tap on the map aims and shows the blast area, the second tap (or “Launch”) fires. Drones fly on every tap.{1}{2}{3}</p>", peace ? RA.t("<b>Peace time:</b> strikes are allowed in {0}. ", G.peaceLeft()) : '', RA.missileTypes().some((t) => RA.MISSILE[t].range) ? RA.t(" White circles show the range of your buildings — build them closer to the front.") : '', sam.na ? '' : RA.t(" An enemy “{0}” shoots down missiles within {1} cells (red circles while aiming).", sam.name, RA.CFG.SAM_R), RA.MISSILE.atom.na ? '' : RA.t(" Nukes sour relations with everyone; an ally you hit breaks the alliance."));
     this.openSheet(h, (s) => {
       const b = s.querySelector('[data-silo]');
       if (b) b.onclick = () => {
@@ -229,19 +229,19 @@ Object.assign(RA.UI.prototype, {
     const G = this.G, me = G.me, M = RA.MISSILE[type];
     const O = G.owner[c] ? G.P[G.owner[c]] : null;
     if (type === 'mirv' && (!O || O === me)) {
-      this.toast('info', 'MIRV cilja državu — dodirni tuđu teritoriju.');
+      this.toast('info', RA.t("A MIRV targets a state — tap foreign land."));
       return false;
     }
     if (G.inPeace()) {
-      this.toast('info', `Mirno doba — udari su dozvoljeni za ${G.peaceLeft()}.`);
+      this.toast('info', RA.t("Peace time — strikes are allowed in {0}.", G.peaceLeft()));
       return false;
     }
     if (M.range && M.kind !== 'drone' && !G.strikeSilo(me, type, c, true)) {
-      this.toast('info', `Meta je izvan dometa (${M.range} polja od zgrade ${RA.STRUCT.silo.name}). Gradi bliže frontu.`);
+      this.toast('info', RA.t("Target out of range ({0} cells from a {1}). Build closer to the front.", M.range, RA.STRUCT.silo.name));
       return false;
     }
     if (me.gold < G.missileCost(type, me)) {
-      this.toast('info', 'Nemaš dovoljno zlata.');
+      this.toast('info', RA.t("Not enough gold."));
       return false;
     }
     this.act('mis', [type, c]);
@@ -250,7 +250,7 @@ Object.assign(RA.UI.prototype, {
     return true;
   },
   confirm(title, text, yes, fn) {
-    const h = this.head(title, '') + `<p class="note" style="margin-top:-4px;font-size:14px;color:#c9d4dc">${RA.esc(text)}</p><div class="btns" style="margin-top:14px"><button class="btn danger" data-y><span class="t">${RA.esc(yes)}</span></button><button class="btn" data-n><span class="t">Odustani</span></button></div>`;
+    const h = this.head(title, '') + RA.t("<p class=\"note\" style=\"margin-top:-4px;font-size:14px;color:#c9d4dc\">{0}</p><div class=\"btns\" style=\"margin-top:14px\"><button class=\"btn danger\" data-y><span class=\"t\">{1}</span></button><button class=\"btn\" data-n><span class=\"t\">Cancel</span></button></div>", RA.esc(text), RA.esc(yes));
     this.openSheet(h, (s) => {
       s.querySelector('[data-y]').onclick = () => {
         this.closeSheet();
@@ -267,26 +267,26 @@ Object.assign(RA.UI.prototype, {
     const team = G.sameTeam(me, O);
     if (me.allies.has(O.id)) {
       if (full) {
-        b.push(this.mini(`Pošalji ${Math.round(this.ratio * 100)}% vojske`, `data-do="send:${O.id}"`, 'ok', me.troops < 200, 'send'));
-        b.push(this.mini('Traži pomoć', `data-do="help:${O.id}"`, '', false, 'flag'));
+        b.push(this.mini(RA.t("Send {0}% of troops", Math.round(this.ratio * 100)), `data-do="send:${O.id}"`, 'ok', me.troops < 200, 'send'));
+        b.push(this.mini(RA.t("Ask for help"), `data-do="help:${O.id}"`, '', false, 'flag'));
       }
-      if (O.lord === me.id) b.push(this.mini('Oslobodi', `data-do="brk:${O.id}"`, 'warn'));
+      if (O.lord === me.id) b.push(this.mini(RA.t("Release"), `data-do="brk:${O.id}"`, 'warn'));
       else if (!team && me.lord !== O.id) {
-        b.push(this.mini('Produži', `data-do="ext:${O.id}"`));
-        b.push(this.mini('Raskini', `data-do="brk:${O.id}"`, 'warn'));
+        b.push(this.mini(RA.t("Extend"), `data-do="ext:${O.id}"`));
+        b.push(this.mini(RA.t("Break"), `data-do="brk:${O.id}"`, 'warn'));
       }
     } else {
       const why = G.allyCount(me) >= C.ALLY_MAX ? 'limit' : G.allyCount(O) >= C.ALLY_MAX ? 'puno' : '';
-      if (!O.lord) b.push(this.mini('Vojni savez', `data-do="propA:${O.id}"`, '', !!why || !!me.lord || G.allyReqs.some((r) => r.from === me.id && r.to === O.id), 'ally'));
+      if (!O.lord) b.push(this.mini(RA.t("Military alliance"), `data-do="propA:${O.id}"`, '', !!why || !!me.lord || G.allyReqs.some((r) => r.from === me.id && r.to === O.id), 'ally'));
       // a weak neighbour (or a beaten enemy) can become a vassal instead of being conquered
-      if (!(O.human && !O.ai) && !G.vassalErr(me, O)) b.push(this.mini('Vazal', `data-do="vas:${O.id}"`, 'ok', false, 'flag'));
+      if (!(O.human && !O.ai) && !G.vassalErr(me, O)) b.push(this.mini(RA.t("Vassal"), `data-do="vas:${O.id}"`, 'ok', false, 'flag'));
     }
-    if (O.type !== 'bot') b.push(this.mini('Pregovaraj', `data-do="deal:${O.id}"`, '', false, 'trade'));
-    if (G.online && O.human && O !== me) b.push(this.mini('Prijavi', `data-do="rep:${O.id}"`, 'warn'));
+    if (O.type !== 'bot') b.push(this.mini(RA.t("Negotiate"), `data-do="deal:${O.id}"`, '', false, 'trade'));
+    if (G.online && O.human && O !== me) b.push(this.mini(RA.t("Report"), `data-do="rep:${O.id}"`, 'warn'));
     // Conquest League 5v5: vote to kick a teammate (4 of the other 4; the computer takes the state)
-    if (G.opts.league === 5 && me && O.human && O !== me && O.team === me.team && !O.kicked) b.push(this.mini(me.kickVote === O.id ? 'Glas dat' : 'Izbaci', `data-do="kick:${O.id}"`, 'warn', me.kickVote === O.id));
-    if (me.trade.has(O.id)) b.push(this.mini('Prekini trgovinu', `data-do="endT:${O.id}"`, 'warn'));
-    else b.push(this.mini('Trgovina', `data-do="propT:${O.id}"`, '', me.trade.size >= C.TRADE_MAX || O.trade.size >= C.TRADE_MAX || G.atWar(me, O), 'trade'));
+    if (G.opts.league === 5 && me && O.human && O !== me && O.team === me.team && !O.kicked) b.push(this.mini(me.kickVote === O.id ? RA.t("Voted") : RA.t("Kick"), `data-do="kick:${O.id}"`, 'warn', me.kickVote === O.id));
+    if (me.trade.has(O.id)) b.push(this.mini(RA.t("Stop trade"), `data-do="endT:${O.id}"`, 'warn'));
+    else b.push(this.mini(RA.t("Trade"), `data-do="propT:${O.id}"`, '', me.trade.size >= C.TRADE_MAX || O.trade.size >= C.TRADE_MAX || G.atWar(me, O), 'trade'));
     return b.join('');
   },
   diploAct(act, id) {
@@ -299,7 +299,7 @@ Object.assign(RA.UI.prototype, {
     }
     if (act === 'deal') return this.dealSheet(id);
     if (act === 'rep') return this.reportSheet(this.G.P[id]);
-    if (act === 'kick') return this.confirm(`Izbaciti ${RA.esc(this.G.P[id].nick || this.G.P[id].name)}?`, 'Glasaš za izbacivanje iz tima. Kad glasaju 4 saigrača, državu preuzima kompjuter.', 'Glasaj', () => this.act('kick', [id]));
+    if (act === 'kick') return this.confirm(RA.t("Kick {0}?", RA.esc(this.G.P[id].nick || this.G.P[id].name)), RA.t("You vote to kick them from the team. When 4 teammates vote, the computer takes over the state."), RA.t("Vote"), () => this.act('kick', [id]));
     const G = this.G, me = G.me, O = G.P[id];
     if (!me || !O) return;
     const map = { accA: ['aRes', [id, 1]], decA: ['aRes', [id, 0]], accT: ['tRes', [id, 1]], decT: ['tRes', [id, 0]], propA: ['aReq', [id]], propT: ['tReq', [id]], send: ['give', [id, this.ratio]], help: ['help', [id]], vas: ['vas', [id]], ext: ['ext', [id]], endT: ['tEnd', [id]] };
@@ -309,11 +309,11 @@ Object.assign(RA.UI.prototype, {
       return;
     }
     if (act === 'brk' && O.lord === me.id) {
-      this.confirm(`Osloboditi vazala (${O.name})?`, 'Više ti ne plaća danak i ne bori se uz tebe. Nije izdaja.', 'Oslobodi', () => this.act('brk', [id]));
+      this.confirm(RA.t("Release the vassal ({0})?", O.name), RA.t("It no longer pays you tribute or fights at your side. It's not a betrayal."), RA.t("Release"), () => this.act('brk', [id]));
       return;
     }
     if (act === 'brk') {
-      this.confirm(`Raskinuti vojni savez (${O.name})?`, 'To je izdaja: 30 sekundi imaš prepolovljenu odbranu, a ostale države ti manje vjeruju.', 'Raskini savez', () => this.act('brk', [id]));
+      this.confirm(RA.t("Break the military alliance ({0})?", O.name), RA.t("That's a betrayal: your defence is halved for 30 seconds, and the other states trust you less."), RA.t("Break the alliance"), () => this.act('brk', [id]));
       return;
     }
     if (map[act]) this.act(map[act][0], map[act][1]);
@@ -332,53 +332,53 @@ Object.assign(RA.UI.prototype, {
     if (!me || G.state !== 'play') return;
     const C = RA.CFG, tk = G.tick;
     const row = (o, meta, buttons, wide) => `<div class="prow${wide ? ' wide' : ''}"><span class="sw" style="background:${o.hex}"></span><div class="pn" data-do="show:${o.id}"><div class="nm">${RA.esc(o.name)}</div><div class="d">${meta}</div></div><div class="bb">${buttons}</div></div>`;
-    let h = this.head('Savezi', `Vojni ${G.allyCount(me)}/${C.ALLY_MAX} · trgovinski ${me.trade.size}/${C.TRADE_MAX} · +${RA.fmt(me.tradeRate || 0)}/s od trgovine`);
+    let h = this.head(RA.t("Alliances"), RA.t("Military {0}/{1} · trade {2}/{3} · +{4}/s from trade", G.allyCount(me), C.ALLY_MAX, me.trade.size, C.TRADE_MAX, RA.fmt(me.tradeRate || 0)));
     const ae = Math.round(me.ae || 0);
-    h += `<p class="explain">Agresivna ekspanzija: <b${ae >= C.AE_COALITION ? ' class="neg"' : ''}>${ae}/100</b>. Raste sa svakom napadnutom i pokorenom državom (broj država, ne površina), vremenom opada. Od ${C.AE_COALITION} kompjuterske države te izbjegavaju, raskidaju saveze s tobom i udružuju se protiv tebe.</p>`;
-    if (G.online) h += `<div class="btns" style="margin-bottom:10px">${this.btn({ icon: 'chat', attrs: 'data-do="chat:0"', t: 'Brze poruke saveznicima', d: 'Poruke i emoji koje vide saveznici i tim (tipka T)' })}</div>`;
+    h += RA.t("<p class=\"explain\">Aggressive expansion: <b{0}>{1}/100</b>. It rises with every state you attack and conquer (the number of states, not the area) and fades with time. From {2} computer states avoid you, break alliances with you and join forces against you.</p>", ae >= C.AE_COALITION ? ' class="neg"' : '', ae, C.AE_COALITION);
+    if (G.online) h += `<div class="btns" style="margin-bottom:10px">${this.btn({ icon: 'chat', attrs: 'data-do="chat:0"', t: RA.t("Quick messages to allies"), d: RA.t("Messages and emoji your allies and team see (key T)") })}</div>`;
     // offers
     const offers = G.allyReqs.filter((r) => r.to === me.id).map((r) => ['A', r]).concat(G.tradeReqs.filter((r) => r.to === me.id).map((r) => ['T', r]));
     if (offers.length) {
-      h += '<div class="sec-t">Ponude</div><div class="list">';
+      h += RA.t("<div class=\"sec-t\">Offers</div><div class=\"list\">");
       for (const [k, r] of offers) {
         const o = G.P[r.from];
-        h += row(o, k === 'A' ? 'nudi <b>vojni savez</b>' : 'nudi <b>trgovinski savez</b>', this.mini('Prihvati', `data-do="acc${k}:${o.id}"`, 'ok') + this.mini('Odbij', `data-do="dec${k}:${o.id}"`));
+        h += row(o, k === 'A' ? RA.t("offers a <b>military alliance</b>") : RA.t("offers a <b>trade pact</b>"), this.mini(RA.t("Accept"), `data-do="acc${k}:${o.id}"`, 'ok') + this.mini(RA.t("Decline"), `data-do="dec${k}:${o.id}"`));
       }
       h += '</div>';
     }
     // offers and demands from other states (02l-offers.js)
     const deals = G.offers.filter((o) => o.to === me.id);
     if (deals.length) {
-      h += '<div class="sec-t">Ponude za dogovor</div><div class="list">';
+      h += RA.t("<div class=\"sec-t\">Deal offers</div><div class=\"list\">");
       for (const d of deals) {
         const o = G.P[d.from];
-        h += row(o, `daje: <b>${RA.esc(G.offerText(d.give))}</b><br>traži: <b>${RA.esc(G.offerText(d.want))}</b>`, this.mini('Prihvati', `data-do="offY:${d.id}"`, 'ok') + this.mini('Protivponuda', `data-do="offC:${d.id}"`) + this.mini('Odbij', `data-do="offN:${d.id}"`), true);
+        h += row(o, RA.t("gives: <b>{0}</b><br>wants: <b>{1}</b>", RA.esc(G.offerText(d.give)), RA.esc(G.offerText(d.want))), this.mini(RA.t("Accept"), `data-do="offY:${d.id}"`, 'ok') + this.mini(RA.t("Counter-offer"), `data-do="offC:${d.id}"`) + this.mini(RA.t("Decline"), `data-do="offN:${d.id}"`), true);
       }
       h += '</div>';
     }
     // military alliances
-    h += `<div class="sec-t">Vojni savezi · ${G.allyCount(me)}/${C.ALLY_MAX}</div><p class="explain">Ne napadate se. Kad te neko napadne, saveznici udaraju na njega ili ti šalju vojsku. Traje 5 min, može se produžiti.</p>`;
-    if (!me.allies.size) h += '<p class="note" style="margin-top:0">Nemaš vojnih saveznika.</p>';
+    h += RA.t("<div class=\"sec-t\">Military alliances · {0}/{1}</div><p class=\"explain\">You don't attack each other. When someone attacks you, your allies strike at them or send you troops. Lasts 5 min, can be extended.</p>", G.allyCount(me), C.ALLY_MAX);
+    if (!me.allies.size) h += RA.t("<p class=\"note\" style=\"margin-top:0\">You have no military allies.</p>");
     else {
       h += '<div class="list">';
       for (const [oid, exp] of me.allies) {
         const o = G.P[oid];
-        const kind = o.lord === me.id ? `<span class="tag al">vazal · danak +${RA.fmt(o.tribute || 0)}/s</span>` : me.lord === oid ? '<span class="tag al">tvoj gospodar · daješ danak</span>' : isFinite(exp) ? 'ističe za ' + RA.fmtTime(Math.max(0, (exp - tk) / 10)) : '<span class="tag al">tim · stalni savez</span>';
-        h += row(o, `${kind} · vojska ${RA.fmt(o.troops)}${o.trade && me.trade.has(oid) ? ' · <span class="tag tr">⇄ trgovina</span>' : ''}`, this.diploButtons(o, true), true);
+        const kind = o.lord === me.id ? RA.t("<span class=\"tag al\">vassal · tribute +{0}/s</span>", RA.fmt(o.tribute || 0)) : me.lord === oid ? RA.t("<span class=\"tag al\">your overlord · you pay tribute</span>") : isFinite(exp) ? RA.t("expires in ") + RA.fmtTime(Math.max(0, (exp - tk) / 10)) : RA.t("<span class=\"tag al\">team · permanent alliance</span>");
+        h += row(o, RA.t("{0} · army {1}{2}", kind, RA.fmt(o.troops), o.trade && me.trade.has(oid) ? RA.t(" · <span class=\"tag tr\">⇄ trade</span>") : ''), this.diploButtons(o, true), true);
       }
       h += '</div>';
     }
     // trade agreements
-    h += `<div class="sec-t">Trgovinski savezi · ${me.trade.size}/${C.TRADE_MAX}</div><p class="explain">Trgovački brodovi između vaših luka i trgovina preko zajedničke granice donose zlato objema stranama. Nema obaveze pomoći u ratu. Napad prekida trgovinu.</p>`;
-    if (!me.trade.size) h += '<p class="note" style="margin-top:0">Nemaš trgovinskih saveza. Za pomorsku trgovinu trebate luke; susjedi mogu trgovati i kopnom.</p>';
+    h += RA.t("<div class=\"sec-t\">Trade pacts · {0}/{1}</div><p class=\"explain\">Trade ships between your ports and trade across a shared border bring gold to both sides. No duty to help in war. An attack ends the trade.</p>", me.trade.size, C.TRADE_MAX);
+    if (!me.trade.size) h += RA.t("<p class=\"note\" style=\"margin-top:0\">You have no trade pacts. Sea trade needs ports; neighbours can also trade over land.</p>");
     else {
       h += '<div class="list">';
       for (const oid of me.trade) {
         const o = G.P[oid];
         const land = me.nbCache && me.nbCache.has(oid);
-        const via = [land ? 'kopnom' : '', me.n.port && o.n.port ? 'morem' : ''].filter(Boolean).join(' i ') || 'nema puta — trebaju luke ili granica';
-        const rs = G.deps && o.res ? ' · ima: ' + ([0, 1, 2].filter((s) => o.res[s]).map((s) => `${RA.resKind(s, G.era).name} ${Math.round(G.resRate(o, s) * 100)}%`).join(', ') || 'ništa') : '';
-        h += row(o, `trgovina: ${via}${rs}`, this.mini('Prekini', `data-do="endT:${oid}"`, 'warn'));
+        const via = [land ? RA.t("by land") : '', me.n.port && o.n.port ? RA.t("by sea") : ''].filter(Boolean).join(RA.t(" and ")) || RA.t("no route — ports or a border needed");
+        const rs = G.deps && o.res ? RA.t(" · has: ") + ([0, 1, 2].filter((s) => o.res[s]).map((s) => `${RA.resKind(s, G.era).name} ${Math.round(G.resRate(o, s) * 100)}%`).join(', ') || RA.t("nothing")) : '';
+        h += row(o, `trgovina: ${via}${rs}`, this.mini(RA.t("Stop"), `data-do="endT:${oid}"`, 'warn'));
       }
       h += '</div>';
     }
@@ -387,15 +387,15 @@ Object.assign(RA.UI.prototype, {
     const others = G.P.filter((o) => o && o.alive && o.spawned && o !== me && (o.type !== 'bot' || nb.has(o.id)))
       .sort((a, b) => (nb.has(b.id) ? 1 : 0) - (nb.has(a.id) ? 1 : 0) || b.tiles - a.tiles)
       .slice(0, 24);
-    h += '<div class="sec-t">Države</div><div class="list">';
+    h += RA.t("<div class=\"sec-t\">States</div><div class=\"list\">");
     for (const o of others) {
-      const tags = (o.lord ? `<span class="tag al">vazal: ${RA.esc(G.P[o.lord].name)}</span>` : me.allies.has(o.id) ? '<span class="tag al">⛨ savez</span>' : '') + (me.trade.has(o.id) ? '<span class="tag tr">⇄ trgovina</span>' : '');
-      const meta = `${o.ai ? this.relLabel(o.rel[me.id]) + ' · ' : ''}${nb.has(o.id) ? 'susjed · ' : ''}vojska ${RA.fmt(o.troops)}${tags}`;
+      const tags = (o.lord ? RA.t("<span class=\"tag al\">vassal: {0}</span>", RA.esc(G.P[o.lord].name)) : me.allies.has(o.id) ? RA.t("<span class=\"tag al\">⛨ alliance</span>") : '') + (me.trade.has(o.id) ? RA.t("<span class=\"tag tr\">⇄ trade</span>") : '');
+      const meta = RA.t("{0}{1}army {2}{3}", o.ai ? this.relLabel(o.rel[me.id]) + ' · ' : '', nb.has(o.id) ? RA.t("neighbour · ") : '', RA.fmt(o.troops), tags);
       h += row(o, meta, this.diploButtons(o, false), true);
     }
     h += '</div>';
-    h += `<p class="note">Vazal: slaba država (najviše ${Math.round(C.VASSAL_TROOPS * 100)}% tvoje vojske i ${Math.round(C.VASSAL_AREA * 100)}% zemlje), susjed ili protivnik u ratu, može pristati da ti bude vazal umjesto da je osvojiš — plaća ${Math.round(C.TRIBUTE * 100)}% prihoda i bori se uz tebe; najviše ${C.VASSAL_MAX}. Ako oslabiš, oslobodi se.</p>`;
-    h += `<p class="note">Najviše ${C.ALLY_MAX} vojna i ${C.TRADE_MAX} trgovinskih saveza. Izdaja saveznika = 30 s prepolovljene odbrane i loš ugled kod svih.</p>`;
+    h += RA.t("<p class=\"note\">Vassal: a weak state (at most {0}% of your troops and {1}% of your land), a neighbour or an enemy at war, may agree to be your vassal instead of being conquered — it pays {2}% of its income and fights at your side; at most {3}. If you weaken, it breaks free.</p>", Math.round(C.VASSAL_TROOPS * 100), Math.round(C.VASSAL_AREA * 100), Math.round(C.TRIBUTE * 100), C.VASSAL_MAX);
+    h += RA.t("<p class=\"note\">At most {0} military alliances and {1} trade pacts. Betraying an ally = 30 s of halved defence and a bad name with everyone.</p>", C.ALLY_MAX, C.TRADE_MAX);
     this.openSheet(h, (s) => this.bindDiplo(s), keep, () => this.diploSheet(true));
   },
 
@@ -404,11 +404,11 @@ Object.assign(RA.UI.prototype, {
     const G = this.G, map = G.map, me = G.me;
     if (c < 0 || !me || !me.alive) return;
     if (map.block[c]) {
-      this.toast('info', 'To je izvan odabrane regije.');
+      this.toast('info', RA.t("That's outside the chosen region."));
       return;
     }
     if (!map.land[c]) {
-      this.toast('info', 'More. Za desant izaberi „Desant” pa dodirni obalu.');
+      this.toast('info', RA.t("Sea. For a landing pick “Landing”, then tap the coast."));
       return;
     }
     const W = map.W, C = RA.CFG, tk = G.tick;
@@ -416,24 +416,24 @@ Object.assign(RA.UI.prototype, {
     const ci = map.cityAt[c];
     let city = ci >= 0 ? map.cities[ci] : null;
     if (!city) for (const ct of G.cities) if (Math.abs(ct.x - cx) <= 2 && Math.abs(ct.y - cy) <= 2) city = ct;
-    const terr = RA.TERR_NAME[map.terr[c]] + (map.river[c] ? ' · rijeka' : '') + (map.coast[c] ? ' · obala' : '');
-    const cityLine = city ? `${city.tier === 3 ? 'Prijestolnica' : city.tier === 2 ? 'Metropola' : 'Grad'} ${RA.esc(city.name)} · ` : '';
+    const terr = RA.TERR_NAME[map.terr[c]] + (map.river[c] ? RA.t(" · river") : '') + (map.coast[c] ? RA.t(" · coast") : '');
+    const cityLine = city ? `${city.tier === 3 ? RA.t("Capital") : city.tier === 2 ? RA.t("Metropolis") : RA.t("City")} ${RA.esc(city.name)} · ` : '';
     const oid = G.owner[c];
     const O = oid ? G.P[oid] : null;
     const pct = (p) => ((p.area / G.landTotal()) * 100).toFixed(1).replace('.', ',') + '%';
     const unitsNear = G.units.filter((u) => !u.dead && Math.hypot(u.x - cx - 0.5, u.y - cy - 0.5) <= 4);
-    const unitLine = unitsNear.length ? `<p class="explain">Jedinice ovdje: ${unitsNear.map((u) => `${RA.UNIT[u.type].name} (${RA.esc(G.P[u.owner].name)}, ${Math.round((u.hp / RA.UNIT[u.type].hp) * 100)}%)`).join(', ')}</p>` : '';
+    const unitLine = unitsNear.length ? RA.t("<p class=\"explain\">Units here: {0}</p>", unitsNear.map((u) => `${RA.UNIT[u.type].name} (${RA.esc(G.P[u.owner].name)}, ${Math.round((u.hp / RA.UNIT[u.type].hp) * 100)}%)`).join(', ')) : '';
     let h = '';
     if (O === me) {
-      h += this.head('Tvoja teritorija', cityLine + terr, me.hex) + unitLine;
-      h += '<div class="sec-t">Gradi ovdje</div><div class="grid2">';
+      h += this.head(RA.t("Your land"), cityLine + terr, me.hex) + unitLine;
+      h += RA.t("<div class=\"sec-t\">Build here</div><div class=\"grid2\">");
       for (const t of RA.STRUCT_ORDER) {
         const S = RA.STRUCT[t];
         const why = G.canBuild(me, t, c);
         const ok = typeof why === 'number';
         h += this.btn({ icon: S.icon || t, attrs: `data-build="${t}"`, dis: !ok, t: S.short || S.name, d: ok ? RA.fmt(G.structCost(me, t)) : RA.esc(why.replace(/\.$/, '')) });
       }
-      h += '</div><div class="sec-t">Postavi jedinicu ovdje</div><div class="grid2">';
+      h += RA.t("</div><div class=\"sec-t\">Place a unit here</div><div class=\"grid2\">");
       for (const t of ['inf', 'tank', 'art']) {
         const U = RA.UNIT[t];
         if (U.na) continue;
@@ -458,53 +458,53 @@ Object.assign(RA.UI.prototype, {
     const acts = [];
     const myAtt = G.attacks.find((a) => !a.done && a.a === me.id && a.t === oid);
     if (!O) {
-      h += this.head('Slobodna zemlja', cityLine + terr) + unitLine;
-      acts.push(this.btn({ icon: 'attack', cls: 'primary', attrs: 'data-act="attack"', t: 'Širi se ovamo', d: 'Front kreće prema ovoj tački', r: troopsTxt }));
+      h += this.head(RA.t("Free land"), cityLine + terr) + unitLine;
+      acts.push(this.btn({ icon: 'attack', cls: 'primary', attrs: 'data-act="attack"', t: RA.t("Expand here"), d: RA.t("The front heads for this point"), r: troopsTxt }));
     } else {
       const ally = me.allies.has(O.id);
-      const kind = O.type === 'nation' ? `Država · ${RA.PERS[O.ai.pers].label}` : O.type === 'bot' ? 'Grad-država' : 'Igrač';
-      const traitor = O.traitorUntil > tk ? ' · <b style="color:#ffb3b3">izdajnik</b>' : '';
+      const kind = O.type === 'nation' ? RA.t("State · {0}", RA.PERS[O.ai.pers].label) : O.type === 'bot' ? RA.t("City-state") : RA.t("Player");
+      const traitor = O.traitorUntil > tk ? RA.t(" · <b style=\"color:#ffb3b3\">traitor</b>") : '';
       h += this.head(O.name, `${kind}${traitor} · ${cityLine}${terr}`, O.hex);
       const cities = O.nCity[1] + O.nCity[2] + O.nCity[3] + O.n.city;
-      h += `<div class="kv"><div><div class="k">Vojska</div><div class="v">${RA.fmt(O.troops)}</div></div><div><div class="k">Kopno</div><div class="v">${pct(O)}</div></div><div><div class="k">Gradovi</div><div class="v">${cities}</div></div></div>`;
-      const tags = (ally ? ' · <span class="tag al">⛨ vojni savez</span>' : '') + (me.trade.has(O.id) ? ' · <span class="tag tr">⇄ trgovina</span>' : '');
-      if (O.ai) h += `<p class="explain">Stav prema tebi: ${this.relLabel(O.rel[me.id])}${tags} · jedinica: ${O.units.length}</p>` + this.whyHtml(O);
+      h += RA.t("<div class=\"kv\"><div><div class=\"k\">Army</div><div class=\"v\">{0}</div></div><div><div class=\"k\">Land</div><div class=\"v\">{1}</div></div><div><div class=\"k\">Cities</div><div class=\"v\">{2}</div></div></div>", RA.fmt(O.troops), pct(O), cities);
+      const tags = (ally ? RA.t(" · <span class=\"tag al\">⛨ military alliance</span>") : '') + (me.trade.has(O.id) ? RA.t(" · <span class=\"tag tr\">⇄ trade</span>") : '');
+      if (O.ai) h += RA.t("<p class=\"explain\">Attitude towards you: {0}{1} · units: {2}</p>", this.relLabel(O.rel[me.id]), tags, O.units.length) + this.whyHtml(O);
       h += unitLine;
       if (!ally) {
         acts.push(this.btn({
           icon: 'attack', cls: 'primary', attrs: 'data-act="attack"', dis: peace,
-          t: O ? 'Napadni ovaj dio' : 'Zauzmi', d: peace && O ? `Mirno doba — napadi za ${G.peaceLeft()}` : O ? `${Math.round(this.ratio * 100)}% vojske · s najbliže granice do ove tačke` : `${Math.round(this.ratio * 100)}% vojske, širenje prema ovoj tački`, r: troopsTxt,
+          t: O ? RA.t("Attack this part") : RA.t("Take"), d: peace && O ? RA.t("Peace time — attacks in {0}", G.peaceLeft()) : O ? RA.t("{0}% of troops · from the nearest border to this point", Math.round(this.ratio * 100)) : RA.t("{0}% of troops, expanding towards this point", Math.round(this.ratio * 100)), r: troopsTxt,
         }));
         if (O) acts.push(this.btn({
           icon: 'attack', attrs: 'data-act="attackAll"', dis: peace,
-          t: 'Napadni cijelu granicu', d: `${Math.round(this.ratio * 100)}% vojske · front na svakom dodiru s ovom državom`, r: troopsTxt,
+          t: RA.t("Attack the whole border"), d: RA.t("{0}% of troops · a front wherever you touch this state", Math.round(this.ratio * 100)), r: troopsTxt,
         }));
       }
     }
-    if (myAtt) acts.push(this.btn({ icon: 'retreat', attrs: 'data-act="retreat"', t: 'Obustavi napad', d: `U napadu je ${RA.fmt(myAtt.troops)} vojnika · vraća se ${O ? '75%' : 'sve'}` }));
+    if (myAtt) acts.push(this.btn({ icon: 'retreat', attrs: 'data-act="retreat"', t: RA.t("Stop the attack"), d: RA.t("{0} troops in the attack · {1} come back", RA.fmt(myAtt.troops), O ? '75%' : RA.t("all")) }));
     if (map.coast[c] && (!O || !me.allies.has(O.id))) {
-      acts.push(this.btn({ icon: 'boat', attrs: 'data-act="boat"', dis: me.boats >= C.BOAT_MAX || (O && peace), t: 'Desant brodom na ovu obalu', d: `Brodovi: ${me.boats}/${C.BOAT_MAX}`, r: troopsTxt }));
+      acts.push(this.btn({ icon: 'boat', attrs: 'data-act="boat"', dis: me.boats >= C.BOAT_MAX || (O && peace), t: RA.t("A landing by ship on this coast"), d: RA.t("Ships: {0}/{1}", me.boats, C.BOAT_MAX), r: troopsTxt }));
     }
     if (RA.ERA.para && me.n.airport && (!O || !me.allies.has(O.id))) {
       const ap = G.paraAirport(me, c);
-      acts.push(this.btn({ icon: 'para', attrs: 'data-act="para"', dis: !ap || me.gold < C.PARA_GOLD || (O && peace), t: 'Padobranci ovdje', d: ap ? `${RA.fmt(C.PARA_GOLD)} zlata · ${Math.round(this.ratio * 100)}% vojske` : `Nijedan spreman aerodrom u dometu (${C.PARA_RANGE} polja)`, r: troopsTxt }));
+      acts.push(this.btn({ icon: 'para', attrs: 'data-act="para"', dis: !ap || me.gold < C.PARA_GOLD || (O && peace), t: RA.t("Paratroopers here"), d: ap ? RA.t("{0} gold · {1}% of troops", RA.fmt(C.PARA_GOLD), Math.round(this.ratio * 100)) : RA.t("No ready airfield in range ({0} cells)", C.PARA_RANGE), r: troopsTxt }));
     }
     h += `<div class="btns">${acts.join('')}</div>`;
-    if (G.online) h += `<div class="sec-t">Označi za saveznike</div><div class="grid2">${RA.PINGS.map((P, i) => this.btn({ icon: P.icon, attrs: `data-ping="${i}"`, t: P.name, d: 'ping na karti' })).join('')}</div>`;
+    if (G.online) h += RA.t("<div class=\"sec-t\">Mark for allies</div><div class=\"grid2\">{0}</div>", RA.PINGS.map((P, i) => this.btn({ icon: P.icon, attrs: `data-ping="${i}"`, t: P.name, d: RA.t("map ping") })).join(''));
     if (O && O.type === 'nation' && !O.human) {
       const ru = RA.rulerOf(G, O);
       h += `<div class="ruler-row"><span class="rb-face">${RA.rulerPortrait(ru.kind, O.hex, O.rel[me.id] < -35, ru.seed)}</span><div><b>${RA.esc(ru.title)} ${RA.esc(ru.name)}</b><br><span class="d">${this.relLabel(O.rel[me.id])}</span></div></div>`;
     }
-    if (O && O.type !== 'me') h += `<div class="sec-t">Odnosi</div><div class="bb" style="display:flex;flex-wrap:wrap;gap:6px">${this.diploButtons(O, true)}</div>`;
+    if (O && O.type !== 'me') h += RA.t("<div class=\"sec-t\">Relations</div><div class=\"bb\" style=\"display:flex;flex-wrap:wrap;gap:6px\">{0}</div>", this.diploButtons(O, true));
     if (me.n.silo) {
-      h += `<div class="sec-t">${RA.esc(RA.ERA.strikeTab)} na ovu tačku</div><div class="grid2">`;
+      h += RA.t("<div class=\"sec-t\">{0} at this point</div><div class=\"grid2\">", RA.esc(RA.ERA.strikeTab));
       for (const t of RA.missileTypes()) {
         if (t === 'mirv' && !O) continue;
         const M = RA.MISSILE[t];
         const cost = G.missileCost(t, me);
         const far = M.range && !G.strikeSilo(me, t, c, true);
         const wait = M.from && tk < M.from;
-        h += this.btn({ icon: RA.missileIcon(t), cls: M.kind === 'conv' ? '' : 'danger', attrs: `data-nuke="${t}"`, dis: me.gold < cost || peace || far || wait, t: M.name, d: far ? 'izvan dometa' : wait ? 'razvoj traje' : RA.fmt(cost) });
+        h += this.btn({ icon: RA.missileIcon(t), cls: M.kind === 'conv' ? '' : 'danger', attrs: `data-nuke="${t}"`, dis: me.gold < cost || peace || far || wait, t: M.name, d: far ? RA.t("out of range") : wait ? RA.t("in development") : RA.fmt(cost) });
       }
       h += '</div>';
     }
@@ -547,7 +547,7 @@ Object.assign(RA.UI.prototype, {
 
   stanceName() {
     const st = this.G.me && this.G.me.stance, T = st && this.G.P[st.t];
-    return !st ? 'kao kompjuter' : st.k === 'def' ? 'brani se' : st.k === 'eco' ? 'gradi ekonomiju' : `napadaj ${T ? T.name : ''}`;
+    return !st ? RA.t("like the computer") : st.k === 'def' ? RA.t("defend") : st.k === 'eco' ? RA.t("build the economy") : RA.t("attack {0}", T ? T.name : '');
   },
   /* Focus: orders for the computer while I'm away (command 'stance') */
   stanceSheet() {
@@ -555,11 +555,11 @@ Object.assign(RA.UI.prototype, {
     if (!me) return;
     const cur = me.stance ? me.stance.k : 'auto';
     const opt = (k, t, d) => this.btn({ attrs: `data-st="${k}"`, cls: cur === k ? 'primary' : '', t, d });
-    let h = this.head('Dok me nema', 'Kad zatvoriš igru, kompjuter vodi tvoju državu po ovoj naredbi') + '<div class="btns">';
-    h += opt('auto', 'Kao kompjuter', 'Sam odlučuje: širi se, ratuje, sklapa saveze');
-    h += opt('def', 'Brani se', 'Bez novih ratova: utvrde i PVO, uzvraća samo kad ga napadnu, prihvata saveze');
-    h += opt('eco', 'Gradi ekonomiju', 'Bez novih ratova: gradovi, fabrike i luke, širi se na slobodnu zemlju');
-    h += '</div><div class="sec-t">Napadaj državu</div><div class="list">';
+    let h = this.head(RA.t("While I'm away"), RA.t("When you close the game, the computer plays your state by this order")) + '<div class="btns">';
+    h += opt('auto', RA.t("Like the computer"), RA.t("Decides by itself: expands, goes to war, makes alliances"));
+    h += opt('def', RA.t("Defend"), RA.t("No new wars: forts and air defence, strikes back only when attacked, accepts alliances"));
+    h += opt('eco', RA.t("Build the economy"), RA.t("No new wars: cities, factories and ports, expands onto free land"));
+    h += RA.t("</div><div class=\"sec-t\">Attack a state</div><div class=\"list\">");
     // my neighbours (no RA.AI.scan here: it draws from the game's random numbers)
     const W = G.map.W, ids = new Set();
     for (let i = 0; i < me.tiles; i++) {
@@ -567,12 +567,12 @@ Object.assign(RA.UI.prototype, {
       for (const n of [c - 1, c + 1, c - W, c + W]) if (n >= 0 && n < G.map.N && G.owner[n] && G.owner[n] !== me.id) ids.add(G.owner[n]);
     }
     const nb = [...ids].map((id) => G.P[id]).filter((o) => o && o.alive && o.type !== 'bot' && !G.isFriendly(me, o));
-    for (const o of nb) h += `<div class="prow wide"><span class="sw" style="background:${o.hex}"></span><div class="pn"><div class="nm">${RA.esc(o.name)}</div><div class="d">vojska ${RA.fmt(o.troops)}</div></div><div class="bb">${this.mini(me.stance && me.stance.t === o.id ? 'Izabrano' : 'Napadaj', `data-st="atk:${o.id}"`, 'warn')}</div></div>`;
-    if (!nb.length) h += '<p class="note">Nemaš susjeda s kojim nisi u savezu.</p>';
+    for (const o of nb) h += RA.t("<div class=\"prow wide\"><span class=\"sw\" style=\"background:{0}\"></span><div class=\"pn\"><div class=\"nm\">{1}</div><div class=\"d\">army {2}</div></div><div class=\"bb\">{3}</div></div>", o.hex, RA.esc(o.name), RA.fmt(o.troops), this.mini(me.stance && me.stance.t === o.id ? RA.t("Selected") : RA.t("Attack"), `data-st="atk:${o.id}"`, 'warn'));
+    if (!nb.length) h += RA.t("<p class=\"note\">You have no neighbour you are not allied with.</p>");
     this.openSheet(h + '</div>', (s) => s.querySelectorAll('[data-st]').forEach((b) => (b.onclick = () => {
       const [k, t] = b.dataset.st.split(':');
       this.act('stance', k === 'atk' ? [k, +t] : [k]);
-      this.toast('good', `Dok te nema: ${k === 'auto' ? 'kao kompjuter' : k === 'def' ? 'brani se' : k === 'eco' ? 'gradi ekonomiju' : 'napadaj ' + G.P[+t].name}.`);
+      this.toast('good', RA.t("While you're away: {0}.", k === 'auto' ? RA.t("like the computer") : k === 'def' ? RA.t("defend") : k === 'eco' ? RA.t("build the economy") : RA.t("attack ") + G.P[+t].name));
       this.closeSheet();
     })));
   },
@@ -581,7 +581,7 @@ Object.assign(RA.UI.prototype, {
     const G = this.G, me = G.me;
     if ((M.kind !== 'nuke' && M.kind !== 'mirv') || !(me.nukeUntil > G.tick)) return '';
     const left = me.nukeUntil - G.tick, pct = Math.round((left / RA.CFG.NUKE_COOL) * 100);
-    return `<span class="nuke-bar" title="Cijena se vraća na normalu"><i style="width:${pct}%"></i></span><span class="nuke-up">Skuplje ×${G.nukeMul(me).toFixed(1).replace('.', ',')} · normalna cijena za ${RA.dur(left)}</span>`;
+    return RA.t("<span class=\"nuke-bar\" title=\"The price returns to normal\"><i style=\"width:{0}%\"></i></span><span class=\"nuke-up\">Dearer ×{1} · normal price in {2}</span>", pct, G.nukeMul(me).toFixed(1).replace('.', ','), RA.dur(left));
   },
   /* offers and demands (plan 15): "Zahtijevam" from them, "Nudim" from me; pre = a counter-offer to fill in */
   dealSheet(oid, pre) {
@@ -594,18 +594,18 @@ Object.assign(RA.UI.prototype, {
       const cities = G.cities.filter((c) => c.owner === P.id && c.i !== P.capCity).sort((a, b2) => b2.tier - a.tier).slice(0, 40);
       const res = G.deps && P.res ? [0, 1, 2].filter((s) => P.res[s]) : [];
       const sts = (G.straits || []).map((st, i) => [st, i]).filter(([st]) => st.closed === P.id);
-      let h = `<div class="deal-side"><div class="sec-t">${k === 'want' ? `Zahtijevam od: ${RA.esc(P.name)}` : 'Nudim'}</div>`;
-      h += `<label class="deal-row">Zlato<input type="number" min="0" step="10000" data-k="${k}.g" value="${b.g || ''}" placeholder="0"><small>ima ${RA.fmt(P.gold)}</small></label>`;
-      if (allied) h += `<label class="deal-row">Vojska<input type="number" min="0" step="1000" data-k="${k}.t" value="${b.t || ''}" placeholder="0"><small>ima ${RA.fmt(P.troops)}</small></label>`;
-      h += `<label class="deal-row">Grad<select data-k="${k}.c"><option value="-1">—</option>${cities.map((c) => `<option value="${c.i}"${c.i === b.c ? ' selected' : ''}>${RA.esc(c.name)}${c.tier ? ' ' + '★'.repeat(c.tier) : ''}</option>`).join('')}</select></label>`;
-      if (res.length) h += `<label class="deal-row">Resurs<select data-k="${k}.r"><option value="-1">—</option>${res.map((s) => `<option value="${s}"${s === b.r ? ' selected' : ''}>${RA.resKind(s, G.era).name} (5 min)</option>`).join('')}</select></label>`;
-      if (sts.length) h += `<label class="deal-row">Moreuz<select data-k="${k}.s"><option value="-1">—</option>${sts.map(([st, i]) => `<option value="${i}"${i === b.s ? ' selected' : ''}>otvori ${RA.esc(st.name)}</option>`).join('')}</select></label>`;
+      let h = `<div class="deal-side"><div class="sec-t">${k === 'want' ? RA.t("I demand from: {0}", RA.esc(P.name)) : RA.t("I offer")}</div>`;
+      h += RA.t("<label class=\"deal-row\">Gold<input type=\"number\" min=\"0\" step=\"10000\" data-k=\"{0}.g\" value=\"{1}\" placeholder=\"0\"><small>has {2}</small></label>", k, b.g || '', RA.fmt(P.gold));
+      if (allied) h += RA.t("<label class=\"deal-row\">Troops<input type=\"number\" min=\"0\" step=\"1000\" data-k=\"{0}.t\" value=\"{1}\" placeholder=\"0\"><small>has {2}</small></label>", k, b.t || '', RA.fmt(P.troops));
+      h += RA.t("<label class=\"deal-row\">City<select data-k=\"{0}.c\"><option value=\"-1\">—</option>{1}</select></label>", k, cities.map((c) => `<option value="${c.i}"${c.i === b.c ? ' selected' : ''}>${RA.esc(c.name)}${c.tier ? ' ' + '★'.repeat(c.tier) : ''}</option>`).join(''));
+      if (res.length) h += RA.t("<label class=\"deal-row\">Resource<select data-k=\"{0}.r\"><option value=\"-1\">—</option>{1}</select></label>", k, res.map((s) => `<option value="${s}"${s === b.r ? ' selected' : ''}>${RA.resKind(s, G.era).name} (5 min)</option>`).join(''));
+      if (sts.length) h += RA.t("<label class=\"deal-row\">Strait<select data-k=\"{0}.s\"><option value=\"-1\">—</option>{1}</select></label>", k, sts.map(([st, i]) => RA.t("<option value=\"{0}\"{1}>open the {2}</option>", i, i === b.s ? ' selected' : '', RA.esc(st.name))).join(''));
       return h + '</div>';
     };
-    let h = '<div id="dealSheet"></div>' + this.head(pre && pre.reply ? 'Protivponuda' : 'Pregovori', `${RA.esc(O.name)} · ${O.ai && !O.human ? 'kompjuter odmah odgovara: prihvata, traži više ili odbija' : 'igrač: prihvata, odbija ili pravi protivponudu'}`, O.hex);
+    let h = '<div id="dealSheet"></div>' + this.head(pre && pre.reply ? RA.t("Counter-offer") : RA.t("Negotiations"), `${RA.esc(O.name)} · ${O.ai && !O.human ? RA.t("the computer answers at once: accepts, asks for more or declines") : RA.t("a player: accepts, declines or makes a counter-offer")}`, O.hex);
     h += `<div class="deal-grid">${side(O, want, 'want')}${side(me, give, 'give')}</div>`;
-    if (!allied) h += '<p class="note">Vojsku možete razmjenjivati samo kad ste vojni saveznici. Grad se daje s okolinom (3 polja); prijestolnica se ne daje.</p>';
-    h += `<div class="btns"><button class="btn primary" data-send><span class="t">${pre && pre.reply ? 'Pošalji protivponudu' : 'Pošalji ponudu'}</span></button></div>`;
+    if (!allied) h += RA.t("<p class=\"note\">You can exchange troops only as military allies. A city goes with its surroundings (3 cells); a capital can't be given.</p>");
+    h += `<div class="btns"><button class="btn primary" data-send><span class="t">${pre && pre.reply ? RA.t("Send the counter-offer") : RA.t("Send the offer")}</span></button></div>`;
     this.openSheet(h, (s) => {
       s.querySelector('[data-send]').onclick = () => {
         const b = { want: Object.assign({}, E), give: Object.assign({}, E) };
@@ -627,7 +627,7 @@ Object.assign(RA.UI.prototype, {
     let h = '';
     if (rows.length) h += `<div class="why-list">${rows.map(([k, v]) => `<span class="why ${v > 0 ? 'pos' : 'neg'}">${v > 0 ? '+' : '−'}${Math.abs(v)} ${RA.esc(RA.WHY[k] || k)}</span>`).join('')}</div>`;
     const al = [...O.allies.keys()].map((id) => G.P[id]).filter((q) => q && q.alive);
-    if (al.length) h += `<p class="note">Saveznici: ${al.map((q) => `<b style="color:${q.hex}">${RA.esc(q === me ? 'ti' : q.name)}</b>`).join(', ')} · tipka L: savezi na karti</p>`;
+    if (al.length) h += RA.t("<p class=\"note\">Allies: {0} · key L: alliances on the map</p>", al.map((q) => `<b style="color:${q.hex}">${RA.esc(q === me ? RA.t("you") : q.name)}</b>`).join(', '));
     return h;
   },
   /* quick messages to allies and team (online) */
@@ -636,11 +636,9 @@ Object.assign(RA.UI.prototype, {
     const G = this.G, me = G && G.me;
     if (!me || G.state !== 'play') return;
     const T = RA.TAX, cur = RA.TAX[me.tax] || T[2], pct = (v) => (v >= 1 ? '+' : '−') + Math.round(Math.abs(v - 1) * 100) + '%';
-    const h = this.head('Ekonomija', 'Riznica · razvoj · trgovina') +
-      `<div class="economy-overview"><div><span>Riznica</span><strong>${RA.fmt(me.gold)}</strong><small>raspoloživo zlato</small></div><div><span>Prihod</span><strong>+${RA.fmt(me.goldRate || 0)}</strong><small>zlata / sekundi</small></div><div><span>Vojska</span><strong>${me.growRate >= 0 ? '+' : '−'}${RA.fmt(Math.abs(me.growRate || 0))}</strong><small>vojnika / sekundi</small></div></div>` +
-      `<div class="field"><span class="lab">Porez: ${RA.esc(cur.name)}</span><div class="seg wrap" id="taxSeg" role="group" aria-label="Porez">${T.map((t, i) => `<button data-v="${i}" aria-pressed="${i === me.tax}">${RA.esc(t.name)}</button>`).join('')}</div>
-      <p class="note">Viši porez: više zlata, ali vojska sporije raste. Niži: vojska brže raste, zlata manje.<br>Sada: zlato ${cur.g === 1 ? 'normalno' : pct(cur.g)}, rast vojske ${cur.grow === 1 ? 'normalan' : pct(cur.grow)}.</p></div>
-      <div class="field"><span class="lab">Kamata</span><p class="note">Ušteđeno zlato donosi 1% u minuti, najviše četvrtinu tvog prihoda. Sada: <b>+${RA.fmt(me.interest || 0)}/s</b>.</p></div>` +
+    const h = this.head(RA.t("Economy"), RA.t("Treasury · development · trade")) +
+      RA.t("<div class=\"economy-overview\"><div><span>Treasury</span><strong>{0}</strong><small>gold available</small></div><div><span>Income</span><strong>+{1}</strong><small>gold / second</small></div><div><span>Army</span><strong>{2}{3}</strong><small>troops / second</small></div></div>", RA.fmt(me.gold), RA.fmt(me.goldRate || 0), me.growRate >= 0 ? '+' : '−', RA.fmt(Math.abs(me.growRate || 0))) +
+      RA.t("<div class=\"field\"><span class=\"lab\">Tax: {0}</span><div class=\"seg wrap\" id=\"taxSeg\" role=\"group\" aria-label=\"Tax\">{1}</div>\n      <p class=\"note\">Higher tax: more gold, but the army grows more slowly. Lower: the army grows faster, less gold.<br>Now: gold {2}, army growth {3}.</p></div>\n      <div class=\"field\"><span class=\"lab\">Interest</span><p class=\"note\">Saved gold earns 1% a minute, at most a quarter of your income. Now: <b>+{4}/s</b>.</p></div>", RA.esc(cur.name), T.map((t, i) => `<button data-v="${i}" aria-pressed="${i === me.tax}">${RA.esc(t.name)}</button>`).join(''), cur.g === 1 ? RA.t("normal") : pct(cur.g), cur.grow === 1 ? RA.t("normal{=2}") : pct(cur.grow), RA.fmt(me.interest || 0)) +
       this.resHtml() + this.loanHtml() + this.straitHtml();
     this.openSheet(this.techHtml(h), (s) => {
       s.querySelectorAll('[data-tech]').forEach((b) => (b.onclick = () => {
@@ -662,7 +660,7 @@ Object.assign(RA.UI.prototype, {
           this.act('str', [i, v]);
           if (G.online) setTimeout(() => this.econSheet(true), 400);
         };
-        if (v) this.confirm(`Zatvoriti ${G.straits[i].name}?`, 'Prolaze samo tvoji i savezniči brodovi. Svi koji plove tim morima se ljute (sve više što duže traje), a to je i agresija: sam protiv svih — koalicija; s jakim saveznicima možeš izdržati.', 'Zatvori', go);
+        if (v) this.confirm(RA.t("Close the {0}?", G.straits[i].name), RA.t("Only your ships and your allies' pass. Everyone who sails those seas gets angry (more the longer it lasts), and it counts as aggression: alone against everyone — a coalition; with strong allies you can hold out."), RA.t("Close"), go);
         else go();
       }));
       s.querySelectorAll('#taxSeg button').forEach((b) => (b.onclick = () => {
@@ -684,59 +682,59 @@ Object.assign(RA.UI.prototype, {
   techHtml(h) {
     const G = this.G, me = G.me;
     if (!G.opts.tree) return h;
-    let t = '<div class="sec-t">Stablo tehnologija</div><p class="explain">Istraživanje za zlato: svaka grana ima 5 nivoa, svaki nivo je duplo skuplji. Traje do kraja igre.</p><div class="research-grid">';
+    let t = RA.t("<div class=\"sec-t\">Tech tree</div><p class=\"explain\">Research for gold: every branch has 5 levels, each level costs twice as much. Lasts until the end of the game.</p><div class=\"research-grid\">");
     for (const k of RA.TECH_ORDER) {
       const T = RA.TECH[k], lv = G.techLv(me, k), cost = G.techCost(me, k), max = lv >= RA.TECH_MAX;
-      t += `<article class="research-card" data-branch="${k}"><div class="research-heading"><i>${RA.icon(T.icon)}</i><span>${T.name}<small>Nivo ${lv} / ${RA.TECH_MAX}</small></span></div>${this.techProgress(lv)}<p>${RA.esc(T.desc)}</p>${max ? '<span class="research-max">Potpuno razvijeno</span>' : this.mini(`Istraži · ${RA.fmt(cost)}`, `data-tech="${k}" aria-label="Istraži ${T.name}, nivo ${lv+1}, ${RA.fmt(cost)} zlata"`, 'ok', me.gold < cost)}</article>`;
+      t += RA.t("<article class=\"research-card\" data-branch=\"{0}\"><div class=\"research-heading\"><i>{1}</i><span>{2}<small>Level {3} / {4}</small></span></div>{5}<p>{6}</p>{7}</article>", k, RA.icon(T.icon), T.name, lv, RA.TECH_MAX, this.techProgress(lv), RA.esc(T.desc), max ? RA.t("<span class=\"research-max\">Fully developed</span>") : this.mini(RA.t("Research · {0}", RA.fmt(cost)), RA.t("data-tech=\"{0}\" aria-label=\"Research {1}, level {2}, {3} gold\"", k, T.name, lv+1, RA.fmt(cost)), 'ok', me.gold < cost));
     }
     t += '</div>';
     // weapons research (03c-research.js): one at a time, it takes a while
     const B = me.rsBusy, left = B ? B.done - G.clock() : 0, secs = G.sub ? left : left / 10;
-    t += `<div class="sec-t">Istraživanje oružja</div><p class="explain">Plati i sačekaj: oružje je bolje do kraja igre. Jedno istraživanje u isto vrijeme.${B ? ` Sada: <b>${RA.esc(RA.RSCH[B.k].name)} ${B.lv}</b> — još ${RA.fmtTime(Math.max(0, secs))}.` : ''}</p><div class="research-grid" id="rschGrid">`;
+    t += RA.t("<div class=\"sec-t\">Weapons research</div><p class=\"explain\">Pay and wait: the weapon is better for the rest of the game. One research at a time.{0}</p><div class=\"research-grid\" id=\"rschGrid\">", B ? RA.t(" Now: <b>{0} {1}</b> — {2} to go.", RA.esc(RA.RSCH[B.k].name), B.lv, RA.fmtTime(Math.max(0, secs))) : '');
     for (const k of RA.RSCH_ORDER) {
       const R = RA.RSCH[k], lv = G.rsLv(me, k), cost = G.rsCost(me, k), max = lv >= R.max, busy = B && B.k === k;
       const dur = G.sub ? G.rsTime(me, k) : G.rsTime(me, k) / 10;
-      t += `<article class="research-card" data-rsch-card="${k}"><div class="research-heading"><i>${RA.icon(R.icon)}</i><span>${R.name}<small>Nivo ${lv} / ${R.max}</small></span></div><p>${RA.esc(R.desc)}</p>${max ? '<span class="research-max">Potpuno razvijeno</span>' : busy ? '<span class="research-max">Istražuje se…</span>' : this.mini(`Istraži · ${RA.fmt(cost)} · ${RA.fmtTime(dur)}`, `data-rsch="${k}"`, 'ok', me.gold < cost || !!B)}</article>`;
+      t += RA.t("<article class=\"research-card\" data-rsch-card=\"{0}\"><div class=\"research-heading\"><i>{1}</i><span>{2}<small>Level {3} / {4}</small></span></div><p>{5}</p>{6}</article>", k, RA.icon(R.icon), R.name, lv, R.max, RA.esc(R.desc), max ? RA.t("<span class=\"research-max\">Fully developed</span>") : busy ? RA.t("<span class=\"research-max\">Researching…</span>") : this.mini(RA.t("Research · {0} · {1}", RA.fmt(cost), RA.fmtTime(dur)), `data-rsch="${k}"`, 'ok', me.gold < cost || !!B));
     }
     t += '</div>';
     const i = h.indexOf('<div class="field">');
     return i < 0 ? h + t : h.slice(0, i) + t + h.slice(i);
   },
   techProgress(level) {
-    return `<div class="research-progress" role="img" aria-label="Nivo ${level} od 5">${Array.from({length:5},(_,i)=>`<i class="${i<level?'earned':i===level?'next':''}"></i>`).join('')}</div>`;
+    return `<div class="research-progress" role="img" aria-label="${RA.t('Level {0} of 5', level)}">${Array.from({length:5},(_,i)=>`<i class="${i<level?'earned':i===level?'next':''}"></i>`).join('')}</div>`;
   },
   /* resources: what you have, buy, or miss (and what missing costs you); partners' offers with their prices */
   resHtml() {
     const G = this.G, me = G.me;
     if (!G.deps || !me.res) return '';
-    let h = '<div class="sec-t">Resursi</div><p class="explain">Bez resursa ništa nije zabranjeno, samo skuplje ili sporije. Što nemaš, kupuješ od trgovinskog partnera za dio svog prihoda dok kupuješ (ko ima više nalazišta, prodaje jeftinije).</p><div class="list">';
+    let h = RA.t("<div class=\"sec-t\">Resources</div><p class=\"explain\">Without resources nothing is forbidden, just dearer or slower. What you lack you buy from a trade partner for part of your income while you buy (whoever has more deposits sells cheaper).</p><div class=\"list\">");
     for (let s = 0; s < 3; s++) {
       const K = RA.resKind(s, G.era), sid = me.imp[s], q = G.P[sid];
       let d, bb = '';
-      if (me.res[s]) d = `<span class="pos">imaš</span> · ${me.res[s]} ${me.res[s] === 1 ? 'nalazište' : 'nalazišta'}`;
+      if (me.res[s]) d = RA.t("<span class=\"pos\">you have it</span> · {0} {1}", me.res[s], me.res[s] === 1 ? RA.t("deposit") : RA.t("deposits"));
       else if (sid && q) {
-        d = `kupuješ od ${RA.esc(q.name)} · ${Math.round(G.resRate(q, s) * 100)}% prihoda`;
-        bb = this.mini('Prekini', `data-buy="${s}:0"`, 'warn');
+        d = RA.t("you buy from {0} · {1}% of income", RA.esc(q.name), Math.round(G.resRate(q, s) * 100));
+        bb = this.mini(RA.t("Stop"), `data-buy="${s}:0"`, 'warn');
       } else {
-        d = `<span class="neg">nemaš</span> — ${RA.RES[s].lack}`;
+        d = RA.t("<span class=\"neg\">you lack it</span> — {0}", RA.RES[s].lack);
         const sellers = [...me.trade].map((id) => G.P[id]).filter((o) => o && o.alive && o.res && o.res[s]).sort((a, b) => G.resRate(a, s) - G.resRate(b, s));
         bb = sellers.slice(0, 3).map((o) => this.mini(`${RA.esc(o.name)} ${Math.round(G.resRate(o, s) * 100)}%`, `data-buy="${s}:${o.id}"`)).join('');
-        if (!sellers.length) d += '<br>Nijedan trgovinski partner ga nema — sklopi trgovinski savez (Savezi).';
+        if (!sellers.length) d += RA.t("<br>No trade partner has it — make a trade pact (Alliances).");
       }
       h += `<div class="prow wide"><span class="sw res-${RA.RES[s].id}"></span><div class="pn"><div class="nm">${K.name}</div><div class="d">${d}</div></div><div class="bb">${bb}</div></div>`;
     }
-    if (me.resRateIn) h += `<p class="note">Prodaješ drugima: +${RA.fmt(me.resRateIn)}/s.</p>`;
+    if (me.resRateIn) h += RA.t("<p class=\"note\">You sell to others: +{0}/s.</p>", RA.fmt(me.resRateIn));
     return h + '</div>';
   },
   /* straits: who holds them; the holder of both shores may close one for foreign ships */
   straitHtml() {
     const G = this.G, me = G.me;
     if (!G.straits.length) return '';
-    let h = '<div class="sec-t">Moreuzi</div><p class="explain">Ko drži obje obale moreuza može ga zatvoriti za tuđe brodove (desanti i trgovina). Prolaze samo njegovi i savezniči brodovi.</p><div class="list">';
+    let h = RA.t("<div class=\"sec-t\">Straits</div><p class=\"explain\">Whoever holds both shores of a strait can close it to foreign ships (landings and trade). Only their ships and their allies' pass.</p><div class=\"list\">");
     for (const st of G.straits) {
       const H = G.P[st.holder], C = G.P[st.closed];
-      const d = C ? `<span class="neg">zatvoren</span> · ${RA.esc(C.name)}` : H ? `otvoren · obje obale drži ${RA.esc(H.name)}` : 'otvoren · obale drže različite države';
-      const btn = st.holder === me.id ? this.mini(st.closed ? 'Otvori' : 'Zatvori', `data-str="${st.i}:${st.closed ? 0 : 1}"`, st.closed ? 'ok' : 'warn') : '';
+      const d = C ? RA.t("<span class=\"neg\">closed</span> · {0}", RA.esc(C.name)) : H ? RA.t("open · both shores held by {0}", RA.esc(H.name)) : RA.t("open · the shores are held by different states");
+      const btn = st.holder === me.id ? this.mini(st.closed ? RA.t("Open") : RA.t("Close"), `data-str="${st.i}:${st.closed ? 0 : 1}"`, st.closed ? 'ok' : 'warn') : '';
       h += `<div class="prow wide"><span class="sw" style="background:${C ? C.hex : H ? H.hex : '#6f8190'}"></span><div class="pn"><div class="nm">${RA.esc(st.name)}</div><div class="d">${d}</div></div><div class="bb">${btn}</div></div>`;
     }
     return h + '</div>';
@@ -744,13 +742,13 @@ Object.assign(RA.UI.prototype, {
   /* loans: the open ones (repay) and who would lend (neighbours and partners with gold) */
   loanHtml() {
     const G = this.G, me = G.me, C = RA.CFG;
-    let h = `<div class="sec-t">Zajmovi</div><p class="explain">Država kompjutera ti posudi zlato; dio tvoje zemlje najbliži njoj je zalog (šrafirano na karti). Vraćaš iznos + ${Math.round(C.LOAN_RATE * 100)}% za ${Math.round(C.LOAN_DUE / 600)} min — kad dođe rok, uzima se samo ako imaš zlata. Ne vratiš → zalog je njen.</p>`;
+    let h = RA.t("<div class=\"sec-t\">Loans</div><p class=\"explain\">A computer state lends you gold; the part of your land nearest to it is the pledge (hatched on the map). You repay the amount + {0}% within {1} min — at the due date it's taken only if you have the gold. Don't repay → the pledge is theirs.</p>", Math.round(C.LOAN_RATE * 100), Math.round(C.LOAN_DUE / 600));
     const mine = G.loans.filter((l) => l.to === me.id);
     if (mine.length) {
       h += '<div class="list">';
       for (const l of mine) {
         const L = G.P[l.from];
-        h += `<div class="prow wide"><span class="sw" style="background:${L.hex}"></span><div class="pn"><div class="nm">${RA.esc(L.name)}</div><div class="d">duguješ <b>${RA.fmt(l.owed)}</b> · rok ${RA.dur(l.due - G.tick)} · zalog ${l.cells.length} polja</div></div><div class="bb">${this.mini('Vrati', `data-pay="${l.id}"`, 'ok', me.gold < l.owed)}</div></div>`;
+        h += RA.t("<div class=\"prow wide\"><span class=\"sw\" style=\"background:{0}\"></span><div class=\"pn\"><div class=\"nm\">{1}</div><div class=\"d\">you owe <b>{2}</b> · due {3} · pledge {4} cells</div></div><div class=\"bb\">{5}</div></div>", L.hex, RA.esc(L.name), RA.fmt(l.owed), RA.dur(l.due - G.tick), l.cells.length, this.mini(RA.t("Repay"), `data-pay="${l.id}"`, 'ok', me.gold < l.owed));
       }
       h += '</div>';
     }
@@ -758,22 +756,21 @@ Object.assign(RA.UI.prototype, {
     const nb = me.nbCache || new Map();
     const lenders = G.P.filter((o) => o && o.alive && o !== me && o.type === 'nation' && o.ai && (nb.has(o.id) || me.trade.has(o.id) || me.allies.has(o.id)) && !mine.some((l) => l.from === o.id))
       .sort((a, b) => b.gold - a.gold).slice(0, 5);
-    if (!lenders.length) return h + '<p class="note">Nema ko da ti posudi: zajam daju susjedi, trgovinski partneri i saveznici.</p>';
+    if (!lenders.length) return h + RA.t("<p class=\"note\">Nobody to lend you money: loans come from neighbours, trade partners and allies.</p>");
     h += '<div class="list">';
     for (const L of lenders) {
       const bs = C.LOAN_SECS.map((_, k) => {
         const o = G.loanOffer(me, L, k), err = G.loanErr(me, L, k);
-        return this.mini(`${RA.fmt(o.amount)}`, `data-loan="${L.id}:${k}" title="${RA.esc(err || `Vraćaš ${RA.fmt(o.owed)}; zalog ${o.cells} polja`)}"`, '', !!err);
+        return this.mini(`${RA.fmt(o.amount)}`, RA.t("data-loan=\"{0}:{1}\" title=\"{2}\"", L.id, k, RA.esc(err || RA.t("You repay {0}; pledge {1} cells", RA.fmt(o.owed), o.cells))), '', !!err);
       }).join('');
-      h += `<div class="prow wide"><span class="sw" style="background:${L.hex}"></span><div class="pn"><div class="nm">${RA.esc(L.name)}</div><div class="d">${this.relLabel(L.rel[me.id])} · zlato ${RA.fmt(L.gold)}${G.atWar(me, L) ? ' · u ratu' : ''}</div></div><div class="bb">${bs}</div></div>`;
+      h += RA.t("<div class=\"prow wide\"><span class=\"sw\" style=\"background:{0}\"></span><div class=\"pn\"><div class=\"nm\">{1}</div><div class=\"d\">{2} · gold {3}{4}</div></div><div class=\"bb\">{5}</div></div>", L.hex, RA.esc(L.name), this.relLabel(L.rel[me.id]), RA.fmt(L.gold), G.atWar(me, L) ? RA.t(" · at war") : '', bs);
     }
-    return h + '</div><p class="note">Zalog: ' + C.LOAN_PLEDGE.map((v) => Math.round(v * 100) + '%').join(' / ') + ' tvoje zemlje za mali / srednji / veliki zajam.</p>';
+    return h + RA.t("</div><p class=\"note\">Pledge: ") + C.LOAN_PLEDGE.map((v) => Math.round(v * 100) + '%').join(' / ') + RA.t(" of your land for a small / medium / large loan.</p>");
   },
   quickSheet() {
     const G = this.G;
     if (!G || !G.me || G.state !== 'play') return;
-    const h = this.head('Brze poruke', 'Vide ih tvoji saveznici i tim · tipka T') + `<div class="qm-grid">${RA.QUICK_MSGS.map((m, i) => `<button class="btn" data-qm="${i}"><span class="t">${RA.esc(m)}</span></button>`).join('')}</div>
-      <p class="note">Ping na karti: desni klik (dugi dodir) na mjesto → „Označi za saveznike”, ili tipka G na mjestu miša.</p>`;
+    const h = this.head(RA.t("Quick messages"), RA.t("Your allies and team see them · key T")) + RA.t("<div class=\"qm-grid\">{0}</div>\n      <p class=\"note\">Map ping: right click (long press) on a spot → “Mark for allies”, or key G at the mouse position.</p>", RA.QUICK_MSGS.map((m, i) => `<button class="btn" data-qm="${i}"><span class="t">${RA.esc(m)}</span></button>`).join(''));
     this.openSheet(h, (s) => s.querySelectorAll('[data-qm]').forEach((b) => (b.onclick = () => {
       this.closeSheet();
       this.act('qm', [+b.dataset.qm]);
@@ -784,28 +781,12 @@ Object.assign(RA.UI.prototype, {
   menu() {
     const app = this.app, G = this.G;
     const reg = G.map.region;
-    let h = this.head('Meni', `${RA.esc(RA.ERA.name)} · ${RA.esc(reg ? reg.name : RA.mapInfo(G.map.id).all)}${G.zone ? ' · battle royale' : ''} · ${RA.DIFF[G.opts.difficulty] ? RA.DIFF[G.opts.difficulty].label : ''} · vrijeme ${RA.dur(G.tick)}`);
-    h += `<div class="btns">
-      <button class="btn primary" data-m="resume"><span class="t">Nastavi</span></button>
-      <button class="btn" data-m="how"><span class="t">Kako se igra</span></button>
-      <button class="btn" data-m="cities"><span class="t">Imena gradova</span><span class="r" style="font-size:14px">${app.fx.showCities ? 'Uključeno' : 'Isključeno'}</span></button>
-      <button class="btn" data-m="osm" ${app.osmOK ? '' : 'disabled'}><span><span class="t">Podloga: ${app.osmOn ? 'OpenStreetMap' : 'Atlas (ugrađena)'}</span><br><span class="d">${app.osmOK ? 'Dodirni za promjenu' : 'Podloga trenutno nije dostupna. Ugrađeni atlas je spreman za igru.'}</span></span></button>
-      <button class="btn" data-m="tips"><span class="t">Savjeti tokom igre</span><span class="r" style="font-size:14px">${this.noTips ? 'Isključeno' : 'Uključeno'}</span></button>
-      <button class="btn" data-m="cb"><span class="t">Mod za daltoniste</span><span class="r" style="font-size:14px">${this.settings.cb ? 'Uključeno' : 'Isključeno'}</span></button>
-      <button class="btn" data-m="sfx"><span class="t">Zvučni efekti</span><span class="r" style="font-size:14px">${this.audio.s.sfx ? 'Uključeno' : 'Isključeno'}</span></button>
-      <button class="btn" data-m="music"><span class="t">Muzika</span><span class="r" style="font-size:14px">${this.audio.s.music ? 'Uključeno' : 'Isključeno'}</span></button>
-      <button class="btn" data-m="rulers"><span class="t">Komentari vladara</span><span class="r" style="font-size:14px">${this.settings.rulers === false ? 'Isključeno' : 'Uključeno'}</span></button>
-      ${G.online && G.me && !G.me.surr && (!G.long || G.opts.league || (this.app.long.rec && this.app.long.rec.set.fast)) ? (() => {
+    let h = this.head(RA.t("Menu"), RA.t("{0} · {1}{2} · {3} · time {4}", RA.esc(RA.ERA.name), RA.esc(reg ? reg.name : RA.mapInfo(G.map.id).all), G.zone ? RA.t(" · battle royale") : '', RA.DIFF[G.opts.difficulty] ? RA.DIFF[G.opts.difficulty].label : '', RA.dur(G.tick)));
+    h += RA.t("<div class=\"btns\">\n      <button class=\"btn primary\" data-m=\"resume\"><span class=\"t\">Resume</span></button>\n      <button class=\"btn\" data-m=\"how\"><span class=\"t\">How to play</span></button>\n      <button class=\"btn\" data-m=\"cities\"><span class=\"t\">City names</span><span class=\"r\" style=\"font-size:14px\">{0}</span></button>\n      <button class=\"btn\" data-m=\"osm\" {1}><span><span class=\"t\">Base map: {2}</span><br><span class=\"d\">{3}</span></span></button>\n      <button class=\"btn\" data-m=\"tips\"><span class=\"t\">Tips during the game</span><span class=\"r\" style=\"font-size:14px\">{4}</span></button>\n      <button class=\"btn\" data-m=\"cb\"><span class=\"t\">Colour-blind mode</span><span class=\"r\" style=\"font-size:14px\">{5}</span></button>\n      <button class=\"btn\" data-m=\"sfx\"><span class=\"t\">Sound effects</span><span class=\"r\" style=\"font-size:14px\">{6}</span></button>\n      <button class=\"btn\" data-m=\"music\"><span class=\"t\">Music</span><span class=\"r\" style=\"font-size:14px\">{7}</span></button>\n      <button class=\"btn\" data-m=\"rulers\"><span class=\"t\">Rulers' comments</span><span class=\"r\" style=\"font-size:14px\">{8}</span></button>\n      {9}\n      {10}\n    </div>\n    <p class=\"note\">Keys: Space pause · 1–3 speed · Q/E attack strength · V army · B build · D landing · P paratroopers · R missiles · S alliances · L alliances on the map · M mobilisation · Esc cancel.</p>", app.fx.showCities ? RA.t("On") : RA.t("Off"), app.osmOK ? '' : 'disabled', app.osmOn ? 'OpenStreetMap' : RA.t("Atlas (built in)"), app.osmOK ? RA.t("Tap to change") : RA.t("The base map isn't available right now. The built-in atlas is ready to play."), this.noTips ? RA.t("Off") : RA.t("On"), this.settings.cb ? RA.t("On") : RA.t("Off"), this.audio.s.sfx ? RA.t("On") : RA.t("Off"), this.audio.s.music ? RA.t("On") : RA.t("Off"), this.settings.rulers === false ? RA.t("Off") : RA.t("On"), G.online && G.me && !G.me.surr && (!G.long || G.opts.league || (this.app.long.rec && this.app.long.rec.set.fast)) ? (() => {
         const hs = G.activeHumans(), v = hs.filter((p) => p.endVote).length;
         const lt = G.opts.league ? G.lgTeam(G.me.team).filter((p) => p.alive && !p.kicked) : null;
-        return `<button class="btn" data-m="endv"><span><span class="t">${G.me.endVote ? 'Povuci glas za kraj' : 'Ponudi kraj igre'}</span><br><span class="d">Glasova ${v}/${hs.length} — kad glasaju svi, pobjeđuje ${G.opts.league ? 'tim s više zemlje' : 'ko ima najviše kopna'}</span></span></button>
-        <button class="btn danger" data-m="surr" ${G.me.surrVote ? 'disabled' : ''}><span><span class="t">${lt ? (G.me.surrVote ? 'Glasao/la si za predaju' : 'Glasaj za predaju') : 'Predaja'}</span><br><span class="d">${lt ? `Tim se predaje kad glasa ${G.lgNeed(lt.length)} od ${lt.length} (sada ${lt.filter((p) => p.surrVote).length})` : 'Tvoju državu preuzima kompjuter, partija je izgubljena'}</span></span></button>`;
-      })() : ''}
-      ${G.long && !(this.app.long.rec && this.app.long.rec.set.fast) ? `<button class="btn" data-m="stance"><span><span class="t">Dok me nema: ${RA.esc(this.stanceName())}</span><br><span class="d">Šta kompjuter radi s tvojom državom kad zatvoriš igru</span></span></button>
-      <button class="btn" data-m="home"><span><span class="t">Glavni meni</span><br><span class="d">Igra teče dalje, kompjuter vodi tvoju državu — vratiš se preko „Nastavi Focus igru”</span></span></button>
-      <button class="btn danger" data-m="leave"><span><span class="t">Napusti igru</span><br><span class="d">Zauvijek — progres ove Focus igre se briše</span></span></button>` : `<button class="btn danger" data-m="new"><span><span class="t">${G.online ? 'Napusti online igru' : 'Nova igra'}</span><br><span class="d">${G.opts.league ? 'Kompjuter preuzima tvoju državu — napuštanje lige gubi ELO' : G.online ? 'Tvoju državu preuzima kompjuter' : 'Trenutna partija se prekida'}</span></span></button>`}
-    </div>
-    <p class="note">Tipke: Space pauza · 1–3 brzina · Q/E snaga napada · V vojska · B gradnja · D desant · P padobranci · R rakete · S savezi · L savezi na karti · M mobilizacija · Esc odustani.</p>`;
+        return RA.t("<button class=\"btn\" data-m=\"endv\"><span><span class=\"t\">{0}</span><br><span class=\"d\">Votes {1}/{2} — when everyone votes, {3} wins</span></span></button>\n        <button class=\"btn danger\" data-m=\"surr\" {4}><span><span class=\"t\">{5}</span><br><span class=\"d\">{6}</span></span></button>", G.me.endVote ? RA.t("Withdraw the vote to end") : RA.t("Offer to end the game"), v, hs.length, G.opts.league ? RA.t("the team with more land") : RA.t("whoever has the most land"), G.me.surrVote ? 'disabled' : '', lt ? (G.me.surrVote ? RA.t("You voted to surrender") : RA.t("Vote to surrender")) : RA.t("Surrender"), lt ? RA.t("The team surrenders when {0} of {1} vote (now {2})", G.lgNeed(lt.length), lt.length, lt.filter((p) => p.surrVote).length) : RA.t("The computer takes your state, the game is lost"));
+      })() : '', G.long && !(this.app.long.rec && this.app.long.rec.set.fast) ? RA.t("<button class=\"btn\" data-m=\"stance\"><span><span class=\"t\">While I'm away: {0}</span><br><span class=\"d\">What the computer does with your state when you close the game</span></span></button>\n      <button class=\"btn\" data-m=\"home\"><span><span class=\"t\">Main menu</span><br><span class=\"d\">The game goes on, the computer plays your state — come back with “Continue Focus game”</span></span></button>\n      <button class=\"btn danger\" data-m=\"leave\"><span><span class=\"t\">Leave the game</span><br><span class=\"d\">For good — your progress in this Focus game is deleted</span></span></button>", RA.esc(this.stanceName())) : `<button class="btn danger" data-m="new"><span><span class="t">${G.online ? RA.t("Leave the online game") : RA.t("New game")}</span><br><span class="d">${G.opts.league ? RA.t("The computer takes your state — leaving a league game costs ELO") : G.online ? RA.t("The computer takes your state") : RA.t("The current game is ended")}</span></span></button>`);
     this.openSheet(h, (s) => {
       s.querySelectorAll('[data-m]').forEach((b) => (b.onclick = () => {
         const m = b.dataset.m;
@@ -835,26 +816,26 @@ Object.assign(RA.UI.prototype, {
           this.act('endv', [G.me.endVote ? 0 : 1]);
           this.closeSheet();
         } else if (m === 'surr') {
-          if (G.opts.league) this.confirm('Glasati za predaju?', `Tim se predaje kad glasa ${G.lgNeed(G.lgTeam(G.me.team).filter((p) => p.alive && !p.kicked).length)} igrača; tada je partija izgubljena za cijeli tim.`, 'Glasaj', () => this.act('surr', []));
-          else this.confirm('Predati se?', 'Tvoju državu preuzima kompjuter i partija se računa kao izgubljena.', 'Predaja', () => this.act('surr', []));
+          if (G.opts.league) this.confirm(RA.t("Vote to surrender?"), RA.t("The team surrenders when {0} players vote; then the game is lost for the whole team.", G.lgNeed(G.lgTeam(G.me.team).filter((p) => p.alive && !p.kicked).length)), RA.t("Vote"), () => this.act('surr', []));
+          else this.confirm(RA.t("Surrender?"), RA.t("The computer takes your state and the game counts as lost."), RA.t("Surrender"), () => this.act('surr', []));
         } else if (m === 'stance') {
           this.stanceSheet();
         } else if (m === 'home') {
           app.long.snap();
           app.showStart();
         } else if (m === 'leave') {
-          this.confirm('Napustiti Focus igru?', 'Tvoja država zauvijek prelazi kompjuteru i ne možeš joj se vratiti. Sav tvoj progres u ovoj igri se briše.', 'Napusti', () =>
-            setTimeout(() => this.confirm('Sigurno? Ovo se ne može vratiti.', `Posljednja provjera: progres Focus igre (${G.me ? G.me.name : ''}) biće obrisan. Ako samo želiš pauzu, izaberi „Glavni meni” — igra te čeka.`, 'Da, obriši progres', () => {
+          this.confirm(RA.t("Leave the Focus game?"), RA.t("Your state goes to the computer for good and you can't come back to it. All your progress in this game is deleted."), RA.t("Leave"), () =>
+            setTimeout(() => this.confirm(RA.t("Sure? This can't be undone."), RA.t("Last check: the progress of the Focus game ({0}) will be deleted. If you just want a break, pick “Main menu” — the game waits for you.", G.me ? G.me.name : ''), RA.t("Yes, delete the progress"), () => {
               app.long.leave();
               app.showStart();
             }), 50));
         } else if (m === 'new') {
-          if (G.opts.league) this.confirm('Napustiti ligašku partiju?', 'Kompjuter preuzima tvoju državu i gubiš ELO kao da je tim izgubio. Novi meč možeš tražiti odmah.', 'Napusti', () => {
+          if (G.opts.league) this.confirm(RA.t("Leave the league game?"), RA.t("The computer takes your state and you lose ELO as if your team had lost. You can search for a new match right away."), RA.t("Leave"), () => {
             app.long.leave();
             app.showStart();
           });
-          else if (G.online) this.confirm('Napustiti online igru?', app.net && app.net.role === 'host' ? 'Ti si domaćin: kad izađeš, igra staje i za prijatelja.' : 'Tvoju državu preuzima kompjuter, a prijatelj nastavlja.', 'Napusti', () => app.showStart());
-          else this.confirm('Prekinuti partiju?', 'Počinješ ispočetka sa novim postavkama.', 'Nova igra', () => app.showStart());
+          else if (G.online) this.confirm(RA.t("Leave the online game?"), app.net && app.net.role === 'host' ? RA.t("You are the host: when you leave, the game stops for your friend too.") : RA.t("The computer takes your state, and your friend plays on."), RA.t("Leave"), () => app.showStart());
+          else this.confirm(RA.t("End the game?"), RA.t("You start again with new settings."), RA.t("New game"), () => app.showStart());
         }
       }));
     });
@@ -867,59 +848,7 @@ Object.assign(RA.UI.prototype, {
     const k = mm.winShare > 0 ? C.WIN_SHARE / mm.winShare : 1, pc = (v) => Math.round(v / k);
     const win = Math.round(C.WIN_SHARE * 100);
     const eras = RA.ERAS.map((e) => `<li><b>${RA.esc(e.name)}</b> (${RA.esc(e.sub)}) — ${RA.esc(RA.eraBlurb(e, M.id))}</li>`).join('');
-    const h = this.head('Kako se igra', 'Overtake — pravila ukratko') + `<div class="howto">
-      <h4>Cilj</h4><p>Zauzmi ${win}% kopna odabranog dijela karte ili ostani posljednja država. Kad pobijediš, možeš nastaviti igru i osvojiti sve. Ko drži više od ${pc(35)}% karte, plaća svako novo osvajanje skuplje.</p>
-      <h4>Modovi</h4><ul>
-        <li><b>Blitz</b>: brza partija (20–40 min), bez stabla tehnologija i resursa, 1 min mira.</li>
-        <li><b>Focus</b>: igra traje danima (~1, 3 ili 7) na serveru i teče i dok nisi tu — kompjuter vodi tvoju državu. Stablo tehnologija, resursi i trgovina, duže mirno doba. Glavni meni čuva igru (<i>Nastavi Focus igru</i>), a kad se vratiš, vidiš šta se desilo. <i>Napusti igru</i> briše tvoj progres zauvijek.</li>
-        <li><b>Make your choice</b>: sam biraš tempo, stablo tehnologija, resurse, nuklearno oružje i mirno doba.</li></ul>
-      <h4>Doba</h4><p>Na početnom ekranu biraš period u kojem se boriš. Svako doba ima svoje granice, gradove, jedinice, zgrade i oružje:</p><ul>${eras}</ul>
-      <h4>Početak</h4><ul>
-        <li><b>Stvarne granice</b>: sve države kreću sa svojom teritorijom iz tog doba. Dodirni državu ili je izaberi sa spiska — dobijaš njenu zemlju, vojsku i zlato.</li>
-        <li><b>Od prijestolnice</b>: države kreću od malog kruga oko glavnog grada, a ostalo je slobodna (siva) zemlja i gradovi-države.</li>
-        <li>Prvi minut (podesivo) je <b>mirno doba</b>: niko ne smije napadati države — gradi, zauzimaj slobodnu zemlju, sklapaj saveze.</li></ul>
-      <h4>Battle royale</h4><p>Poslije mirnog doba i još 90 s radioaktivna zona počinje da se sužava prema nasumičnoj tački (${C.BR_PHASES} krugova). Bijeli isprekidani krug pokazuje kuda ide. Sve izvan crvenog kruga propada — i zemlja i vojska na njoj. Pobjeđuje ko ostane.</p>
-      <h4>Širenje i napad</h4><ul>
-        <li><b>Dodirni</b> slobodno kopno ili susjeda — šalješ onoliko vojske koliko pokazuje klizač <b>Snaga napada</b>.</li>
-        <li><b>Usmjereni napad</b>: dodir na susjednu državu šalje vojsku s tvoje najbliže granice pravo do tog mjesta (strelica na karti) — osvaja se samo taj dio, pa se ostatak vojske vraća. Što više vojske pošalješ, to je koridor širi.</li>
-        <li>Na računaru: <b>desnim dugmetom miša povuci strelicu</b> od svoje teritorije do cilja — napad ide baš tim pravcem.</li>
-        <li>Front na cijeloj granici s državom: dugi pritisak (desni klik) na nju → <b>Napadni cijelu granicu</b>. Slobodno kopno se uvijek zauzima s cijele granice.</li>
-        <li><b>Vrati granice</b>: kad ti neka država otme zemlju, u traci napada se pojavi žuto dugme „Vrati N polja” — jedan klik šalje kontranapad samo na tu zemlju (oteto u zadnje 3 minute), bez širenja dalje.</li>
-        <li><b>Pravo prolaza</b>: vojni saveznik te pušta preko svoje zemlje — državu koja graniči s njim možeš napasti i ako ti s njom nemaš granicu.</li>
-        <li>Rijeke, brda, planine i gradovi usporavaju napadača.</li>
-        <li>Aktivni napadi su iznad donje trake. <b>✕</b> obustavlja napad i vraća vojsku (napad na državu: 25% se izgubi u povlačenju).</li></ul>
-      <h4>Vojska i zlato</h4><ul>
-        <li>Vojska raste sama, najbrže oko <b>42%</b> kapaciteta (zelena zona na traci).</li>
-        <li><b>Mobilizacija</b> (Vojska): odmah +30% kapaciteta, ali rast stoji 45 s. Jednom u 4 minute.</li>
-        <li>Zlato donose teritorija, gradovi, luke, vozovi ili karavani i trgovina.</li>
-        <li><b>Mornarica</b> (Vojska): dva broda po dobu, iz tvoje luke. Dodirni brod pa more. Ratni brod potapa desante i trgovačke brodove, blokira neprijateljske luke u blizini (bez zlata i trgovine) i gađa obalu; drugi brod lovi desante i trgovačke brodove (podmornica od 1914. je nevidljiva dok joj ratni brod ne priđe).</li>
-        <li><b>Avijacija</b> (od 1938., Desant ili tipka A): lovci brane nebo oko aerodroma i prate tvoje avione, bombarderi ruše zgrade, jedinice i vojsku do 70 polja od aerodroma. <b>Dronovi</b> (danas, Rakete): jeftini, lete pravo s tvoje granice — kamikaza ili lovac na jedinice.</li>
-        <li><b>Gvozdena kupola</b> (zgrada, od 1938.): kad neko lansira nuklearku na tebe, svaka spremna kupola sama ispali atomsku bombu na njegovu prijestolnicu i gradove.</li>
-        <li><b>Resursi</b> (opcija u postavkama): žito, metal i gorivo na stvarnim nalazištima (znakovi na karti). Bez njih je sve skuplje ili sporije; što nemaš, kupiš od trgovinskog partnera (Ekonomija).</li>
-        <li><b>Moreuzi</b> (Ekonomija): ko drži obje obale može zatvoriti moreuz za tuđe brodove. Svi koji tuda plove se ljute — zatvaranje je agresija.</li>
-        <li><b>Zajam</b> (Ekonomija: klik na zlato ili Z): država kompjutera ti posudi zlato, dio tvoje zemlje je zalog (šrafirano). Ne vratiš na vrijeme → zalog je njen.</li>
-        <li><b>Vazal</b> (meni Savezi): slabu susjednu državu možeš učiniti vazalom umjesto da je osvojiš — plaća ti danak i bori se uz tebe. Ako oslabiš, oslobodi se.</li>
-        <li><b>Agresivna ekspanzija</b> (meni Savezi): svaka napadnuta i pokorena država ljuti ostale. Previše osvajanja odjednom → kompjuterske države se udružuju protiv tebe. Ljutnja vremenom opada.</li>
-        <li><b>Porez</b> (klik na zlato gore ili tipka Z): viši porez daje više zlata, ali vojska sporije raste. Ušteđeno zlato donosi malu kamatu.</li></ul>
-      <h4>Jedinice</h4><ul>
-        <li>Tri vrste u svakom dobu (npr. legija, konjica i strijelci u Rimu; pješadija, tenkovi i artiljerija danas): prva čvrsto brani granicu, druga ubrzava i pojeftinjuje tvoje napade, treća gađa neprijatelja iz daljine.</li>
-        <li>Jedinice same prate granicu. Dodirni svoju jedinicu pa novo mjesto da je premjestiš. Opkoljena jedinica propada.</li></ul>
-      <h4>Gradnja</h4><ul>
-        <li><b>Grad</b>: vojska, zlato i odbrana. <b>Fabrika</b> (u starim dobima tržnica ili manufaktura): put do tvojih gradova u krugu 18 polja — vozovi ili karavani donose zlato.</li>
-        <li><b>Kasarna</b> (+vojska, +2 jedinice), <b>Utvrda</b>, <b>Luka</b>, a zavisno od doba i <b>Aerodrom</b> (padobranci), <b>Raketni silos</b> ili opsadna radionica, <b>PVO</b>.</li></ul>
-      <h4>More i zrak</h4><p>Desant brodom na bilo koju obalu (najviše ${C.BOAT_MAX} broda). Od 1938. padobranci skaču do ${C.PARA_RANGE} polja od aerodroma; PVO ih može oboriti.</p>
-      <h4>Udari i bombe</h4><ul>
-        <li>U starim dobima onageri, trebušei, bombarde, rakete i topovi gađaju samo do svog <b>dometa</b> (bijeli krugovi pri ciljanju) — gradi ih blizu fronta.</li>
-        <li>1914: Debela Berta i cepelini. 1938: V-2 rakete, a atomska bomba tek od 10. minute. Hladni rat i danas: sve do hidrogenske bombe i MIRV-a.</li>
-        <li><b>Atomska</b> i <b>hidrogenska</b> bomba brišu teritoriju, uništavaju SVE zgrade i jedinice u krugu i ubijaju velik dio vojske mete.</li></ul>
-      <h4>Savezi</h4><ul>
-        <li><b>Vojni savez</b> (najviše ${C.ALLY_MAX}, traje 5 min): ne napadate se, a saveznici ti pomažu kad te neko napadne. Možeš im slati vojsku i tražiti pomoć.</li>
-        <li><b>Trgovinski savez</b> (najviše ${C.TRADE_MAX}): trgovački brodovi između luka i trgovina preko granice donose zlato objema stranama — bez obaveza u ratu.</li>
-        <li>Izdaja saveznika = 30 s prepolovljene odbrane i loš ugled kod svih.</li></ul>
-      <h4>Zima i prijestolnice</h4><p>Svake 4 minute ${RA.esc(I.winterHow)} prekrije snijeg na 1 minut: napadi i jedinice su tamo sporiji. Pad prijestolnice znači krizu: −25% vojske, pola prihoda 60 s i plijen za osvajača.</p>
-      <h4>Online s prijateljem</h4><p>Oboje otvorite war.deovilab.com; jedan pritisne „Napravi sobu”, drugi „Pridruži se”. Domaćin bira doba, kartu i način: <b>zajedno protiv svih</b> (stalni savez, dijelite pobjedu) ili <b>jedan protiv drugog</b>, uz battle royale ako želite. Brzinu i pauzu kontroliše domaćin.</p>
-      <h4>Kontrole</h4><p>Jedan prst: pomjeranje · dva prsta: zum · dugi pritisak (desni klik): meni za to mjesto. Igru možeš pauzirati i ubrzati (1×–3×).</p>
-    </div>`;
+    const h = this.head(RA.t("How to play"), RA.t("Overtake — the rules in short")) + RA.t("<div class=\"howto\">\n      <h4>Goal</h4><p>Take {0}% of the land of the chosen part of the map or be the last state standing. When you win you can play on and conquer everything. Whoever holds more than {1}% of the map pays more for every new conquest.</p>\n      <h4>Modes</h4><ul>\n        <li><b>Blitz</b>: a quick game (20–40 min), no tech tree or resources, 1 min of peace.</li>\n        <li><b>Focus</b>: the game lasts days (~1, 3 or 7) on the server and runs even while you are away — the computer plays your state. Gold and orders come every second, armies move slowly. Tech tree, weapons research, resources and trade, a longer peace time. The main menu keeps the game (<i>Continue Focus game</i>), and when you come back you see what happened. <i>Leave the game</i> deletes your progress for good.</li>\n        <li><b>Make your choice</b>: you pick the pace, the tech tree, resources, nuclear weapons and peace time yourself.</li></ul>\n      <h4>Eras</h4><p>On the start screen you pick the period you fight in. Every era has its own borders, cities, units, buildings and weapons:</p><ul>{2}</ul>\n      <h4>Start</h4><ul>\n        <li><b>Real borders</b>: every state starts with its land from that era. Tap a state or pick it from the list — you get its land, army and gold.</li>\n        <li><b>From the capital</b>: states start from a small circle around their capital, the rest is free (grey) land and city-states.</li>\n        <li>The first minute (adjustable) is <b>peace time</b>: nobody may attack states — build, take free land, make alliances.</li></ul>\n      <h4>Battle royale</h4><p>After peace time and another 90 s a radioactive zone starts shrinking towards a random point ({3} circles). The white dashed circle shows where it's going. Everything outside the red circle is lost — the land and the troops on it. Whoever is left wins.</p>\n      <h4>Expanding and attacking</h4><ul>\n        <li><b>Tap</b> free land or a neighbour — you send as many troops as the <b>Attack strength</b> slider shows.</li>\n        <li><b>Directed attack</b>: tapping a neighbouring state sends troops from your nearest border straight to that spot (an arrow on the map) — only that part is taken, then the rest of the troops come back. The more troops you send, the wider the corridor.</li>\n        <li>On a computer: <b>drag an arrow with the right mouse button</b> from your land to the target — the attack goes exactly that way.</li>\n        <li>A front along the whole border with a state: long press (right click) on it → <b>Attack the whole border</b>. Free land is always taken along the whole border.</li>\n        <li><b>Retake</b>: when a state takes your land, a yellow “Retake N cells” button appears in the attack bar — one click sends a counter-attack only on that land (taken in the last 3 minutes), without going further.</li>\n        <li><b>Right of passage</b>: a military ally lets you through its land — you can attack a state bordering it even if you have no border with it.</li>\n        <li>Rivers, hills, mountains and cities slow the attacker down.</li>\n        <li>Active attacks are above the bottom bar. <b>✕</b> stops an attack and brings the troops back (an attack on a state: 25% is lost in the retreat).</li></ul>\n      <h4>Army and gold</h4><ul>\n        <li>The army grows by itself, fastest around <b>42%</b> of capacity (the green zone on the bar).</li>\n        <li><b>Mobilisation</b> (Army): instantly +30% of capacity, but growth stops for 45 s. Once every 4 minutes.</li>\n        <li>Gold comes from land, cities, ports, trains or caravans and trade.</li>\n        <li><b>Navy</b> (Army): two ships per era, from your port. Tap a ship, then the sea. A warship sinks landings and trade ships, blockades enemy ports nearby (no gold, no trade) and shells the coast; the other ship hunts landings and trade ships (the submarine from 1914 is invisible until a warship comes close).</li>\n        <li><b>Air force</b> (from 1938, Landing or key A): fighters guard the sky around the airfield and escort your planes, bombers destroy buildings, units and troops up to 70 cells from the airfield. <b>Drones</b> (today, Missiles): cheap, fly straight from your border — kamikaze or unit hunter; every tap sends one until you cancel.</li>\n        <li><b>Iron Dome</b> (a building, from 1938): when someone launches a nuke at you, every ready dome fires an atomic bomb at their capital and cities by itself.</li>\n        <li><b>Resources</b> (an option in the settings): grain, metal and fuel at real deposits (signs on the map). Without them everything is dearer or slower; what you lack you buy from a trade partner (Economy).</li>\n        <li><b>Straits</b> (Economy): whoever holds both shores can close a strait to foreign ships. Everyone who sails there gets angry — closing is aggression.</li>\n        <li><b>Loan</b> (Economy: click the gold or Z): a computer state lends you gold, part of your land is the pledge (hatched). Don't repay in time → the pledge is theirs.</li>\n        <li><b>Vassal</b> (Alliances menu): you can make a weak neighbouring state your vassal instead of conquering it — it pays you tribute and fights at your side. If you weaken, it breaks free.</li>\n        <li><b>Aggressive expansion</b> (Alliances menu): every state you attack and subdue angers the others. Too many conquests at once → computer states join forces against you. The anger fades with time.</li>\n        <li><b>Tax</b> (click the gold at the top or key Z): a higher tax gives more gold, but the army grows more slowly. Saved gold earns a little interest.</li></ul>\n      <h4>Units</h4><ul>\n        <li>Three kinds in every era (e.g. legion, cavalry and archers in Rome; infantry, tanks and artillery today): the first holds the border firmly, the second makes your attacks faster and cheaper, the third hits the enemy from afar.</li>\n        <li>Units follow the border by themselves. Tap your unit, then a new spot, to move it. A surrounded unit is lost.</li></ul>\n      <h4>Building</h4><ul>\n        <li><b>City</b>: troops, gold and defence. <b>Factory</b> (a market or manufactory in older eras): a route to your cities within 18 cells — trains or caravans bring gold.</li>\n        <li><b>Barracks</b> (+troops, +2 units), <b>Fort</b>, <b>Port</b>, and depending on the era <b>Airfield</b> (paratroopers), <b>Missile silo</b> or siege workshop, <b>Air defence</b>.</li></ul>\n      <h4>Sea and air</h4><p>A landing by ship on any coast (at most {4} ships). From 1938 paratroopers jump up to {5} cells from an airfield; air defence can shoot them down.</p>\n      <h4>Strikes and bombs</h4><ul>\n        <li>In older eras onagers, trebuchets, bombards, rockets and cannons only reach their <b>range</b> (white circles while aiming) — build them near the front.</li>\n        <li>1914: Big Bertha and zeppelins. 1938: V-2 rockets, and the atomic bomb only from minute 10. Cold War and today: everything up to the hydrogen bomb and MIRV.</li>\n        <li>The <b>atomic</b> and <b>hydrogen</b> bomb wipe out land, destroy EVERY building and unit in the circle and kill a large part of the target's army.</li></ul>\n      <h4>Alliances</h4><ul>\n        <li><b>Military alliance</b> (at most {6}, lasts 5 min): you don't attack each other, and your allies help you when someone attacks you. You can send them troops and ask for help.</li>\n        <li><b>Trade pact</b> (at most {7}): trade ships between ports and trade across a border bring gold to both sides — no duties in war.</li>\n        <li>Betraying an ally = 30 s of halved defence and a bad name with everyone.</li></ul>\n      <h4>Winter and capitals</h4><p>Every 4 minutes {8} is covered with snow for 1 minute: attacks and units are slower there. Losing your capital means a crisis: −25% troops, half income for 60 s and loot for the conqueror.</p>\n      <h4>Online with a friend</h4><p>Both open war.deovilab.com; one presses “Create a room”, the other “Join”. The host picks the era, the map and the type: <b>together against everyone</b> (a permanent alliance, you share the win) or <b>against each other</b>, with battle royale if you like. The host controls speed and pause.</p>\n      <h4>Controls</h4><p>One finger: move · two fingers: zoom · long press (right click): menu for that spot. You can pause and speed up the game (1×–3×).</p>\n    </div>", win, pc(35), eras, C.BR_PHASES, C.BOAT_MAX, C.PARA_RANGE, C.ALLY_MAX, C.TRADE_MAX, RA.esc(I.winterHow));
     this.openSheet(h);
   },
 
@@ -928,16 +857,16 @@ Object.assign(RA.UI.prototype, {
     const G = this.G, me = G.me;
     const $ = this.$;
     const won = !!(G.winner && me && (G.winner === me || G.sameTeam(G.winner, me)));
-    $('endTitle').textContent = won ? 'Pobjeda' : kind === 'lost' ? 'Poraz' : 'Kraj igre';
+    $('endTitle').textContent = won ? RA.t("Victory") : kind === 'lost' ? RA.t("Defeat") : RA.t("Game over");
     $('endTitle').classList.toggle('win', !!won);
     const where = G.map.region ? G.map.region.name : RA.mapInfo(G.map.id).name;
     $('endSub').textContent = won
-      ? (G.winner !== me ? `Vaš tim je osvojio: ${where} (${RA.dur(G.tick)}).` : `Osvojeno: ${where}, za ${RA.dur(G.tick)}.`)
+      ? (G.winner !== me ? RA.t("Your team conquered: {0} ({1}).", where, RA.dur(G.tick)) : RA.t("Conquered: {0}, in {1}.", where, RA.dur(G.tick)))
       : kind === 'lost'
-      ? `Tvoja država je pala poslije ${RA.dur(G.tick)}.`
-      : `Pobjednik je ${G.winner ? G.winner.name : 'neko drugi'} (${where}).`;
+      ? RA.t("Your state fell after {0}.", RA.dur(G.tick))
+      : RA.t("The winner is {0} ({1}).", G.winner ? G.winner.name : RA.t("someone else"), where);
     const peak = me ? ((me.peak / G.map.landArea) * 100).toFixed(1).replace('.', ',') : '0';
-    $('endStats').innerHTML = `<div><div class="k">Vrhunac</div><div class="v">${peak}%</div></div><div><div class="k">Gradova osvojeno</div><div class="v">${me ? me.stats.citiesTaken : 0}</div></div><div><div class="k">Uništeno država</div><div class="v">${me ? me.stats.kills : 0}</div></div>`;
+    $('endStats').innerHTML = RA.t("<div><div class=\"k\">Peak</div><div class=\"v\">{0}%</div></div><div><div class=\"k\">Cities conquered</div><div class=\"v\">{1}</div></div><div><div class=\"k\">States destroyed</div><div class=\"v\">{2}</div></div>", peak, me ? me.stats.citiesTaken : 0, me ? me.stats.kills : 0);
     $('endTime').textContent = RA.dur(G.tick);
     $('watchBtn').hidden = !!(G.state === 'over');
     // single player: the winner may play on to 100% (online needs every device to agree: later)
@@ -1007,7 +936,7 @@ Object.assign(RA.UI.prototype, {
       ctx.strokeStyle = p.hex;
       ctx.lineWidth = p === G.me ? 3 : 1.6;
       ctx.stroke();
-      legend.unshift(`<span><i style="background:${p.hex}"></i>${RA.esc(p.name)}${p === G.me ? ' (ti)' : ''}</span>`);
+      legend.unshift(`<span><i style="background:${p.hex}"></i>${RA.esc(p.name)}${p === G.me ? RA.t(" (you)") : ''}</span>`);
     }
     // key moments (plan 23): my wars, alliances and betrayals, fallen capitals and states, nuclear launches
     const me = G.me, end = H[H.length - 1].t || 1, M = RA.MARKS;

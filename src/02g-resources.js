@@ -7,9 +7,9 @@
    No exchange: a trade partner that has a kind sells it to you directly, for a share of your gold income for as long
    as you buy (the more deposits it has, the cheaper). */
 RA.RES = [
-  { id: 'food', icon: 'wheat', lack: 'vojska raste 15% sporije' },
-  { id: 'metal', icon: 'ore', lack: 'jedinice su 30% skuplje' },
-  { id: 'fuel', icon: 'fuel', lack: 'zgrade i rakete su 30% skuplje' },
+  { id: 'food', icon: 'wheat', lack: RA.t("the army grows 15% slower") },
+  { id: 'metal', icon: 'ore', lack: RA.t("units cost 30% more") },
+  { id: 'fuel', icon: 'fuel', lack: RA.t("buildings and missiles cost 30% more") },
 ];
 Object.assign(RA.CFG, {
   RES_FOOD: 0.85, // army growth without food
@@ -19,9 +19,9 @@ Object.assign(RA.CFG, {
 /* the kind of a slot in an era: its name and which deposits count */
 RA.resKind = function (slot, era) {
   const i = Math.max(0, RA.ERAS.findIndex((e) => e.id === era)), steel = i >= 3;
-  if (slot === 0) return { dep: 'food', name: 'Žito' };
-  if (slot === 1) return { dep: 'iron', name: steel ? 'Čelik' : 'Željezo' };
-  return i <= 1 ? { dep: 'wood', name: 'Drvo' } : i === 2 ? { dep: 'coal', name: 'Ugalj' } : { dep: 'oil', name: 'Nafta' };
+  if (slot === 0) return { dep: 'food', name: RA.t("Grain") };
+  if (slot === 1) return { dep: 'iron', name: steel ? RA.t("Steel") : RA.t("Iron") };
+  return i <= 1 ? { dep: 'wood', name: RA.t("Wood") } : i === 2 ? { dep: 'coal', name: RA.t("Coal") } : { dep: 'oil', name: RA.t("Oil") };
 };
 
 (function (P) {
@@ -83,21 +83,21 @@ RA.resKind = function (slot, era) {
   };
   P.buyRes = function (pid, s, sid) {
     const p = this.P[pid];
-    if (!this.opts.res) return 'Resursi nisu uključeni u ovoj igri.';
-    if (!Number.isInteger(s) || s < 0 || s > 2) return 'Nevažeći resurs.';
+    if (!this.opts.res) return RA.t("Resources are off in this game.");
+    if (!Number.isInteger(s) || s < 0 || s > 2) return RA.t("Invalid resource.");
     const name = RA.resKind(s, this.era).name;
     if (!sid) {
-      if (p.imp[s]) this.tell(p, 'info', `Više ne kupuješ: ${name}.`, p.imp[s]);
+      if (p.imp[s]) this.tell(p, 'info', RA.t("You no longer buy: {0}.", name), p.imp[s]);
       p.imp[s] = 0;
       return true;
     }
     const q = this.P[sid];
-    if (!q || !q.alive || q === p) return 'Nevažeći igrač.';
-    if (!p.trade.has(sid)) return `Za kupovinu treba trgovinski savez (${q.name}).`;
-    if (!q.res || !q.res[s]) return `${q.name} nema: ${name}.`;
-    if (p.res[s]) return `Već imaš svoje: ${name}.`;
+    if (!q || !q.alive || q === p) return RA.t("Invalid player.");
+    if (!p.trade.has(sid)) return RA.t("Buying needs a trade pact ({0}).", q.name);
+    if (!q.res || !q.res[s]) return RA.t("{0} has no {1}.", q.name, name);
+    if (p.res[s]) return RA.t("You already have your own: {0}.", name);
     p.imp[s] = sid;
-    this.tell(p, 'good', `Kupuješ ${name} od ${q.name}: ${Math.round(this.resRate(q, s) * 100)}% tvog prihoda dok kupuješ.`, sid, q.capital);
+    this.tell(p, 'good', RA.t("You buy {0} from {1}: {2}% of your income while you buy.", name, q.name, Math.round(this.resRate(q, s) * 100)), sid, q.capital);
     return { s, sid };
   };
   /* recount deposits, drop purchases that no longer work */
@@ -110,13 +110,13 @@ RA.resKind = function (slot, era) {
         if (!sid) continue;
         const q = this.P[sid];
         let why = '';
-        if (p.res[s]) why = 'imaš svoje';
-        else if (!q || !q.alive) why = 'prodavac je pao';
-        else if (!p.trade.has(sid)) why = 'nema više trgovinskog saveza';
-        else if (!q.res[s]) why = 'prodavac ga više nema';
+        if (p.res[s]) why = RA.t("you have your own");
+        else if (!q || !q.alive) why = RA.t("the seller has fallen");
+        else if (!p.trade.has(sid)) why = RA.t("the trade pact is over");
+        else if (!q.res[s]) why = RA.t("the seller no longer has it");
         if (why) {
           p.imp[s] = 0;
-          this.tell(p, 'info', `Kupovina prekinuta (${RA.resKind(s, this.era).name}): ${why}.`, sid);
+          this.tell(p, 'info', RA.t("Purchase stopped ({0}): {1}.", RA.resKind(s, this.era).name, why), sid);
         }
       }
     }

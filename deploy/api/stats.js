@@ -72,28 +72,28 @@ const SCHEMA = [
 
 /* r = this game, s = totals over all the player's games (after this one) */
 const ACHIEVEMENTS = [
-  { id: 'prva', name: 'Prva pobjeda', desc: 'Pobijedi u bilo kojoj partiji.', ok: (r, s) => s.wins >= 1 },
-  { id: 'vojskovodja', name: 'Vojskovođa', desc: 'Pobijedi 5 puta.', ok: (r, s) => s.wins >= 5 },
-  { id: 'osvajac', name: 'Osvajač', desc: 'Pobijedi 25 puta.', ok: (r, s) => s.wins >= 25 },
-  { id: 'veteran', name: 'Veteran', desc: 'Odigraj 10 partija do kraja.', ok: (r, s) => s.games >= 10 },
-  { id: 'munja', name: 'Munjeviti rat', desc: 'Pobijedi za manje od 10 minuta.', ok: (r) => r.won && r.secs < 600 },
-  { id: 'tesko', name: 'Protiv svih izgleda', desc: 'Pobijedi na težini Teško.', ok: (r) => r.won && r.difficulty === 'tesko' },
-  { id: 'evropa', name: 'Gospodar Evrope', desc: 'Pobijedi na cijeloj karti Evrope.', ok: (r) => r.won && r.map === 'evropa' && r.region === 'evropa' },
-  { id: 'svijet', name: 'Gospodar svijeta', desc: 'Pobijedi na cijeloj karti svijeta.', ok: (r) => r.won && r.map === 'svijet' && r.region === 'svijet' },
-  { id: 'royale', name: 'Posljednji preživjeli', desc: 'Pobijedi u battle royale.', ok: (r) => r.won && r.gm === 'br' },
-  { id: 'online', name: 'Prva online pobjeda', desc: 'Pobijedi u online igri.', ok: (r) => r.won && r.online },
-  { id: 'rame', name: 'Rame uz rame', desc: 'Pobijedi zajedno s prijateljem (online tim).', ok: (r) => r.won && r.online && r.mode === 'coop' },
-  { id: 'duel', name: 'Dvoboj', desc: 'Pobijedi prijatelja u online igri jedan protiv drugog.', ok: (r) => r.won && r.online && r.mode === 'vs' },
-  { id: 'dugme', name: 'Crveno dugme', desc: 'Lansiraj nuklearnu bombu.', ok: (r) => r.nukes >= 1 },
-  { id: 'rusitelj', name: 'Rušitelj carstava', desc: 'Uništi 5 država u jednoj partiji.', ok: (r) => r.kills >= 5 },
-  { id: 'opsada', name: 'Majstor opsade', desc: 'Osvoji 20 gradova u jednoj partiji.', ok: (r) => r.cities >= 20 },
-  { id: 'carstvo', name: 'Carstvo', desc: 'Drži 50% karte u jednom trenutku.', ok: (r) => r.peak >= 50 },
-  { id: 'maraton', name: 'Dugi rat', desc: 'Odigraj partiju dužu od 45 minuta.', ok: (r) => r.secs >= 2700 },
-  { id: 'doba', name: 'Kroz sva doba', desc: 'Pobijedi u svih 7 historijskih doba.', ok: (r, s) => s.eras >= ERAS.length },
+  { id: 'prva', name: 'First victory', desc: 'Win any match.', ok: (r, s) => s.wins >= 1 },
+  { id: 'vojskovodja', name: 'Warlord', desc: 'Win 5 times.', ok: (r, s) => s.wins >= 5 },
+  { id: 'osvajac', name: 'Conqueror', desc: 'Win 25 times.', ok: (r, s) => s.wins >= 25 },
+  { id: 'veteran', name: 'Veteran', desc: 'Play 10 matches to the end.', ok: (r, s) => s.games >= 10 },
+  { id: 'munja', name: 'Blitzkrieg', desc: 'Win in less than 10 minutes.', ok: (r) => r.won && r.secs < 600 },
+  { id: 'tesko', name: 'Against all odds', desc: 'Win on Hard difficulty.', ok: (r) => r.won && r.difficulty === 'tesko' },
+  { id: 'evropa', name: 'Master of Europe', desc: 'Win on the whole map of Europe.', ok: (r) => r.won && r.map === 'evropa' && r.region === 'evropa' },
+  { id: 'svijet', name: 'Master of the world', desc: 'Win on the whole world map.', ok: (r) => r.won && r.map === 'svijet' && r.region === 'svijet' },
+  { id: 'royale', name: 'Last one standing', desc: 'Win a battle royale.', ok: (r) => r.won && r.gm === 'br' },
+  { id: 'online', name: 'First online victory', desc: 'Win an online game.', ok: (r) => r.won && r.online },
+  { id: 'rame', name: 'Shoulder to shoulder', desc: 'Win together with a friend (online team).', ok: (r) => r.won && r.online && r.mode === 'coop' },
+  { id: 'duel', name: 'Duel', desc: 'Beat a friend in an online one-on-one game.', ok: (r) => r.won && r.online && r.mode === 'vs' },
+  { id: 'dugme', name: 'The red button', desc: 'Launch a nuclear bomb.', ok: (r) => r.nukes >= 1 },
+  { id: 'rusitelj', name: 'Empire breaker', desc: 'Destroy 5 states in one match.', ok: (r) => r.kills >= 5 },
+  { id: 'opsada', name: 'Siege master', desc: 'Conquer 20 cities in one match.', ok: (r) => r.cities >= 20 },
+  { id: 'carstvo', name: 'Empire', desc: 'Hold 50% of the map at one moment.', ok: (r) => r.peak >= 50 },
+  { id: 'maraton', name: 'The long war', desc: 'Play a match longer than 45 minutes.', ok: (r) => r.secs >= 2700 },
+  { id: 'doba', name: 'Through all ages', desc: 'Win in all 7 historical ages.', ok: (r, s) => s.eras >= ERAS.length },
 ];
 
 // status by wins: title now and the next one
-const RANKS = [[0, 'Regrut'], [1, 'Vojnik'], [3, 'Kaplar'], [6, 'Narednik'], [10, 'Poručnik'], [15, 'Kapetan'], [25, 'Major'], [40, 'Pukovnik'], [60, 'General'], [100, 'Maršal']];
+const RANKS = [[0, 'Recruit'], [1, 'Private'], [3, 'Corporal'], [6, 'Sergeant'], [10, 'Lieutenant'], [15, 'Captain'], [25, 'Major'], [40, 'Colonel'], [60, 'General'], [100, 'Marshal']];
 function rankOf(wins) {
   let i = 0;
   while (i + 1 < RANKS.length && wins >= RANKS[i + 1][0]) i++;
@@ -106,16 +106,16 @@ const int = (v, max) => (Number.isFinite(+v) ? Math.max(0, Math.min(max, Math.ro
 
 /* checks one reported result; returns the clean row or an error text */
 function cleanResult(b) {
-  if (typeof b.gid !== 'string' || !/^[A-Za-z0-9_:-]{4,64}$/.test(b.gid)) return 'Nevažeća igra.';
+  if (typeof b.gid !== 'string' || !/^[A-Za-z0-9_:-]{4,64}$/.test(b.gid)) return 'Invalid game.';
   const r = { gid: b.gid, online: b.online === true, won: b.won === true };
   for (const k of ['mode', 'map', 'region', 'era', 'gm', 'start', 'difficulty']) {
-    if (typeof b[k] !== 'string' || !WORD.test(b[k])) return 'Nevažeći podaci igre.';
+    if (typeof b[k] !== 'string' || !WORD.test(b[k])) return 'Invalid game data.';
     r[k] = b[k];
   }
-  if (!ERAS.includes(r.era)) return 'Nevažeće doba.';
+  if (!ERAS.includes(r.era)) return 'Invalid age.';
   r.secs = int(b.secs, 7 * 86400);
-  if (r.secs < 30) return 'Prekratka partija.';
-  if (r.won && r.secs < 60) return 'Prekratka partija.';
+  if (r.secs < 30) return 'The match is too short.';
+  if (r.won && r.secs < 60) return 'The match is too short.';
   r.peak = Math.max(0, Math.min(100, Number.isFinite(+b.peak) ? +b.peak : 0));
   r.cities = int(b.cities, 5000);
   r.kills = int(b.kills, 1000);
@@ -151,11 +151,11 @@ module.exports = function statsRoutes(db, sessionUser) {
     routes: {
       'POST /api/result': async (req, b) => {
         const u = await sessionUser(req);
-        if (!u) return [401, { e: 'Nisi prijavljen.' }];
+        if (!u) return [401, { e: 'You are not signed in.' }];
         const r = cleanResult(b);
         if (typeof r === 'string') return [400, { e: r }];
         const day = await db.query(`select count(*)::int n from results where user_id = $1 and at > now() - interval '1 day'`, [u.id]);
-        if (day.rows[0].n >= PER_DAY) return [429, { e: 'Previše partija danas.' }];
+        if (day.rows[0].n >= PER_DAY) return [429, { e: 'Too many matches today.' }];
         const ins = await db.query(
           `insert into results (user_id, gid, online, mode, map, region, era, gm, start, difficulty, won, secs, peak, cities, kills, conquered, nukes, players)
            values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
@@ -176,10 +176,10 @@ module.exports = function statsRoutes(db, sessionUser) {
       },
       'POST /api/save': async (req, b) => {
         const u = await sessionUser(req);
-        if (!u) return [401, { e: 'Nisi prijavljen.' }];
+        if (!u) return [401, { e: 'You are not signed in.' }];
         const r = b.rec, gid = r && r.gid;
-        if (typeof gid !== 'string' || !/^s[a-z0-9]{1,40}$/.test(gid) || !Array.isArray(r.cmds) || !Array.isArray(r.picks) || !r.set || typeof r.set !== 'object') return [400, { e: 'Neispravna igra.' }];
-        if (!Number.isInteger(b.tick) || b.tick < 0 || b.tick > 1e8 || !Number.isFinite(b.at)) return [400, { e: 'Neispravna igra.' }];
+        if (typeof gid !== 'string' || !/^s[a-z0-9]{1,40}$/.test(gid) || !Array.isArray(r.cmds) || !Array.isArray(r.picks) || !r.set || typeof r.set !== 'object') return [400, { e: 'Invalid game.' }];
+        if (!Number.isInteger(b.tick) || b.tick < 0 || b.tick > 1e8 || !Number.isFinite(b.at)) return [400, { e: 'Invalid game.' }];
         const m = b.meta && typeof b.meta === 'object' ? b.meta : {};
         const meta = { where: String(m.where || '').slice(0, 60), era: String(m.era || '').slice(0, 30), who: String(m.who || '').slice(0, 30), secs: Math.max(0, Math.min(1e7, +m.secs || 0)), land: Math.max(0, Math.min(100, +m.land || 0)) };
         const data = JSON.stringify({ rec: r, tick: b.tick, at: b.at, meta });
@@ -191,18 +191,18 @@ module.exports = function statsRoutes(db, sessionUser) {
       // the campaign's progress (dynasty, home, XP, tech tree, missions done): one per account
       'POST /api/campaign': async (req, b) => {
         const u = await sessionUser(req);
-        if (!u) return [401, { e: 'Nisi prijavljen.' }];
-        if (typeof b.home !== 'string' || !/^[a-z]{2,16}$/.test(b.home) || !b.tree || typeof b.tree !== 'object' || !b.done || typeof b.done !== 'object') return [400, { e: 'Nevažeća kampanja.' }];
+        if (!u) return [401, { e: 'You are not signed in.' }];
+        if (typeof b.home !== 'string' || !/^[a-z]{2,16}$/.test(b.home) || !b.tree || typeof b.tree !== 'object' || !b.done || typeof b.done !== 'object') return [400, { e: 'Invalid campaign.' }];
         const data = JSON.stringify({ v: 1, home: b.home, name: String(b.name || '').slice(0, 18), color: /^#[0-9a-f]{6}$/i.test(b.color || '') ? b.color : '', xp: Math.max(0, Math.min(1e7, b.xp | 0)), tree: b.tree, done: b.done, at: +b.at || Date.now() });
-        if (data.length > 20000) return [400, { e: 'Prevelika kampanja.' }];
+        if (data.length > 20000) return [400, { e: 'The campaign is too big.' }];
         await db.query('insert into campaigns (user_id, data) values ($1, $2) on conflict (user_id) do update set data = excluded.data, at = now()', [u.id, data]);
         return { ok: true };
       },
       // my Focus games (plan 3): the list behind "Nastavi Focus igru" on every computer, with the last snapshot of my state
       'POST /api/focus': async (req, b) => {
         const u = await sessionUser(req);
-        if (!u) return [401, { e: 'Nisi prijavljen.' }];
-        if (typeof b.code !== 'string' || !/^[a-z0-9]{6}$/.test(b.code)) return [400, { e: 'Nevažeća igra.' }];
+        if (!u) return [401, { e: 'You are not signed in.' }];
+        if (typeof b.code !== 'string' || !/^[a-z0-9]{6}$/.test(b.code)) return [400, { e: 'Invalid game.' }];
         if (b.drop) {
           await db.query('delete from focus where user_id = $1 and code = $2', [u.id, b.code]);
           return { ok: true };
@@ -220,41 +220,41 @@ module.exports = function statsRoutes(db, sessionUser) {
       },
       'GET /api/focus': async (req) => {
         const u = await sessionUser(req);
-        if (!u) return [401, { e: 'Nisi prijavljen.' }];
+        if (!u) return [401, { e: 'You are not signed in.' }];
         const q = await db.query('select data from focus where user_id = $1 order by at desc limit 12', [u.id]);
         return { games: q.rows.map((r) => JSON.parse(r.data)) };
       },
       // a player reported in an online game (plan 25): kept for the owner to look at
       'POST /api/report': async (req, b) => {
         const u = await sessionUser(req);
-        if (!u) return [401, { e: 'Nisi prijavljen.' }];
-        if (!['team', 'name', 'cheat', 'grief'].includes(b.reason)) return [400, { e: 'Nevažeća prijava.' }];
+        if (!u) return [401, { e: 'You are not signed in.' }];
+        if (!['team', 'name', 'cheat', 'grief'].includes(b.reason)) return [400, { e: 'Invalid report.' }];
         const n = await db.query("select count(*)::int as n from reports where by_user = $1 and at > now() - interval '1 hour'", [u.id]);
-        if (n.rows[0].n >= 10) return [429, { e: 'Previše prijava — pokušaj kasnije.' }];
+        if (n.rows[0].n >= 10) return [429, { e: 'Too many reports — try later.' }];
         await db.query('insert into reports (by_user, game, name, reason) values ($1, $2, $3, $4)', [u.id, String(b.game || '').slice(0, 40), String(b.name || '').slice(0, 30), b.reason]);
         return { ok: true };
       },
       'GET /api/campaign': async (req) => {
         const u = await sessionUser(req);
-        if (!u) return [401, { e: 'Nisi prijavljen.' }];
+        if (!u) return [401, { e: 'You are not signed in.' }];
         const q = await db.query('select data from campaigns where user_id = $1', [u.id]);
         return { campaign: q.rows.length ? JSON.parse(q.rows[0].data) : null };
       },
       'GET /api/save': async (req) => {
         const u = await sessionUser(req);
-        if (!u) return [401, { e: 'Nisi prijavljen.' }];
+        if (!u) return [401, { e: 'You are not signed in.' }];
         const q = await db.query('select data from saves where user_id = $1', [u.id]);
         return { save: q.rows.length ? JSON.parse(q.rows[0].data) : null };
       },
       'POST /api/save/delete': async (req, b) => {
         const u = await sessionUser(req);
-        if (!u) return [401, { e: 'Nisi prijavljen.' }];
+        if (!u) return [401, { e: 'You are not signed in.' }];
         await db.query('delete from saves where user_id = $1 and gid = $2', [u.id, String(b.gid || '')]);
         return { ok: true };
       },
       'GET /api/stats': async (req) => {
         const u = await sessionUser(req);
-        if (!u) return [401, { e: 'Nisi prijavljen.' }];
+        if (!u) return [401, { e: 'You are not signed in.' }];
         const [s, a, recent] = await Promise.all([
           totals(db, u.id),
           db.query('select id, at from achievements where user_id = $1', [u.id]),

@@ -71,7 +71,7 @@ async def main():
         await A.click('#skirmishBtn')
         await A.wait_for_selector('#skirmList [data-skjoin]', timeout=20000)
         lst = await A.evaluate('document.getElementById("skirmList").textContent')
-        check('Blitz' in lst and 'Igrača 0/8' in lst, 'Skirmish lists an open public Blitz game: ' + lst[:80])
+        check('Blitz' in lst and 'Players 0/8' in lst, 'Skirmish lists an open public Blitz game: ' + lst[:80])
         # a new public game with two teams, from the sheet
         await A.click('#skTeams button[data-v="2"]')
         await A.click('[data-sknew]')

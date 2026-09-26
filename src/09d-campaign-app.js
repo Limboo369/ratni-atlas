@@ -41,12 +41,12 @@ Object.assign(RA.App.prototype, {
     }
     const ruler = ui.campRuler(c);
     RA.placeHuman(G, tgt ? G.P[tgt].nation.c : cell, ruler);
-    if (!G.me) return ui.toast('bad', 'Dom dinastije nije na karti ovog doba.', { ms: 5000 });
+    if (!G.me) return ui.toast('bad', RA.t("The dynasty's home is not on this age's map."), { ms: 5000 });
     ui.settings.name = ui.settings.name || c.name;
     this.start();
     const T = G.camp && G.P[G.camp.target];
-    ui.toast('info', `<b>${RA.esc(m.title)}</b> — ${RA.esc(m.type === 'free' ? 'slobodna igra' : RA.campGoalText(m))}${T ? ` Cilj: <b>${RA.esc(T.name)}</b>.` : ''}`, { ms: 9000, cell: T ? T.capital : -1 });
-    ui.toast('good', `Dinastija ${RA.esc(c.name)} vlada: <b>${RA.esc(G.me.name)}</b> · vladar <b>${RA.esc(ruler)}</b>`, { ms: 7000 });
+    ui.toast('info', `<b>${RA.esc(m.title)}</b> — ${RA.esc(m.type === 'free' ? RA.t("free play") : RA.campGoalText(m))}${T ? RA.t(" Goal: <b>{0}</b>.", RA.esc(T.name)) : ''}`, { ms: 9000, cell: T ? T.capital : -1 });
+    ui.toast('good', RA.t("The {0} dynasty rules: <b>{1}</b> · ruler <b>{2}</b>", RA.esc(c.name), RA.esc(G.me.name), RA.esc(ruler)), { ms: 7000 });
     if (gm.region) {
       const bx = gm.region.box;
       this.lmap.setMaxBounds(L.latLngBounds([[bx[1], bx[0]], [bx[3], bx[2]]]).pad(0.7));

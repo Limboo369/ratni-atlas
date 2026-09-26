@@ -51,6 +51,7 @@ jobs:
       - run: python3 build/test_account.py
       - run: python3 build/test_pwa.py  # aplikacija: manifest, ikone, service worker, bez interneta, instalacija
       - run: python3 build/test_market.py  # Community market: editor, objava, lista, igranje scenarija, link
+      - run: python3 build/test_lang.py danas  # the English page has no Bosnian/Serbian text left; the Serbian switch works
       - if: failure()
         uses: actions/upload-artifact@v4
         with: { name: shots, path: build/shots/ }

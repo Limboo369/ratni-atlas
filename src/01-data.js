@@ -56,7 +56,7 @@ RA.loadMap = async function (D = window.MAPDATA) {
 
   const map = {
     id: M.id || 'evropa', // the embedded map is Europe
-    name: M.name || 'Cijela Evropa',
+    name: M.name ? RA.tn(M.name) : RA.t("All of Europe"),
     W, H, N,
     X0: M.X0, Y0: M.Y0, CELL: M.CELL,
     X1: M.X0 + W * M.CELL, Y1: M.Y0 + H * M.CELL,
@@ -230,7 +230,7 @@ RA.loadMap = async function (D = window.MAPDATA) {
 
   // cities
   map.cities = D.cities.map((c, i) => ({
-    i, name: c.n, x: c.x, y: c.y, c: c.y * W + c.x, tier: c.t, pop: c.p, rank: c.r, iso: c.iso, owner: 0,
+    i, name: RA.tn(c.n), raw: c.n, x: c.x, y: c.y, c: c.y * W + c.x, tier: c.t, pop: c.p, rank: c.r, iso: c.iso, owner: 0,
   }));
   map.cityAt = new Int16Array(N).fill(-1);
   map.cities.forEach((c) => (map.cityAt[c.c] = c.i));
@@ -247,8 +247,9 @@ RA.loadMap = async function (D = window.MAPDATA) {
         if (map.land[k]) map.urban[k] = c.i;
       }
   }
-  map.nations = D.nations.map((n) => ({ iso: n.iso, name: n.n, x: n.x, y: n.y, c: n.y * W + n.x, color: n.c, capital: n.cap }));
-  map.cityStates = D.cs.map((s) => ({ name: s.n, x: s.x, y: s.y, c: s.y * W + s.x }));
-  map.seas = D.seas.map((s) => ({ name: s.n, x: RA.lonToX(s.lon), y: RA.latToY(s.lat), rank: s.r }));
+  // names: English (RA.tn) when that is the language; raw = the data's own name (key of the eras' city renames)
+  map.nations = D.nations.map((n) => ({ iso: n.iso, name: RA.tn(n.n), x: n.x, y: n.y, c: n.y * W + n.x, color: n.c, capital: RA.tn(n.cap) }));
+  map.cityStates = D.cs.map((s) => ({ name: RA.tn(s.n), raw: s.n, x: s.x, y: s.y, c: s.y * W + s.x }));
+  map.seas = D.seas.map((s) => ({ name: RA.tn(s.n), x: RA.lonToX(s.lon), y: RA.latToY(s.lat), rank: s.r }));
   return map;
 };

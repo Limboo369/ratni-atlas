@@ -44,33 +44,33 @@ RA.CFG = {
 };
 /* tax (plan 33): more gold ↔ slower army growth; every state starts at 'Srednji' */
 RA.TAX = [
-  { name: 'Vrlo nizak', g: 0.6, grow: 1.22 },
-  { name: 'Nizak', g: 0.8, grow: 1.1 },
-  { name: 'Srednji', g: 1, grow: 1 },
-  { name: 'Visok', g: 1.22, grow: 0.86 },
-  { name: 'Vrlo visok', g: 1.45, grow: 0.7 },
+  { name: RA.t("Very low"), g: 0.6, grow: 1.22 },
+  { name: RA.t("Low"), g: 0.8, grow: 1.1 },
+  { name: RA.t("Medium{=2}"), g: 1, grow: 1 },
+  { name: RA.t("High"), g: 1.22, grow: 0.86 },
+  { name: RA.t("Very high"), g: 1.45, grow: 0.7 },
 ];
 
 RA.STRUCT = {
-  barracks: { name: 'Kasarna', short: 'Kasarna', cost: (n) => Math.min(1.6e6, 125000 * RA.dpow(2, n)), time: 30,
-    desc: '+160k maksimalne vojske. Gradi kad si blizu granice kapaciteta.' },
-  fort: { name: 'Utvrda', short: 'Utvrda', cost: (n) => Math.min(300000, 60000 * (n + 1)), time: 40,
-    desc: 'Napadači u krugu od 8 polja gube 3× više vojske i sporiji su.' },
-  port: { name: 'Luka', short: 'Luka', cost: (n) => Math.min(1.5e6, 150000 * RA.dpow(2, n)), time: 50, coastal: true,
-    desc: '+300 zlata/s. Gradi se samo na obali.' },
-  silo: { name: 'Raketni silos', short: 'Silos', cost: () => 1000000, time: 90,
-    desc: 'Omogućava lansiranje nuklearnih bombi.' },
-  sam: { name: 'PVO štit', short: 'PVO', cost: (n) => Math.min(3e6, 1200000 * (n + 1)), time: 80,
-    desc: 'Obara neprijateljske rakete koje ciljaju u krugu od 28 polja.' },
+  barracks: { name: RA.t("Barracks"), short: RA.t("Barracks"), cost: (n) => Math.min(1.6e6, 125000 * RA.dpow(2, n)), time: 30,
+    desc: RA.t("+160k max army. Build it when you are near your army cap.") },
+  fort: { name: RA.t("Fort"), short: RA.t("Fort"), cost: (n) => Math.min(300000, 60000 * (n + 1)), time: 40,
+    desc: RA.t("Attackers within 8 cells lose 3× more troops and are slower.") },
+  port: { name: RA.t("Port"), short: RA.t("Port"), cost: (n) => Math.min(1.5e6, 150000 * RA.dpow(2, n)), time: 50, coastal: true,
+    desc: RA.t("+300 gold/s. Built on the coast only.") },
+  silo: { name: RA.t("Missile silo"), short: RA.t("Silo"), cost: () => 1000000, time: 90,
+    desc: RA.t("Lets you launch nuclear bombs.") },
+  sam: { name: RA.t("Air defence"), short: 'PVO', cost: (n) => Math.min(3e6, 1200000 * (n + 1)), time: 80,
+    desc: RA.t("Shoots down enemy missiles aimed within 28 cells.") },
 };
 RA.NUKE = {
-  atom: { name: 'Atomska bomba', cost: 750000, r1: 5, r2: 9, speed: 3.0 },
-  hydro: { name: 'Hidrogenska bomba', cost: 4000000, r1: 13, r2: 19, speed: 2.4 },
+  atom: { name: RA.t("Atomic bomb"), cost: 750000, r1: 5, r2: 9, speed: 3.0 },
+  hydro: { name: RA.t("Hydrogen bomb"), cost: 4000000, r1: 13, r2: 19, speed: 2.4 },
 };
 RA.DIFF = {
-  lako: { label: 'Lako', grace: 1500, maxT: 0.6, grow: 0.86, start: 0.6, rate: [80, 120], trig: [0.64, 0.74], nukeAfter: 9000, build: 0.6 },
-  srednje: { label: 'Srednje', grace: 900, maxT: 0.82, grow: 0.95, start: 0.8, rate: [55, 85], trig: [0.56, 0.66], nukeAfter: 6000, build: 0.85 },
-  tesko: { label: 'Teško', grace: 300, maxT: 1.0, grow: 1.0, start: 1.0, rate: [36, 60], trig: [0.5, 0.6], nukeAfter: 4200, build: 1.0 },
+  lako: { label: RA.t("Easy"), grace: 1500, maxT: 0.6, grow: 0.86, start: 0.6, rate: [80, 120], trig: [0.64, 0.74], nukeAfter: 9000, build: 0.6 },
+  srednje: { label: RA.t("Medium"), grace: 900, maxT: 0.82, grow: 0.95, start: 0.8, rate: [55, 85], trig: [0.56, 0.66], nukeAfter: 6000, build: 0.85 },
+  tesko: { label: RA.t("Hard"), grace: 300, maxT: 1.0, grow: 1.0, start: 1.0, rate: [36, 60], trig: [0.5, 0.6], nukeAfter: 4200, build: 1.0 },
 };
 
 RA.Game = class Game {
@@ -245,8 +245,8 @@ RA.Game = class Game {
       P[to].nCity[city.tier]++;
       if (this.state === 'play' && from !== to) {
         P[to].stats.citiesTaken++;
-        if (city.tier >= 1) this.tell(P[to], 'good', `Osvojen grad: ${city.name}!`, to, city.c);
-        if (from) this.tell(P[from], 'bad', `Izgubljen grad: ${city.name} (${P[to].name})`, from, city.c);
+        if (city.tier >= 1) this.tell(P[to], 'good', RA.t("City captured: {0}!", city.name), to, city.c);
+        if (from) this.tell(P[from], 'bad', RA.t("City lost: {0} ({1})", city.name, P[to].name), from, city.c);
       }
     }
   }
@@ -324,7 +324,7 @@ RA.Game = class Game {
       p.ae *= RA.CFG.AE_DECAY;
       if (p.aeWarn && p.ae < RA.CFG.AE_COALITION * 0.75) {
         p.aeWarn = false;
-        this.tell(p, 'good', 'Svijet se smirio: koalicija protiv tebe se raspada.', p.id);
+        this.tell(p, 'good', RA.t("The world has calmed down: the coalition against you breaks up."), p.id);
       }
     } else p.ae = 0;
     let g = 70 + Math.sqrt(p.tiles) * 1.2 + p.cityG + (p.n.port - p.portsOff) * RA.CFG.PORT_G + p.n.city * RA.CFG.CITY_BUILT_G;
@@ -465,7 +465,7 @@ RA.Game = class Game {
       T.attackedAt = this.tick;
       // cancel pending alliance requests between them
       this.allyReqs = this.allyReqs.filter((r) => !((r.from === aid && r.to === tid) || (r.from === tid && r.to === aid)));
-      if (!att.boat) this.tell(T, 'bad', `${A.name} te napada!`, aid, focusCell);
+      if (!att.boat) this.tell(T, 'bad', RA.t("{0} is attacking you!", A.name), aid, focusCell);
       // news: a new war (not every thrust): once per pair per minute
       const wk = aid + ':' + tid, last = this._warAt.get(wk);
       if (last === undefined || this.tick - last > 600) this.news('war', aid, tid);
@@ -842,7 +842,7 @@ RA.Game = class Game {
     const path = r.path;
     const b = { id: this.nextId++, owner: pid, troops, path, pos: 0, tgt: tgtCell, dep: r.dep, done: false, born: this.tick };
     this.boats.push(b);
-    if (tp) this.tell(tp, 'bad', `${p.name} šalje desant na tvoju obalu!`, pid, tgtCell);
+    if (tp) this.tell(tp, 'bad', RA.t("{0} is sending a landing to your coast!", p.name), pid, tgtCell);
     if (tp) {
       this.relTo(tp, pid, Math.max(-100, tp.rel[pid] - 20), 'boat');
     }
@@ -867,16 +867,16 @@ RA.Game = class Game {
       const T = o ? this.P[o] : null;
       if (this.zone && this.zoneOut(b.tgt)) {
         p.troops += b.troops;
-        this.tell(p, 'info', 'Obala je u međuvremenu progutala radioaktivna zona — desant se vratio kući.', o, b.tgt);
+        this.tell(p, 'info', RA.t("The radioactive zone swallowed the coast in the meantime — the landing went back home."), o, b.tgt);
         return;
       }
       if (T && (this.isFriendly(p, T) || this.tick < this.peaceUntil)) {
         p.troops += b.troops;
-        if (!this.isFriendly(p, T)) this.tell(p, 'info', 'Mirno doba — obala je u međuvremenu zauzeta, desant se vratio kući.', o, b.tgt);
+        if (!this.isFriendly(p, T)) this.tell(p, 'info', RA.t("Peace time — the coast was taken in the meantime, the landing went back home."), o, b.tgt);
         return;
       }
       this.launchAttack(b.owner, o, b.troops, b.tgt, b.tgt);
-      if (T) this.tell(T, 'bad', `${p.name} se iskrcao na tvoju obalu!`, b.owner, b.tgt);
+      if (T) this.tell(T, 'bad', RA.t("{0} has landed on your coast!", p.name), b.owner, b.tgt);
     }
   }
 
@@ -888,16 +888,16 @@ RA.Game = class Game {
   }
   canBuild(p, type, c) {
     const map = this.map;
-    if (RA.STRUCT[type].na) return 'To se u ovom dobu ne gradi.';
-    if (c < 0 || this.owner[c] !== p.id) return 'Moraš graditi na svojoj teritoriji.';
-    if (!map.land[c]) return 'Ne može na vodi.';
-    if (this.fallout[c] > 20) return 'Teren je radioaktivan.';
+    if (RA.STRUCT[type].na) return RA.t("That is not built in this era.");
+    if (c < 0 || this.owner[c] !== p.id) return RA.t("You must build on your own land.");
+    if (!map.land[c]) return RA.t("Not on water.");
+    if (this.fallout[c] > 20) return RA.t("The ground is radioactive.");
     if (RA.STRUCT[type].coastal && !map.coast[c]) {
       // allow within 1 cell of coast
       const W = map.W;
       let ok = false;
       for (const n of [c - 1, c + 1, c - W, c + W]) if (n >= 0 && n < map.N && map.coast[n] && this.owner[n] === p.id) ok = n;
-      if (ok === false) return 'Luka mora biti na obali.';
+      if (ok === false) return RA.t("A port must be on the coast.");
       c = ok;
     }
     const W = map.W, H = map.H, x = c % W, y = (c / W) | 0, R = RA.CFG.STRUCT_MIN_DIST;
@@ -907,12 +907,12 @@ RA.Game = class Game {
         const sx = x + dx, sy = y + dy;
         if (sx < 0 || sy < 0 || sx >= W || sy >= H || dx * dx + dy * dy >= R * R) continue;
         const si = this.structAt[sy * W + sx];
-        if (si >= 0 && !this.structs[si].dead) return 'Preblizu drugoj zgradi.';
+        if (si >= 0 && !this.structs[si].dead) return RA.t("Too close to another building.");
       }
     if (type === 'city') {
-      for (const ct of this.cities) if ((ct.x - x) * (ct.x - x) + (ct.y - y) * (ct.y - y) < 25) return 'Preblizu postojećem gradu.';
+      for (const ct of this.cities) if ((ct.x - x) * (ct.x - x) + (ct.y - y) * (ct.y - y) < 25) return RA.t("Too close to an existing city.");
     }
-    if (p.gold < this.structCost(p, type)) return 'Nemaš dovoljno zlata.';
+    if (p.gold < this.structCost(p, type)) return RA.t("Not enough gold.");
     return c;
   }
   build(pid, type, c) {
@@ -958,8 +958,8 @@ RA.Game = class Game {
     np.built[s.type]++;
     if (s.type === 'city') np.bcities.push(s);
     s.linksAt = 0;
-    this.tell(np, 'good', `Zarobio si: ${s.type === 'city' ? 'grad ' + s.name : RA.STRUCT[s.type].name}`, pid, s.c);
-    this.tell(old, 'bad', `Izgubio si: ${s.type === 'city' ? 'grad ' + s.name : RA.STRUCT[s.type].name}`, pid, s.c);
+    this.tell(np, 'good', RA.t("You captured: {0}", s.type === 'city' ? RA.t("city ") + s.name : RA.STRUCT[s.type].name), pid, s.c);
+    this.tell(old, 'bad', RA.t("You lost: {0}", s.type === 'city' ? RA.t("city ") + s.name : RA.STRUCT[s.type].name), pid, s.c);
   }
   _destroyStruct(s) {
     if (s.dead) return;
@@ -996,16 +996,16 @@ RA.Game = class Game {
   /* ---------------- diplomacy ---------------- */
   requestAlliance(fromId, toId) {
     const a = this.P[fromId], b = this.P[toId];
-    if (!a || !b || !a.alive || !b.alive || a === b) return 'Nevažeći igrač.';
-    if (a.allies.has(toId)) return 'Već ste saveznici.';
-    if (this.opts.league) return 'U ligi nema saveza s protivničkim timom.';
-    if (a.lord || b.lord) return a.lord ? 'Vazal ne sklapa saveze.' : `${b.name} je vazal (${this.P[b.lord].name}) — ne sklapa saveze.`;
-    if (this.allyCount(a) >= RA.CFG.ALLY_MAX) return `Možeš imati najviše ${RA.CFG.ALLY_MAX} saveza.`;
-    if (this.allyCount(b) >= RA.CFG.ALLY_MAX) return `${b.name} već ima ${RA.CFG.ALLY_MAX} saveza.`;
-    if (this.allyReqs.some((r) => r.from === fromId && r.to === toId)) return 'Zahtjev je već poslan.';
+    if (!a || !b || !a.alive || !b.alive || a === b) return RA.t("Invalid player.");
+    if (a.allies.has(toId)) return RA.t("You are already allies.");
+    if (this.opts.league) return RA.t("No alliances with the other team in the league.");
+    if (a.lord || b.lord) return a.lord ? RA.t("A vassal makes no alliances.") : RA.t("{0} is a vassal ({1}) — it makes no alliances.", b.name, this.P[b.lord].name);
+    if (this.allyCount(a) >= RA.CFG.ALLY_MAX) return RA.t("You can have at most {0} alliances.", RA.CFG.ALLY_MAX);
+    if (this.allyCount(b) >= RA.CFG.ALLY_MAX) return RA.t("{0} already has {1} alliances.", b.name, RA.CFG.ALLY_MAX);
+    if (this.allyReqs.some((r) => r.from === fromId && r.to === toId)) return RA.t("Request already sent.");
     if (b.human && !b.ai) {
       this.allyReqs.push({ from: fromId, to: toId, exp: this.tick + RA.CFG.ALLY_REQ_DUR });
-      this.tell(b, 'offer', `${a.name} nudi vojni savez.`, fromId, a.capital);
+      this.tell(b, 'offer', RA.t("{0} offers a military alliance.", a.name), fromId, a.capital);
       return true;
     }
     const ok = RA.AI.considerAlliance(this, b, a);
@@ -1013,7 +1013,7 @@ RA.Game = class Game {
       this.makeAlliance(a, b);
       return true;
     }
-    this.tell(a, 'info', `Ponuda za vojni savez odbijena (${b.name}).`, toId, b.capital);
+    this.tell(a, 'info', RA.t("Military alliance offer declined ({0}).", b.name), toId, b.capital);
     this.relTo(b, fromId, Math.min(100, b.rel[fromId] + 3), 'offer');
     return 'declined';
   }
@@ -1024,12 +1024,12 @@ RA.Game = class Game {
     const a = this.P[fromId], b = this.P[toId];
     if (!accept) {
       this.relTo(a, toId, Math.max(-100, a.rel[toId] - 10), 'decl');
-      this.tell(a, 'info', `Ponuda za vojni savez odbijena (${b.name}).`, toId, b.capital);
+      this.tell(a, 'info', RA.t("Military alliance offer declined ({0}).", b.name), toId, b.capital);
       return;
     }
     if (this.allyCount(a) >= RA.CFG.ALLY_MAX || this.allyCount(b) >= RA.CFG.ALLY_MAX) {
-      this.tell(a, 'info', 'Savez nije moguć — dostignut limit saveza.', toId);
-      this.tell(b, 'info', 'Savez nije moguć — dostignut limit saveza.', fromId);
+      this.tell(a, 'info', RA.t("No alliance possible — alliance limit reached."), toId);
+      this.tell(b, 'info', RA.t("No alliance possible — alliance limit reached."), fromId);
       return;
     }
     this.makeAlliance(a, b);
@@ -1046,8 +1046,8 @@ RA.Game = class Game {
     }
     this.allyReqs = this.allyReqs.filter((r) => !((r.from === a.id && r.to === b.id) || (r.from === b.id && r.to === a.id)));
     this.news('ally', a.id, b.id);
-    this.tell(a, 'good', `Vojni savez sklopljen: ${b.name} (5 min).`, b.id, b.capital);
-    this.tell(b, 'good', `Vojni savez sklopljen: ${a.name} (5 min).`, a.id, a.capital);
+    this.tell(a, 'good', RA.t("Military alliance made: {0} (5 min).", b.name), b.id, b.capital);
+    this.tell(b, 'good', RA.t("Military alliance made: {0} (5 min).", a.name), a.id, a.capital);
     this.alliancesChanged = true;
   }
   breakAlliance(aid, bid, betrayal) {
@@ -1063,16 +1063,16 @@ RA.Game = class Game {
       if (!(b.traitorUntil > this.tick)) a.traitorUntil = this.tick + RA.CFG.TRAITOR_DUR;
       this.relTo(b, aid, -100, 'betray');
       for (const o of this.P) if (o && o.alive && o !== a && o !== b && !o.human) this.relTo(o, aid, Math.max(-100, o.rel[aid] - 35), 'traitor');
-      this.tell(b, 'bad', `${a.name} te je izdao!`, aid, a.capital);
-      this.tell(a, 'bad', `Izdaja! Raskinuo si savez (${b.name}). Odbrana ti je prepolovljena 30 s.`, bid);
+      this.tell(b, 'bad', RA.t("{0} betrayed you!", a.name), aid, a.capital);
+      this.tell(a, 'bad', RA.t("Betrayal! You broke the alliance ({0}). Your defence is halved for 30 s.", b.name), bid);
     }
   }
   extendAlliance(aid, bid) {
     const a = this.P[aid], b = this.P[bid];
-    if (!a.allies.has(bid)) return 'Niste saveznici.';
+    if (!a.allies.has(bid)) return RA.t("You are not allies.");
     if (this.sameTeam(a, b) || a.lord === bid || b.lord === aid) return true;
     const ok = !b.ai ? true : RA.AI.considerExtension(this, b, a);
-    if (!ok) return `${b.name} ne želi produžiti savez.`;
+    if (!ok) return RA.t("{0} doesn't want to extend the alliance.", b.name);
     const exp = this.tick + RA.CFG.ALLY_DUR;
     a.allies.set(bid, exp);
     b.allies.set(aid, exp);
@@ -1089,8 +1089,8 @@ RA.Game = class Game {
           this.P[oid].allies.delete(p.id);
           this.alliancesChanged = true;
           if (p.id < oid) this.news('allyEnd', p.id, oid);
-          this.tell(p, 'info', `Vojni savez je istekao: ${this.P[oid].name}.`, oid);
-          this.tell(this.P[oid], 'info', `Vojni savez je istekao: ${p.name}.`, p.id);
+          this.tell(p, 'info', RA.t("The military alliance has expired: {0}.", this.P[oid].name), oid);
+          this.tell(this.P[oid], 'info', RA.t("The military alliance has expired: {0}.", p.name), p.id);
         }
       }
     }
@@ -1179,14 +1179,14 @@ RA.Game = class Game {
       p.n[s.type]++;
       if (s.type === 'fort') p.forts.push(s);
       if (s.type === 'city') p.bcities.push(s);
-      this.tell(p, 'good', s.type === 'city' ? `Osnovan je grad ${s.name}.` : `${RA.STRUCT[s.type].name}: izgradnja završena.`, p.id, s.c);
+      this.tell(p, 'good', s.type === 'city' ? RA.t("City founded: {0}.", s.name) : RA.t("{0}: construction finished.", RA.STRUCT[s.type].name), p.id, s.c);
     }
   }
   step() {
     if (this.state !== 'play') return;
     if (this.sub && ++this.st % this.sub) return this._subStep();
     this.tick++;
-    if (this.tick === this.peaceUntil) this.tellAll('info', '⚔ Mirno doba je završeno — od sada su dozvoljeni napadi na države!');
+    if (this.tick === this.peaceUntil) this.tellAll('info', RA.t("⚔ Peace time is over — attacks on states are allowed from now on!"));
     this._season();
     const P = this.P;
     for (let i = 1; i < P.length; i++) {
@@ -1266,14 +1266,14 @@ RA.Game = class Game {
     for (const att of this.attacks) if (att.a === p.id) att.done = true;
     for (const b of this.boats) if (b.owner === p.id) b.done = true;
     for (const u of p.units.slice()) this._removeUnit(u);
-    for (const id of [...p.trade]) this.cancelTrade(p.id, id, 'država je pala');
+    for (const id of [...p.trade]) this.cancelTrade(p.id, id, RA.t("the state has fallen"));
     const killer = p.lastAttackedBy ? this.P[p.lastAttackedBy] : null;
     if (killer) killer.stats.kills++;
     if (killer && killer.alive && p.type === 'nation' && killer.type !== 'bot') this.addAE(killer, RA.CFG.AE_FALL);
     if (p.human) {
-      this.tell(p, 'bad', 'Tvoja država je pala.', p.id);
-      this.tell(p, 'lost', 'Poražen si.', p.id);
-      for (const h of this.P) if (h && h.human && h !== p && h.alive) this.tell(h, 'bad', `Pao je igrač ${p.nick || p.name}${killer ? ' (osvajač: ' + killer.name + ')' : ''}.`, p.id);
+      this.tell(p, 'bad', RA.t("Your state has fallen."), p.id);
+      this.tell(p, 'lost', RA.t("You are defeated."), p.id);
+      for (const h of this.P) if (h && h.human && h !== p && h.alive) this.tell(h, 'bad', RA.t("Player {0} has fallen{1}.", p.nick || p.name, killer ? RA.t(" (conqueror: ") + killer.name + ')' : ''), p.id);
     }
     this.news('fall', killer ? killer.id : p.id, killer ? p.id : 0); // shown in the kill feed (no toast for others)
   }
@@ -1282,7 +1282,7 @@ RA.Game = class Game {
     p.ae = Math.min(100, p.ae + v);
     if (!p.aeWarn && p.ae >= RA.CFG.AE_COALITION) {
       p.aeWarn = true;
-      this.tell(p, 'bad', 'Tvoje širenje plaši svijet: države se udružuju protiv tebe. Ljutnja vremenom opada.', p.id);
+      this.tell(p, 'bad', RA.t("Your expansion scares the world: states are joining forces against you. The anger fades with time."), p.id);
     }
   }
   _updateLeader() {
@@ -1330,7 +1330,7 @@ RA.Game = class Game {
       if (sides.size === 1) {
         this.state = 'over';
         this._history();
-        this.tellAll('over', `Osvojeno sve: ${best.best.name}`, best.best.id);
+        this.tellAll('over', RA.t("Everything conquered: {0}", best.best.name), best.best.id);
       }
       return;
     }
@@ -1359,7 +1359,7 @@ RA.Game = class Game {
   _endVotes() {
     const hs = this.activeHumans();
     if (!hs.length || this.state !== 'play' || !hs.every((p) => p.endVote)) return;
-    this.tellAll('info', 'Svi igrači su glasali za kraj igre.', 0);
+    this.tellAll('info', RA.t("Every player voted to end the game."), 0);
     this._decide();
   }
   /* end now: the side with the most land wins */
@@ -1388,7 +1388,7 @@ RA.Game = class Game {
   /* a late player in a Focus game (plan 21) is safe from other players until it attacks one (or the time is up) */
   shieldErr(p, T) {
     if (!T || !p || !p.human || !T.human) return null;
-    if (T.shieldUntil > this.tick) return `${T.name} je tek ušao/la u igru — zaštićen/a od napada igrača još ${RA.dur(T.shieldUntil - this.tick)}.`;
+    if (T.shieldUntil > this.tick) return RA.t("{0} has just joined — protected from players for another {1}.", T.name, RA.dur(T.shieldUntil - this.tick));
     p.shieldUntil = 0; // attacking a player ends my own protection
     return null;
   }
@@ -1437,56 +1437,56 @@ RA.Game = class Game {
   /* "Vrati granice": a counter-attack only on the land X recently took from p, until the old border is back */
   cmdReclaim(pid, xid, ratio) {
     const p = this.P[pid], X = this.P[xid];
-    if (!p || !p.alive) return 'Nisi u igri.';
-    if (!X || !X.alive || X === p) return 'Nevažeći igrač.';
-    if (this.isFriendly(p, X)) return `${X.name} ti je saveznik.`;
-    if (this.tick < this.peaceUntil) return 'Mirno doba.';
+    if (!p || !p.alive) return RA.t("You are not in the game.");
+    if (!X || !X.alive || X === p) return RA.t("Invalid player.");
+    if (this.isFriendly(p, X)) return RA.t("{0} is your ally.", X.name);
+    if (this.tick < this.peaceUntil) return RA.t("Peace time.");
     const cells = this.lostTo(p).get(xid);
-    if (!cells || !cells.length) return `${X.name} ti nije ništa oteo u zadnje 3 minute.`;
-    if (!this.hasBorderWith(p, xid)) return `Nemaš granicu s tom državom (${X.name}).`;
+    if (!cells || !cells.length) return RA.t("{0} took nothing from you in the last 3 minutes.", X.name);
+    if (!this.hasBorderWith(p, xid)) return RA.t("You have no border with that state ({0}).", X.name);
     const troops = p.troops * ratio;
-    if (troops < 1) return 'Nemaš dovoljno vojske.';
+    if (troops < 1) return RA.t("Not enough troops.");
     const a = this.launchAttack(pid, xid, troops, cells[cells.length - 1], -1, false, -1, new Set(cells));
-    return a ? { att: a, n: cells.length } : 'Napad nije moguć.';
+    return a ? { att: a, n: cells.length } : RA.t("No attack possible.");
   }
   cmdAttack(pid, c, ratio, dir, from) {
     const p = this.P[pid];
-    if (!p || !p.alive) return { err: 'Nisi u igri.' };
-    if (c < 0 || !this.map.land[c]) return { err: 'To je voda. Dodirni kopno ili obalu.' };
-    if (this.zone && this.zoneOut(c)) return { err: 'To je u radioaktivnoj zoni — tamo se više ne može.' };
+    if (!p || !p.alive) return { err: RA.t("You are not in the game.") };
+    if (c < 0 || !this.map.land[c]) return { err: RA.t("That's water. Tap land or a coast.") };
+    if (this.zone && this.zoneOut(c)) return { err: RA.t("That's in the radioactive zone — nothing can go there any more.") };
     const tid = this.owner[c];
     if (tid === pid) return { own: true };
     const T = tid ? this.P[tid] : null;
-    if (T && this.isFriendly(p, T)) return { err: `${T.name} ti je saveznik.` };
-    if (T && this.tick < this.peaceUntil) return { err: `Mirno doba: napadi na države počinju za ${this.peaceLeft()}. Do tada zauzimaj slobodnu zemlju i sklapaj saveze.` };
+    if (T && this.isFriendly(p, T)) return { err: RA.t("{0} is your ally.", T.name) };
+    if (T && this.tick < this.peaceUntil) return { err: RA.t("Peace time: attacks on states start in {0}. Until then take free land and make alliances.", this.peaceLeft()) };
     const sh = this.shieldErr(p, T);
     if (sh) return { err: sh };
     const troops = p.troops * ratio;
-    if (troops < 1) return { err: 'Nemaš dovoljno vojske.' };
+    if (troops < 1) return { err: RA.t("Not enough troops.") };
     if (this.hasBorderWith(p, tid) || (T && p.human && this._viaOf(p, T))) {
       const a = this.launchAttack(pid, tid, troops, c, -1, !!dir, from);
-      return a ? { ok: 'land', att: a } : { err: 'Napad nije moguć.' };
+      return a ? { ok: 'land', att: a } : { err: RA.t("No attack possible.") };
     }
     if (this.map.coast[c]) {
       const r = this.launchBoat(pid, c, troops);
       if (typeof r === 'object') return { ok: 'boat', boat: r };
       return { err: this.boatErr(r) };
     }
-    return { err: T ? `Nemaš kopnenu granicu s tom državom (${T.name}), ni preko vojnog saveznika. Pošalji brod na obalu.` : 'Nemaš pristup tom području. Pošalji brod na obalu.' };
+    return { err: T ? RA.t("You have no land border with that state ({0}), not even through a military ally. Send a ship to its coast.", T.name) : RA.t("You can't reach that area. Send a ship to the coast.") };
   }
   boatErr(r) {
     return ({
-      max: `Najviše ${RA.CFG.BOAT_MAX} broda istovremeno.`,
-      nopath: 'Nema morskog puta do te obale.',
-      far: `Predaleko — brod plovi najviše ${RA.CFG.BOAT_RANGE} polja.`,
-      nocoast: 'Brod može pristati samo na obalu.',
-      water: 'Dodirni obalu, ne more.',
-      own: 'To je tvoja obala.',
-      ally: 'To je obala saveznika.',
-      troops: 'Premalo vojske za desant.',
-      peace: 'Mirno doba — brodom zasad možeš samo na slobodnu obalu.',
-      zone: 'Ta obala je u radioaktivnoj zoni.',
-      dead: 'Nisi u igri.',
-    })[r] || (r && r.length > 12 ? r : 'Brod ne može isploviti.');
+      max: RA.t("At most {0} ships at a time.", RA.CFG.BOAT_MAX),
+      nopath: RA.t("No sea route to that coast."),
+      far: RA.t("Too far — a ship sails at most {0} cells.", RA.CFG.BOAT_RANGE),
+      nocoast: RA.t("A ship can land only on a coast."),
+      water: RA.t("Tap the coast, not the sea."),
+      own: RA.t("That's your own coast."),
+      ally: RA.t("That's an ally's coast."),
+      troops: RA.t("Too few troops for a landing."),
+      peace: RA.t("Peace time — for now a ship can only go to a free coast."),
+      zone: RA.t("That coast is in the radioactive zone."),
+      dead: RA.t("You are not in the game."),
+    })[r] || (r && r.length > 12 ? r : RA.t("The ship can't sail."));
   }
 };

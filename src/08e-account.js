@@ -55,7 +55,7 @@ RA.Account = class {
     try {
       j = await r.json();
     } catch (_) {}
-    if (!r.ok || !j) throw new Error((j && j.e) || `Server za naloge ne odgovara (${r.status}).`);
+    if (!r.ok || !j) throw new Error((j && j.e && RA.t(String(j.e))) || RA.t("The accounts server isn't answering ({0}).", r.status));
     return j;
   }
 
@@ -79,12 +79,12 @@ RA.Account = class {
     b.hidden = pb.hidden = !this.ok;
     ui.$('leaderboardBtn').hidden = !this.ok;
     b.classList.toggle('on', !!u);
-    const label = u ? `Profil: ${u.name}` : 'Prijava';
+    const label = u ? `Profil: ${u.name}` : RA.t("Sign in");
     b.setAttribute('aria-label', label);
     b.title = label;
     b.innerHTML = u ? RA.emblem(u) : RA.icon('user');
-    pb.innerHTML = u ? `${RA.emblem(u)}<span>${RA.esc(u.name)}</span>` : `${RA.icon('user')}<span>Prijava</span>`;
-    pb.setAttribute('aria-label', u ? `Otvori profil: ${u.name}` : 'Prijava i profil');
+    pb.innerHTML = u ? `${RA.emblem(u)}<span>${RA.esc(u.name)}</span>` : RA.t("{0}<span>Sign in</span>", RA.icon('user'));
+    pb.setAttribute('aria-label', u ? RA.t("Open profile: {0}", u.name) : RA.t("Sign-in and profile"));
     // the account name fills the name field, unless the player already typed one
     if (u && !ui.settings.name) {
       ui.settings.name = u.name;
@@ -117,7 +117,7 @@ RA.Account = class {
         s.onload = ok;
         s.onerror = () => {
           this.gsiLoading = null;
-          fail(new Error('Ne mogu učitati Google prijavu. Provjeri internet vezu.'));
+          fail(new Error(RA.t("Can't load Google sign-in. Check your internet connection.")));
         };
         document.head.appendChild(s);
       });
@@ -127,10 +127,10 @@ RA.Account = class {
 
   async googleButton(slot, note) {
     if (!this.google) {
-      note.textContent = 'Google prijava još nije podešena na serveru.';
+      note.textContent = RA.t("Google sign-in isn't set up on the server yet.");
       return;
     }
-    note.textContent = 'Učitavam Google prijavu…';
+    note.textContent = RA.t("Loading Google sign-in…");
     try {
       await this.gsi();
     } catch (e) {
@@ -155,7 +155,7 @@ RA.Account = class {
       size: 'large',
       text: 'continue_with',
       shape: 'pill',
-      locale: 'bs',
+      locale: RA.LANG,
       width: Math.max(220, Math.min(320, slot.clientWidth || 300)),
     });
   }
@@ -165,7 +165,7 @@ RA.Account = class {
     try {
       const j = await this.api('POST', '/api/login', { credential });
       this.set(j.user);
-      ui.toast('good', `Prijavljen si kao ${RA.esc(j.user.name)}.`);
+      ui.toast('good', RA.t("Signed in as {0}.", RA.esc(j.user.name)));
     } catch (e) {
       ui.toast('info', RA.esc(e.message));
     }
@@ -177,7 +177,7 @@ RA.Account = class {
     } catch (_) {}
     if (window.google && google.accounts && google.accounts.id) google.accounts.id.disableAutoSelect();
     this.set(null);
-    this.ui.toast('info', 'Odjavljen si.');
+    this.ui.toast('info', RA.t("Signed out."));
   }
 
   /* a finished game → the account (once per game); new achievements pop up as toasts */
@@ -209,9 +209,9 @@ RA.Account = class {
     try {
       const j = await this.api('POST', '/api/result', body);
       this.stats = null;
-      (j.fresh || []).forEach((a, i) => setTimeout(() => this.ui.toast('good', `<b>Dostignuće:</b> ${RA.esc(a.name)} — ${RA.esc(a.desc)}`, { ms: 6000 }), 600 + i * 900));
+      (j.fresh || []).forEach((a, i) => setTimeout(() => this.ui.toast('good', RA.t("<b>Achievement:</b> {0} — {1}", RA.esc(RA.t(a.name)), RA.esc(RA.t(a.desc))), { ms: 6000 }), 600 + i * 900));
     } catch (e) {
-      if (!/Prekratka/.test(e.message)) this.ui.toast('info', 'Rezultat nije sačuvan na nalogu: ' + RA.esc(e.message));
+      if (!/Prekratka/.test(e.message)) this.ui.toast('info', RA.t("The result wasn't saved on the account: ") + RA.esc(e.message));
     }
   }
 
@@ -219,25 +219,25 @@ RA.Account = class {
   gameLine(r) {
     const reg = RA.REGIONS.find((x) => x.id === r.region && x.map === r.map);
     const where = r.region === r.map || !reg ? RA.mapInfo(r.map).all || RA.mapInfo(r.map).name : reg.name;
-    const how = [RA.eraById(r.era).short, r.online ? (r.mode === 'coop' ? 'online tim' : 'online 1 na 1') : '', r.gm === 'br' ? 'battle royale' : r.gm === 'defcon' ? 'DEFCON' : '', r.difficulty === 'tesko' ? 'teško' : r.difficulty === 'lako' ? 'lako' : ''].filter(Boolean).join(' · ');
+    const how = [RA.eraById(r.era).short, r.online ? (r.mode === 'coop' ? RA.t("online team") : RA.t("online 1 on 1")) : '', r.gm === 'br' ? RA.t("battle royale") : r.gm === 'defcon' ? 'DEFCON' : '', r.difficulty === 'tesko' ? RA.t("hard") : r.difficulty === 'lako' ? RA.t("easy") : ''].filter(Boolean).join(' · ');
     const d = new Date(r.at), pad = (n) => String(n).padStart(2, '0');
     const when = `${d.getDate()}. ${d.getMonth() + 1}. ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-    return `<li class="${r.won ? 'w' : 'l'}"><span class="res">${r.won ? 'Pobjeda' : 'Poraz'}</span><span class="what"><b>${RA.esc(where)}</b><small>${RA.esc(how)}</small></span><span class="num">${RA.fmtTime(r.secs)}<small>${String(Math.round(r.peak * 10) / 10).replace('.', ',')}% · ${when}</small></span>${/^l[a-z0-9]{6}$/.test(r.gid || '') ? `<button class="mini ok" data-rp="${r.gid.slice(1)}">Replay</button>` : ''}</li>`;
+    return `<li class="${r.won ? 'w' : 'l'}"><span class="res">${r.won ? RA.t("Victory") : RA.t("Defeat")}</span><span class="what"><b>${RA.esc(where)}</b><small>${RA.esc(how)}</small></span><span class="num">${RA.fmtTime(r.secs)}<small>${String(Math.round(r.peak * 10) / 10).replace('.', ',')}% · ${when}</small></span>${/^l[a-z0-9]{6}$/.test(r.gid || '') ? `<button class="mini ok" data-rp="${r.gid.slice(1)}">Replay</button>` : ''}</li>`;
   }
   fillStats(s, j) {
-    const st = j.stats, rk = st.rank, pct = (v) => String(v).replace('.', ',') + '%';
+    const st = j.stats, rk = st.rank, pct = (v) => (RA.LANG === 'en' ? String(v) : String(v).replace('.', ',')) + '%';
     const cell = (k, v) => `<div><div class="k">${k}</div><div class="v">${v}</div></div>`;
     const put = (id, h) => {
       const el = s.querySelector(id);
       if (el) el.innerHTML = h;
     };
     const need = rk.next ? rk.next.wins - st.wins : 0;
-    put('#accRank', `<b>${RA.esc(rk.title)}</b> · nivo ${rk.level}${rk.next ? `<div class="bar"><i style="width:${Math.round(((st.wins - rk.min) / Math.max(1, rk.next.wins - rk.min)) * 100)}%"></i></div><small>Još ${need} ${need === 1 ? 'pobjeda' : need < 5 ? 'pobjede' : 'pobjeda'} do čina ${RA.esc(rk.next.title)}</small>` : '<small>Najviši čin</small>'}`);
-    put('#accStats', `<div class="acc-grid">${cell('Partija', st.games)}${cell('Pobjeda', st.wins)}${cell('Uspješnost', st.games ? Math.round((st.wins / st.games) * 100) + '%' : '—')}${cell('Online pobjeda', st.onlineWins)}${cell('Najveće carstvo', pct(st.peak))}${cell('Najbrža pobjeda', st.fastest ? RA.fmtTime(st.fastest) : '—')}${cell('Uništeno država', st.kills)}${cell('Osvojeno gradova', st.cities)}${cell('Vrijeme u igri', st.secs >= 3600 ? `${Math.floor(st.secs / 3600)} h ${Math.floor((st.secs % 3600) / 60)} min` : `${Math.floor(st.secs / 60)} min`)}</div>`);
+    put('#accRank', RA.t("<b>{0}</b> · level {1}{2}", RA.esc(RA.t(rk.title)), rk.level, rk.next ? RA.t("<div class=\"bar\"><i style=\"width:{0}%\"></i></div><small>{1} more {2} to the rank of {3}</small>", Math.round(((st.wins - rk.min) / Math.max(1, rk.next.wins - rk.min)) * 100), need, need === 1 ? RA.t("win") : need < 5 ? RA.t("wins") : RA.t("wins{=2}"), RA.esc(RA.t(rk.next.title))) : RA.t("<small>Highest rank</small>")));
+    put('#accStats', `<div class="acc-grid">${cell(RA.t("Games"), st.games)}${cell(RA.t("Victory"), st.wins)}${cell(RA.t("Win rate"), st.games ? Math.round((st.wins / st.games) * 100) + '%' : '—')}${cell(RA.t("Online wins"), st.onlineWins)}${cell(RA.t("Largest empire"), pct(st.peak))}${cell(RA.t("Fastest win"), st.fastest ? RA.fmtTime(st.fastest) : '—')}${cell(RA.t("States destroyed"), st.kills)}${cell(RA.t("Cities conquered"), st.cities)}${cell(RA.t("Time played"), st.secs >= 3600 ? RA.t("{0} h {1} min", Math.floor(st.secs / 3600), Math.floor((st.secs % 3600) / 60)) : RA.t("{0} min", Math.floor(st.secs / 60)))}</div>`);
     const got = j.achievements.filter((a) => a.at).length;
-    put('#accAchT', `Dostignuća · ${got}/${j.achievements.length}`);
-    put('#accAch', j.achievements.map((a) => `<div class="ach${a.at ? ' on' : ''}"><i class="ach-mark" aria-hidden="true">${RA.icon(a.at ? 'check' : 'lock')}</i><div><b>${RA.esc(a.name)}</b><span>${RA.esc(a.desc)}</span><small>${a.at ? 'OTKLJUČANO' : 'ZAKLJUČANO'}</small></div></div>`).join(''));
-    put('#accHist', j.recent.length ? `<ol class="hist">${j.recent.map((r) => this.gameLine(r)).join('')}</ol>` : '<p class="note">Još nema završenih partija. Odigraj jednu do kraja — pobjeda ili poraz se ovdje upisuju.</p>');
+    put('#accAchT', RA.t("Achievements · {0}/{1}", got, j.achievements.length));
+    put('#accAch', j.achievements.map((a) => `<div class="ach${a.at ? ' on' : ''}"><i class="ach-mark" aria-hidden="true">${RA.icon(a.at ? 'check' : 'lock')}</i><div><b>${RA.esc(RA.t(a.name))}</b><span>${RA.esc(RA.t(a.desc))}</span><small>${a.at ? RA.t("UNLOCKED") : RA.t("LOCKED")}</small></div></div>`).join(''));
+    put('#accHist', j.recent.length ? `<ol class="hist">${j.recent.map((r) => this.gameLine(r)).join('')}</ol>` : RA.t("<p class=\"note\">No finished games yet. Play one to the end — wins and losses are recorded here.</p>"));
     // online games (Skirmish, league, Focus) have a replay on the server
     s.querySelectorAll('#accHist [data-rp]').forEach((b) => (b.onclick = () => {
       this.ui.closeSheet();
@@ -258,10 +258,8 @@ RA.Account = class {
   /* leaderboard: most wins, or most online wins */
   async topSheet(by) {
     const ui = this.ui;
-    let h = '<div id="accSheet" class="dossier-marker leaderboard-marker"></div>' + ui.head('Ljestvica komandanata', 'POREDAK · OVERTAKE');
-    h += `<div class="seg" id="topSeg"><button data-v="wins" aria-pressed="${by !== 'online'}">Pobjede</button><button data-v="online" aria-pressed="${by === 'online'}">Online pobjede</button></div>
-      <div id="topList"><p class="note">Učitavam…</p></div>
-      <div class="btns" style="margin-top:14px"><button class="btn" id="topBack"><span class="t">${this.user ? 'Nazad na profil' : 'Nazad'}</span></button></div>`;
+    let h = '<div id="accSheet" class="dossier-marker leaderboard-marker"></div>' + ui.head(RA.t("Commanders' leaderboard"), 'POREDAK · OVERTAKE');
+    h += RA.t("<div class=\"seg\" id=\"topSeg\"><button data-v=\"wins\" aria-pressed=\"{0}\">Wins</button><button data-v=\"online\" aria-pressed=\"{1}\">Online wins</button></div>\n      <div id=\"topList\"><p class=\"note\">Loading…</p></div>\n      <div class=\"btns\" style=\"margin-top:14px\"><button class=\"btn\" id=\"topBack\"><span class=\"t\">{2}</span></button></div>", by !== 'online', by === 'online', this.user ? RA.t("Back to the profile") : RA.t("Back"));
     ui.openSheet(h, (s) => {
       s.querySelectorAll('#topSeg button').forEach((b) => (b.onclick = () => this.topSheet(b.dataset.v)));
       s.querySelector('#topBack').onclick = () => this.sheet();
@@ -273,8 +271,8 @@ RA.Account = class {
       const row = (r) => `<li class="${r.me ? 'me' : ''}"><span class="rk">${r.rank}.</span>${RA.emblem(r, 'sm')}<span class="nm">${RA.esc(r.name)}</span><span class="sc">${by === 'online' ? r.online : r.wins}<small>${by === 'online' ? ' online' : ` / ${r.games}`}</small></span></li>`;
       box.innerHTML = j.rows.length
         ? `<ol class="top-list">${j.rows.map(row).join('')}</ol>${j.me && !j.rows.some((r) => r.me) ? `<ol class="top-list mine">${row(j.me)}</ol>` : ''}`
-        : '<p class="note">Još niko nema pobjedu. Budi prvi!</p>';
-      if (!this.user) box.insertAdjacentHTML('beforeend', '<p class="note">Prijavi se da se i tvoje pobjede računaju.</p>');
+        : RA.t("<p class=\"note\">Nobody has a win yet. Be the first!</p>");
+      if (!this.user) box.insertAdjacentHTML('beforeend', RA.t("<p class=\"note\">Sign in so your wins count too.</p>"));
     } catch (e) {
       if (box.isConnected) box.innerHTML = `<p class="note">${RA.esc(e.message)}</p>`;
     }
@@ -284,12 +282,7 @@ RA.Account = class {
     if (!keep) this.after = null;
     const ui = this.ui, u = this.user;
     if (!u) {
-      const h = `<div id="accSheet" class="dossier-marker signin-marker"></div>${ui.head('Tvoja historija počinje ovdje.', 'PROFIL KOMANDANTA')}
-        <div class="signin-hero">${RA.emblem({icon:'orao'}, 'lg')}<p>Svaka pobjeda ostavlja trag.</p><span>Sačuvaj napredak i nastavi na bilo kojem uređaju.</span></div>
-        <div class="signin-features"><div>${RA.icon('army')}<b>Izgradi svoj ugled</b><span>Činovi i lični grb</span></div><div>${RA.icon('star')}<b>Zabilježi pobjede</b><span>Statistika i dostignuća</span></div><div>${RA.icon('globe')}<b>Zauzmi svoje mjesto</b><span>Svjetska ljestvica</span></div></div>
-        <div class="signin-action"><div class="gsi-slot" id="gsiSlot"></div><p class="note" id="accNote" aria-live="polite"></p><p>Igraj i bez prijave. Tvoj izbor.</p></div>
-        <button class="btn" id="accTop"><span class="t">Pogledaj ljestvicu</span><span class="r" aria-hidden="true">↗</span></button>
-        <p class="account-privacy">Google dijeli ime, e-mail i sliku profila. Nalog možeš obrisati u postavkama profila.</p>`;
+      const h = RA.t("<div id=\"accSheet\" class=\"dossier-marker signin-marker\"></div>{0}\n        <div class=\"signin-hero\">{1}<p>Every victory leaves a mark.</p><span>Keep your progress and continue on any device.</span></div>\n        <div class=\"signin-features\"><div>{2}<b>Build your reputation</b><span>Ranks and a personal emblem</span></div><div>{3}<b>Record your wins</b><span>Statistics and achievements</span></div><div>{4}<b>Take your place</b><span>World leaderboard</span></div></div>\n        <div class=\"signin-action\"><div class=\"gsi-slot\" id=\"gsiSlot\"></div><p class=\"note\" id=\"accNote\" aria-live=\"polite\"></p><p>You can play without signing in. Your choice.</p></div>\n        <button class=\"btn\" id=\"accTop\"><span class=\"t\">See the leaderboard</span><span class=\"r\" aria-hidden=\"true\">↗</span></button>\n        <p class=\"account-privacy\">Google shares your name, e-mail and profile picture. You can delete the account in the profile settings.</p>", ui.head(RA.t("Your history starts here."), 'PROFIL KOMANDANTA'), RA.emblem({icon:'orao'}, 'lg'), RA.icon('army'), RA.icon('star'), RA.icon('globe'));
       ui.openSheet(h, (s) => {
         s.querySelector('#accTop').onclick = () => this.topSheet('wins');
         this.googleButton(s.querySelector('#gsiSlot'), s.querySelector('#accNote'));
@@ -298,25 +291,7 @@ RA.Account = class {
     }
     const since = u.since ? new Date(u.since) : null;
     const embs = (u.pic ? ['google'] : []).concat(Object.keys(RA.EMBLEMS));
-    const h = `<div id="accSheet" class="dossier-marker profile-marker"></div>${ui.head('Dosje komandanta', 'TVOJA HISTORIJA · TVOJE POBJEDE')}
-      <div class="prof-card">
-        <button class="prof-emb" id="embBtn" aria-label="Promijeni ikonicu" aria-expanded="false">${RA.emblem(u, 'lg')}<i>${RA.icon('edit')}</i></button>
-        <div class="prof-main"><span class="dossier-eyebrow">KOMANDANT</span><div class="prof-name">${RA.esc(u.name)}</div><div class="prof-rank" id="accRank"><small>Učitavam…</small></div>${since ? `<small class="prof-since">Član od ${since.getDate()}. ${since.getMonth() + 1}. ${since.getFullYear()}.</small>` : ''}</div>
-      </div>
-      <div class="emb-pick" id="embPick" hidden>${embs.map((id) => `<button data-emb="${id}" aria-pressed="${id === u.icon}" aria-label="Ikonica ${id}">${RA.emblem({ icon: id, pic: u.pic })}</button>`).join('')}</div>
-      <div id="accStats"><p class="note">Učitavam statistiku…</p></div>
-      <div class="dossier-columns"><section class="dossier-achievements"><div class="sec-t" id="accAchT">Dostignuća</div><div class="ach-list" id="accAch"></div></section>
-      <section class="dossier-history"><div class="sec-t">Posljednje operacije</div><div id="accHist"></div></section></div>
-      <div class="account-settings"><div class="sec-t">Postavke profila</div><p class="note">${RA.esc(u.email)}</p><div class="field acc-name"><label class="lab" for="accName">Ime u igri</label>
-        <div class="acc-row"><input type="text" id="accName" maxlength="18" value="${RA.esc(u.name)}" autocomplete="nickname" spellcheck="false"><button class="btn good" id="accSave"><span class="t">Sačuvaj</span></button></div></div>
-      <p class="note" id="accNote" aria-live="polite"></p>
-      <div class="btns"><button class="btn" id="accPush"><span class="t">Obavještenja</span><br><span class="d">Učitavam…</span></button></div>
-      </div>
-      <div class="btns" style="margin-top:14px">
-        <button class="btn" id="accTop"><span class="t">Ljestvica</span></button>
-        <button class="btn" id="accOut"><span class="t">Odjavi se</span></button>
-        <button class="btn danger" id="accDel"><span class="t">Obriši nalog</span></button>
-      </div>`;
+    const h = RA.t("<div id=\"accSheet\" class=\"dossier-marker profile-marker\"></div>{0}\n      <div class=\"prof-card\">\n        <button class=\"prof-emb\" id=\"embBtn\" aria-label=\"Change the emblem\" aria-expanded=\"false\">{1}<i>{2}</i></button>\n        <div class=\"prof-main\"><span class=\"dossier-eyebrow\">COMMANDER</span><div class=\"prof-name\">{3}</div><div class=\"prof-rank\" id=\"accRank\"><small>Loading…</small></div>{4}</div>\n      </div>\n      <div class=\"emb-pick\" id=\"embPick\" hidden>{5}</div>\n      <div id=\"accStats\"><p class=\"note\">Loading statistics…</p></div>\n      <div class=\"dossier-columns\"><section class=\"dossier-achievements\"><div class=\"sec-t\" id=\"accAchT\">Achievements</div><div class=\"ach-list\" id=\"accAch\"></div></section>\n      <section class=\"dossier-history\"><div class=\"sec-t\">Recent operations</div><div id=\"accHist\"></div></section></div>\n      <div class=\"account-settings\"><div class=\"sec-t\">Profile settings</div><p class=\"note\">{6}</p><div class=\"field acc-name\"><label class=\"lab\" for=\"accName\">Name in the game</label>\n        <div class=\"acc-row\"><input type=\"text\" id=\"accName\" maxlength=\"18\" value=\"{7}\" autocomplete=\"nickname\" spellcheck=\"false\"><button class=\"btn good\" id=\"accSave\"><span class=\"t\">Save</span></button></div></div>\n      <p class=\"note\" id=\"accNote\" aria-live=\"polite\"></p>\n      <div class=\"btns\"><button class=\"btn\" id=\"accPush\"><span class=\"t\">Notifications</span><br><span class=\"d\">Loading…</span></button></div>\n      </div>\n      <div class=\"btns\" style=\"margin-top:14px\">\n        <button class=\"btn\" id=\"accTop\"><span class=\"t\">Leaderboard</span></button>\n        <button class=\"btn\" id=\"accOut\"><span class=\"t\">Sign out</span></button>\n        <button class=\"btn danger\" id=\"accDel\"><span class=\"t\">Delete account</span></button>\n      </div>", ui.head(RA.t("Commander's file"), RA.t('YOUR HISTORY · YOUR VICTORIES')), RA.emblem(u, 'lg'), RA.icon('edit'), RA.esc(u.name), since ? RA.t("<small class=\"prof-since\">Member since {1}/{0}/{2}</small>", since.getDate(), since.getMonth() + 1, since.getFullYear()) : '', embs.map((id) => `<button data-emb="${id}" aria-pressed="${id === u.icon}" aria-label="${RA.t('Emblem')} ${id}">${RA.emblem({ icon: id, pic: u.pic })}</button>`).join(''), RA.esc(u.email), RA.esc(u.name));
     ui.openSheet(h, (s) => {
       const note = s.querySelector('#accNote');
       s.querySelector('#accTop').onclick = () => this.topSheet('wins');
@@ -343,7 +318,7 @@ RA.Account = class {
           ui.$('nameIn').value = j.user.name;
           ui._save();
           this.set(j.user);
-          ui.toast('good', 'Ime sačuvano.');
+          ui.toast('good', RA.t("Name saved."));
         } catch (e) {
           note.textContent = e.message;
         }
@@ -354,11 +329,11 @@ RA.Account = class {
         if (e.key === 'Enter') save();
       };
       s.querySelector('#accOut').onclick = () => this.logout();
-      s.querySelector('#accDel').onclick = () => ui.confirm('Obrisati nalog?', 'Brišu se nalog, statistike, dostignuća i historija partija. Ne može se vratiti.', 'Obriši', async () => {
+      s.querySelector('#accDel').onclick = () => ui.confirm(RA.t("Delete the account?"), RA.t("The account, statistics, achievements and game history are deleted. This can't be undone."), RA.t("Delete"), async () => {
         try {
           await this.api('POST', '/api/delete', {});
           this.set(null);
-          ui.toast('info', 'Nalog je obrisan.');
+          ui.toast('info', RA.t("The account was deleted."));
         } catch (e) {
           ui.toast('info', RA.esc(e.message));
         }

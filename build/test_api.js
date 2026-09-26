@@ -135,7 +135,7 @@ async function main() {
     r = await call('GET', '/api/stats');
     const st = r.j.stats || {};
     check(st.games === 3 && st.wins === 2 && st.onlineWins === 1 && st.fastest === 500 && st.peak === 72.5 && st.nukes === 1, 'totals: ' + JSON.stringify(st));
-    check(st.rank && st.rank.title === 'Vojnik' && st.rank.next.title === 'Kaplar' && st.rank.next.wins === 3, 'status from wins: ' + JSON.stringify(st.rank));
+    check(st.rank && st.rank.title === 'Private' && st.rank.next.title === 'Corporal' && st.rank.next.wins === 3, 'status from wins: ' + JSON.stringify(st.rank));
     check(r.j.achievements.length >= 15 && r.j.achievements.filter((a) => a.at).length === 10 && r.j.achievements.every((a) => a.name && a.desc), 'achievement list with names and unlock dates');
     check(r.j.recent.length === 3 && r.j.recent[0].online === true, 'recent games, newest first');
     // Ana: one plain win

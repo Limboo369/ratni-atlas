@@ -57,7 +57,7 @@ function cleanData(d) {
     if (col(o.c)) x.c = col(o.c);
     nat[k] = x;
   }
-  const add = (Array.isArray(d.add) ? d.add : []).slice(0, 40).map((a) => ({ n: clean(a && a.n, 30) || 'Nova država', c: col(a && a.c) || '#888888', cap: a && int(a.cap, 0, 5e6) ? a.cap : 0 }));
+  const add = (Array.isArray(d.add) ? d.add : []).slice(0, 40).map((a) => ({ n: clean(a && a.n, 30) || 'New state', c: col(a && a.c) || '#888888', cap: a && int(a.cap, 0, 5e6) ? a.cap : 0 }));
   const slots = (Array.isArray(d.slots) ? d.slots : []).filter((k) => int(k, 1, 255)).slice(0, 255);
   const R = d.rules && typeof d.rules === 'object' ? d.rules : {};
   const rules = { peace: int(R.peace, 0, 600) ? R.peace : 60, res: R.res ? 1 : 0, tree: R.tree ? 1 : 0, nn: R.nn ? 1 : 0 };
@@ -78,22 +78,22 @@ module.exports = function marketRoutes(db, sessionUser) {
     routes: {
       'POST /api/scen/save': async (req, b) => {
         const u = await sessionUser(req);
-        if (!u) return [401, { e: 'Za objavu scenarija prijavi se.' }];
+        if (!u) return [401, { e: 'Sign in to publish a scenario.' }];
         const data = cleanData(b.data);
-        if (!data) return [400, { e: 'Scenarij nije ispravan.' }];
+        if (!data) return [400, { e: 'The scenario is not valid.' }];
         const title = clean(b.title, 60);
         if (title.length < 3) return [400, { e: 'Naslov treba bar 3 slova.' }];
         const txt = JSON.stringify(data);
-        if (txt.length > MAX_DATA) return [413, { e: 'Scenarij je prevelik.' }];
+        if (txt.length > MAX_DATA) return [413, { e: 'The scenario is too big.' }];
         const args = [title, clean(b.desc, 400), data.map, data.reg, data.era, !!b.pub, txt];
         if (b.code) {
           const s = await find(b.code);
-          if (!s || String(s.user_id) !== String(u.id)) return [404, { e: 'Taj scenarij nije tvoj.' }];
+          if (!s || String(s.user_id) !== String(u.id)) return [404, { e: 'That scenario isn\'t yours.' }];
           await db.query('update scenarios set title = $1, descr = $2, map = $3, reg = $4, era = $5, pub = $6, data = $7, updated = now() where id = $8', [...args, s.id]);
           return { code: s.code };
         }
         const n = await db.query('select count(*)::int n from scenarios where user_id = $1', [u.id]);
-        if (n.rows[0].n >= PER_USER) return [400, { e: `Najviše ${PER_USER} scenarija po nalogu.` }];
+        if (n.rows[0].n >= PER_USER) return [400, { e: `At most ${PER_USER} scenarios per account.` }];
         const code = crypto.randomBytes(8).toString('base64').replace(/[^a-z0-9]/gi, '').toLowerCase().padEnd(8, '0').slice(0, 8);
         await db.query('insert into scenarios (code, user_id, title, descr, map, reg, era, pub, data) values ($1, $2, $3, $4, $5, $6, $7, $8, $9)', [code, u.id, ...args]);
         return { code };
@@ -101,7 +101,7 @@ module.exports = function marketRoutes(db, sessionUser) {
       'GET /api/scen/list': async (req) => {
         const p = q(req), u = await sessionUser(req);
         const mine = p.get('mine') === '1';
-        if (mine && !u) return [401, { e: 'Nisi prijavljen.' }];
+        if (mine && !u) return [401, { e: 'You are not signed in.' }];
         const order = p.get('sort') === 'top' ? 'likes desc, plays desc, updated desc' : 'updated desc';
         const text = clean(p.get('q'), 40);
         const r = await db.query(
@@ -115,7 +115,7 @@ module.exports = function marketRoutes(db, sessionUser) {
       'GET /api/scen/get': async (req) => {
         const s = await find(q(req).get('code'));
         const u = s && !s.pub ? await sessionUser(req) : null;
-        if (!s || (!s.pub && (!u || String(u.id) !== String(s.user_id)))) return [404, { e: 'Taj scenarij ne postoji (ili nije objavljen).' }];
+        if (!s || (!s.pub && (!u || String(u.id) !== String(s.user_id)))) return [404, { e: 'That scenario doesn\'t exist (or isn\'t published).' }];
         const me = s.pub ? await sessionUser(req) : u;
         return { scen: { code: s.code, title: s.title, desc: s.descr, author: s.author, plays: s.plays, likes: s.likes, pub: s.pub, data: JSON.parse(s.data), mine: !!me && String(me.id) === String(s.user_id) } };
       },
@@ -132,7 +132,7 @@ module.exports = function marketRoutes(db, sessionUser) {
       },
       'POST /api/scen/like': async (req, b) => {
         const u = await sessionUser(req);
-        if (!u) return [401, { e: 'Za sviđanje se prijavi.' }];
+        if (!u) return [401, { e: 'Sign in to like it.' }];
         const s = await find(b.code);
         if (!s || !s.pub) return [404, { e: 'Nema tog scenarija.' }];
         if (b.on) await db.query('insert into scenario_likes (scenario_id, user_id) values ($1, $2) on conflict do nothing', [s.id, u.id]);
@@ -142,7 +142,7 @@ module.exports = function marketRoutes(db, sessionUser) {
       },
       'POST /api/scen/delete': async (req, b) => {
         const u = await sessionUser(req);
-        if (!u) return [401, { e: 'Nisi prijavljen.' }];
+        if (!u) return [401, { e: 'You are not signed in.' }];
         await db.query('delete from scenarios where code = $1 and user_id = $2', [String(b.code || ''), u.id]);
         return { ok: true };
       },

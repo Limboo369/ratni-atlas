@@ -37,7 +37,7 @@ RA.scenMap = function (em, S) {
     if (k > 255 || !a) return;
     const c = Number.isInteger(a.cap) && a.cap >= 0 && a.cap < N ? a.cap : 0;
     const ct = em.cityAt[c] >= 0 ? em.cities[em.cityAt[c]] : null;
-    nations.push({ iso: 'S' + (i + 1), name: nm(a.n, 'Nova država ' + (i + 1)), color: col(a.c, '#888888'), x: c % W, y: (c / W) | 0, c, capital: ct ? ct.name : nm(a.n, ''), k });
+    nations.push({ iso: 'S' + (i + 1), name: nm(a.n, RA.t("New state ") + (i + 1)), color: col(a.c, '#888888'), x: c % W, y: (c / W) | 0, c, capital: ct ? ct.name : nm(a.n, ''), k });
   });
   // every state keeps a capital on its own land (its biggest city there, else any of its cells); states without land go
   const cnt = new Int32Array(256), any = new Int32Array(256).fill(-1);
@@ -99,6 +99,6 @@ RA.scenDiff = function (G, em, meta) {
       if (o.n || o.c) nat[k] = o;
     }
   }
-  for (let i = 0; i < add.length; i++) if (!add[i]) add[i] = { n: 'Nova država ' + (i + 1), c: '#888888', cap: 0 };
+  for (let i = 0; i < add.length; i++) if (!add[i]) add[i] = { n: RA.t("New state ") + (i + 1), c: '#888888', cap: 0 };
   return Object.assign({ v: 1, k0: K0, paint, nat, add }, meta);
 };

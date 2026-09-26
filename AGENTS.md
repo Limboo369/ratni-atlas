@@ -2,7 +2,16 @@
 
 Browser territory-conquest strategy game (OpenFront.io-style, made better) on a real map of Europe.
 Game name **Overtake** (logo: "Over" in the text color, "take" in red `var(--danger)`); the repository stays `ratni-atlas`.
-Owner: **Darko** (Bosnia). Talk to him in **Bosnian, ijekavica**, short and concrete. All in-game text is Bosnian (ijekavica).
+Owner: **Darko** (Bosnia). Talk to him in **Bosnian, ijekavica**, short and concrete.
+**The game is in English** (Darko, 27. 9. 2026): every text a player sees is English, now and in everything we add later.
+**Serbian (Latin)** is the second language, chosen with the EN/SR button on the start screen (localStorage `ra_lang`).
+How (`src/00a-i18n.js`): write texts as `RA.t('English with {0}', value)` and add the Serbian line to `src/00b-sr.js`
+(`"English": "Srpski"`; Serbian Latin, ijekavica, "Istorija" not "Historija"). Two Serbian forms of one English text get a
+hidden mark: `RA.t('President{=2}')`. `src/body.html` is English; `RA.trDom` translates its text nodes and labels from
+`RA.SR`. Map data keeps its own (Bosnian) names; `RA.tn(name)` gives the English name from `src/00c-names.js` (applied
+when a map loads; `raw` keeps the data name for the eras' city renames). Server messages (`deploy/`) are English and
+the page shows them through `RA.t`. Never make game logic depend on a text (online players may use different languages).
+`python3 build/test_lang.py` checks that no Bosnian/Serbian word is left in the English page.
 The game is played **mostly on a computer** (desktop browser, mouse and keyboard): design and polish for that first.
 It must still work well on an **Android phone** — every screen must also work at phone width (375 px).
 
@@ -174,7 +183,7 @@ Rebuild era data: `scripts/fetch_data.sh && python3 build/eras.py`.
   with `RA.takeBorders`.
 - Internal names stay as they are (`RA` namespace, storage keys, room ids, file names) — renaming them breaks saves and online play.
 
-## Tests (CI runs `make.py`, `test_ui2.py` (phone and desktop), `test_mp.py`, `test_long.py`, `test_skirmish.py`, `test_league.js` + `.py`, `test_world.py`, `test_api.js`, `test_account.py` and `test_tutorial.py` before every publish; a failed check blocks it)
+## Tests (CI runs `make.py`, `test_ui2.py` (phone and desktop), `test_mp.py`, `test_long.py`, `test_skirmish.py`, `test_league.js` + `.py`, `test_world.py`, `test_api.js`, `test_account.py`, `test_tutorial.py` and `test_lang.py` before every publish; a failed check blocks it)
 
 ```
 python3 build/make.py
@@ -192,6 +201,7 @@ python3 build/test_account.py              # sign-in on the start screen (fake G
 python3 build/test_pwa.py                  # the app: manifest, icons, service worker, offline start, install button
 python3 build/test_market.py               # Community market: editor on the map, publish, list, play a scenario, link
 python3 build/test_tutorial.py desktop     # the guided tutorial, step by step (also `phone`)
+python3 build/test_lang.py danas           # English page without Bosnian/Serbian words (any eras), Serbian switch
 python3 build/test_eras.py 1200            # every era + battle royale
 python3 build/sim_eras.py rim:granice:klasik:evropa:DAC:30:11:srednje   # AI balance run
 ```

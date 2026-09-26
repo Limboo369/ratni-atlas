@@ -8,7 +8,7 @@ Object.assign(RA.CFG, {
   DEFCON_STEP: 1800, // 3 min per stage
   DEFCON_END: 15000, // 25 min
 });
-RA.DEFCON_NAMES = { 5: 'gradnja i savezi', 4: 'kopneni napadi', 3: 'more i zrak', 2: 'rakete', 1: 'nuklearke' };
+RA.DEFCON_NAMES = { 5: RA.t("building and alliances"), 4: RA.t("land attacks"), 3: RA.t("sea and air"), 2: RA.t("missiles"), 1: RA.t("nukes") };
 RA.DEFCON_NEED = { land: 4, sea: 3, air: 3, conv: 2, nuke: 1 };
 
 (function (P) {
@@ -22,8 +22,8 @@ RA.DEFCON_NEED = { land: 4, sea: 3, air: 3, conv: 2, nuke: 1 };
     const d = this.defcon(), need = RA.DEFCON_NEED[what];
     if (!d || d <= need) return '';
     const at = (5 - need) * RA.CFG.DEFCON_STEP;
-    const txt = { land: 'Napadi na države', sea: 'Brodovi i desanti', air: 'Avijacija i padobranci', conv: 'Raketni udari', nuke: 'Nuklearno oružje' }[what];
-    return `DEFCON ${d}: ${txt} su dozvoljeni od DEFCON ${need} (za ${RA.dur(at - this.tick)}).`;
+    const txt = { land: RA.t("Attacks on states"), sea: RA.t("Ships and landings"), air: RA.t("Air force and paratroopers"), conv: RA.t("Missile strikes"), nuke: RA.t("Nuclear weapons") }[what];
+    return RA.t("DEFCON {0}: {1} are allowed from DEFCON {2} (in {3}).", d, txt, need, RA.dur(at - this.tick));
   };
   /* what a state kept: its cities (bigger count more) and the cities it built */
   P.defconScore = function (p) {
@@ -52,6 +52,6 @@ RA.DEFCON_NEED = { land: 4, sea: 3, air: 3, conv: 2, nuke: 1 };
     this.winner = best;
     this.state = 'over';
     this._history();
-    this.tellAll('over', `DEFCON — vrijeme je isteklo. Pobjednik po gradovima i stanovništvu: ${best.name} (${bs} bodova)`, best.id);
+    this.tellAll('over', RA.t("DEFCON — time is up. Winner by cities and population: {0} ({1} points)", best.name, bs), best.id);
   };
 })(RA.Game.prototype);

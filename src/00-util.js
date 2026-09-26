@@ -118,7 +118,7 @@ RA.dur = function (ticks) {
   if (RA.TICK_REAL <= 100) return sec < 60 ? sec + ' s' : RA.fmtTime(sec);
   if (sec < 60) return sec + ' s';
   const m = Math.round(sec / 60);
-  return m < 60 ? m + ' min' : `${Math.floor(m / 60)} h${m % 60 ? ' ' + (m % 60) + ' min' : ''}`;
+  return m < 60 ? m + RA.t(" min") : `${Math.floor(m / 60)} h${m % 60 ? ' ' + (m % 60) + RA.t(" min") : ''}`;
 };
 RA.hexToRgb = function (h) {
   const n = parseInt(h.slice(1), 16);

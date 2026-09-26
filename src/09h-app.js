@@ -20,7 +20,7 @@ RA.appUpdated = () => {
   const app = window.__ra, start = document.getElementById('startScreen');
   const idle = start && !start.hidden && document.getElementById('sheetWrap').hidden && !(app && app.ui && app.ui.editor);
   if (idle) return location.reload();
-  if (app && app.ui) app.ui.toast('info', 'Nova verzija igre je spremna — osvježi stranicu kad završiš partiju (online igrači moraju imati istu verziju).', { ms: 20000 });
+  if (app && app.ui) app.ui.toast('info', RA.t("A new version of the game is ready — refresh the page when you finish the match (online players must have the same version)."), { ms: 20000 });
 };
 RA.appInstalled = () => (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
 
@@ -38,7 +38,7 @@ Object.assign(RA.UI.prototype, {
     addEventListener('appinstalled', () => {
       window.__raInstall = null;
       show();
-      this.toast('good', 'Overtake je instaliran — pokreni ga kao aplikaciju.', { ms: 6000 });
+      this.toast('good', RA.t("Overtake is installed — launch it as an app."), { ms: 6000 });
     });
     b.onclick = () => {
       const e = window.__raInstall;
@@ -58,13 +58,13 @@ Object.assign(RA.UI.prototype, {
     const d = b.querySelector('.d');
     const ok = 'PushManager' in window && 'Notification' in window && 'serviceWorker' in navigator && /^https?:$/.test(location.protocol);
     if (!ok || !A || !A.user) {
-      d.textContent = 'Ovaj preglednik ne podržava obavještenja' + (navigator.userAgent.includes('iPhone') ? ' (na iPhoneu: prvo „Dodaj na početni ekran“).' : '.');
+      d.textContent = RA.t("This browser does not support notifications") + (navigator.userAgent.includes('iPhone') ? RA.t(" (on iPhone: first “Add to Home Screen”).") : '.');
       b.disabled = true;
       return;
     }
     const reg = await navigator.serviceWorker.ready;
     let sub = await reg.pushManager.getSubscription();
-    const draw = () => (d.textContent = sub ? 'Uključena na ovom uređaju — napad na tvoju Focus državu, kraj igre, meč u ligi' : Notification.permission === 'denied' ? 'Blokirana u pregledniku (dozvoli ih u postavkama stranice)' : 'Isključena — dodirni da uključiš');
+    const draw = () => (d.textContent = sub ? RA.t("On for this device — an attack on your Focus state, game over, a league match") : Notification.permission === 'denied' ? RA.t("Blocked in the browser (allow them in the site settings)") : RA.t("Off — tap to turn on"));
     draw();
     b.onclick = async () => {
       try {
@@ -77,10 +77,10 @@ Object.assign(RA.UI.prototype, {
           const { key } = await A.api('GET', '/api/push/key');
           sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: RA.b64key(key) });
           await A.api('POST', '/api/push/sub', { sub: sub.toJSON() });
-          this.toast('good', 'Obavještenja su uključena.');
+          this.toast('good', RA.t("Notifications are on."));
         }
       } catch (e) {
-        this.toast('bad', 'Obavještenja: ' + RA.esc(e.message || String(e)), { ms: 6000 });
+        this.toast('bad', RA.t("Notifications: ") + RA.esc(e.message || String(e)), { ms: 6000 });
       }
       draw();
     };

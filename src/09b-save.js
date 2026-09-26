@@ -95,13 +95,13 @@ Object.assign(RA.App.prototype, {
     ui.campOver = false;
     for (const c of r.picks) RA.placeHuman(G, c, r.name);
     if (!G.me || !G.me.spawned) {
-      ui.toast('bad', 'Sačuvana igra se ne može obnoviti.', { ms: 6000 });
+      ui.toast('bad', RA.t("The saved game cannot be restored."), { ms: 6000 });
       this.dropSave(r.gid);
       return this.showStart();
     }
     RA.startGame(G);
     if (ui.settings.cb) RA.applyColorblind(G, true);
-    if (r.build !== RA.BUILD) ui.toast('info', 'Igra je u međuvremenu ažurirana — nastavak može malo odstupati od onoga što si ostavio.', { ms: 7000 });
+    if (r.build !== RA.BUILD) ui.toast('info', RA.t("The game has been updated in the meantime — the continuation may differ a little from what you left."), { ms: 7000 });
     // replay in slices so the page stays alive; the loading screen shows how far it is
     const ov = document.getElementById('loading'), msg = document.getElementById('loadMsg');
     ov.hidden = false;
@@ -123,7 +123,7 @@ Object.assign(RA.App.prototype, {
         if (G.tick >= target || G.state !== 'play') return done();
         G.step();
       }
-      msg.textContent = `Nastavljam sačuvanu igru… ${Math.round((G.tick / Math.max(1, target)) * 100)}%`;
+      msg.textContent = RA.t("Resuming the saved game… {0}%", Math.round((G.tick / Math.max(1, target)) * 100));
       setTimeout(slice, 0);
     };
     const done = () => {
@@ -147,7 +147,7 @@ Object.assign(RA.App.prototype, {
         this.lmap.setMaxBounds(L.latLngBounds([[bx[1], bx[0]], [bx[3], bx[2]]]).pad(0.7));
       } else this.lmap.setMaxBounds(this.defBounds);
       if (me.alive && me.capital >= 0) this.lmap.setView(this.map.latLngOfCell(me.capital), this.zoomAt(4.9), { animate: false });
-      ui.toast('good', `Igra nastavljena (${RA.fmtTime(G.tick / 10)}). Pauzirano — pritisni ▶ ili razmak kad budeš spreman.`, { ms: 7000 });
+      ui.toast('good', RA.t("Game resumed ({0}). Paused — press ▶ or space when you're ready.", RA.fmtTime(G.tick / 10)), { ms: 7000 });
     };
     slice();
   },
@@ -163,6 +163,6 @@ Object.assign(RA.UI.prototype, {
     b.hidden = !sv;
     if (!sv) return;
     const m = sv.meta || {};
-    b.innerHTML = `<span class="t">Nastavi igru</span><span class="d">${RA.esc(m.who || '')} · ${RA.esc(m.where || '')} · ${RA.esc(m.era || '')} · ${RA.fmtTime(m.secs || 0)} · ${String(m.land || 0).replace('.', ',')}%</span>`;
+    b.innerHTML = RA.t("<span class=\"t\">Continue game</span><span class=\"d\">{0} · {1} · {2} · {3} · {4}%</span>", RA.esc(m.who || ''), RA.esc(m.where || ''), RA.esc(m.era || ''), RA.fmtTime(m.secs || 0), String(m.land || 0).replace('.', ','));
   },
 });

@@ -44,7 +44,7 @@ RA.Editor = class {
   }
   tap(c) {
     const G = this.G, ui = this.app.ui;
-    if (!this.land(c)) return ui.toast('info', 'To nije kopno u ovoj regiji.');
+    if (!this.land(c)) return ui.toast('info', RA.t("That is not land in this region."));
     if (this.tool === 'pick') {
       this.sel = G.owner[c];
       this.tool = 'paint';
@@ -52,8 +52,8 @@ RA.Editor = class {
     }
     if (this.tool === 'new') {
       const K0 = this.em.nations.length, k = K0 + 1 + this.added;
-      if (k > 255 || this.added >= RA.SCEN_MAX_ADD || G.P.length > 250) return ui.toast('bad', 'Više novih država ne može.');
-      const color = RA.ED_COLORS[this.added % RA.ED_COLORS.length], name = 'Nova država ' + (this.added + 1);
+      if (k > 255 || this.added >= RA.SCEN_MAX_ADD || G.P.length > 250) return ui.toast('bad', RA.t("No more new states are possible."));
+      const color = RA.ED_COLORS[this.added % RA.ED_COLORS.length], name = RA.t("New state ") + (this.added + 1);
       const p = G.addPlayer({ name, type: 'nation', color, iso: 'S' + (this.added + 1) });
       p.nation = { k, c, x: c % G.map.W, y: (c / G.map.W) | 0, name, color, capital: '', iso: p.iso };
       p.capital = c;
@@ -65,7 +65,7 @@ RA.Editor = class {
       this.paint(c);
       this.endStroke();
       this.app.terr.updatePalette();
-      ui.toast('good', 'Nova država — daj joj ime i boju, pa oboji njenu zemlju.');
+      ui.toast('good', RA.t("New state — give it a name and a colour, then paint its land."));
       return ui.editorPanel();
     }
     if (this.tool === 'paint') {
@@ -192,14 +192,14 @@ Object.assign(RA.App.prototype, {
   scenPlay(S, title, code) {
     const R = S.rules || {};
     if (code) RA.scenPlayed(this, code);
-    this.newGame({ map: S.map, region: S.reg, era: S.era, start: 'granice', scen: S, scenTitle: title || 'Scenarij', peace: R.peace != null ? R.peace : 60, res: !!R.res, tree: !!R.tree, noNuke: !!R.nn });
-    this.ui.toast('info', `Scenarij „${RA.esc(title || 'bez naslova')}“ — izaberi državu${S.slots && S.slots.length ? ' (samo one koje scenarij nudi)' : ''}.`, { ms: 6000 });
+    this.newGame({ map: S.map, region: S.reg, era: S.era, start: 'granice', scen: S, scenTitle: title || RA.t("Scenario"), peace: R.peace != null ? R.peace : 60, res: !!R.res, tree: !!R.tree, noNuke: !!R.nn });
+    this.ui.toast('info', RA.t("Scenario “{0}” — pick a state{1}.", RA.esc(title || RA.t("untitled")), S.slots && S.slots.length ? RA.t(" (only those the scenario offers)") : ''), { ms: 6000 });
   },
   scenOpen(code) {
     const A = this.ui.account;
     const get = A && A.ok ? A.api('GET', '/api/scen/get?code=' + code) : fetch('/api/scen/get?code=' + code).then((r) => r.json());
     get.then((j) => {
-      if (!j || !j.scen) throw new Error((j && j.e) || 'Taj scenarij ne postoji.');
+      if (!j || !j.scen) throw new Error((j && j.e && RA.t(String(j.e))) || RA.t("That scenario does not exist."));
       this.ui.scenSheet(j.scen);
     }).catch((e) => this.ui.toast('bad', RA.esc(e.message), { ms: 5000 }));
   },
@@ -220,12 +220,12 @@ Object.assign(RA.UI.prototype, {
     try {
       draft = JSON.parse(localStorage.getItem('ra_scen_draft') || 'null');
     } catch (_) {}
-    let h = '<div id="marketSheet"></div>' + this.head('Community market', 'Scenariji igrača: igraj tuđe, napravi svoj');
-    h += `<div class="btns"><button class="btn primary" id="mkNew"><span class="t">Napravi scenarij</span><br><span class="d">Karta i doba s početnog ekrana — prebojiš granice, nove države, mjesta za igrače</span></button>${draft ? `<button class="btn" id="mkDraft"><span class="t">Nastavi uređivanje</span><br><span class="d">${RA.esc(draft.meta.title || 'Nacrt')} · ${new Date(draft.at).toLocaleString('bs')}</span></button>` : ''}</div>`;
-    if (!api) h += '<p class="note">Market radi na war.deovilab.com (objavljeni scenariji su na serveru).</p>';
+    let h = '<div id="marketSheet"></div>' + this.head(RA.t("Community market"), RA.t("Players' scenarios: play others', make your own"));
+    h += RA.t("<div class=\"btns\"><button class=\"btn primary\" id=\"mkNew\"><span class=\"t\">Create scenario</span><br><span class=\"d\">Map and age from the start screen — repaint borders, new states, player slots</span></button>{0}</div>", draft ? RA.t("<button class=\"btn\" id=\"mkDraft\"><span class=\"t\">Continue editing</span><br><span class=\"d\">{0} · {1}</span></button>", RA.esc(draft.meta.title || RA.t("Draft")), new Date(draft.at).toLocaleString(RA.LOCALE)) : '');
+    if (!api) h += RA.t("<p class=\"note\">The market works on war.deovilab.com (published scenarios are on the server).</p>");
     else {
-      h += `<div class="seg" id="mkTabs"><button data-v="new" aria-pressed="${tab === 'new'}">Najnovije</button><button data-v="top" aria-pressed="${tab === 'top'}">Najbolje</button><button data-v="mine" aria-pressed="${tab === 'mine'}">Moji</button></div>`;
-      h += `<div class="field"><input id="mkQ" placeholder="Traži po naslovu" maxlength="40" value="${RA.esc(this._mkQ || '')}"></div><div class="list" id="mkList"><p class="note">Učitavam…</p></div>`;
+      h += RA.t("<div class=\"seg\" id=\"mkTabs\"><button data-v=\"new\" aria-pressed=\"{0}\">Newest</button><button data-v=\"top\" aria-pressed=\"{1}\">Best</button><button data-v=\"mine\" aria-pressed=\"{2}\">Mine</button></div>", tab === 'new', tab === 'top', tab === 'mine');
+      h += RA.t("<div class=\"field\"><input id=\"mkQ\" placeholder=\"Search by title\" maxlength=\"40\" value=\"{0}\"></div><div class=\"list\" id=\"mkList\"><p class=\"note\">Loading…</p></div>", RA.esc(this._mkQ || ''));
     }
     this.openSheet(h, (s) => {
       s.querySelector('#mkNew').onclick = () => this.app.editorOpen();
@@ -250,7 +250,7 @@ Object.assign(RA.UI.prototype, {
         const reg = RA.REGIONS.find((r) => r.id === x.reg && r.map === x.map);
         return `${reg ? reg.name : RA.mapInfo(x.map).all} · ${RA.eraById(x.era).short}`;
       };
-      box.innerHTML = j.rows.length ? j.rows.map((x) => `<div class="prow wide"><div class="pn"><div class="nm">${RA.esc(x.title)}${x.pub ? '' : ' · <i>nacrt</i>'}</div><div class="d">${RA.esc(where(x))} · ${RA.esc(x.author)} · ▶ ${x.plays} · ♥ ${x.likes}${x.desc ? '<br>' + RA.esc(x.desc) : ''}</div></div><div class="bb">${this.mini('Igraj', `data-mkplay="${x.code}"`, 'ok')}${tab === 'mine' ? this.mini('Uredi', `data-mkedit="${x.code}"`) + this.mini('Obriši', `data-mkdel="${x.code}"`, 'warn') : x.pub ? this.mini(x.liked ? '♥' : '♡', `data-mklike="${x.code}" data-on="${x.liked ? 0 : 1}"`) : ''}</div></div>`).join('') : `<p class="note">${tab === 'mine' ? 'Još nemaš scenarija — napravi prvi.' : 'Još nema objavljenih scenarija.'}</p>`;
+      box.innerHTML = j.rows.length ? j.rows.map((x) => `<div class="prow wide"><div class="pn"><div class="nm">${RA.esc(x.title)}${x.pub ? '' : RA.t(" · <i>draft</i>")}</div><div class="d">${RA.esc(where(x))} · ${RA.esc(x.author)} · ▶ ${x.plays} · ♥ ${x.likes}${x.desc ? '<br>' + RA.esc(x.desc) : ''}</div></div><div class="bb">${this.mini(RA.t("Play"), `data-mkplay="${x.code}"`, 'ok')}${tab === 'mine' ? this.mini(RA.t("Edit"), `data-mkedit="${x.code}"`) + this.mini(RA.t("Delete"), `data-mkdel="${x.code}"`, 'warn') : x.pub ? this.mini(x.liked ? '♥' : '♡', `data-mklike="${x.code}" data-on="${x.liked ? 0 : 1}"`) : ''}</div></div>`).join('') : `<p class="note">${tab === 'mine' ? RA.t("You have no scenarios yet — make the first one.") : RA.t("No published scenarios yet.")}</p>`;
       const get = (code) => A.api('GET', '/api/scen/get?code=' + code).then((r) => r.scen);
       box.querySelectorAll('[data-mkplay]').forEach((b) => (b.onclick = () => get(b.dataset.mkplay).then((sc) => {
         this.closeSheet();
@@ -258,14 +258,14 @@ Object.assign(RA.UI.prototype, {
       }, (e) => this.toast('bad', RA.esc(e.message)))));
       box.querySelectorAll('[data-mkedit]').forEach((b) => (b.onclick = () => get(b.dataset.mkedit).then((sc) => this.app.editorOpen(sc.data, { code: sc.code, title: sc.title, desc: sc.desc, pub: sc.pub }))));
       box.querySelectorAll('[data-mklike]').forEach((b) => (b.onclick = () => this.needAccount(() => A.api('POST', '/api/scen/like', { code: b.dataset.mklike, on: +b.dataset.on }).then(() => this.marketList(s, tab), (e) => this.toast('bad', RA.esc(e.message))))));
-      box.querySelectorAll('[data-mkdel]').forEach((b) => (b.onclick = () => this.confirm('Obrisati scenarij?', 'Scenarij se briše i sa marketa.', 'Obriši', () => A.api('POST', '/api/scen/delete', { code: b.dataset.mkdel }).then(() => this.marketSheet('mine')))));
+      box.querySelectorAll('[data-mkdel]').forEach((b) => (b.onclick = () => this.confirm(RA.t("Delete the scenario?"), RA.t("The scenario is also removed from the market."), RA.t("Delete"), () => A.api('POST', '/api/scen/delete', { code: b.dataset.mkdel }).then(() => this.marketSheet('mine')))));
     }, (e) => (box.innerHTML = `<p class="note">${RA.esc(e.message)}</p>`));
   },
   /* one scenario (from a link /scenario-<code>) */
   scenSheet(sc) {
-    let h = this.head(RA.esc(sc.title), `Scenarij · ${RA.esc(sc.author)} · ▶ ${sc.plays} · ♥ ${sc.likes}`);
+    let h = this.head(RA.esc(sc.title), RA.t("Scenario · {0} · ▶ {1} · ♥ {2}", RA.esc(sc.author), sc.plays, sc.likes));
     if (sc.desc) h += `<p class="explain">${RA.esc(sc.desc)}</p>`;
-    h += `<div class="btns"><button class="btn primary" id="scPlay"><span class="t">Igraj</span></button><button class="btn" id="scCopy"><span class="t">Kopiraj link</span></button></div>`;
+    h += RA.t("<div class=\"btns\"><button class=\"btn primary\" id=\"scPlay\"><span class=\"t\">Play</span></button><button class=\"btn\" id=\"scCopy\"><span class=\"t\">Copy link</span></button></div>");
     this.openSheet(h, (s) => {
       s.querySelector('#scPlay').onclick = () => {
         this.closeSheet();
@@ -274,7 +274,7 @@ Object.assign(RA.UI.prototype, {
       s.querySelector('#scCopy').onclick = () => {
         try {
           navigator.clipboard.writeText(location.origin + '/scenario-' + sc.code);
-          this.toast('good', 'Link je kopiran.');
+          this.toast('good', RA.t("Link copied."));
         } catch (_) {}
       };
     });
@@ -290,24 +290,10 @@ Object.assign(RA.UI.prototype, {
       p.className = 'ed-panel';
       document.body.appendChild(p);
     }
-    const states = G.P.filter((q) => q && q.nation && (q.alive || q.nation.k > E.em.nations.length)).sort((a, b) => a.name.localeCompare(b.name, 'bs'));
+    const states = G.P.filter((q) => q && q.nation && (q.alive || q.nation.k > E.em.nations.length)).sort((a, b) => a.name.localeCompare(b.name, RA.LOCALE));
     const S = G.P[E.sel];
-    const tools = [['paint', 'Četka'], ['pick', 'Uzmi državu'], ['new', 'Nova država'], ['move', 'Pomjeri kartu']];
-    p.innerHTML = `<div class="ed-head"><b>Editor scenarija</b><button class="mini" id="edMin">${this._edMin ? '▸' : '▾'}</button></div>
-      <div class="ed-body"${this._edMin ? ' hidden' : ''}>
-      <input id="edTitle" maxlength="60" placeholder="Naslov scenarija" value="${RA.esc(E.meta.title)}">
-      <textarea id="edDesc" maxlength="400" rows="2" placeholder="Opis (šta je cilj, ko protiv koga)">${RA.esc(E.meta.desc)}</textarea>
-      <div class="seg wrap" id="edTool">${tools.map(([v, t]) => `<button data-v="${v}" aria-pressed="${E.tool === v}">${t}</button>`).join('')}</div>
-      <div class="seg" id="edBrush">${[1, 3, 6].map((v) => `<button data-v="${v}" aria-pressed="${E.brush === v}">Četka ${v}</button>`).join('')}</div>
-      <label class="lab">Bojiš u</label>
-      <select id="edState"><option value="0"${E.sel ? '' : ' selected'}>— Slobodna zemlja —</option>${states.map((q) => `<option value="${q.id}"${q.id === E.sel ? ' selected' : ''}>${RA.esc(q.name)}${E.slots.has(q.id) ? ' ★' : ''}</option>`).join('')}</select>
-      ${S ? `<div class="ed-row"><input id="edName" maxlength="30" value="${RA.esc(S.name)}"><input type="color" id="edColor" value="${S.hex}"></div>
-      <label class="ed-check"><input type="checkbox" id="edSlot"${E.slots.has(S.id) ? ' checked' : ''}> Igrač može uzeti ovu državu (★)</label>` : '<p class="note">Slobodna zemlja: niko je ne drži na početku.</p>'}
-      <p class="note">${E.slots.size ? `Igrač bira među ${E.slots.size} označenih (★).` : 'Bez ★: igrač može uzeti bilo koju državu.'}</p>
-      <div class="ed-row" id="edRules"><label>Mir <input type="number" id="edPeace" min="0" max="600" step="10" value="${E.rules.peace}"> s</label>
-        <label><input type="checkbox" id="edRes"${E.rules.res ? ' checked' : ''}> Resursi</label><label><input type="checkbox" id="edTree"${E.rules.tree ? ' checked' : ''}> Stablo</label><label><input type="checkbox" id="edNn"${E.rules.nn ? ' checked' : ''}> Bez nuklearki</label></div>
-      <div class="ed-btns"><button class="mini" id="edUndo"${E.undo.length ? '' : ' disabled'}>Poništi</button><button class="mini" id="edTry">Isprobaj</button><button class="mini ok" id="edSave">Sačuvaj</button><button class="mini ok" id="edPub">${E.meta.pub ? 'Objavljeno ✓' : 'Objavi'}</button><button class="mini warn" id="edExit">Izađi</button></div>
-      </div>`;
+    const tools = [['paint', RA.t("Brush")], ['pick', RA.t("Take a state")], ['new', RA.t("New state")], ['move', RA.t("Move the map")]];
+    p.innerHTML = RA.t("<div class=\"ed-head\"><b>Scenario editor</b><button class=\"mini\" id=\"edMin\">{0}</button></div>\n      <div class=\"ed-body\"{1}>\n      <input id=\"edTitle\" maxlength=\"60\" placeholder=\"Scenario title\" value=\"{2}\">\n      <textarea id=\"edDesc\" maxlength=\"400\" rows=\"2\" placeholder=\"Description (what the goal is, who against whom)\">{3}</textarea>\n      <div class=\"seg wrap\" id=\"edTool\">{4}</div>\n      <div class=\"seg\" id=\"edBrush\">{5}</div>\n      <label class=\"lab\">Painting</label>\n      <select id=\"edState\"><option value=\"0\"{6}>— Free land —</option>{7}</select>\n      {8}\n      <p class=\"note\">{9}</p>\n      <div class=\"ed-row\" id=\"edRules\"><label>Peace <input type=\"number\" id=\"edPeace\" min=\"0\" max=\"600\" step=\"10\" value=\"{10}\"> s</label>\n        <label><input type=\"checkbox\" id=\"edRes\"{11}> Resources</label><label><input type=\"checkbox\" id=\"edTree\"{12}> Tree</label><label><input type=\"checkbox\" id=\"edNn\"{13}> No nukes</label></div>\n      <div class=\"ed-btns\"><button class=\"mini\" id=\"edUndo\"{14}>Undo</button><button class=\"mini\" id=\"edTry\">Try it</button><button class=\"mini ok\" id=\"edSave\">Save</button><button class=\"mini ok\" id=\"edPub\">{15}</button><button class=\"mini warn\" id=\"edExit\">Exit</button></div>\n      </div>", this._edMin ? '▸' : '▾', this._edMin ? ' hidden' : '', RA.esc(E.meta.title), RA.esc(E.meta.desc), tools.map(([v, t]) => `<button data-v="${v}" aria-pressed="${E.tool === v}">${t}</button>`).join(''), [1, 3, 6].map((v) => RA.t("<button data-v=\"{0}\" aria-pressed=\"{1}\">Brush {2}</button>", v, E.brush === v, v)).join(''), E.sel ? '' : ' selected', states.map((q) => `<option value="${q.id}"${q.id === E.sel ? ' selected' : ''}>${RA.esc(q.name)}${E.slots.has(q.id) ? ' ★' : ''}</option>`).join(''), S ? RA.t("<div class=\"ed-row\"><input id=\"edName\" maxlength=\"30\" value=\"{0}\"><input type=\"color\" id=\"edColor\" value=\"{1}\"></div>\n      <label class=\"ed-check\"><input type=\"checkbox\" id=\"edSlot\"{2}> A player can take this state (★)</label>", RA.esc(S.name), S.hex, E.slots.has(S.id) ? ' checked' : '') : RA.t("<p class=\"note\">Free land: nobody holds it at the start.</p>"), E.slots.size ? RA.t("The player picks among {0} marked (★).", E.slots.size) : RA.t("No ★: the player can take any state."), E.rules.peace, E.rules.res ? ' checked' : '', E.rules.tree ? ' checked' : '', E.rules.nn ? ' checked' : '', E.undo.length ? '' : ' disabled', E.meta.pub ? RA.t("Published ✓") : RA.t("Publish"));
     const $ = (id) => p.querySelector('#' + id);
     $('edMin').onclick = () => {
       this._edMin = !this._edMin;
@@ -319,8 +305,8 @@ Object.assign(RA.UI.prototype, {
     p.querySelectorAll('#edTool button').forEach((b) => (b.onclick = () => {
       E.tool = b.dataset.v;
       this.app.editorDrag();
-      if (E.tool === 'new') this.toast('info', 'Dodirni kartu gdje je prijestolnica nove države.');
-      if (E.tool === 'pick') this.toast('info', 'Dodirni državu na karti.');
+      if (E.tool === 'new') this.toast('info', RA.t("Tap the map where the new state's capital is."));
+      if (E.tool === 'pick') this.toast('info', RA.t("Tap a state on the map."));
       this.editorPanel();
     }));
     p.querySelectorAll('#edBrush button').forEach((b) => (b.onclick = () => {
@@ -367,17 +353,17 @@ Object.assign(RA.UI.prototype, {
       this.editor = null;
       this.app.editorMouse(false);
       p.remove();
-      this.app.scenPlay(sc, E.meta.title || 'Nacrt');
+      this.app.scenPlay(sc, E.meta.title || RA.t("Draft"));
     };
     const save = (pub) => this.needAccount(() => {
-      if ((E.meta.title || '').trim().length < 3) return this.toast('bad', 'Daj scenariju naslov (bar 3 slova).');
+      if ((E.meta.title || '').trim().length < 3) return this.toast('bad', RA.t("Give the scenario a title (at least 3 letters)."));
       this.account.api('POST', '/api/scen/save', { code: E.meta.code || undefined, title: E.meta.title, desc: E.meta.desc, pub: pub || E.meta.pub, data: E.scen() }).then((j) => {
         E.meta.code = j.code;
         if (pub) E.meta.pub = true;
         try {
           localStorage.removeItem('ra_scen_draft');
         } catch (_) {}
-        this.toast('good', pub ? `Objavljeno na marketu. Link: <b>${RA.esc(location.origin + '/scenario-' + j.code)}</b>` : 'Sačuvano na nalogu.', { ms: 7000 });
+        this.toast('good', pub ? RA.t("Published on the market. Link: <b>{0}</b>", RA.esc(location.origin + '/scenario-' + j.code)) : RA.t("Saved to your account."), { ms: 7000 });
         this.editorPanel();
       }, (e) => this.toast('bad', RA.esc(e.message), { ms: 6000 }));
     });

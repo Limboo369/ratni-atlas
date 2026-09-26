@@ -46,7 +46,7 @@ async def main():
         await page.click('[data-home="sarajevo"]')
         await page.wait_for_selector('[data-mis="0"]')
         txt = await ev('document.getElementById("sheet").textContent')
-        check('Kotromanić' in txt and 'Uspon' in txt and 'Krune i mačevi' in txt, 'the campaign screen: the dynasty, chapter I open, chapter II locked')
+        check('Kotromanić' in txt and 'The rise' in txt and 'Crowns and swords' in txt, 'the campaign screen: the dynasty, chapter I open, chapter II locked')
         await page.screenshot(path=OUT + f'camp_{MODE}.png')
         await page.click('[data-mis="0"]')
         await page.wait_for_function('window.__ra.G && window.__ra.G.opts.camp && window.__ra.G.state === "play" && window.__ra.G.me', timeout=60_000)
@@ -56,7 +56,7 @@ async def main():
         check(True, 'the goal is on the screen: ' + await ev('document.querySelector("#status .pill.goal").textContent'))
         # the goal is met
         await ev('() => { const G = window.__ra.G; G.camp.share0 = 0.0001; }')
-        await page.wait_for_function('document.getElementById("sheet").textContent.includes("Misija uspješna")', timeout=15_000)
+        await page.wait_for_function('document.getElementById("sheet").textContent.includes("Mission accomplished")', timeout=15_000)
         c = await ev('JSON.parse(localStorage.getItem("ra_campaign"))')
         check(c['xp'] >= 80 and c['done'].get('0', 0) >= 1, f'success: XP {c["xp"]}, stars {c["done"]}')
         await page.click('#sheet [data-camp]')
@@ -70,7 +70,7 @@ async def main():
         check(abs(bg - 1.06) < 1e-9, f'the dynasty\'s upgrade applies in the mission (gold ×{bg})')
         # a failed mission: the player's state falls
         await ev('() => { const G = window.__ra.G; G._kill(G.me); }')
-        await page.wait_for_function('document.getElementById("sheet").textContent.includes("neuspješna")', timeout=15_000)
+        await page.wait_for_function('document.getElementById("sheet").textContent.includes("Mission failed")', timeout=15_000)
         check(True, 'a lost mission ends with "Misija neuspješna" and a retry')
         # progress survives a reload; the survive mission sets a coalition
         await page.reload()

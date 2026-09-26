@@ -69,14 +69,14 @@ RA.dcos = (a) => RA.dsin(a + 1.5707963267948966);
   P._stepZone = function () {
     const Z = this.zone, C = RA.CFG, tk = this.tick;
     if (Z.state === 'wait' || Z.state === 'hold') {
-      if (tk === Z.shrinkAt - 200) this.tellAll('info', '☢ Radioaktivna zona se sužava za 20 s — pomjeri se prema bijelom krugu.');
+      if (tk === Z.shrinkAt - 200) this.tellAll('info', RA.t("☢ The radioactive zone shrinks in 20 s — move towards the white circle."));
       if (tk >= Z.shrinkAt) {
         Z.state = 'shrink';
         Z.fx = Z.cx;
         Z.fy = Z.cy;
         Z.fr = Z.r;
         Z.t0 = tk;
-        this.tellAll('bad', `☢ Zona se sužava (${Z.phase + 1}/${C.BR_PHASES})! Sve izvan kruga propada.`);
+        this.tellAll('bad', RA.t("☢ The zone is shrinking ({0}/{1})! Everything outside the circle is lost.", Z.phase + 1, C.BR_PHASES));
       }
       return;
     }
@@ -94,7 +94,7 @@ RA.dcos = (a) => RA.dsin(a + 1.5707963267948966);
         Z.tx = Z.cx;
         Z.ty = Z.cy;
         Z.tr = Z.r;
-        this.tellAll('info', '☢ Posljednji krug — zona se više ne sužava. Pobjeđuje ko ostane.');
+        this.tellAll('info', RA.t("☢ The last circle — the zone stops shrinking. Whoever is left wins."));
       } else {
         Z.state = 'hold';
         this._zoneNext();
@@ -121,7 +121,7 @@ RA.dcos = (a) => RA.dsin(a + 1.5707963267948966);
         p.troops = Math.max(0, p.troops - dens * lost * 1.2);
         if (!p.zoneWarned || this.tick - p.zoneWarned > 150) {
           p.zoneWarned = this.tick;
-          this.tell(p, 'bad', `☢ Zona ti je progutala ${lost} polja i vojsku na njima — bježi prema sredini!`, p.id);
+          this.tell(p, 'bad', RA.t("☢ The zone swallowed {0} of your cells and the troops on them — run for the centre!", lost), p.id);
         }
       }
     }

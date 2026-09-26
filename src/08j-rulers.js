@@ -7,176 +7,176 @@
 
 /* ---------------- who rules: title, name, portrait kind ---------------- */
 RA.RULER_KINDS = {
-  rim: [{ t: 'Imperator', k: 'laurel' }, { t: 'Poglavica', k: 'chief' }, { t: 'Kraljica', k: 'queen', f: 1 }],
-  srednji: [{ t: 'Kralj', k: 'crown' }, { t: 'Sultan', k: 'turban' }, { t: 'Knez', k: 'fur' }],
-  napoleon: [{ t: 'Car', k: 'bicorne' }, { t: 'Kralj', k: 'crown' }, { t: 'Kraljica', k: 'queen', f: 1 }],
-  ww1: [{ t: 'Car', k: 'helmet' }, { t: 'General', k: 'cap' }, { t: 'Premijer', k: 'suit' }],
-  ww2: [{ t: 'Maršal', k: 'cap' }, { t: 'Kralj', k: 'crown' }, { t: 'Predsjednik', k: 'suit' }],
-  hladni: [{ t: 'Generalni sekretar', k: 'suit' }, { t: 'Predsjednik', k: 'suit' }, { t: 'General', k: 'cap' }],
-  danas: [{ t: 'Predsjednik', k: 'suit' }, { t: 'Predsjednica', k: 'suitf', f: 1 }, { t: 'Premijer', k: 'suit' }],
+  rim: [{ t: RA.t("Imperator"), k: 'laurel' }, { t: RA.t("Chief"), k: 'chief' }, { t: RA.t("Queen"), k: 'queen', f: 1 }],
+  srednji: [{ t: RA.t("King"), k: 'crown' }, { t: RA.t("Sultan"), k: 'turban' }, { t: RA.t("Prince"), k: 'fur' }],
+  napoleon: [{ t: RA.t("Emperor"), k: 'bicorne' }, { t: RA.t("King"), k: 'crown' }, { t: RA.t("Queen"), k: 'queen', f: 1 }],
+  ww1: [{ t: RA.t("Emperor"), k: 'helmet' }, { t: RA.t("General"), k: 'cap' }, { t: RA.t("Prime Minister"), k: 'suit' }],
+  ww2: [{ t: RA.t("Marshal"), k: 'cap' }, { t: RA.t("King"), k: 'crown' }, { t: RA.t("President{=2}"), k: 'suit' }],
+  hladni: [{ t: RA.t("General Secretary"), k: 'suit' }, { t: RA.t("President{=2}"), k: 'suit' }, { t: RA.t("General"), k: 'cap' }],
+  danas: [{ t: RA.t("President{=2}"), k: 'suit' }, { t: RA.t("President"), k: 'suitf', f: 1 }, { t: RA.t("Prime Minister"), k: 'suit' }],
 };
 /* titles of other parts of the world in the older eras (by the capital's place) */
 RA.rulerTitle = function (era, lat, lon, base) {
   const old = ['rim', 'srednji', 'napoleon'].includes(era);
   if (!old && era !== 'ww1') return base;
-  if (lon > 128 && lat > 30 && lat < 46) return { t: era === 'ww1' ? 'Car' : 'Šogun', k: 'kabuto' };
-  if (lon > 98 && lat > 18) return { t: 'Car', k: 'crown' };
-  if (lon > 66 && lon < 92 && lat < 32) return { t: 'Maharadža', k: 'turban' };
-  if (lon > 44 && lon < 64 && lat > 24 && lat < 40) return { t: 'Šah', k: 'turban' };
-  if (lon > 52 && lat >= 40) return { t: 'Kan', k: 'fur' };
-  if (lat < 36 && lat > 12 && lon > -18 && lon < 60 && old) return { t: 'Sultan', k: 'turban' };
-  if (lon < -30 && old) return { t: 'Poglavica', k: 'chief' };
-  if (lat < 12 && lon > -20 && lon < 52 && old) return { t: 'Kralj', k: 'chief' };
+  if (lon > 128 && lat > 30 && lat < 46) return { t: era === 'ww1' ? RA.t("Emperor") : RA.t("Shogun"), k: 'kabuto' };
+  if (lon > 98 && lat > 18) return { t: RA.t("Emperor"), k: 'crown' };
+  if (lon > 66 && lon < 92 && lat < 32) return { t: RA.t("Maharaja"), k: 'turban' };
+  if (lon > 44 && lon < 64 && lat > 24 && lat < 40) return { t: RA.t("Shah"), k: 'turban' };
+  if (lon > 52 && lat >= 40) return { t: RA.t("Khan"), k: 'fur' };
+  if (lat < 36 && lat > 12 && lon > -18 && lon < 60 && old) return { t: RA.t("Sultan"), k: 'turban' };
+  if (lon < -30 && old) return { t: RA.t("Chief"), k: 'chief' };
+  if (lat < 12 && lon > -20 && lon < 52 && old) return { t: RA.t("King"), k: 'chief' };
   return base;
 };
 RA.RULER_NAMES = {
-  rim: { m: ['Aurelijan', 'Valerijan', 'Kasije', 'Marcijan', 'Flavije', 'Septimije', 'Klaudije', 'Oktavijan', 'Tercije', 'Brenos', 'Vercingetor', 'Budimir', 'Ambriks', 'Tarkvinije'], f: ['Livija', 'Julija', 'Hortenzija', 'Boudika', 'Teuta', 'Agripina'] },
-  srednji: { m: ['Radoslav', 'Otokar', 'Bela', 'Tvrtko', 'Ladislav', 'Gundomir', 'Hildebrand', 'Bolesko', 'Rodrigo', 'Almerik', 'Svjetoslav', 'Kasim', 'Murad', 'Dragoljub', 'Branimir', 'Ingvar', 'Leopold', 'Selim'], f: ['Jelena', 'Katarina', 'Margareta', 'Izabela'] },
-  napoleon: { m: ['Fridrih', 'Ferdinand', 'Aleksije', 'Maksimilijan', 'Ludvig', 'Gustav', 'Albert', 'Konstantin', 'Oskar', 'Milorad', 'Emanuel'], f: ['Karolina', 'Leopoldina', 'Viktorija', 'Hortenzija', 'Amalija', 'Luiza'] },
-  ww1: { m: ['Vilhelm', 'Konrad', 'Nikola', 'Albert', 'Herbert', 'Radomir', 'Gerhard', 'Ferdinand', 'Artur', 'Emil', 'Stjepan', 'Ottokar', 'Klement'], f: ['Marija', 'Aleksandra'] },
-  ww2: { m: ['Vukašin', 'Hartmut', 'Leonid', 'Edgar', 'Bruno', 'Aleksandar', 'Gaston', 'Umberto', 'Kasimir', 'Sigmund', 'Tihomir', 'Oswald'], f: ['Vilhelmina', 'Elizabeta'] },
-  hladni: { m: ['Boris', 'Hubert', 'Miroslav', 'Arnold', 'Vadim', 'Richard', 'Stanko', 'Lothar', 'Evgenij', 'Clarence', 'Radovan', 'Gunther'], f: ['Golda', 'Indira'] },
-  danas: { m: ['Marko', 'Lukas', 'Tomas', 'Viktor', 'Damir', 'Pavel', 'Emir', 'Filip', 'Oliver', 'Stefan', 'Jonas', 'Adrian'], f: ['Elena', 'Ana', 'Mira', 'Sofija', 'Ingrid', 'Lucija', 'Nora', 'Klara'] },
+  rim: { m: [RA.t("Aurelian"), RA.t("Valerian"), RA.t("Cassius"), RA.t("Marcian"), RA.t("Flavius"), RA.t("Septimius"), RA.t("Claudius"), RA.t("Octavian"), RA.t("Tertius"), RA.t("Brennos"), RA.t("Vercingetorix"), RA.t("Budimir"), RA.t("Ambrix"), RA.t("Tarquinius")], f: [RA.t("Livia"), RA.t("Julia"), RA.t("Hortensia"), RA.t("Boudica"), RA.t("Teuta"), RA.t("Agrippina")] },
+  srednji: { m: [RA.t("Radoslav"), RA.t("Otakar"), RA.t("Béla"), RA.t("Tvrtko"), RA.t("Ladislaus"), RA.t("Gundomir"), RA.t("Hildebrand"), RA.t("Boleslaw"), RA.t("Rodrigo"), RA.t("Almeric"), RA.t("Sviatoslav"), RA.t("Qasim"), RA.t("Murad"), RA.t("Dragoljub"), RA.t("Branimir"), RA.t("Ingvar"), RA.t("Leopold"), RA.t("Selim")], f: [RA.t("Helena"), RA.t("Catherine"), RA.t("Margaret"), RA.t("Isabella")] },
+  napoleon: { m: [RA.t("Frederick"), RA.t("Ferdinand"), RA.t("Alexios"), RA.t("Maximilian"), RA.t("Ludwig"), RA.t("Gustav"), RA.t("Albert"), RA.t("Constantine"), RA.t("Oscar"), RA.t("Milorad"), RA.t("Emmanuel")], f: [RA.t("Caroline"), RA.t("Leopoldina"), RA.t("Victoria"), RA.t("Hortensia"), RA.t("Amalia"), RA.t("Louise")] },
+  ww1: { m: [RA.t("Wilhelm"), RA.t("Konrad"), RA.t("Nicholas"), RA.t("Albert"), RA.t("Herbert"), RA.t("Radomir"), RA.t("Gerhard"), RA.t("Ferdinand"), RA.t("Arthur"), RA.t("Emil"), RA.t("Stephen"), RA.t("Ottokar"), RA.t("Clement")], f: [RA.t("Maria"), RA.t("Alexandra")] },
+  ww2: { m: [RA.t("Vukašin"), RA.t("Hartmut"), RA.t("Leonid"), RA.t("Edgar"), RA.t("Bruno"), RA.t("Alexander"), RA.t("Gaston"), RA.t("Umberto"), RA.t("Casimir"), RA.t("Sigmund"), RA.t("Tihomir"), RA.t("Oswald")], f: [RA.t("Wilhelmina"), RA.t("Elizabeth")] },
+  hladni: { m: [RA.t("Boris"), RA.t("Hubert"), RA.t("Miroslav"), RA.t("Arnold"), RA.t("Vadim"), RA.t("Richard"), RA.t("Stanko"), RA.t("Lothar"), RA.t("Evgeny"), RA.t("Clarence"), RA.t("Radovan"), RA.t("Gunther")], f: [RA.t("Golda"), RA.t("Indira")] },
+  danas: { m: [RA.t("Marko"), RA.t("Lukas"), RA.t("Tomas"), RA.t("Viktor"), RA.t("Damir"), RA.t("Pavel"), RA.t("Emir"), RA.t("Philip"), RA.t("Oliver"), RA.t("Stefan"), RA.t("Jonas"), RA.t("Adrian")], f: [RA.t("Elena"), RA.t("Anna"), RA.t("Mira"), RA.t("Sofia"), RA.t("Ingrid"), RA.t("Lucia"), RA.t("Nora"), RA.t("Clara")] },
 };
-RA.RULER_SURNAMES = ['Gromovnik', 'Veliki', 'Mudri', 'Hrabri', 'Brzi', 'Tvrdi', 'Kovač', 'Orlović', 'Vuković', 'Stein', 'Ferro', 'Dubois', 'Novak', 'Kranjc', 'Ivanović', 'Bauer', 'Rossi', 'Lindqvist', 'Horvat', 'Petrović', 'Moreau', 'Zorić'];
+RA.RULER_SURNAMES = [RA.t("the Thunderer"), RA.t("the Great"), RA.t("the Wise"), RA.t("the Brave"), RA.t("the Swift"), RA.t("the Stern"), RA.t("Kovač"), RA.t("Orlović"), RA.t("Vuković"), RA.t("Stein"), RA.t("Ferro"), RA.t("Dubois"), RA.t("Novak"), RA.t("Kranjc"), RA.t("Ivanović"), RA.t("Bauer"), RA.t("Rossi"), RA.t("Lindqvist"), RA.t("Horvat"), RA.t("Petrović"), RA.t("Moreau"), RA.t("Zorić")];
 
 /* ---------------- lines: {ja} = the ruler's state, {ti} = your state, {on} = another state ---------------- */
 RA.RULER_LINES = {
   greet: [
-    'Dobrodošao u komšiluk, {ti}. Drži se svoje strane granice.', 'Novi susjed? Nadam se da znaš kuhati bolje nego ratovati.', 'Pozdrav od {ja}! Ne diraj nam granicu i bićemo najbolji prijatelji.',
-    'Aha, {ti}. Čuo sam za vas. Ništa dobro, doduše.', 'Mir i trgovina, {ti}? Ili ćemo odmah na mačeve?', 'Ja sam ovdje glavni. Ti si tu samo u prolazu.',
-    'Moji savjetnici kažu da ste opasni. Ja kažem da ste mali.', 'Neka ti je sa srećom, susjede. Trebaće ti.', 'Vidim te na karti, {ti}. Stalno te vidim.',
-    'Donio sam ti poklon: prazno obećanje. Kao i uvijek.', 'Lijepa vam je prijestolnica. Bila bi i ljepša pod mojom zastavom.', 'Ne brini, {ti}, ja sam miroljubiv. Uglavnom.',
+    RA.t("Welcome to the neighbourhood, {ti}. Stay on your side of the border."), RA.t("A new neighbour? I hope you cook better than you fight."), RA.t("Greetings from {ja}! Leave our border alone and we'll be best friends."),
+    RA.t("Ah, {ti}. I've heard of you. Nothing good, mind you."), RA.t("Peace and trade, {ti}? Or shall we go straight to swords?"), RA.t("I'm in charge here. You're just passing through."),
+    RA.t("My advisers say you're dangerous. I say you're small."), RA.t("Good luck, neighbour. You'll need it."), RA.t("I see you on the map, {ti}. I always see you."),
+    RA.t("I brought you a gift: an empty promise. As always."), RA.t("Lovely capital you have. It would be lovelier under my flag."), RA.t("Don't worry, {ti}, I'm peaceful. Mostly."),
   ],
   attacked: [
-    '{ti}! Izdajice jedna podla!', 'Napadaš MENE? Ti, s onom vojskom od papira?', 'Ovo ćeš platiti, {ti}. Sa kamatom.', 'Mislio sam da si pametniji. Pogriješio sam.',
-    'Moji generali te već crtaju na zidu za pikado!', 'Sramota! Ni pozdrav prije rata?', 'Bježi s moje zemlje, ološu!', 'Vi ste obični razbojnici, {ti}!',
-    'Dobro. Hoćeš rat? Imaćeš rat.', 'Ko te je naučio ratovati, kokoš?', 'Pisaću o ovome u historijskim knjigama. Ružno ću te nacrtati.', 'Ovo nije fer! Ja sam htio prvi!',
-    'Nosi se! Nosi se s mojih polja!', 'Majko mila, pa ti stvarno napadaš!', 'Svi na granicu! Svi! I kuhar!',
+    RA.t("{ti}! You vile traitor!"), RA.t("You attack ME? You, with that paper army?"), RA.t("You'll pay for this, {ti}. With interest."), RA.t("I thought you were smarter. I was wrong."),
+    RA.t("My generals are already drawing you on the dartboard!"), RA.t("Shameful! Not even a hello before a war?"), RA.t("Get off my land, you scoundrel!"), RA.t("You are common bandits, {ti}!"),
+    RA.t("Fine. You want war? You'll get war."), RA.t("Who taught you to fight, a chicken?"), RA.t("I'll write about this in the history books. And draw you ugly."), RA.t("This isn't fair! I wanted to go first!"),
+    RA.t("Go away! Get off my fields!"), RA.t("Good heavens, you're really attacking!"), RA.t("Everyone to the border! Everyone! The cook too!"),
   ],
   taunt: [
-    'Tvoja zemlja je lijepa, {ti}. Biće još ljepša kad bude moja.', 'Iznenađenje! Nisi valjda mislio da ću čekati?', 'Ništa lično, {ti}. Samo mi treba još malo zemlje.',
-    'Predaj se odmah i poštedjeću ti kozu.', 'Moji vojnici su dosadni. Ti si im zabava.', 'Kucam, kucam! Ko je? Rat!', 'Hvala na gostoprimstvu, {ti}. Ostaćemo malo duže.',
-    'Tvoja vojska je smiješna. Moja se već smije.', 'Pripremi ključeve grada, stižemo!', 'Ovo je samo zagrijavanje.', 'Trebao si graditi utvrde umjesto spomenika.',
-    'Izvini, ruka mi je sama krenula prema tvojoj granici.',
+    RA.t("Your land is beautiful, {ti}. It'll be even prettier when it's mine."), RA.t("Surprise! You didn't think I'd wait, did you?"), RA.t("Nothing personal, {ti}. I just need a bit more land."),
+    RA.t("Surrender now and I'll spare your goat."), RA.t("My soldiers are bored. You're their entertainment."), RA.t("Knock, knock! Who's there? War!"), RA.t("Thanks for the hospitality, {ti}. We'll be staying a little longer."),
+    RA.t("Your army is laughable. Mine is already laughing."), RA.t("Get the city keys ready, we're coming!"), RA.t("This is just the warm-up."), RA.t("You should have built forts instead of monuments."),
+    RA.t("Sorry, my hand just drifted toward your border."),
   ],
   losing: [
-    'Pomoć! Ko god čuje, pomoć!', 'Ovo nije poraz. Ovo je... taktičko povlačenje. Brzo povlačenje.', 'Savjetnici, pakujte kofere! I moje krune!', 'Nismo gotovi! Samo smo malo... manji.',
-    'Zašto mi to radiš, {ti}? Šta sam ti skrivio?', 'Dobro, dobro, predomislio sam se. Mir? Molim?', 'Ovo će mi pokvariti ugled kod komšija.', 'Treba mi hitno čudo. Ili dva.',
-    'Sve je u redu. Ništa nije u redu.', 'Moja karta se smanjuje! Neko je sakrio pola države!', 'Ako padnem, pašću s dostojanstvom. Ili vrišteći.', 'Zovite saveznike! Ima li nas još saveznika?',
+    RA.t("Help! Anyone who hears this, help!"), RA.t("This isn't a defeat. It's a... tactical retreat. A fast retreat."), RA.t("Advisers, pack the suitcases! And my crowns!"), RA.t("We're not finished! We're just a bit... smaller."),
+    RA.t("Why are you doing this to me, {ti}? What did I ever do to you?"), RA.t("Fine, fine, I've changed my mind. Peace? Please?"), RA.t("This will ruin my reputation with the neighbours."), RA.t("I need a miracle, urgently. Or two."),
+    RA.t("Everything is fine. Nothing is fine."), RA.t("My map is shrinking! Someone hid half of my country!"), RA.t("If I fall, I'll fall with dignity. Or screaming."), RA.t("Call the allies! Do we still have any allies?"),
   ],
   fallen: [
-    'Ovo još nije kraj, {ti}! ...Dobro, jeste.', 'Zapamtićeš me! Ili bar moj grob.', 'Moji potomci će se vratiti. Negdje. Nekad.', 'Prokleti bili, {ti}, i tvoja karta!',
-    'Samo sam htio malo mira i kolača...', 'Uzmi sve, ali ostavi mi pjesmu o meni.', 'Idem u egzil. Neko ima ljepše vrijeme od ovoga.', 'Pobijedio si. Nemoj se previše radovati, ružno ti stoji.',
-    'Istorija će reći da sam bio u pravu.', 'Čuvaj mi palatu. I nahrani mačku.',
+    RA.t("This isn't over, {ti}! ...Fine, it is."), RA.t("You'll remember me! Or at least my grave."), RA.t("My descendants will return. Somewhere. Someday."), RA.t("Curse you, {ti}, and your map!"),
+    RA.t("I only wanted a little peace and some cake..."), RA.t("Take everything, but leave me the song about me."), RA.t("I'm going into exile. Somewhere with better weather than this."), RA.t("You won. Don't gloat too much, it doesn't suit you."),
+    RA.t("History will say I was right."), RA.t("Look after my palace. And feed the cat."),
   ],
   conquest: [
-    '{on} više ne postoji. Ko je sljedeći?', 'Još jedna zastava za moju zbirku!', 'Ha! {on} je pao kao kula od karata.', 'Karta je sada ljepša. Više moje boje.',
-    'Pobjeda! Slavimo tri dana, pa opet u rat.', 'Neka ovo bude pouka svima!', 'Kome treba diplomatija kad imaš vojsku?', '{on} je bio slab. Svi ste slabi.',
+    RA.t("{on} is no more. Who's next?"), RA.t("Another flag for my collection!"), RA.t("Ha! {on} fell like a house of cards."), RA.t("The map looks nicer now. More of my colour."),
+    RA.t("Victory! Three days of celebration, then back to war."), RA.t("Let this be a lesson to everyone!"), RA.t("Who needs diplomacy when you have an army?"), RA.t("{on} was weak. You're all weak."),
   ],
   ally: [
-    'Savez s {ti}! Zajedno smo nepobjedivi. Barem na papiru.', 'Dobro došli u savez, prijatelji! Vi čuvate lijevi bok, mi desni.', 'Savez je sklopljen. Ne zaboravi, ja sam stariji partner.',
-    'Zajedno ćemo im pokazati!', 'Ruke uvis za savez! Pa ruke na oružje.', 'Neka se neprijatelji tresu! Ili bar malo drhte.', 'Pošten savez, pošteni ljudi. Uglavnom.',
-    'Od danas smo braća po oružju. I po zlatu, nadam se.', 'Konačno neko pametan u komšiluku!', 'Ovo pečatim krunom i dobrom rakijom.',
+    RA.t("An alliance with {ti}! Together we're invincible. On paper, at least."), RA.t("Welcome to the alliance, friends! You guard the left flank, we'll take the right."), RA.t("The alliance is sealed. Don't forget, I'm the senior partner."),
+    RA.t("Together we'll show them!"), RA.t("Hands up for the alliance! Then hands on the weapons."), RA.t("Let our enemies tremble! Or at least shiver a bit."), RA.t("An honest alliance, honest people. Mostly."),
+    RA.t("From today we're brothers in arms. And in gold, I hope."), RA.t("Finally someone smart in the neighbourhood!"), RA.t("I seal this with my crown and a good brandy."),
   ],
   allyEnd: [
-    'Savez je istekao. Bilo je lijepo dok je trajalo.', 'Ugovor je istekao, {ti}. Produži ako me voliš.', 'Kraj saveza. Ništa lično, ali pazi na granicu.',
-    'Istekao savez? Nisam ni primijetio. Dobro, jesam.', 'Hvala za saradnju. Račun stiže poštom.',
+    RA.t("The alliance has expired. It was nice while it lasted."), RA.t("The treaty has expired, {ti}. Renew it if you love me."), RA.t("End of the alliance. Nothing personal, but watch the border."),
+    RA.t("The alliance expired? I didn't even notice. Fine, I did."), RA.t("Thanks for the cooperation. The bill is in the post."),
   ],
   betrayed: [
-    'IZDAJICE! Pljujem na tvoj savez!', 'Znao sam da ti ne treba vjerovati, {ti}!', 'Juda u kruni! Eto šta si!', 'Nož u leđa! Od saveznika! Sramota!',
-    'Nikad ti ovo neću oprostiti. Ni moji unuci.', 'Zmijo jedna otrovna!', 'A ja ti poslao poklone za praznike...', 'Svi će znati šta si uradio, {ti}. Svi!',
-    'Ovo je najgori dan mog vladanja.', 'Zapisujem te u crnu knjigu. Velikim slovima.',
+    RA.t("TRAITOR! I spit on your alliance!"), RA.t("I knew I shouldn't trust you, {ti}!"), RA.t("A Judas in a crown! That's what you are!"), RA.t("A knife in the back! From an ally! Shameful!"),
+    RA.t("I'll never forgive you for this. Neither will my grandchildren."), RA.t("You poisonous snake!"), RA.t("And I sent you holiday presents..."), RA.t("Everyone will know what you did, {ti}. Everyone!"),
+    RA.t("This is the worst day of my reign."), RA.t("I'm writing you into my black book. In capital letters."),
   ],
   betrayer: [
-    'Oprosti, {ti}. Posao je posao.', 'Savez? Kakav savez? Ne sjećam se.', 'Ništa lično, samo ti je zemlja bila preblizu.', 'Pročitaj sitna slova ugovora, prijatelju.',
-    'Uvijek sam više volio sebe nego tebe.', 'Bilo je zabavno dok je trajalo. Za mene.',
+    RA.t("Sorry, {ti}. Business is business."), RA.t("Alliance? What alliance? I don't remember."), RA.t("Nothing personal, your land was just too close."), RA.t("Read the small print of the treaty, my friend."),
+    RA.t("I always liked myself more than you."), RA.t("It was fun while it lasted. For me."),
   ],
   trade: [
-    'Trgovina! Moje zlato voli tvoje zlato.', 'Dobar posao, {ti}. Ti dobijaš robu, ja dobijam više robe.', 'Brodovi plove, kese se pune. Lijep dan.',
-    'Kupuj, prodaj, ne ratuj. Barem ne danas.', 'Moji trgovci te već vole. Moji generali manje.', 'Trgovački savez! Neka teče zlato!', 'Pošalji nam malo začina, mi šaljemo malo poreza.',
-    'Pare vole mir. Ja volim pare.',
+    RA.t("Trade! My gold loves your gold."), RA.t("Good deal, {ti}. You get goods, I get more goods."), RA.t("Ships are sailing, purses are filling. Lovely day."),
+    RA.t("Buy, sell, don't fight. At least not today."), RA.t("My merchants already love you. My generals, less so."), RA.t("A trade pact! Let the gold flow!"), RA.t("Send us some spices, we'll send you some taxes."),
+    RA.t("Money loves peace. I love money."),
   ],
   refuse: [
-    'Savez s tobom? Radije bih se oženio kozom.', 'Ne, hvala. Imam ukusa.', 'Hmm... ne. Pitaj ponovo za sto godina.', 'Moji savjetnici su se smijali tri sata na tvoju ponudu.',
-    'Odbijeno. Ali cijenim hrabrost.', 'Ti i ja? Nikad!', 'Probaj opet kad budeš veći.', 'Poruka primljena, pročitana i spaljena.',
-    'Ne vjerujem ti ni koliko mogu baciti tvog ambasadora.', 'Neee. Mada ti je lijep šešir.',
+    RA.t("An alliance with you? I'd rather marry a goat."), RA.t("No, thanks. I have taste."), RA.t("Hmm... no. Ask again in a hundred years."), RA.t("My advisers laughed at your offer for three hours."),
+    RA.t("Refused. But I admire the courage."), RA.t("You and me? Never!"), RA.t("Try again when you're bigger."), RA.t("Message received, read and burned."),
+    RA.t("I trust you as far as I can throw your ambassador."), RA.t("Nooo. Nice hat though."),
   ],
   refuseVassal: [
-    'Ja? Tvoj vazal? Prije ću pojesti svoju krunu!', 'Klečati pred tobom? Nikad!', 'Slobodni smo i ostaćemo slobodni!', 'Pokušaj ponovo kad mi ostane samo jedan grad.',
-    'Vazal? Zvuči kao bolest.', 'Imam ja ponos, {ti}. Malo, ali imam.',
+    RA.t("Me? Your vassal? I'd sooner eat my crown!"), RA.t("Kneel before you? Never!"), RA.t("We are free and we'll stay free!"), RA.t("Try again when I have only one city left."),
+    RA.t("Vassal? Sounds like a disease."), RA.t("I have my pride, {ti}. A little, but I have it."),
   ],
   vassal: [
-    'Dobro, {ti}... Klanjam se. Nerado.', 'Evo ti danak. Guši se njime.', 'Služiću ti. Za sada.', 'Bolje vazal nego mrtav, kažu.',
-    'Ovo je najtužniji dan moje dinastije.', 'Primi naš danak i ostavi nam bar himnu.',
+    RA.t("Fine, {ti}... I bow. Reluctantly."), RA.t("Here's your tribute. Choke on it."), RA.t("I'll serve you. For now."), RA.t("Better a vassal than dead, they say."),
+    RA.t("This is the saddest day of my dynasty."), RA.t("Take our tribute and at least leave us our anthem."),
   ],
   rebel: [
-    'Slobodni smo! Nosi svoj danak, {ti}!', 'Tvoje vrijeme je prošlo. Moje tek dolazi!', 'Više ti ne klečimo!', 'Ha! Oslabio si. Mi nismo.',
-    'Lanci su pukli! Živjela sloboda!', 'Hvala na godinama služenja. Nimalo.',
+    RA.t("We're free! Keep your tribute, {ti}!"), RA.t("Your time is over. Mine is just beginning!"), RA.t("We kneel to you no more!"), RA.t("Ha! You've grown weak. We haven't."),
+    RA.t("The chains are broken! Long live freedom!"), RA.t("Thanks for the years of service. Not really."),
   ],
   loan: [
-    'Evo zlata, {ti}. Vrati na vrijeme ili ćemo razgovarati drugačije.', 'Posudba je posudba. Kamata je ljubav.', 'Dobro, posudiću ti. Ali pazim ja na tvoj zalog.',
-    'Zlato ide tebi, zemlja možda meni. Vidjećemo.', 'Ne zaboravi rok. Ja nikad ne zaboravljam.',
+    RA.t("Here's the gold, {ti}. Pay it back on time or we'll talk differently."), RA.t("A loan is a loan. Interest is love."), RA.t("Fine, I'll lend it to you. But I'm keeping an eye on your collateral."),
+    RA.t("Gold goes to you, land maybe to me. We'll see."), RA.t("Don't forget the deadline. I never forget."),
   ],
   refuseLoan: [
-    'Zajam? Tebi? Ha!', 'Moja riznica nije milostinja.', 'Vrati prvo ono što si ukrao, pa pričaj o zajmu.', 'Nemam para. Za tebe.',
+    RA.t("A loan? For you? Ha!"), RA.t("My treasury isn't a charity."), RA.t("First return what you stole, then talk about loans."), RA.t("I have no money. For you."),
   ],
   pledge: [
-    'Rok je prošao, {ti}. Zalog je moj!', 'Dug je dug. Hvala na zemlji!', 'Trebao si čitati ugovor. Sada je ovo moje.', 'Kamata se plaća zemljom, prijatelju.',
+    RA.t("The deadline has passed, {ti}. The collateral is mine!"), RA.t("A debt is a debt. Thanks for the land!"), RA.t("You should have read the contract. Now this is mine."), RA.t("Interest is paid in land, my friend."),
   ],
   nuked: [
-    'Ti si LUDAK, {ti}! Luđak s atomskom bombom!', 'Moji gradovi! Gore moji gradovi!', 'Ovo je zločin! Cijeli svijet te gleda!', 'Nuklearka?! Ozbiljno?!',
-    'Kunem se, osvetiću se. Iz podruma, ali osvetiću se.', 'Ostaće samo pepeo i tvoja sramota!', 'Nemaš ti srca, {ti}. Samo silos.', 'Svi u bunker! Svi!',
+    RA.t("You're a MADMAN, {ti}! A madman with an atomic bomb!"), RA.t("My cities! My cities are burning!"), RA.t("This is a crime! The whole world is watching you!"), RA.t("A nuke?! Seriously?!"),
+    RA.t("I swear I'll get revenge. From the basement, but I will."), RA.t("Only ashes and your shame will remain!"), RA.t("You have no heart, {ti}. Only a silo."), RA.t("Everyone into the bunker! Everyone!"),
   ],
   nukeThreat: [
-    'Pogledaj u nebo, {ti}. Stiže ti poklon.', 'Imao si priliku za mir.', 'Ovo je za moje gradove!', 'Neka svijet vidi ko je ovdje glavni.',
-    'Nije ništa lično. Samo radioaktivno.',
+    RA.t("Look at the sky, {ti}. A gift is on its way."), RA.t("You had a chance at peace."), RA.t("This is for my cities!"), RA.t("Let the world see who's in charge here."),
+    RA.t("It's nothing personal. Just radioactive."),
   ],
   dome: [
-    'Kupola radi! Evo ti nazad tvoja bomba!', 'Mislio si da sam bez odbrane? Ha!', 'Udariš li mene, gori i tvoja kuća.', 'Automatski uzvrat. Automatska sramota za tebe.',
+    RA.t("The dome works! Here's your bomb back!"), RA.t("You thought I had no defences? Ha!"), RA.t("Hit me and your house burns too."), RA.t("Automatic retaliation. Automatic shame for you."),
   ],
   strait: [
-    'Zatvorio si moreuz?! Moji trgovci plaču!', 'Otvori moreuz, {ti}, ili ćemo ga otvoriti topovima!', 'Ko ti je dao more? More je svačije!', 'Blokada? Ovo je piratstvo!',
+    RA.t("You closed the strait?! My merchants are crying!"), RA.t("Open the strait, {ti}, or we'll open it with cannons!"), RA.t("Who gave you the sea? The sea belongs to everyone!"), RA.t("A blockade? This is piracy!"),
   ],
   blockade: [
-    'Moja luka je u blokadi! Skloni te brodove!', 'Tvoji brodovi smrde po barutu i bezobrazluku.', 'Ribari mi ne mogu ni na pecanje! Sramota!',
+    RA.t("My port is blockaded! Move those ships!"), RA.t("Your ships smell of gunpowder and bad manners."), RA.t("My fishermen can't even go fishing! Shameful!"),
   ],
   bombed: [
-    'Bombarderi iznad moje prijestolnice?! Oborite ih!', 'Avioni! Sa neba! Kakva nepristojnost!', 'Tvoji piloti su gori od tvojih generala.',
+    RA.t("Bombers over my capital?! Shoot them down!"), RA.t("Planes! From the sky! How rude!"), RA.t("Your pilots are worse than your generals."),
   ],
   coalition: [
-    'Dosta je bilo, {ti}! Svi zajedno protiv tebe!', 'Tvoja glad za zemljom nas je ujedinila.', 'Koalicija je sklopljena. Tvoji dani su odbrojani.', 'Previše si progutao, {ti}. Vrijeme je da povratiš.',
-    'Cijeli kontinent se udružuje. Čestitam, to je tvoja zasluga.', 'Ne može jedan sam pojesti cijelu tortu!',
+    RA.t("Enough, {ti}! All of us together against you!"), RA.t("Your hunger for land has united us."), RA.t("The coalition is formed. Your days are numbered."), RA.t("You've swallowed too much, {ti}. Time to cough it up."),
+    RA.t("The whole continent is joining forces. Congratulations, that's your doing."), RA.t("One can't eat the whole cake alone!"),
   ],
   nearWin: [
-    'Neko zaustavite {ti}! Uzima sve!', '{ti} je blizu pobjede. Možda je vrijeme za panike.', 'Ne sviđa mi se kako izgleda ova karta.', 'Još malo i svi ćemo govoriti kako {ti} kaže.',
-    'Ujedinimo se! Sad ili nikad!', 'Kako smo pustili da {ti} toliko naraste?',
+    RA.t("Somebody stop {ti}! They're taking everything!"), RA.t("{ti} is close to victory. Maybe it's time to panic."), RA.t("I don't like the look of this map."), RA.t("A little more and we'll all be saying what {ti} tells us to."),
+    RA.t("Let's unite! Now or never!"), RA.t("How did we let {ti} grow so big?"),
   ],
   boast: [
-    'Pogledaj kartu. Vidiš onu veliku mrlju? To sam ja.', 'Ja sam najveći, najjači i najskromniji.', 'Kleknite, male države!', 'Uskoro ću trebati veću kartu.',
-    'Zlato, vojska, zemlja — imam sve. Osim dosade.', 'Svako jutro se probudim i osvojim nešto.',
+    RA.t("Look at the map. See that big blob? That's me."), RA.t("I am the biggest, the strongest and the most modest."), RA.t("Kneel, little states!"), RA.t("Soon I'll need a bigger map."),
+    RA.t("Gold, army, land — I have it all. Except boredom."), RA.t("Every morning I wake up and conquer something."),
   ],
   weak: [
-    'Ti si ta mala država? Mislio sam da je mrlja na karti.', 'Tvoja vojska stane u jednu kočiju.', 'Slatko. Imaš i zastavu?', 'Ne brini, {ti}, neću te napasti. Nisi vrijedan truda.',
+    RA.t("You're that little state? I thought you were a smudge on the map."), RA.t("Your army fits in a single carriage."), RA.t("Cute. Do you have a flag too?"), RA.t("Don't worry, {ti}, I won't attack you. You're not worth the trouble."),
   ],
   peaceOver: [
-    'Mirno doba je gotovo. Pazi se, {ti}.', 'Kraj mira! Konačno!', 'Sad počinje prava igra.', 'Oštrite mačeve, mir je istekao.',
-    'Nadam se da si se dobro odmorio. Više nećeš.',
+    RA.t("The peace is over. Watch yourself, {ti}."), RA.t("The end of peace! At last!"), RA.t("Now the real game begins."), RA.t("Sharpen the swords, the peace has run out."),
+    RA.t("I hope you rested well. You won't anymore."),
   ],
   help: [
-    'Stižem, saveznice! Drži se!', 'Neprijatelj tvog prijatelja je moj neprijatelj. Ili tako nešto.', 'Šaljem vojsku! I sendviče!', 'Niko ne dira mog saveznika!',
+    RA.t("I'm coming, ally! Hold on!"), RA.t("The enemy of my friend is my enemy. Or something like that."), RA.t("Sending the army! And sandwiches!"), RA.t("Nobody touches my ally!"),
   ],
   nonsense: [
-    'Da li je neko vidio moju krunu? Bila je tu maločas.', 'Danas sam donio zakon protiv ponedjeljka.', 'Moj konj bi bio bolji vladar od pola ovih ovdje.', 'Zašto je more slano? Istražiti! Hitno!',
-    'Moji astrolozi kažu da će sutra biti srijeda.', 'Uveo sam porez na pjevanje pod tušem.', 'Kad sam bio mlad, granice su bile ravnije.', 'Nekad mi se čini da me neko pomjera po karti.',
-    'Proglasio sam današnji dan praznikom kolača.', 'Moj dvorski luda kaže da sam ja dvorska luda.', 'Probao sam osvojiti mjesec. Previsoko.', 'Ne mogu zaspati od silnih dugmadi na mapi.',
-    'Je li ovo potez ili sam kliknuo slučajno?', 'Moja mačka je glavni savjetnik. Ima bolje ideje.', 'Ko je izmislio zimu? Hoću njegovu adresu.', 'Kažu da je pametan vladar tih vladar. Ja nisam tih.',
-    'Planiram rat. Ili ručak. Još ne znam.', 'Sreo sam jednog kartografa. Rekao je da sam okrugao.', 'Dvor je hladan. Treba nam veći kamin. I veća država.', 'Pitao sam narod šta želi. Rekli su "manje pitanja".',
-    'Najbolja strategija je sakriti se iza planine. Ako je imaš.', 'Danas sam naučio novu riječ: "blokada". Zvuči ukusno.', 'Neka mi neko objasni šta je "tutorijal".', 'Zlato ne raste na drveću. Provjerio sam.',
+    RA.t("Has anyone seen my crown? It was here a moment ago."), RA.t("Today I passed a law against Mondays."), RA.t("My horse would be a better ruler than half of the people here."), RA.t("Why is the sea salty? Investigate! Urgently!"),
+    RA.t("My astrologers say tomorrow will be Wednesday."), RA.t("I introduced a tax on singing in the shower."), RA.t("When I was young, borders were straighter."), RA.t("Sometimes I feel like someone is moving me around the map."),
+    RA.t("I have declared today a holiday of cakes."), RA.t("My court jester says I'm the court jester."), RA.t("I tried to conquer the moon. Too high."), RA.t("I can't sleep with all these buttons on the map."),
+    RA.t("Was that a move or did I click by accident?"), RA.t("My cat is my chief adviser. She has better ideas."), RA.t("Who invented winter? I want their address."), RA.t("They say a wise ruler is a quiet ruler. I'm not quiet."),
+    RA.t("I'm planning a war. Or lunch. I haven't decided."), RA.t("I met a cartographer. He said I was round."), RA.t("The court is cold. We need a bigger fireplace. And a bigger country."), RA.t("I asked the people what they want. They said \"fewer questions\"."),
+    RA.t("The best strategy is to hide behind a mountain. If you have one."), RA.t("Today I learned a new word: \"blockade\". Sounds tasty."), RA.t("Can someone explain to me what a \"tutorial\" is?"), RA.t("Gold doesn't grow on trees. I checked."),
   ],
   angryHuman: [
-    'Opet ti, {ti}? Zar nemaš pametnijeg posla?', 'Tvoje lice mi se ne sviđa. Ni tvoje granice.', 'Bez uvrede, {ti}, ali ti si budala.', 'Čuvaj se, {ti}. Pamtim sve.',
-    'Moja baka bi bolje vodila tvoju državu.', 'Da si pola pametan koliko si drzak...',
+    RA.t("You again, {ti}? Don't you have anything better to do?"), RA.t("I don't like your face. Or your borders."), RA.t("No offence, {ti}, but you're a fool."), RA.t("Watch out, {ti}. I remember everything."),
+    RA.t("My grandmother would run your country better."), RA.t("If you were half as smart as you are cheeky..."),
   ],
 };
 
@@ -222,7 +222,7 @@ RA.rulerOf = function (G, p) {
   const pool = RA.RULER_NAMES[era] || RA.RULER_NAMES.danas, names = base.f ? pool.f : pool.m;
   let name = names[(h >>> 4) % names.length];
   if (['danas', 'hladni', 'ww2', 'ww1'].includes(era)) name += ' ' + RA.RULER_SURNAMES[(h >>> 9) % RA.RULER_SURNAMES.length];
-  else if ((h >>> 7) % 3 === 0) name += ' ' + ['II.', 'III.', 'IV.', 'Veliki', 'Mudri', 'Strašni', 'Crveni'][(h >>> 11) % 7];
+  else if ((h >>> 7) % 3 === 0) name += ' ' + ['II.', 'III.', 'IV.', RA.t("the Great"), RA.t("the Wise"), RA.t("the Terrible"), RA.t("the Red")][(h >>> 11) % 7];
   return (p._ruler = { title: base.t, kind: base.k, name, seed: h });
 };
 
@@ -244,7 +244,7 @@ Object.assign(RA.UI.prototype, {
     if (!pool) return false;
     const ru = RA.rulerOf(G, p);
     const i = (Math.random() * pool.length) | 0;
-    const txt = pool[i].replace(/\{ja\}/g, p.name).replace(/\{ti\}/g, me.name).replace(/\{on\}/g, o.on ? G.P[o.on].name : 'neko');
+    const txt = pool[i].replace(/\{ja\}/g, p.name).replace(/\{ti\}/g, me.name).replace(/\{on\}/g, o.on ? G.P[o.on].name : RA.t("someone"));
     const angry = /attacked|betrayed|nuked|refuse|strait|blockade|bombed|coalition|angryHuman|losing|fallen|rebel|pledge|refuseLoan|refuseVassal/.test(sit);
     R.next = now + 9000;
     R.per.set(pid, now + 35000);
@@ -421,49 +421,49 @@ RA.rulerLineCount = () => Object.values(RA.RULER_LINES).reduce((n, a) => n + a.l
 (function (more) {
   for (const k in more) RA.RULER_LINES[k] = (RA.RULER_LINES[k] || []).concat(more[k]);
 })({
-  greet: ['Zdravo, komšija! Tvoja zastava je... zanimljiva.', 'Ako trebaš soli, pitaj. Ako trebaš zemlje, ne pitaj.', 'Mi smo mirna država. Imamo samo malo previše topova.', 'Dobrodošao! Pravila su jednostavna: moje je moje.', 'Pozdravljam te u ime naroda, vojske i moje mame.', 'Neka naše granice budu duge, a naši ratovi kratki.'],
-  attacked: ['Ti si zmija, {ti}! Zmija s krunom!', 'Moje selo! Moje krave! Moje sve!', 'Ovo je objava rata? Mogao si bar poslati pismo.', 'Nikad ti ovo neću zaboraviti. Imam dobro pamćenje i lošu narav.', 'Topovi, na položaj! Kuhari, za topove!', 'Tvoji vojnici gaze moj travnjak!', 'Čekaj samo da mi dođe pojačanje, {ti}!', 'Napad bez upozorenja? Ima li u tebe imalo stida?', 'Moj narod će pjevati pjesme o tvojoj sramoti!', 'Hoćeš borbu? Dobićeš je. Na moj teren, po mojim pravilima!'],
-  taunt: ['Tvoje granice su mi uvijek bile sumnjive.', 'Moji generali su se dosađivali. Sad ne.', 'Dolazimo po tvoje zlato. I tvoje krave.', 'Nemoj se ljutiti, samo pomjeramo granicu malo tvojim putem.', 'Tvoje utvrde su od pijeska, {ti}.', 'Evo nas! Iznenađenje!', 'Pravila su jednostavna: ko jači, taj kači.', 'Kako se kaže "predaja" na tvom jeziku?'],
-  losing: ['Moja riznica je prazna, moja vojska još praznija.', 'Da li je kasno da se predomislim oko ovog rata?', 'Ko je rekao da će ovo biti lako? Otpustite ga!', 'Bježimo! Mislim... preraspoređujemo se!', 'Moji generali su nestali. Zajedno s konjima.', 'Ako me neko traži, u podrumu sam.', 'Molim za primirje! Molim za bilo šta!', 'Gubimo, ali gubimo sa stilom.'],
-  fallen: ['Neka zemlja pamti da sam bio ovdje.', 'Vratiću se kao duh i plašiću ti konje.', 'Sve prolazi. Nažalost, i ja.', 'Poklanjam ti svoje dugove. Uživaj.', 'Nisam poražen. Samo sam u pauzi. Trajnoj.'],
-  conquest: ['Sljedeći na listi... da vidim... svi.', 'Moja karta je sve šira, moj osmijeh isto.', 'Dobro jutro, nova provincijo!', '{on} je sada samo fusnota u mojoj historiji.', 'Nema više {on}. Ima više mene.'],
-  ally: ['S ovim savezom idemo daleko. Ili bar do granice.', 'Pola mojih topova je sad i tvoje. Pola.', 'Nikad nisam imao boljeg saveznika. Doduše, nikad nisam ni imao saveznika.', 'Savez! Neka se tresu komšije!', 'Zajedno do pobjede! Ti prvi, naravno.'],
-  betrayed: ['Mislio sam da smo prijatelji! Glupi ja!', 'Tvoja riječ vrijedi manje od moje stare čizme.', 'Kajaćeš se, {ti}! Kajaćeš se gorko!', 'Pokazao si pravo lice. Ružno je.', 'Izdao si me, a ja sam ti dao najbolje mjesto na gozbi!'],
-  trade: ['Trgovina cvjeta! A i moji porezi.', 'Tvoja roba je dobra, cijena još bolja. Za mene.', 'Neka karavani idu i neka ne staju!', 'Zlato je najbolji diplomata.', 'Ti prodaješ, ja kupujem, a obojica se smiješimo.'],
-  refuse: ['Savez s tobom? Nisam toliko očajan. Još.', 'Vrati se kad budeš ozbiljna država.', 'Moj astrolog kaže: ne.', 'Hvala, ali već imam dovoljno problema.', 'Nije do tebe, do mene je. Ma do tebe je.', 'Tvoja ponuda je smiješnija od mog dvorskog lude.'],
-  vassal: ['Dobro, dobro. Evo ti ključevi. Pazi, onaj od podruma zapinje.', 'Moja kruna je sad malo manja. I malo tužnija.', 'Služim ti, ali ne očekuj osmijehe.'],
-  rebel: ['Dosta je bilo tvog danka!', 'Naša zastava opet vijori sama!', 'Hvala na lekciji. Sad ćeš ti učiti od nas.'],
-  nuked: ['Nebo gori! Zašto nebo gori?!', 'Ti si čudovište, {ti}! Pravo čudovište!', 'Neka ti je savjest lagana kao moj pepeo.', 'Radijacija u mojoj prijestolnici! Ko će sad ovo očistiti?!'],
-  coalition: ['Svi su protiv tebe, {ti}. I to s razlogom.', 'Pohlepa je grijeh, a ti si veliki grješnik.', 'Neka svaki grad digne zastavu protiv {ti}!'],
-  nearWin: ['{ti} je skoro pojeo cijelu kartu! Neko nek zovne pomoć!', 'Ako {ti} pobijedi, ja idem u penziju.', 'Ovo je kraj slobodnog svijeta! Ili bar našeg dvora.'],
-  boast: ['Moja vojska je toliko velika da je ne mogu ni prebrojati. Neko je broji umjesto mene.', 'Kad ja kihnem, tri države se prehlade.', 'Ja ne osvajam države. Države dolaze meni.', 'Istorija će me voljeti. Ja ću se pobrinuti za to.'],
-  weak: ['Kako se zove tvoja država? Ima li je na karti?', 'Imaš lijepu malu vojsku. Kao igračke.', 'Tvoja prijestolnica je manja od mog dvorišta.'],
-  help: ['Evo nas, prijatelju! Ko te dira?', 'Moja vojska kreće! Polako, ali kreće.', 'Tvoji neprijatelji su moji neprijatelji. Danas.'],
-  nonsense: ['Uveo sam dan bez zakona. Bilo je haotično. Ponovićemo.', 'Na mom dvoru je zabranjeno reći "karta" naglas.', 'Moji savjetnici se svađaju oko boje zastave. Već treću sedmicu.', 'Danas sam osvojio jednu livadu. Ispostavilo se da je moja.', 'Naredio sam da se planine malo spuste. Ne slušaju.', 'Pisao sam pjesmu o sebi. Remek-djelo.', 'Moj narod traži hljeb. Dao sam im bolje: parolu!', 'Imam novi plan: prvo ručak, pa sve ostalo.', 'Nekad bih samo da budem obični seljak. Pa se sjetim da seljaci ne jedu kolače.', 'Neko mi je ukrao granični kamen! Opet!', 'Kad sam bio dijete, htio sam biti kartograf. Sad sam predmet karte.', 'Savjetnik me pitao šta je strategija. Rekao sam: pobijediti.', 'Da li se more vidi iz svemira? Hitno istražiti!', 'Moj kuhar kaže da je rat kao gulaš: treba vremena.', 'Zabranio sam kišu. Pada i dalje. Uvodim porez na kišu.', 'Danas je dobar dan za nešto veliko. Možda drijemež.'],
-  angryHuman: ['Tvoji potezi su kao tvoje brkove: loši.', 'Idi igraj se negdje drugo, {ti}.', 'Nije ovo pijaca, {ti}! Ovo je ozbiljan rat!', 'Pametnjakoviću, vidim šta radiš.', 'Imaš sreće što sam danas dobre volje. Nisam.'],
-  peaceOver: ['Zvono je zazvonilo. Na bojno polje!', 'Mir je bio lijep. Dosadan, ali lijep.', 'Konačno! Moji topovi su se već ukiselili.'],
-  strait: ['Zatvoren moreuz, zatvoreno srce!', 'Tvoji brodovi, tvoja pravila? Nećemo tako.', 'Ribe se žale. I moji trgovci.'],
-  dome: ['Iznenađenje! I ja imam dugme.', 'Pucaš na mene? Evo ti isto.'],
-  loan: ['Posudio sam ti zlato. I strpljenje. Oba su ograničena.', 'Zajam je tvoj, zalog je moj ako zakasniš.'],
-  pledge: ['Ugovor je ugovor, {ti}. Hvala na zemlji!', 'Dug si platio zemljom. Loša kamata za tebe.'],
-  blockade: ['Moji mornari umiru od dosade u luci!', 'Sklanjaj brodove ili ćemo ih potopiti kamenjem!'],
-  bombed: ['Nebo više nije sigurno! Kakvo vrijeme!', 'Opet avioni! Kao muhe, samo gore.'],
-  refuseVassal: ['Prije ću se zakopati s krunom na glavi!', 'Tvoj vazal? Moja baka bi se prevrnula u grobu.'],
-  refuseLoan: ['Kasa je zatvorena. Za tebe posebno.', 'Idi posudi od nekog glupljeg.'],
-  betrayer: ['Savezi su kao hljeb — brzo se ustajale.', 'Rekao sam da smo prijatelji. Nisam rekao koliko dugo.'],
-  allyEnd: ['Bilo je lijepo, ali sve lijepo kratko traje.'],
+  greet: [RA.t("Hello, neighbour! Your flag is... interesting."), RA.t("If you need salt, ask. If you need land, don't."), RA.t("We are a peaceful country. We just have slightly too many cannons."), RA.t("Welcome! The rules are simple: what's mine is mine."), RA.t("I greet you in the name of the people, the army and my mother."), RA.t("May our borders be long and our wars short.")],
+  attacked: [RA.t("You're a snake, {ti}! A snake with a crown!"), RA.t("My village! My cows! My everything!"), RA.t("This is a declaration of war? You could at least have sent a letter."), RA.t("I'll never forget this. I have a good memory and a bad temper."), RA.t("Cannons, take positions! Cooks, to the cannons!"), RA.t("Your soldiers are trampling my lawn!"), RA.t("Just wait until my reinforcements arrive, {ti}!"), RA.t("Attacking without warning? Have you no shame at all?"), RA.t("My people will sing songs about your disgrace!"), RA.t("You want a fight? You'll get one. On my ground, by my rules!")],
+  taunt: [RA.t("I always found your borders suspicious."), RA.t("My generals were bored. Not anymore."), RA.t("We're coming for your gold. And your cows."), RA.t("Don't be angry, we're just moving the border a little your way."), RA.t("Your forts are made of sand, {ti}."), RA.t("Here we are! Surprise!"), RA.t("The rules are simple: might makes right."), RA.t("How do you say \"surrender\" in your language?")],
+  losing: [RA.t("My treasury is empty, my army even emptier."), RA.t("Is it too late to change my mind about this war?"), RA.t("Who said this would be easy? Fire him!"), RA.t("Run! I mean... we're redeploying!"), RA.t("My generals have vanished. Along with the horses."), RA.t("If anyone needs me, I'm in the basement."), RA.t("I beg for a truce! I beg for anything!"), RA.t("We're losing, but we're losing in style.")],
+  fallen: [RA.t("Let the land remember I was here."), RA.t("I'll come back as a ghost and scare your horses."), RA.t("All things pass. Sadly, me too."), RA.t("I leave you my debts. Enjoy."), RA.t("I'm not defeated. I'm just on a break. A permanent one.")],
+  conquest: [RA.t("Next on the list... let me see... everyone."), RA.t("My map keeps getting wider, and so does my smile."), RA.t("Good morning, new province!"), RA.t("{on} is now just a footnote in my history."), RA.t("No more {on}. More of me.")],
+  ally: [RA.t("With this alliance we'll go far. Or at least to the border."), RA.t("Half of my cannons are yours now. Half."), RA.t("I've never had a better ally. Then again, I've never had an ally."), RA.t("An alliance! Let the neighbours tremble!"), RA.t("Together to victory! You first, of course.")],
+  betrayed: [RA.t("I thought we were friends! Silly me!"), RA.t("Your word is worth less than my old boot."), RA.t("You'll regret this, {ti}! You'll regret it bitterly!"), RA.t("You've shown your true face. It's ugly."), RA.t("You betrayed me, and I gave you the best seat at the feast!")],
+  trade: [RA.t("Trade is booming! And so are my taxes."), RA.t("Your goods are good, the price even better. For me."), RA.t("Let the caravans roll and never stop!"), RA.t("Gold is the best diplomat."), RA.t("You sell, I buy, and we both smile.")],
+  refuse: [RA.t("An alliance with you? I'm not that desperate. Yet."), RA.t("Come back when you're a serious country."), RA.t("My astrologer says: no."), RA.t("Thanks, but I have enough problems already."), RA.t("It's not you, it's me. Actually, it's you."), RA.t("Your offer is funnier than my court jester.")],
+  vassal: [RA.t("Fine, fine. Here are the keys. Careful, the cellar one sticks."), RA.t("My crown is a bit smaller now. And a bit sadder."), RA.t("I serve you, but don't expect smiles.")],
+  rebel: [RA.t("Enough of your tribute!"), RA.t("Our flag flies alone again!"), RA.t("Thanks for the lesson. Now you'll learn from us.")],
+  nuked: [RA.t("The sky is on fire! Why is the sky on fire?!"), RA.t("You're a monster, {ti}! A real monster!"), RA.t("May your conscience be as light as my ashes."), RA.t("Radiation in my capital! Who's going to clean this up now?!")],
+  coalition: [RA.t("Everyone is against you, {ti}. And for good reason."), RA.t("Greed is a sin, and you are a great sinner."), RA.t("Let every city raise a flag against {ti}!")],
+  nearWin: [RA.t("{ti} has almost eaten the whole map! Somebody call for help!"), RA.t("If {ti} wins, I'm retiring."), RA.t("This is the end of the free world! Or at least of our court.")],
+  boast: [RA.t("My army is so big I can't even count it. Someone counts it for me."), RA.t("When I sneeze, three countries catch a cold."), RA.t("I don't conquer countries. Countries come to me."), RA.t("History will love me. I'll make sure of it.")],
+  weak: [RA.t("What's your country called? Is it even on the map?"), RA.t("You have a nice little army. Like toys."), RA.t("Your capital is smaller than my courtyard.")],
+  help: [RA.t("Here we are, friend! Who's bothering you?"), RA.t("My army is on the move! Slowly, but moving."), RA.t("Your enemies are my enemies. Today.")],
+  nonsense: [RA.t("I introduced a day without laws. It was chaos. We'll do it again."), RA.t("At my court it's forbidden to say \"map\" out loud."), RA.t("My advisers are arguing about the colour of the flag. Third week now."), RA.t("Today I conquered a meadow. It turned out to be mine."), RA.t("I ordered the mountains to lower themselves a bit. They don't listen."), RA.t("I wrote a poem about myself. A masterpiece."), RA.t("My people ask for bread. I gave them something better: a slogan!"), RA.t("I have a new plan: lunch first, then everything else."), RA.t("Sometimes I wish I were a simple peasant. Then I remember peasants don't eat cake."), RA.t("Someone stole my boundary stone! Again!"), RA.t("As a child I wanted to be a cartographer. Now I'm on the map."), RA.t("An adviser asked me what strategy is. I said: winning."), RA.t("Can the sea be seen from space? Investigate urgently!"), RA.t("My cook says war is like goulash: it takes time."), RA.t("I banned rain. It keeps falling. I'm introducing a rain tax."), RA.t("Today is a good day for something big. Maybe a nap.")],
+  angryHuman: [RA.t("Your moves are like your moustache: bad."), RA.t("Go play somewhere else, {ti}."), RA.t("This isn't a market, {ti}! This is a serious war!"), RA.t("Smart-aleck, I see what you're doing."), RA.t("You're lucky I'm in a good mood today. I'm not.")],
+  peaceOver: [RA.t("The bell has rung. To the battlefield!"), RA.t("Peace was nice. Boring, but nice."), RA.t("Finally! My cannons were getting rusty.")],
+  strait: [RA.t("Closed strait, closed heart!"), RA.t("Your ships, your rules? Not like that."), RA.t("The fish are complaining. So are my merchants.")],
+  dome: [RA.t("Surprise! I have a button too."), RA.t("You're shooting at me? Here's the same back.")],
+  loan: [RA.t("I lent you gold. And patience. Both are limited."), RA.t("The loan is yours, the collateral is mine if you're late.")],
+  pledge: [RA.t("A contract is a contract, {ti}. Thanks for the land!"), RA.t("You paid your debt in land. Bad interest for you.")],
+  blockade: [RA.t("My sailors are dying of boredom in port!"), RA.t("Move those ships or we'll sink them with rocks!")],
+  bombed: [RA.t("The sky isn't safe anymore! What weather!"), RA.t("Planes again! Like flies, only higher.")],
+  refuseVassal: [RA.t("I'd sooner be buried with my crown on!"), RA.t("Your vassal? My grandmother would turn in her grave.")],
+  refuseLoan: [RA.t("The till is closed. Especially for you."), RA.t("Go borrow from someone dumber.")],
+  betrayer: [RA.t("Alliances are like bread — they go stale fast."), RA.t("I said we were friends. I didn't say for how long.")],
+  allyEnd: [RA.t("It was nice, but all nice things are short.")],
 });
 (function (more) {
   for (const k in more) RA.RULER_LINES[k] = RA.RULER_LINES[k].concat(more[k]);
 })({
-  nonsense: ['Moja kruna je malo tijesna. Znak da mi raste pamet.', 'Juče sam izgubio bitku. Protiv komarca.', 'Proglasio sam sebe najljepšim vladarom. Jednoglasno.', 'Da imam flotu, plovio bih. Imam flotu. Ne znam plivati.', 'Ne vjerujem geografima. Sve im je okruglo.', 'Moji špijuni su se izgubili. Ko špijunira špijune?', 'Kupio sam novu zastavu. Ista kao stara, samo skuplja.', 'Pitam se da li i drugi vladari pričaju sami sa sobom.'],
-  attacked: ['Neka zvone sva zvona! Neprijatelj je na granici!', 'Ovo je lopovluk, a ti si lopov!', 'Da sam znao, zazidao bih granicu.', 'Moja krv ključa, {ti}! Doslovno!'],
-  taunt: ['Tvoja karta će uskoro biti moja karta.', 'Brže predaj ključeve, žurim na ručak.', 'Tvoji vojnici bježe brže od mojih konja.', 'Znaš šta kažu: najbolja odbrana je moj napad.'],
-  greet: ['Lijep dan za dobre komšijske odnose. Dok traje.', 'Nadam se da voliš mir. Ja volim tvoju zemlju.', 'Komšija! Posudi mi malo zlata, vratiću. Možda.', 'Neka naše vojske gledaju jedna drugu samo izdaleka.'],
-  losing: ['Da li iko prodaje sreću? Plaćam zlatom.', 'Zovite čarobnjaka! Nemamo čarobnjaka? Zovite bilo koga!', 'Ovo je samo loš dan. Loša sedmica. Loša godina.'],
-  boast: ['Kad sam ja na karti, ostali su samo ukras.', 'Jutros sam osvojio grad prije doručka.', 'Moja zastava vijori na tri mora. Uskoro četiri.'],
-  weak: ['Ti si mali, ali si bar šarmantan.', 'Tvoja vojska ne bi uplašila ni moje guske.'],
-  ally: ['Rukovanje, zastave, zdravica! Savez je tu.', 'Neka naš savez traje duže od mojih obećanja.'],
-  trade: ['Tvoje zlato mi je uvijek dobrodošlo.', 'Robu šaljem, račun ne zaboravljam.'],
-  conquest: ['Karta je sada preglednija. Manje država, više mene.'],
+  nonsense: [RA.t("My crown is a bit tight. A sign my brain is growing."), RA.t("Yesterday I lost a battle. Against a mosquito."), RA.t("I declared myself the most handsome ruler. Unanimously."), RA.t("If I had a fleet, I'd sail. I have a fleet. I can't swim."), RA.t("I don't trust geographers. Everything is round to them."), RA.t("My spies got lost. Who spies on the spies?"), RA.t("I bought a new flag. Same as the old one, just more expensive."), RA.t("I wonder if other rulers talk to themselves too.")],
+  attacked: [RA.t("Ring all the bells! The enemy is at the border!"), RA.t("This is theft, and you are a thief!"), RA.t("Had I known, I'd have walled up the border."), RA.t("My blood is boiling, {ti}! Literally!")],
+  taunt: [RA.t("Your map will soon be my map."), RA.t("Hand over the keys faster, I'm late for lunch."), RA.t("Your soldiers run faster than my horses."), RA.t("You know what they say: the best defence is my attack.")],
+  greet: [RA.t("A fine day for good neighbourly relations. While it lasts."), RA.t("I hope you love peace. I love your land."), RA.t("Neighbour! Lend me some gold, I'll pay it back. Maybe."), RA.t("May our armies look at each other only from afar.")],
+  losing: [RA.t("Does anyone sell luck? I'll pay in gold."), RA.t("Call the wizard! We don't have a wizard? Call anyone!"), RA.t("It's just a bad day. A bad week. A bad year.")],
+  boast: [RA.t("When I'm on the map, the others are just decoration."), RA.t("This morning I conquered a city before breakfast."), RA.t("My flag flies over three seas. Soon four.")],
+  weak: [RA.t("You're small, but at least you're charming."), RA.t("Your army wouldn't scare even my geese.")],
+  ally: [RA.t("Handshakes, flags, a toast! The alliance is here."), RA.t("May our alliance last longer than my promises.")],
+  trade: [RA.t("Your gold is always welcome here."), RA.t("I send the goods, I never forget the bill.")],
+  conquest: [RA.t("The map is tidier now. Fewer countries, more of me.")],
 });

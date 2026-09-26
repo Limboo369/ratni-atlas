@@ -284,16 +284,16 @@ const check = (ok, msg) => {
   check(r1.lv === 1 && r2.lv === 2 && T.tech.eco === 2 && Math.abs(T.bGold - 1.16) < 1e-9 && Math.abs(T.bCost - 0.94) < 1e-9, `tech: economy 2 = +16% gold, science 1 = 6% cheaper (${T.bGold}, ${T.bCost})`);
   check(goldT - T.gold === 200000 + 400000 + 200000 + 200000 && DEt.rel[T.id] >= Math.min(100, relT + 9.9), 'tech: levels cost 200k, 400k …; diplomacy warms the others');
   for (let i = 0; i < 5; i++) TG.exec(T.id, 'tech', ['mil']);
-  check(/najvišem/.test(TG.exec(T.id, 'tech', ['mil'])) && /Nepoznata/.test(TG.exec(T.id, 'tech', ['xyz'])), 'tech: five levels at most, unknown branches refused');
+  check(/top level/.test(TG.exec(T.id, 'tech', ['mil'])) && /Unknown/.test(TG.exec(T.id, 'tech', ['xyz'])), 'tech: five levels at most, unknown branches refused');
   TG.me.gold = 0;
-  check(/treba/.test(TG.exec(T.id, 'tech', ['eco'])), 'tech: not without gold');
+  check(/needs/.test(TG.exec(T.id, 'tech', ['eco'])), 'tech: not without gold');
   const noTree = RA.newGame(RA.eraMap(m, 'danas', 'granice'), { seed: 61, difficulty: 'srednje', cityStates: 0, peace: 0, era: 'danas', start: 'granice', gm: 'klasik' });
   RA.placeHuman(noTree, noTree.P.find((p) => p && p.iso === 'FRA').nation.c, 'Test');
   RA.startGame(noTree);
   noTree.me.gold = 1e7;
-  check(/nije uključeno/.test(noTree.exec(noTree.me.id, 'tech', ['eco'])), 'no tech tree in a Blitz game');
+  check(/is off/.test(noTree.exec(noTree.me.id, 'tech', ['eco'])), 'no tech tree in a Blitz game');
   T.gold = 5e7;
-  check(/isključeno/.test(TG.launchMissile(T.id, 'atom', DEt.cells[0])), 'no nukes: an atomic bomb is refused');
+  check(/turned off/.test(TG.launchMissile(T.id, 'atom', DEt.cells[0])), 'no nukes: an atomic bomb is refused');
   for (let i = 0; i < 3000; i++) TG.step();
   const aiTech = TG.P.filter((p) => p && p.alive && !p.human && p.tech).length;
   check(aiTech > 0 && TG.P.every((p) => !p || !p.stats || !p.stats.nukes), `the computer researches too (${aiTech} states), and nobody nukes`);
@@ -317,7 +317,7 @@ const check = (ok, msg) => {
     OG.relTo(B2, me.id, -80, 'atk');
     const r3 = OG.exec(me.id, 'offer', [B2.id, { g: 9e6 }, { g: 1 }]);
     check(r3.st === 'no', 'a state that hates you does not deal');
-    check(/zlata/.test(OG.exec(me.id, 'offer', [B.id, { g: 9e9 }, {}])) && /saveznik/.test(OG.exec(me.id, 'offer', [B.id, { t: 1000 }, {}])), 'no more gold than you have; troops only between allies');
+    check(/gold/.test(OG.exec(me.id, 'offer', [B.id, { g: 9e9 }, {}])) && /ally/.test(OG.exec(me.id, 'offer', [B.id, { t: 1000 }, {}])), 'no more gold than you have; troops only between allies');
     check(OG.offerEmpty(OG.offerClean({ g: -5, c: 'x', r: 9 })), 'offer args from other devices are cleaned');
   }
   // orders while away (Focus, plan 2): "defend" starts no war on a state, "auto" does
@@ -356,7 +356,7 @@ const check = (ok, msg) => {
     const late = nat('BIH'), early = nat('SRB');
     check(late.shieldUntil > LG.tick && late.gold > g0, `a late player: protected ${RA.dur(late.shieldUntil - LG.tick)} and +${Math.round(late.gold - g0)} gold`);
     const e1 = LG.cmdAttack(early.id, late.cells[0], 0.3);
-    check(e1.err && /zaštićen/.test(e1.err), 'the protected player cannot be attacked by another player');
+    check(e1.err && /protected/.test(e1.err), 'the protected player cannot be attacked by another player');
     const nt = LG.tick - 1;
     LG.cmdAttack(late.id, early.cells[0], 0.1);
     check(!(late.shieldUntil > LG.tick), 'attacking a player ends the protection');
@@ -382,7 +382,7 @@ const check = (ok, msg) => {
     check(L2.slotPid.join() === hs.map((p) => p.id).join() && hs.every((p) => p.ai), 'league: seats fixed, the computer plays until a player connects');
     RA.longApply(L2, [0, 0, 'back', []]);
     check(!hs[0].ai, "league: 'back' gives the state to its player");
-    check(/savez/.test(L2.exec(hs[0].id, 'aReq', [hs[2].id]) || ''), 'league: no alliance with the other team');
+    check(/alliance/.test(L2.exec(hs[0].id, 'aReq', [hs[2].id]) || ''), 'league: no alliance with the other team');
     for (let i = 0; i < 300; i++) L2.step();
     const L2b = RA.longGame(m, lrec(2, 31));
     RA.longApply(L2b, [0, 0, 'back', []]);
@@ -400,7 +400,7 @@ const check = (ok, msg) => {
     for (let s = 1; s <= 3; s++) RA.longApply(L5, [0, s, 'kick', [h5[0].id]]);
     check(!h5[0].kicked, 'league 5v5: 3 kick votes are not enough');
     const kr = RA.longApply(L5, [0, 4, 'kick', [h5[0].id]]);
-    check(h5[0].kicked && h5[0].ai && /izbac/i.test(L5.exec(h5[0].id, 'atk', [h5[5].capital, 0.3]) || ''), `league 5v5: 4 votes kick the player, the computer plays, their commands are refused ${JSON.stringify(kr.r)}`);
+    check(h5[0].kicked && h5[0].ai && /kicked/i.test(L5.exec(h5[0].id, 'atk', [h5[5].capital, 0.3]) || ''), `league 5v5: 4 votes kick the player, the computer plays, their commands are refused ${JSON.stringify(kr.r)}`);
     check(/5v5/.test(L2b.exec(hs[0].id, 'kick', [hs[1].id]) || ''), 'league: vote kick only in 5v5');
     // Blitz: a team under 10% of the players' land for 60 s capitulates
     const L1 = RA.longGame(m, lrec(1, 12));
@@ -460,7 +460,7 @@ const check = (ok, msg) => {
     check(diff === 0, `scenario: the game has exactly the edited borders (${diff} cells differ)`);
     check(nz && nz.tiles === 25 && nz.hex === '#abcdef' && vt && vt.hex === '#123456' && G1.owner[nz.capital] === nz.id, 'scenario: new state, new name and colour, capitals on own land');
     const r1 = RA.placeHuman(G1, big.capital >= 0 ? G1.P.find((p) => p && p.nation && p.nation.k === big.nation.k).capital : 0, 'Ja');
-    check(r1.err && /igraš jednu od/.test(r1.err), 'scenario: only the states it names can be taken');
+    check(r1.err && /you play one of/.test(r1.err), 'scenario: only the states it names can be taken');
     const r2 = RA.placeHuman(G1, nz.capital, 'Ja');
     check(r2.ok && G1.me && G1.me.name === 'Nova Zemlja', 'scenario: a named state can be taken');
     RA.startGame(G1);
@@ -518,14 +518,14 @@ const check = (ok, msg) => {
     const r0 = G.wRange(me, 'drone');
     const a1 = RA.longApply(G, [0, 0, 'rsch', ['range']]);
     const a2 = RA.longApply(G, [0, 0, 'rsch', ['drone']]);
-    check(a1.r && a1.r.k === 'range' && /Već istražuješ/.test(a2.r), 'research: started, one at a time');
+    check(a1.r && a1.r.k === 'range' && /Already researching/.test(a2.r), 'research: started, one at a time');
     const need = G.rsTime(me, 'range');
     for (let i = 0; i < need - 1; i++) G.step();
     check(G.rsLv(me, 'range') === 0, 'research: not before its time');
     G.step();
     check(G.rsLv(me, 'range') === 1 && Math.abs(G.wRange(me, 'drone') - r0 * 1.2) < 1e-9, `research: done after ${need} s, drone range ${r0} → ${G.wRange(me, 'drone')}`);
     const nt = RA.newGame(RA.eraMap(m, 'danas', 'granice'), { seed: 1, difficulty: 'srednje', cityStates: 0, era: 'danas', start: 'granice', gm: 'klasik' });
-    check(/stablo/.test(nt.startResearch(nt.P[1].id, 'drone')), 'research: only with the tech tree');
+    check(/tech tree/.test(nt.startResearch(nt.P[1].id, 'drone')), 'research: only with the tech tree');
   }
   // the server steps many Focus games in one process (deploy/game/simhost.js), switching the era tables between them:
   // a game stepped between steps of another era's game must stay the same as the game alone

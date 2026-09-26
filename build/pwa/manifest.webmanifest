@@ -1,8 +1,8 @@
 {
   "name": "Overtake",
   "short_name": "Overtake",
-  "description": "Strategija osvajanja na pravoj karti Evrope i svijeta.",
-  "lang": "bs",
+  "description": "A conquest strategy game on a real map of Europe and the world.",
+  "lang": "en",
   "start_url": "/?app=1",
   "scope": "/",
   "display": "standalone",

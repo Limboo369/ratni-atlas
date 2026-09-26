@@ -6,19 +6,19 @@
 RA.CMD_KINDS = ['atk', 'boat', 'para', 'build', 'rec', 'mv', 'dis', 'mis', 'mob', 'ret', 'aReq', 'aRes', 'tReq', 'tRes', 'ext', 'brk', 'tEnd', 'give', 'help', 'ai', 'back', 'rcl', 'png', 'qm', 'tax', 'vas', 'loan', 'pay', 'str', 'buy', 'air', 'bomb', 'tech', 'stance', 'offer', 'offerRes', 'surr', 'endv', 'kick', 'rsch'];
 /* pings on the map and quick messages, seen by the sender's allies and team (plan item 57) */
 RA.PINGS = [
-  { name: 'Napadni ovdje', icon: 'attack', color: '#ff5d5d' },
-  { name: 'Pomoć ovdje', icon: 'flag', color: '#3ec7c2' },
-  { name: 'Opasnost', icon: 'emp', color: '#f2b134' },
-  { name: 'Idem tamo', icon: 'send', color: '#8fb8ff' },
+  { name: RA.t("Attack here"), icon: 'attack', color: '#ff5d5d' },
+  { name: RA.t("Help here"), icon: 'flag', color: '#3ec7c2' },
+  { name: RA.t("Danger"), icon: 'emp', color: '#f2b134' },
+  { name: RA.t("Going there"), icon: 'send', color: '#8fb8ff' },
 ];
-RA.QUICK_MSGS = ['Napadam!', 'Treba mi pomoć!', 'Pazi, napadaju nas!', 'Idem tamo.', 'Čekaj, spremam vojsku.', 'Hajmo zajedno na njih!',
-  'Hvala!', 'Izvini.', 'Dobra igra!', '👍', '😂', '😡', '🔥', '💣', '🤝', '👀'];
+RA.QUICK_MSGS = [RA.t("Attacking!"), RA.t("I need help!"), RA.t("Watch out, we're under attack!"), RA.t("I'm going there."), RA.t("Wait, I'm getting my army ready."), RA.t("Let's hit them together!"),
+  RA.t("Thanks!"), RA.t("Sorry."), RA.t("Good game!"), '👍', '😂', '😡', '🔥', '💣', '🤝', '👀'];
 
 (function (P) {
   P.exec = function (pid, kind, a) {
     const p = this.P[pid];
-    if (!p || !p.alive) return 'Nisi u igri.';
-    if (p.kicked && kind !== 'ai') return 'Tim te je izbacio iz igre.';
+    if (!p || !p.alive) return RA.t("You are not in the game.");
+    if (p.kicked && kind !== 'ai') return RA.t("Your team kicked you out of the game.");
     a = Array.isArray(a) ? a : [];
     const N = this.map.N;
     const cell = (v) => (Number.isInteger(v) && v >= 0 && v < N ? v : -1);
@@ -37,22 +37,22 @@ RA.QUICK_MSGS = ['Napadam!', 'Treba mi pomoć!', 'Pazi, napadaju nas!', 'Idem ta
         return this.launchPara(pid, cell(a[0]), p.troops * ratio(a[1]));
       case 'build':
         // own keys only: 'toString', '__proto__' … from another device must not reach the build code
-        if (typeof a[0] !== 'string' || !Object.prototype.hasOwnProperty.call(RA.STRUCT, a[0])) return 'Nepoznata zgrada.';
+        if (typeof a[0] !== 'string' || !Object.prototype.hasOwnProperty.call(RA.STRUCT, a[0])) return RA.t("Unknown building.");
         return this.build(pid, a[0], cell(a[1]));
       case 'rec':
-        if (typeof a[0] !== 'string' || !Object.prototype.hasOwnProperty.call(RA.UNIT, a[0])) return 'Nepoznata jedinica.';
+        if (typeof a[0] !== 'string' || !Object.prototype.hasOwnProperty.call(RA.UNIT, a[0])) return RA.t("Unknown unit.");
         return this.recruitUnit(pid, a[0], cell(a[1]));
       case 'mv':
         return this.moveUnit(pid, id(a[0]), cell(a[1]));
       case 'dis': {
         const u = p.units.find((x) => x.id === id(a[0]));
-        if (!u) return 'Jedinica ne postoji.';
+        if (!u) return RA.t("The unit doesn't exist.");
         this.disbandUnit(pid, u.id);
         return { type: u.type };
       }
       case 'mis':
-        if (!['rocket', 'rocket2', 'emp', 'atom', 'hydro', 'mirv', 'drone', 'hdrone'].includes(a[0])) return 'Nepoznata raketa.';
-        if (cell(a[1]) < 0) return 'Nevažeća meta.';
+        if (!['rocket', 'rocket2', 'emp', 'atom', 'hydro', 'mirv', 'drone', 'hdrone'].includes(a[0])) return RA.t("Unknown missile.");
+        if (cell(a[1]) < 0) return RA.t("Invalid target.");
         return this.launchMissile(pid, a[0], a[1]);
       case 'mob':
         return this.mobilize(pid);
@@ -64,17 +64,17 @@ RA.QUICK_MSGS = ['Napadam!', 'Treba mi pomoć!', 'Pazi, napadaju nas!', 'Idem ta
         return res;
       }
       case 'aReq':
-        return player(a[0]) ? this.requestAlliance(pid, a[0]) : 'Nevažeći igrač.';
+        return player(a[0]) ? this.requestAlliance(pid, a[0]) : RA.t("Invalid player.");
       case 'aRes':
         if (player(a[0])) this.respondAlliance(a[0], pid, !!a[1]);
         return null;
       case 'tReq':
-        return player(a[0]) ? this.requestTrade(pid, a[0]) : 'Nevažeći igrač.';
+        return player(a[0]) ? this.requestTrade(pid, a[0]) : RA.t("Invalid player.");
       case 'tRes':
         if (player(a[0])) this.respondTrade(a[0], pid, !!a[1]);
         return null;
       case 'ext':
-        return player(a[0]) ? this.extendAlliance(pid, a[0]) : 'Nevažeći igrač.';
+        return player(a[0]) ? this.extendAlliance(pid, a[0]) : RA.t("Invalid player.");
       case 'brk':
         if (player(a[0])) this.breakAlliance(pid, a[0], true);
         return null;
@@ -82,9 +82,9 @@ RA.QUICK_MSGS = ['Napadam!', 'Treba mi pomoć!', 'Pazi, napadaju nas!', 'Idem ta
         if (player(a[0])) this.cancelTrade(pid, a[0]);
         return null;
       case 'give':
-        return player(a[0]) ? this.donateTroops(pid, a[0], p.troops * ratio(a[1])) : 'Nevažeći igrač.';
+        return player(a[0]) ? this.donateTroops(pid, a[0], p.troops * ratio(a[1])) : RA.t("Invalid player.");
       case 'help':
-        return player(a[0]) ? this.requestHelp(pid, a[0]) : 'Nevažeći igrač.';
+        return player(a[0]) ? this.requestHelp(pid, a[0]) : RA.t("Invalid player.");
       case 'ai':
         // a player who left an online game: the computer takes over their country
         if (!p.ai) {
@@ -96,7 +96,7 @@ RA.QUICK_MSGS = ['Napadam!', 'Treba mi pomoć!', 'Pazi, napadaju nas!', 'Idem ta
       case 'png': {
         // one ping a second at most per player (and one message, below)
         const c = cell(a[0]), k = Number.isInteger(a[1]) && a[1] >= 0 && a[1] < RA.PINGS.length ? a[1] : -1;
-        if (c < 0 || k < 0) return 'Nevažeći ping.';
+        if (c < 0 || k < 0) return RA.t("Invalid ping.");
         if (p.lastPing > this.tick - 10) return null;
         p.lastPing = this.tick;
         this.pings.push({ pid, c, k, tick: this.tick });
@@ -105,7 +105,7 @@ RA.QUICK_MSGS = ['Napadam!', 'Treba mi pomoć!', 'Pazi, napadaju nas!', 'Idem ta
       }
       case 'qm': {
         const m = Number.isInteger(a[0]) && a[0] >= 0 && a[0] < RA.QUICK_MSGS.length ? a[0] : -1;
-        if (m < 0) return 'Nevažeća poruka.';
+        if (m < 0) return RA.t("Invalid message.");
         if (p.lastMsg > this.tick - 10) return null;
         p.lastMsg = this.tick;
         this.chat.push({ pid, m, tick: this.tick });
@@ -113,54 +113,54 @@ RA.QUICK_MSGS = ['Napadam!', 'Treba mi pomoć!', 'Pazi, napadaju nas!', 'Idem ta
         return true;
       }
       case 'air':
-        return typeof a[0] === 'string' ? this.buyAir(pid, a[0]) : 'Nepoznata vrsta aviona.';
+        return typeof a[0] === 'string' ? this.buyAir(pid, a[0]) : RA.t("Unknown aircraft type.");
       case 'bomb':
         return this.bombRaid(pid, cell(a[0]));
       case 'surr':
         // surrender (online): the computer takes my state, I have lost
-        if (!this.online || p.surr) return 'Predaja je samo u online igri.';
+        if (!this.online || p.surr) return RA.t("Surrender is only in an online game.");
         if (this.opts.league) return this.lgSurr(p); // Conquest League: a team vote
         p.surr = true;
         if (!p.ai) RA.AI.init(this, p);
-        this.tellAll('info', `${p.nick || p.name} se predao/la.`, pid);
+        this.tellAll('info', RA.t("{0} surrendered.", p.nick || p.name), pid);
         return { surr: true };
       case 'endv':
         // a vote to end the game (online): when every player still in it agrees, the biggest side wins now
-        if (!this.online) return 'Samo u online igri.';
+        if (!this.online) return RA.t("Only in an online game.");
         p.endVote = a[0] !== 0;
         this._endVotes();
         return { endv: p.endVote };
       case 'rsch':
         // weapons research (03c-research.js): [key]
-        return typeof a[0] === 'string' && Object.prototype.hasOwnProperty.call(RA.RSCH, a[0]) ? this.startResearch(pid, a[0]) : 'Nepoznato istraživanje.';
+        return typeof a[0] === 'string' && Object.prototype.hasOwnProperty.call(RA.RSCH, a[0]) ? this.startResearch(pid, a[0]) : RA.t("Unknown research.");
       case 'kick':
         // vote kick (Conquest League 5v5): [player of my team]
-        return this.opts.league ? this.lgKick(p, player(a[0])) : 'Samo u ligi.';
+        return this.opts.league ? this.lgKick(p, player(a[0])) : RA.t("Only in the league.");
       case 'offer':
         // offers and demands (02l-offers.js): [to, what I give, what I want]
-        return player(a[0]) ? this.makeOffer(pid, a[0], a[1], a[2]) : 'Nevažeća država.';
+        return player(a[0]) ? this.makeOffer(pid, a[0], a[1], a[2]) : RA.t("Invalid state.");
       case 'offerRes':
         return this.answerOffer(pid, id(a[0]), a[1], a[2], a[3]);
       case 'stance':
         // orders for the computer while I'm away (Focus): auto | def | eco | atk + target
-        if (!['auto', 'def', 'eco', 'atk'].includes(a[0])) return 'Nevažeća naredba.';
-        if (a[0] === 'atk' && !player(a[1])) return 'Izaberi državu za napad.';
+        if (!['auto', 'def', 'eco', 'atk'].includes(a[0])) return RA.t("Invalid order.");
+        if (a[0] === 'atk' && !player(a[1])) return RA.t("Choose a state to attack.");
         p.stance = a[0] === 'auto' ? null : { k: a[0], t: a[0] === 'atk' ? a[1] : 0 };
         return { stance: a[0] };
       case 'tech':
-        return typeof a[0] === 'string' && RA.TECH_ORDER.includes(a[0]) ? this.buyTech(pid, a[0]) : 'Nepoznata grana.';
+        return typeof a[0] === 'string' && RA.TECH_ORDER.includes(a[0]) ? this.buyTech(pid, a[0]) : RA.t("Unknown branch.");
       case 'buy':
         return this.buyRes(pid, Number.isInteger(a[0]) ? a[0] : -1, player(a[1]));
       case 'str':
         return this.cmdStrait(pid, Number.isInteger(a[0]) ? a[0] : -1, a[1] === 1);
       case 'loan':
-        return player(a[0]) ? this.requestLoan(pid, a[0], a[1]) : 'Nevažeći igrač.';
+        return player(a[0]) ? this.requestLoan(pid, a[0], a[1]) : RA.t("Invalid player.");
       case 'pay':
         return this.repayLoan(pid, id(a[0]));
       case 'vas':
-        return player(a[0]) ? this.offerVassal(pid, a[0]) : 'Nevažeći igrač.';
+        return player(a[0]) ? this.offerVassal(pid, a[0]) : RA.t("Invalid player.");
       case 'tax':
-        if (!Number.isInteger(a[0]) || a[0] < 0 || a[0] >= RA.TAX.length) return 'Nevažeći porez.';
+        if (!Number.isInteger(a[0]) || a[0] < 0 || a[0] >= RA.TAX.length) return RA.t("Invalid tax.");
         p.tax = a[0];
         return { tax: a[0] };
       case 'rcl':
@@ -170,6 +170,6 @@ RA.QUICK_MSGS = ['Napadam!', 'Treba mi pomoć!', 'Pazi, napadaju nas!', 'Idem ta
         if (p.human) p.ai = null;
         return true;
     }
-    return 'Nepoznata naredba.';
+    return RA.t("Unknown order.");
   };
 })(RA.Game.prototype);

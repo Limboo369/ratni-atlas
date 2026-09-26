@@ -65,19 +65,19 @@ Object.assign(RA.UI.prototype, {
     }
     // diplomacy log
     const txt = {
-      war: `${A} napada ${B}`,
-      fall: n.b ? `${B} je pala — osvojio ${A}` : `${A} je pala`,
-      ally: `${A} i ${B} sklopili vojni savez`,
-      break: `${A} izdao saveznika ${B}`,
-      allyEnd: `Istekao savez: ${A} i ${B}`,
-      trade: `${A} i ${B} trguju`,
+      war: RA.t("{0} attacks {1}", A, B),
+      fall: n.b ? RA.t("{0} has fallen — conquered by {1}", B, A) : RA.t("{0} has fallen", A),
+      ally: RA.t("{0} and {1} made a military alliance", A, B),
+      break: RA.t("{0} betrayed its ally {1}", A, B),
+      allyEnd: RA.t("Alliance expired: {0} and {1}", A, B),
+      trade: RA.t("{0} and {1} trade", A, B),
       deal: `Dogovor: ${A} i ${B}`,
-      vassal: `${B} postaje vazal: ${A}`,
-      dome: `${A} automatski uzvraća nuklearkama na ${B}`,
-      strait: `${A} zatvara ${RA.esc(n.x || 'moreuz')} za tuđe brodove`,
-      straitOpen: `${A} otvara ${RA.esc(n.x || 'moreuz')}`,
-      pledge: `${A} uzima zalog od ${B} (nevraćen zajam)`,
-      rebel: `${A} se oslobađa vlasti: ${B}`,
+      vassal: RA.t("{0} becomes a vassal: {1}", B, A),
+      dome: RA.t("{0} strikes back at {1} with nukes automatically", A, B),
+      strait: RA.t("{0} closes the {1} to foreign ships", A, RA.esc(n.x || 'moreuz')),
+      straitOpen: RA.t("{0} opens the {1}", A, RA.esc(n.x || 'moreuz')),
+      pledge: RA.t("{0} takes the pledge from {1} (unpaid loan)", A, B),
+      rebel: RA.t("{0} breaks free from {1}", A, B),
     }[n.t];
     if (!txt) return;
     this.logLine(n.t, txt, n.tick, focus, mine);
