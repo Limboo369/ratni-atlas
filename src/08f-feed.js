@@ -86,7 +86,7 @@ Object.assign(RA.UI.prototype, {
     const list = this.$('dlogList');
     const li = document.createElement('li');
     li.className = cls + (mine ? ' mine' : '');
-    li.innerHTML = `<time>${RA.fmtTime(tick / 10)}</time><span>${html}</span>`;
+    li.innerHTML = `<time>${(RA.TICK_REAL > 100 ? RA.dur(tick) : RA.fmtTime(tick / 10))}</time><span>${html}</span>`;
     li.onclick = () => (cell >= 0 ? this.flyToCell(cell) : this.focusPlayer(focus));
     const stick = list.scrollTop + list.clientHeight >= list.scrollHeight - 4;
     list.appendChild(li);

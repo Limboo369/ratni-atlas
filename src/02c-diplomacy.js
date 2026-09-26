@@ -54,7 +54,7 @@ Object.assign(RA.CFG, {
     this.tradeReqs.splice(i, 1);
     const a = this.P[fromId], b = this.P[toId];
     if (!accept) {
-      a.rel[toId] = Math.max(-100, a.rel[toId] - 5);
+      this.relTo(a, toId, Math.max(-100, a.rel[toId] - 5), 'tdecl');
       this.tell(a, 'info', `Ponuda za trgovinski savez odbijena (${b.name}).`, toId, b.capital);
       return;
     }
@@ -65,8 +65,8 @@ Object.assign(RA.CFG, {
     a.trade.add(b.id);
     b.trade.add(a.id);
     this.news('trade', a.id, b.id);
-    a.rel[b.id] = Math.min(100, a.rel[b.id] + 12);
-    b.rel[a.id] = Math.min(100, b.rel[a.id] + 12);
+    this.relTo(a, b.id, Math.min(100, a.rel[b.id] + 12), 'trade');
+    this.relTo(b, a.id, Math.min(100, b.rel[a.id] + 12), 'trade');
     this.tradeReqs = this.tradeReqs.filter((r) => !((r.from === a.id && r.to === b.id) || (r.from === b.id && r.to === a.id)));
     this.tell(a, 'good', `Trgovinski savez sklopljen: ${b.name} — brodovi i karavani donose zlato objema stranama.`, b.id, b.capital);
     this.tell(b, 'good', `Trgovinski savez sklopljen: ${a.name} — brodovi i karavani donose zlato objema stranama.`, a.id, a.capital);
@@ -76,7 +76,7 @@ Object.assign(RA.CFG, {
     if (!a.trade.has(bid)) return;
     a.trade.delete(bid);
     b.trade.delete(aid);
-    b.rel[aid] = Math.max(-100, b.rel[aid] - 10);
+    this.relTo(b, aid, Math.max(-100, b.rel[aid] - 10), 'tcancel');
     for (const s of this.tships) if (!s.done && ((s.owner === aid && s.partner === bid) || (s.owner === bid && s.partner === aid))) s.done = true;
     this.tell(a, 'info', `Trgovinski savez je prekinut: ${b.name}${why ? ' (' + why + ')' : ''}.`, b.id);
     this.tell(b, 'info', `Trgovinski savez je prekinut: ${a.name}${why ? ' (' + why + ')' : ''}.`, a.id);
@@ -221,7 +221,7 @@ Object.assign(RA.CFG, {
     if (amt < 100) return 'Premalo vojske.';
     a.troops -= amt;
     b.troops += amt;
-    b.rel[fromId] = Math.min(100, b.rel[fromId] + 10);
+    this.relTo(b, fromId, Math.min(100, b.rel[fromId] + 10), 'gift');
     this.tell(b, 'good', `${a.name} ti šalje ${RA.fmt(amt)} vojske.`, fromId, a.capital);
     this.fx.push({ kind: 'donate', from: a.capital, to: b.capital, tick: this.tick });
     return amt;
@@ -296,7 +296,7 @@ Object.assign(RA.CFG, {
       this.makeVassal(a, b);
       return true;
     }
-    b.rel[aid] = Math.max(-100, b.rel[aid] - 10);
+    this.relTo(b, aid, Math.max(-100, b.rel[aid] - 10), 'vdecl');
     this.tell(a, 'info', `${b.name} odbija da ti bude vazal. Oslabi je još pa pokušaj ponovo.`, bid, b.capital);
     return 'declined';
   };
@@ -310,7 +310,7 @@ Object.assign(RA.CFG, {
     b.lord = a.id;
     a.allies.set(b.id, Infinity);
     b.allies.set(a.id, Infinity);
-    b.rel[a.id] = Math.max(b.rel[a.id], 20);
+    this.relTo(b, a.id, Math.max(b.rel[a.id], 20), 'vassal');
     this.allyReqs = this.allyReqs.filter((r) => r.from !== b.id && r.to !== b.id);
     this.addAE(a, RA.CFG.AE_WAR);
     this.news('vassal', a.id, b.id);
@@ -325,7 +325,7 @@ Object.assign(RA.CFG, {
     b.allies.delete(a.id);
     this.alliancesChanged = true;
     if (why === 'rebel') {
-      b.rel[a.id] = Math.min(b.rel[a.id], -30);
+      this.relTo(b, a.id, Math.min(b.rel[a.id], -30), 'rebel');
       this.news('rebel', b.id, a.id);
       this.tell(a, 'bad', `${b.name} se oslobodio/la tvoje vlasti — više nisi dovoljno jak.`, b.id, b.capital);
     } else if (why === 'free') this.tell(a, 'info', `${b.name} više nije tvoj vazal.`, b.id, b.capital);
@@ -400,7 +400,7 @@ Object.assign(RA.CFG, {
     p.gold -= l.owed;
     if (L && L.alive) {
       L.gold += l.owed;
-      L.rel[pid] = Math.min(100, L.rel[pid] + 10);
+      this.relTo(L, pid, Math.min(100, L.rel[pid] + 10), 'loan');
     }
     this.loans.splice(i, 1);
     this.tell(p, 'good', `${auto ? 'Rok je stigao: z' : 'Z'}ajam vraćen (${L ? L.name : ''}, ${RA.fmt(l.owed)} zlata). Zalog je slobodan.`, l.from);
@@ -423,7 +423,7 @@ Object.assign(RA.CFG, {
         n++;
       }
       this.loans.splice(i, 1);
-      L.rel[p.id] = Math.max(-100, L.rel[p.id] - 25);
+      this.relTo(L, p.id, Math.max(-100, L.rel[p.id] - 25), 'pledge');
       this.news('pledge', L.id, p.id);
       this.tell(p, 'bad', `Nisi vratio zajam: ${L.name} uzima založenu zemlju (${n} polja).`, L.id, L.capital);
     }

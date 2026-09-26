@@ -105,6 +105,38 @@ RA.FxLayer = L.Layer.extend({
       }
     }
 
+    // alliances on the map (key L): capital to capital, military solid green, trade dashed blue ----------
+    if (ui && ui.showAllies) {
+      const cap = (p) => [gx((p.capital % W) + 0.5), gy(Math.floor(p.capital / W) + 0.5)];
+      ctx.lineWidth = 2.5;
+      for (const p of G.P) {
+        if (!p || !p.alive || p.capital < 0 || p.type === 'bot') continue;
+        const a = cap(p);
+        for (const [oid] of p.allies) {
+          const q = G.P[oid];
+          if (!q || !q.alive || q.capital < 0 || oid < p.id) continue;
+          const b = cap(q);
+          ctx.strokeStyle = 'rgba(80,220,120,0.85)';
+          ctx.beginPath();
+          ctx.moveTo(a[0], a[1]);
+          ctx.lineTo(b[0], b[1]);
+          ctx.stroke();
+        }
+        ctx.setLineDash([7, 5]);
+        for (const oid of p.trade) {
+          const q = G.P[oid];
+          if (!q || !q.alive || q.capital < 0 || oid < p.id || p.allies.has(oid)) continue;
+          const b = cap(q);
+          ctx.strokeStyle = 'rgba(110,170,255,0.8)';
+          ctx.beginPath();
+          ctx.moveTo(a[0], a[1]);
+          ctx.lineTo(b[0], b[1]);
+          ctx.stroke();
+        }
+        ctx.setLineDash([]);
+      }
+    }
+
     // sea names --------------------------------------------------------------
     const seaRank = z < 3.6 ? 1 : z < 4.6 ? 2 : 3;
     ctx.textAlign = 'center';

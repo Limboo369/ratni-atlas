@@ -58,9 +58,21 @@ RA.AI = {
     ai.thinks++;
     if (!p.alive || p.tiles === 0) return;
     for (let i = 0; i < G.P.length; i++) p.rel[i] *= 0.985;
+    if (p.why) {
+      for (const id in p.why) {
+        const r = p.why[id];
+        let n = 0;
+        for (const k in r) {
+          r[k] *= 0.985;
+          if (r[k] > -0.5 && r[k] < 0.5) delete r[k];
+          else n++;
+        }
+        if (!n) delete p.why[id];
+      }
+    }
     // aggressive expansion: every state grows cold towards a conqueror (the more states it swallowed, the colder)
     if (p.type === 'nation') {
-      for (const o of G.P) if (o && o !== p && o.alive && o.ae > 25 && !p.allies.has(o.id)) p.rel[o.id] = Math.max(-100, p.rel[o.id] - (o.ae - 25) * 0.05);
+      for (const o of G.P) if (o && o !== p && o.alive && o.ae > 25 && !p.allies.has(o.id)) G.relTo(p, o.id, Math.max(-100, p.rel[o.id] - (o.ae - 25) * 0.05), 'ae');
     }
     const info = RA.AI.scan(G, p);
     p.nbCache = info.nb;
@@ -566,13 +578,24 @@ RA.AI = {
     }
   },
 
+  /* betray an ally only when it pays (plan 19): it is clearly weaker, its other allies can't avenge it, and we are not
+     branded traitors already */
+  betrayPays(G, p, o) {
+    if (o.troops > p.troops * 0.6 || p.traitorUntil > G.tick) return false;
+    let friends = 0;
+    for (const [id] of o.allies) {
+      const q = G.P[id];
+      if (id !== p.id && q && q.alive) friends += q.troops;
+    }
+    return friends < p.troops * 0.5;
+  },
   diplomacy(G, p, info) {
     // renew AI-AI alliances, occasional betrayal, occasional proposals
     const hemmed = info.neutral === 0 && [...info.nb.keys()].every((id) => G.isFriendly(p, G.P[id]));
     const peace = G.tick < G.peaceUntil;
     for (const [oid, exp] of p.allies) {
       const o = G.P[oid];
-      if (!peace && hemmed && p.troops / p.maxT > 0.85 && !o.human && info.nb.has(oid) && G.rng() < (p.ai.pers === 'osvajac' ? 0.25 : 0.1)) {
+      if (!peace && hemmed && p.troops / p.maxT > 0.85 && !o.human && info.nb.has(oid) && RA.AI.betrayPays(G, p, o) && G.rng() < (p.ai.pers === 'osvajac' ? 0.25 : 0.1)) {
         G.breakAlliance(p.id, oid, true);
         G.launchAttack(p.id, oid, p.troops * 0.5, RA.AI.focusOn(G, p, o));
         return;
@@ -581,7 +604,7 @@ RA.AI = {
         p.allies.set(oid, G.tick + RA.CFG.ALLY_DUR);
         o.allies.set(p.id, G.tick + RA.CFG.ALLY_DUR);
       }
-      if (!peace && p.ai.pers === 'osvajac' && G.tick > 3000 && info.nb.has(oid) && o.troops < p.troops * 0.35 && G.rng() < 0.04) {
+      if (!peace && p.ai.pers === 'osvajac' && G.tick > 3000 && info.nb.has(oid) && o.troops < p.troops * 0.35 && RA.AI.betrayPays(G, p, o) && G.rng() < 0.04) {
         G.breakAlliance(p.id, oid, true);
         G.launchAttack(p.id, oid, p.troops * 0.5, RA.AI.focusOn(G, p, o));
         return;
@@ -609,7 +632,7 @@ RA.AI = {
     if (Ld && Ld.id !== p.id && p.allies.has(Ld.id) && G.rng() < 0.3) {
       // nobody stays allied with a hegemon (or a runaway conqueror) for long
       G.breakAlliance(p.id, Ld.id, false);
-      p.rel[Ld.id] = Math.min(p.rel[Ld.id], -20);
+      G.relTo(p, Ld.id, Math.min(p.rel[Ld.id], -20), 'hegemon');
     }
     if (G.allyCount(p) >= RA.CFG.ALLY_MAX || G.tick - p.ai.lastProposal < 700 || G.tick < 180) return;
     // threatened -> look for a partner among neighbours that is not the threat

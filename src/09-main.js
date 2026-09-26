@@ -263,6 +263,7 @@ RA.App = class {
 
   /* the game being shown (and its era's names and city list for the renderer) */
   setGame(G) {
+    RA.TICK_REAL = G && G.long && this.long && this.long.rec ? this.long.rec.tickMs : 100; // Focus: timers in real time
     this.G = G;
     this.ui.audio.setEra(G.era || 'danas');
     this.ui.feedReset();
@@ -314,9 +315,9 @@ RA.App = class {
     ui.resumeOffer();
     document.getElementById('startScreen').hidden = false;
   }
-  newGame() {
-    const s = this.ui.playSet(); // the mode's rules (Blitz preset or Make your choice)
-    if (!this.mapReady(s.map, s.era)) return this.withMap(s.map, s.era, () => this.newGame());
+  newGame(over) {
+    const s = Object.assign(this.ui.playSet(), over || {}); // the mode's rules (Blitz preset or Make your choice)
+    if (!this.mapReady(s.map, s.era)) return this.withMap(s.map, s.era, () => this.newGame(over));
     this.setMap(this.maps[s.map]);
     document.getElementById('startScreen').hidden = true;
     const gm = RA.regionMap(RA.eraMap(this.map, s.era, s.start), s.region);
@@ -365,6 +366,22 @@ RA.App = class {
     this.lmap.flyTo(ll, Math.max(this.lmap.getZoom(), this.zoomAt(4.9)), { duration: 1.1 });
   }
   /* an online game: identical on every device (seed, settings, players), stepped in lockstep by RA.Net */
+  /* "Igraj odmah" (plan 16, solo): Blitz on the chosen map and era, real borders, a random state, no choices */
+  quickGame() {
+    const s = this.ui.settings;
+    this.newGame(Object.assign({}, RA.MODES.blitz.rules, { start: 'granice', difficulty: 'srednje', gm: 'klasik' }));
+    const go = () => {
+      const G = this.G;
+      if (!G || G.state !== 'spawn') return setTimeout(go, 100); // the map may still be loading
+      const ns = G.P.filter((p) => p && p.type === 'nation' && p.alive && p.tiles > 20);
+      const n = ns[Math.floor(Math.random() * ns.length)];
+      if (!n) return;
+      this.ui.pickNation(String(n.id));
+      this.start();
+    };
+    setTimeout(go, 0);
+    return s;
+  }
   startOnline(st, mySlot) {
     // the host's settings are untrusted: a known map (old builds had none: Europe) and a known era
     const set = st.set || {};

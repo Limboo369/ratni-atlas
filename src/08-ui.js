@@ -184,6 +184,11 @@ RA.UI = class {
       if (this.playSet().pace === 'focus') this.confirmLong();
       else app.newGame();
     };
+    $('quickBtn').onclick = () => {
+      this.settings.name = $('nameIn').value.trim().slice(0, 18);
+      this._save();
+      app.quickGame();
+    };
     $('resumeBtn').onclick = () => {
       if (!this.resumeSv) return;
       this.settings.name = $('nameIn').value.trim().slice(0, 18);
@@ -735,9 +740,13 @@ RA.UI = class {
     $('hGoldSub').textContent = `+${RA.fmt(me.goldRate || 0)}/s`;
     const land = (me.area / G.landTotal()) * 100;
     $('hLand').textContent = (land < 10 ? land.toFixed(1) : land.toFixed(0)).replace('.', ',') + '%';
-    $('clock').textContent = RA.fmtTime(G.tick / 10);
+    $('clock').textContent = RA.TICK_REAL > 100 ? RA.dur(G.tick) : RA.fmtTime(G.tick / 10);
     this.updateRatio();
     $('aStrike').classList.toggle('dim', !me.n.silo);
+    // nuclear spam: a bar on the strikes button runs out until the price is normal again
+    const nk = me.nukeUntil > G.tick ? (me.nukeUntil - G.tick) / RA.CFG.NUKE_COOL : 0;
+    $('aStrike').style.setProperty('--nuke', nk.toFixed(3));
+    $('aStrike').classList.toggle('nuke-hot', nk > 0);
   }
   updateRatio() {
     const G = this.G;
@@ -1043,7 +1052,7 @@ RA.UI = class {
   updateStatus() {
     const G = this.G, me = G.me, C = RA.CFG, tk = G.tick;
     const pills = [];
-    const T = (t) => RA.fmtTime(Math.ceil(Math.max(0, t) / 10));
+    const T = (t) => RA.dur(Math.max(0, t));
     if (me && me.alive && G.state === 'play') {
       if (G.opts.camp && G.opts.camp.type !== 'free' && this.campProg) pills.push(['goal', `🎯 ${this.campProg}`]);
       if (G.long && this.app.long.rec) pills.push(['calm', `Focus · potez svakih ${Math.round(this.app.long.rec.tickMs / 1000)} s · igrača ${G.humans.filter((p) => p.alive).length}`]);
@@ -1357,7 +1366,7 @@ RA.UI = class {
     const why = s < 0 || G.owner[s] !== me.id ? 'Strelicu povuci od svoje teritorije.'
       : !T || T === me ? 'Povuci do tuđe države.'
       : G.isFriendly(me, T) ? `${T.name} ti je saveznik.`
-      : G.tick < G.peaceUntil ? `Mirno doba još ${G.peaceLeft()} s.`
+      : G.tick < G.peaceUntil ? `Mirno doba još ${G.peaceLeft()}.`
       : !G.hasBorderWith(me, T.id) && !G._viaOf(me, T) ? `Nemaš kopnenu granicu s tom državom (${T.name}), ni preko saveznika.` : '';
     this.arrow = { s, e, ok: !why, why, name: T && T !== me ? T.name : '' };
   }
@@ -1403,6 +1412,10 @@ RA.UI = class {
     else if (k === 'p' && RA.ERA.para && G.me.n.airport) this.setMode({ kind: 'para' });
     else if (k === 'r') this.strikeSheet();
     else if (k === 's') this.diploSheet();
+    else if (k === 'l') {
+      this.showAllies = !this.showAllies;
+      this.toast('info', this.showAllies ? 'Savezi na karti: zelena linija vojni, plava trgovinski savez (L ugasi).' : 'Savezi na karti isključeni.', { ms: 3000 });
+    }
     else if (k === 't' && this.G.online) this.quickSheet();
     else if (k === 'g' && this.G.online && this.mouseLL) this.act('png', [this.cellFromLatLng(this.mouseLL), 0]);
     else if (k === 'm') this.act('mob', []);

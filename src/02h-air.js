@@ -64,7 +64,7 @@ RA.airName = (k) => {
     if (c < 0 || !this.map.land[c]) return 'Bombarduje se samo kopno.';
     const o = this.owner[c];
     if (!o || o === pid || this.isFriendly(p, this.P[o])) return 'Izaberi neprijateljsku teritoriju.';
-    if (this.tick < this.peaceUntil) return `Mirno doba — napadi su dozvoljeni za ${this.peaceLeft()} s.`;
+    if (this.tick < this.peaceUntil) return `Mirno doba — napadi su dozvoljeni za ${this.peaceLeft()}.`;
     if (this.defconErr('air')) return this.defconErr('air');
     const W = this.map.W, tx = c % W, ty = (c / W) | 0, tk = this.tick;
     let best = null, bd = 1e9, base = null;
@@ -86,7 +86,7 @@ RA.airName = (k) => {
     this._assignSam(pl, p);
     this.planes.push(pl);
     const V = this.P[o];
-    V.rel[pid] = Math.max(-100, V.rel[pid] - 15);
+    this.relTo(V, pid, Math.max(-100, V.rel[pid] - 15), 'bomb');
     this.tell(V, 'bad', `✈ Bombarderi (${p.name}) lete na tvoju zemlju!`, pid, c);
     return { sq: best.id };
   };

@@ -19,7 +19,7 @@ RA.CAMP_TREE = {
     me.bGrow = 1 + 0.05 * lv('mil');
     me.bCost = 1 - 0.05 * lv('sci');
     me.troops *= 1 + 0.1 * lv('mil');
-    for (const o of this.P) if (o && o !== me && o.rel) o.rel[me.id] = Math.min(100, o.rel[me.id] + 8 * lv('dip'));
+    for (const o of this.P) if (o && o !== me && o.rel) this.relTo(o, me.id, Math.min(100, o.rel[me.id] + 8 * lv('dip')), 'tech');
     // neighbours at the start, weakest and strongest
     const nb = this.P.filter((o) => o && o.alive && o !== me && o.type === 'nation' && this.hasBorderWith(me, o.id)).sort((x, y) => x.area - y.area || x.id - y.id);
     const all = this.P.filter((o) => o && o.alive && o !== me && o.type === 'nation').sort((x, y) => x.area - y.area || x.id - y.id);
@@ -32,11 +32,11 @@ RA.CAMP_TREE = {
     if (c.type === 'defend' && T) {
       // a stronger enemy wants your capital
       T.troops *= 1.8;
-      T.rel[me.id] = -100;
+      this.relTo(T, me.id, -100, 'camp');
     }
     if (c.type === 'survive') {
       // every neighbour gangs up on you (as on a runaway conqueror)
-      for (const o of pool) o.rel[me.id] = -100;
+      for (const o of pool) this.relTo(o, me.id, -100, 'camp');
       me.ae = 100;
       me.aeWarn = true;
     }

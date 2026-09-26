@@ -134,7 +134,7 @@ RA.STRAITS = {
         for (const o of this.P) {
           if (!o || !o.alive || o === cl || o.type === 'bot' || cl.allies.has(o.id)) continue;
           const hurt = Math.min(3, o.n.port) + (o.trade.size ? 1 : 0);
-          if (hurt) o.rel[cl.id] = Math.max(-100, o.rel[cl.id] - hurt);
+          if (hurt) this.relTo(o, cl.id, Math.max(-100, o.rel[cl.id] - hurt), 'strait');
         }
       }
     }
@@ -148,7 +148,7 @@ RA.STRAITS = {
     if (pid) {
       this.news('strait', pid, 0, st.name);
       this.addAE(this.P[pid], RA.CFG.AE_STRAIT);
-      for (const o of this.P) if (o && o.alive && o.id !== pid && !o.human && o.type !== 'bot' && !o.allies.has(pid)) o.rel[pid] = Math.max(-100, o.rel[pid] - 15);
+      for (const o of this.P) if (o && o.alive && o.id !== pid && !o.human && o.type !== 'bot' && !o.allies.has(pid)) this.relTo(o, pid, Math.max(-100, o.rel[pid] - 15), 'strait');
       for (const h of this.P) if (h && h.human && h.alive && h.id !== pid) this.tell(h, 'bad', `${this.P[pid].name} je zatvorio/la ${st.name} za tuđe brodove.`, pid, st.cells[0]);
     } else if (why === 'lost') {
       for (const h of this.P) if (h && h.human && h.alive) this.tell(h, 'info', `${st.name} je ponovo otvoren${H ? ' (novi vlasnik obala: ' + H.name + ')' : ''}.`, 0, st.cells[0]);

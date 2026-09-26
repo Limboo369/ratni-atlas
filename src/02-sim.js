@@ -19,6 +19,8 @@ RA.CFG = {
   SAM_R: 28,
   SILO_CD: 100,
   SAM_CD: 75,
+  NUKE_COOL: 900, // ticks after a nuclear launch until the price is normal again
+  NUKE_UP: 0.6, // each nuclear launch in that time: next one +60%
   STRUCT_MIN_DIST: 4,
   CITY_T: [0, 12000, 25000, 40000],
   CITY_G: [0, 5, 10, 16],
@@ -123,6 +125,7 @@ RA.Game = class Game {
     this.state = 'spawn';
     this.nextId = 1;
     this.hist = [];
+    this.marks = []; // key moments for the end-of-game chart: {t, a, b, tick}; never read by the sim
     this.winner = null;
     this.me = null;
     this.encIdx = 1;
@@ -152,7 +155,7 @@ RA.Game = class Game {
     return this.tick < this.peaceUntil;
   }
   peaceLeft() {
-    return Math.max(0, Math.ceil((this.peaceUntil - this.tick) / 10));
+    return RA.dur(this.peaceUntil - this.tick);
   }
   isFriendly(a, b) {
     return a === b || (a && b && a.allies.has(b.id));
@@ -347,15 +350,28 @@ RA.Game = class Game {
   tellAll(kind, text, pid, cell) {
     this.event(kind, text, pid, cell, 0);
   }
+  mark(t, a, b) {
+    if (this.marks.length < 600) this.marks.push({ t, a, b: b || 0, tick: this.tick });
+  }
   /* world news between two states (city-states left out): war, fall, ally, break, ally-end, trade */
   news(t, a, b, x) {
     const A = this.P[a], B = b ? this.P[b] : null;
     if (!A || A.type === 'bot' || (B && B.type === 'bot')) return;
     if (this.feed.length > 200) this.feed.splice(0, 100);
     this.feed.push({ t, a, b: b || 0, tick: this.tick, x });
+    if (t === 'war' || t === 'fall' || t === 'ally' || t === 'break') this.mark(t, a, b);
   }
 
   /* ---------------- attacks ---------------- */
+  /* o's opinion of player id becomes v; the change is remembered under a reason (o.why[id][why]) so the page can show
+     why a state likes or hates you. Reasons fade like the opinion itself (RA.AI.think). */
+  relTo(o, id, v, why) {
+    const d = v - o.rel[id];
+    o.rel[id] = v;
+    if (!d || !why || o.human) return;
+    const w = o.why || (o.why = {}), r = w[id] || (w[id] = {});
+    r[why] = (r[why] || 0) + d;
+  }
   hasBorderWith(p, tid) {
     // does player p touch owner tid (0 = neutral land) by land?
     const own = this.owner, land = this.map.land, W = this.map.W, N = this.map.N;
@@ -429,7 +445,7 @@ RA.Game = class Game {
     if (T) {
       if (A.trade.has(T.id)) this.cancelTrade(A.id, T.id, 'rat');
       this._callAllies(A, T);
-      T.rel[aid] = Math.max(-100, T.rel[aid] - (T.type === 'nation' ? 30 : 15));
+      this.relTo(T, aid, Math.max(-100, T.rel[aid] - (T.type === 'nation' ? 30 : 15)), 'atk');
       T.lastAttackedBy = aid;
       T.attackedAt = this.tick;
       // cancel pending alliance requests between them
@@ -811,7 +827,7 @@ RA.Game = class Game {
     this.boats.push(b);
     if (tp) this.tell(tp, 'bad', `${p.name} šalje desant na tvoju obalu!`, pid, tgtCell);
     if (tp) {
-      tp.rel[pid] = Math.max(-100, tp.rel[pid] - 20);
+      this.relTo(tp, pid, Math.max(-100, tp.rel[pid] - 20), 'boat');
     }
     return b;
   }
@@ -973,7 +989,7 @@ RA.Game = class Game {
       return true;
     }
     this.tell(a, 'info', `Ponuda za vojni savez odbijena (${b.name}).`, toId, b.capital);
-    b.rel[fromId] = Math.min(100, b.rel[fromId] + 3);
+    this.relTo(b, fromId, Math.min(100, b.rel[fromId] + 3), 'offer');
     return 'declined';
   }
   respondAlliance(fromId, toId, accept) {
@@ -982,7 +998,7 @@ RA.Game = class Game {
     this.allyReqs.splice(i, 1);
     const a = this.P[fromId], b = this.P[toId];
     if (!accept) {
-      a.rel[toId] = Math.max(-100, a.rel[toId] - 10);
+      this.relTo(a, toId, Math.max(-100, a.rel[toId] - 10), 'decl');
       this.tell(a, 'info', `Ponuda za vojni savez odbijena (${b.name}).`, toId, b.capital);
       return;
     }
@@ -997,8 +1013,8 @@ RA.Game = class Game {
     const exp = this.tick + RA.CFG.ALLY_DUR;
     a.allies.set(b.id, exp);
     b.allies.set(a.id, exp);
-    a.rel[b.id] = Math.min(100, a.rel[b.id] + 30);
-    b.rel[a.id] = Math.min(100, b.rel[a.id] + 30);
+    this.relTo(a, b.id, Math.min(100, a.rel[b.id] + 30), 'ally');
+    this.relTo(b, a.id, Math.min(100, b.rel[a.id] + 30), 'ally');
     for (const att of this.attacks) {
       if (att.done) continue;
       if ((att.a === a.id && att.t === b.id) || (att.a === b.id && att.t === a.id)) this._endAttack(att, 0);
@@ -1020,8 +1036,8 @@ RA.Game = class Game {
     if (betrayal !== false) {
       this.news('break', aid, bid);
       if (!(b.traitorUntil > this.tick)) a.traitorUntil = this.tick + RA.CFG.TRAITOR_DUR;
-      b.rel[aid] = -100;
-      for (const o of this.P) if (o && o.alive && o !== a && o !== b && !o.human) o.rel[aid] = Math.max(-100, o.rel[aid] - 35);
+      this.relTo(b, aid, -100, 'betray');
+      for (const o of this.P) if (o && o.alive && o !== a && o !== b && !o.human) this.relTo(o, aid, Math.max(-100, o.rel[aid] - 35), 'traitor');
       this.tell(b, 'bad', `${a.name} te je izdao!`, aid, a.capital);
       this.tell(a, 'bad', `Izdaja! Raskinuo si savez (${b.name}). Odbrana ti je prepolovljena 30 s.`, bid);
     }
@@ -1331,7 +1347,7 @@ RA.Game = class Game {
     if (tid === pid) return { own: true };
     const T = tid ? this.P[tid] : null;
     if (T && this.isFriendly(p, T)) return { err: `${T.name} ti je saveznik.` };
-    if (T && this.tick < this.peaceUntil) return { err: `Mirno doba: napadi na države počinju za ${this.peaceLeft()} s. Do tada zauzimaj slobodnu zemlju i sklapaj saveze.` };
+    if (T && this.tick < this.peaceUntil) return { err: `Mirno doba: napadi na države počinju za ${this.peaceLeft()}. Do tada zauzimaj slobodnu zemlju i sklapaj saveze.` };
     const troops = p.troops * ratio;
     if (troops < 1) return { err: 'Nemaš dovoljno vojske.' };
     if (this.hasBorderWith(p, tid) || (T && p.human && this._viaOf(p, T))) {

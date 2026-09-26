@@ -153,6 +153,15 @@ const check = (ok, msg) => {
   check(V.troops < vt0 * 0.8 && V.crisisUntil > NG.tick, `a nuke hurts more: −${Math.round((1 - V.troops / vt0) * 100)}% army and an economic crisis`);
   if (capC) check(capC.tier < tier0, `a city in the core drops a level (${capC.name} ${tier0} → ${capC.tier})`);
   check(A.troops < at0 * 0.85 && A.crisisUntil > 0, `the retaliation lands on the attacker (−${Math.round((1 - A.troops / at0) * 100)}% army)`);
+  // nuclear spam (plan 22): each launch within NUKE_COOL makes the next one dearer; later the price is normal again
+  const base = RA.MISSILE.atom.cost, c1 = NG.missileCost('atom', A);
+  check(Math.abs(c1 - base * (1 + RA.CFG.NUKE_UP)) < 2 && A.nukeUntil > NG.tick, `after a nuclear launch the next atomic bomb costs more (${base} → ${c1})`);
+  const V2 = V.alive ? V : NG.P.find((p) => p && p.alive && p !== A && p.type === 'nation');
+  for (const s of NG.structs) if (s.owner === A.id && s.type === 'silo') s.cd = 0;
+  NG.exec(A.id, 'mis', ['atom', V2.cells[0]]);
+  check(A.nukeN === 2 && Math.abs(NG.missileCost('atom', A) - base * (1 + 2 * RA.CFG.NUKE_UP)) < 2, `a second one right after: ×${NG.nukeMul(A).toFixed(1)}`);
+  while (NG.tick < A.nukeUntil) NG.step();
+  check(NG.missileCost('atom', A) === base, 'the price is normal again after the cool-down');
 
   // the navy (plan 20): a warship from a port blockades an enemy port and sinks its landing boats
   const SG = RA.newGame(RA.eraMap(m, 'danas', 'granice'), { seed: 31, difficulty: 'srednje', cityStates: 0, peace: 0, era: 'danas', start: 'granice', gm: 'klasik' });

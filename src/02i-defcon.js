@@ -23,7 +23,7 @@ RA.DEFCON_NEED = { land: 4, sea: 3, air: 3, conv: 2, nuke: 1 };
     if (!d || d <= need) return '';
     const at = (5 - need) * RA.CFG.DEFCON_STEP;
     const txt = { land: 'Napadi na države', sea: 'Brodovi i desanti', air: 'Avijacija i padobranci', conv: 'Raketni udari', nuke: 'Nuklearno oružje' }[what];
-    return `DEFCON ${d}: ${txt} su dozvoljeni od DEFCON ${need} (za ${RA.fmtTime((at - this.tick) / 10)}).`;
+    return `DEFCON ${d}: ${txt} su dozvoljeni od DEFCON ${need} (za ${RA.dur(at - this.tick)}).`;
   };
   /* what a state kept: its cities (bigger count more) and the cities it built */
   P.defconScore = function (p) {

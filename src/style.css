@@ -1244,3 +1244,17 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
 .online-card small { font-size: 12px; opacity: .75; }
 .online-card:hover { border-color: rgba(255,93,93,.6); }
 #leagueBtn { border-left: 3px solid var(--danger); }
+.why-list { display: flex; flex-wrap: wrap; gap: 6px; margin: -2px 0 8px; }
+.why { font-size: 12px; padding: 2px 8px; border-radius: 10px; background: rgba(255,255,255,.06); }
+.why.pos { color: #7fe0a0; }
+.why.neg { color: #ff9b9b; }
+.nuke-bar { display: block; height: 4px; margin: 6px 0 3px; background: rgba(255,255,255,.1); border-radius: 2px; overflow: hidden; }
+.nuke-bar i { display: block; height: 100%; background: var(--danger); }
+.nuke-up { font-size: 12px; color: #ffb0a0; }
+#aStrike.nuke-hot { position: relative; }
+#aStrike.nuke-hot::after { content: ''; position: absolute; left: 8%; bottom: 3px; height: 3px; width: calc(84% * var(--nuke, 0)); background: var(--danger); border-radius: 2px; }
+.command-quick { display: flex; align-items: baseline; gap: 10px; width: min(100%, 378px); margin: 8px 0 0; padding: 10px 14px; border: 1px solid rgba(255,255,255,.2); border-radius: 2px; background: rgba(10,16,20,.55); color: var(--launch-text, #e8eef0); font-family: inherit; cursor: pointer; text-align: left; }
+.command-quick b { font-size: 14px; letter-spacing: .1em; text-transform: uppercase; }
+.command-quick small { font-size: 11px; opacity: .7; }
+.command-quick:hover { border-color: rgba(255,93,93,.6); }
+.legend .mk { opacity: .9; }

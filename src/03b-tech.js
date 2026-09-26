@@ -34,7 +34,7 @@ RA.TECH_MAX = 5;
     if (k === 'eco') p.bGold = ((p.bGold || 1) * (1 + T.step * (lv + 1))) / (1 + T.step * lv);
     else if (k === 'mil') p.bGrow = ((p.bGrow || 1) * (1 + T.step * (lv + 1))) / (1 + T.step * lv);
     else if (k === 'sci') p.bCost = ((p.bCost || 1) * (1 - T.step * (lv + 1))) / (1 - T.step * lv);
-    else for (const o of this.P) if (o && o !== p && o.rel) o.rel[p.id] = Math.min(100, o.rel[p.id] + T.step);
+    else for (const o of this.P) if (o && o !== p && o.rel) this.relTo(o, p.id, Math.min(100, o.rel[p.id] + T.step), 'tech');
     if (p.human) this.tell(p, 'good', `Istraženo: ${T.name} ${lv + 1} (${T.desc}).`);
     return { k, lv: lv + 1 };
   };

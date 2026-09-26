@@ -99,9 +99,15 @@ RA.NUKE = RA.MISSILE;
   P.hostile = function (a, bid) {
     return bid && bid !== a.id && !a.allies.has(bid);
   };
+  /* nuclear spam costs more (plan 22): every nuclear launch within NUKE_COOL of the last one makes the next NUKE_UP dearer;
+     the price is normal again NUKE_COOL after the last launch (1,5 min in Blitz; in Focus the same game time) */
+  P.nukeMul = function (p) {
+    return p && p.nukeUntil > this.tick ? 1 + RA.CFG.NUKE_UP * p.nukeN : 1;
+  };
   P.missileCost = function (type, p) {
     const M = RA.MISSILE[type];
-    const c = type === 'mirv' ? M.cost + 4000000 * (this.mirvCount || 0) : M.cost;
+    let c = type === 'mirv' ? M.cost + 4000000 * (this.mirvCount || 0) : M.cost;
+    if (M.kind === 'nuke' || M.kind === 'mirv') c *= this.nukeMul(p);
     const k = (p && p.bCost) || 1;
     return Math.round((p && this.deps && !this.hasRes(p, 2) ? c * RA.CFG.RES_DEAR : c) * k); // no fuel: dearer
   };
@@ -584,7 +590,7 @@ RA.NUKE = RA.MISSILE;
   P.mobilize = function (pid) {
     const p = this.P[pid];
     if (!p || !p.alive) return 'Nisi u igri.';
-    if (this.tick < (p.mobReady || 0)) return `Mobilizacija će biti spremna za ${RA.fmtTime((p.mobReady - this.tick) / 10)}.`;
+    if (this.tick < (p.mobReady || 0)) return `Mobilizacija će biti spremna za ${RA.dur(p.mobReady - this.tick)}.`;
     const add = p.maxT * RA.CFG.MOB_SHARE;
     p.troops += add;
     p.mobReady = this.tick + RA.CFG.MOB_CD;
@@ -601,6 +607,7 @@ RA.NUKE = RA.MISSILE;
     v.gold -= plunder;
     if (by) by.gold += plunder;
     v.crisisUntil = this.tick + RA.CFG.CRISIS_DUR;
+    this.mark('cap', by ? by.id : 0, v.id);
     let best = null;
     for (const ct of this.cities) {
       if (ct.owner !== v.id || ct === city) continue;
@@ -640,8 +647,8 @@ RA.NUKE = RA.MISSILE;
     if (this.opts.noNuke && (M.kind === 'nuke' || M.kind === 'mirv')) return 'Nuklearno oružje je isključeno u ovoj igri.';
     const de = this.defconErr(M.kind === 'nuke' || M.kind === 'mirv' ? 'nuke' : 'conv');
     if (de) return de;
-    if (this.tick < this.peaceUntil) return `Mirno doba — udari su dozvoljeni za ${this.peaceLeft()} s.`;
-    if (M.from && this.tick < M.from) return `${M.name}: razvoj još traje — dostupna od ${Math.round(M.from / 600)}. minute (još ${RA.fmtTime((M.from - this.tick) / 10)}).`;
+    if (this.tick < this.peaceUntil) return `Mirno doba — udari su dozvoljeni za ${this.peaceLeft()}.`;
+    if (M.from && this.tick < M.from) return `${M.name}: razvoj još traje — dostupna od ${Math.round(M.from / 600)}. minute (još ${RA.dur(M.from - this.tick)}).`;
     const cost = this.missileCost(type, p);
     if (p.gold < cost) return 'Nemaš dovoljno zlata.';
     if (M.kind === 'drone') return this._launchDrone(p, type, M, c, cost);
@@ -663,7 +670,12 @@ RA.NUKE = RA.MISSILE;
     const m = { id: this.nextId++, owner: pid, type, kind: M.kind, sx: best.x + 0.5, sy: best.y + 0.5, tx: tx + 0.5, ty: ty + 0.5, c, t: 0, dur, sam: null, samAt: 2, done: false, victim: victimId };
     if (M.kind !== 'mirv') this._assignSam(m, p);
     this.missiles.push(m);
-    if (M.kind === 'nuke' || M.kind === 'mirv') p.stats.nukes++;
+    if (M.kind === 'nuke' || M.kind === 'mirv') {
+      p.stats.nukes++;
+      this.mark('nuke', pid, victimId || 0);
+      p.nukeN = (p.nukeUntil > this.tick ? p.nukeN : 0) + 1;
+      p.nukeUntil = this.tick + RA.CFG.NUKE_COOL;
+    }
     const victim = victimId ? this.P[victimId] : null;
     if (victim && (M.kind === 'nuke' || M.kind === 'mirv') && !this.isFriendly(victim, p)) this._retaliate(victim, p);
     if (victim && victim.human) {
@@ -671,7 +683,7 @@ RA.NUKE = RA.MISSILE;
       this.tell(victim, 'bad', msg, pid, c);
     }
     const hate = { conv: [20, 1], emp: [25, 3], nuke: [60, 8], mirv: [100, 20] }[M.kind];
-    for (const o of this.P) if (o && o.alive && o.id !== pid) o.rel[pid] = Math.max(-100, o.rel[pid] - (victim === o ? hate[0] : hate[1]));
+    for (const o of this.P) if (o && o.alive && o.id !== pid) this.relTo(o, pid, Math.max(-100, o.rel[pid] - (victim === o ? hate[0] : hate[1])), M.kind === 'nuke' || M.kind === 'mirv' ? 'nuke' : 'strike');
     return m;
   };
   P.launchNuke = P.launchMissile;
@@ -689,7 +701,7 @@ RA.NUKE = RA.MISSILE;
     const m = { id: this.nextId++, owner: p.id, type, kind: 'drone', sx, sy, tx, ty, c, t: 0, dur: Math.max(10, Math.round(d / M.speed)), sam: null, samAt: 2, done: false, victim: victimId };
     this._assignSam(m, p);
     this.missiles.push(m);
-    if (victimId && victimId !== p.id) this.P[victimId].rel[p.id] = Math.max(-100, this.P[victimId].rel[p.id] - 6);
+    if (victimId && victimId !== p.id) this.relTo(this.P[victimId], p.id, Math.max(-100, this.P[victimId].rel[p.id] - 6), 'strike');
     return m;
   };
   /* the victim's iron domes answer a nuclear launch: one atomic bomb per ready dome, at the attacker's capital first */
@@ -724,7 +736,8 @@ RA.NUKE = RA.MISSILE;
       if (RA.dist(s.x - tx, s.y - ty) <= RA.CFG.SAM_R) {
         m.sam = s;
         m.samAt = m.kind === 'warhead' ? 0.55 : 0.62 + this.rng() * 0.2;
-        s.cd = tk + RA.CFG.SAM_CD;
+        // a nuclear salvo (several launches in a row): air defence reloads twice as fast
+        s.cd = tk + ((m.kind === 'nuke' || m.kind === 'mirv') && p.nukeN > 1 && p.nukeUntil > tk ? RA.CFG.SAM_CD >> 1 : RA.CFG.SAM_CD);
         return true;
       }
     }
@@ -1061,7 +1074,7 @@ RA.NUKE = RA.MISSILE;
     this.planes.push(pl);
     const victim = o ? this.P[o] : null;
     if (victim) this.tell(victim, 'bad', `🪂 ${p.name} spušta padobrance iza tvojih linija!`, pid, c);
-    if (victim) victim.rel[pid] = Math.max(-100, victim.rel[pid] - 20);
+    if (victim) this.relTo(victim, pid, Math.max(-100, victim.rel[pid] - 20), 'para');
     return pl;
   };
   P._stepPlanes = function () {

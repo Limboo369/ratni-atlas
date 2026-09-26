@@ -110,6 +110,16 @@ RA.fmtTime = function (sec) {
   const m = Math.floor(sec / 60), s = sec % 60;
   return (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
 };
+/* a duration of game ticks for people to read. Blitz: "45 s" / "02:10". In a Focus game the page sets RA.TICK_REAL (real ms
+   per tick, 5–35 s) and it reads in real time: "33 min", "2 h 10 min" (display only — the simulation never reads it). */
+RA.TICK_REAL = 100;
+RA.dur = function (ticks) {
+  const sec = Math.max(0, Math.ceil((ticks * RA.TICK_REAL) / 1000));
+  if (RA.TICK_REAL <= 100) return sec < 60 ? sec + ' s' : RA.fmtTime(sec);
+  if (sec < 60) return sec + ' s';
+  const m = Math.round(sec / 60);
+  return m < 60 ? m + ' min' : `${Math.floor(m / 60)} h${m % 60 ? ' ' + (m % 60) + ' min' : ''}`;
+};
 RA.hexToRgb = function (h) {
   const n = parseInt(h.slice(1), 16);
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
