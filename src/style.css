@@ -1222,3 +1222,10 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
 @media(min-width:901px){@keyframes commandSlide{from{transform:translateX(16px)}to{transform:translateX(0)}}#app:has(#hud:not([hidden])) #sheet:not(:has(.dossier-marker,.campaign-marker)){animation:commandSlide .2s cubic-bezier(.2,.8,.2,1)}}
 @media(max-width:600px){#sheetWrap:has(.campaign-marker){padding:10px}#app #sheet:has(.campaign-marker){padding:18px;max-height:calc(100dvh - 20px)}#sheet:has(.campaign-marker)>.sh-head{top:-18px}.dynasty-banner{padding:16px;gap:12px;flex-wrap:wrap}.dynasty-seal{width:45px;height:54px}.dynasty-seal svg{width:25px;height:25px}.dynasty-banner h3{font-size:25px}.dynasty-banner span{font-size:8px}.dynasty-xp{width:100%;border-left:0;border-top:1px solid #ffffff12;padding:10px 0 0;display:flex;align-items:center;gap:8px}.dynasty-xp b{font-size:22px}.research-grid{gap:8px}.research-card{padding:11px}.research-heading{font-size:13px;gap:7px}.research-heading i{width:27px;height:30px}.research-card p{font-size:11px}.campaign-homes{grid-template-columns:repeat(2,minmax(0,1fr))}.camp-row{padding:12px 9px;gap:9px}.camp-row .cr-t{font-size:13px}.camp-row .cr-d{font-size:11px}.campaign-chapter{gap:10px}.campaign-chapter h3{font-size:16px}.economy-overview strong{font-size:21px}.economy-overview>div{padding:12px 8px}}
 @media(prefers-reduced-motion:reduce){#sheet,#sheet:has(.campaign-marker),#app:has(#hud:not([hidden])) #sheet:not(:has(.dossier-marker,.campaign-marker)){animation:none!important}.pace-seg button{transition:none}}
+
+/* Flat building artwork stays flat in the construction catalogue too. */
+.model-preview.flat-model{background:none}
+.model-preview.flat-model img{filter:none}
+#sheet .btn.model-btn{display:grid;grid-template-columns:80px minmax(0,1fr) auto}
+#sheet .btn.model-btn>.r{margin-left:0;max-width:82px;text-align:right;white-space:normal;overflow-wrap:anywhere}
+@media(max-width:600px){#sheet .btn.model-btn{grid-template-columns:63px minmax(0,1fr) auto}}
