@@ -228,8 +228,9 @@ Object.assign(RA.UI.prototype, {
       clearInterval(this._lgIv);
       this._lgIv = setInterval(() => {
         if (!document.getElementById('lgReveal')) return clearInterval(this._lgIv);
-        spin('lgDrawMap', cm, R.chosen.map, i);
-        spin('lgDrawEra', ce, R.chosen.era, i + 3);
+        const frame = RA.motionPreference.matches ? 14 : i;
+        spin('lgDrawMap', cm, R.chosen.map, frame);
+        spin('lgDrawEra', ce, R.chosen.era, frame + 3);
         if (++i > 14) {
           clearInterval(this._lgIv);
           document.getElementById('lgDrawNote').innerHTML = RA.t("<b>{0} · {1}</b> — the game is starting…", RA.esc(RA.lgMapName(R.chosen.map)), RA.esc(RA.eraById(R.chosen.era).short));
@@ -269,7 +270,7 @@ Object.assign(RA.UI.prototype, {
   leagueHistory() {
     this.account.api('GET', '/api/league/history').then((j) => {
       const W = { elim: RA.t("destruction"), cap: RA.t("capitulation"), time: '45 min', surr: RA.t("surrender"), vote: RA.t("vote") };
-      let h = this.head(RA.t("Match history"), RA.t("Your league matches (last 30)")) + '<div class="list">';
+      let h = '<div id="lgHistory"></div>' + this.head(RA.t("Match history"), RA.t("Your league matches (last 30)")) + '<div class="list">';
       h += j.games.length ? j.games.map((g) => `<div class="prow wide"><div class="pn"><div class="nm">${g.won ? RA.t("Victory") : g.left ? RA.t("Abandoned") : RA.t("Defeat")} · ${RA.lgName(g.l)} · ${g.delta >= 0 ? '+' : ''}${g.delta} (${g.elo})</div><div class="d">${RA.esc(RA.lgMapName(g.map))} · ${RA.esc(RA.eraById(g.era).short)} · ${W[g.why] || ''} · ${RA.fmtTime(g.secs)} · ${new Date(g.at).toLocaleString(RA.LOCALE)}<br>${g.teams.map((t) => t.map((p) => (p.me ? '<b>' + RA.esc(p.name) + '</b>' : RA.esc(p.name))).join(', ')).join(' vs ')}</div></div><div class="bb">${this.mini('Replay', `data-rp="${g.code}"`, 'ok')}</div></div>`).join('') : RA.t("<p class=\"note\">You have no league matches yet.</p>");
       this.openSheet(h + '</div>', (s) => s.querySelectorAll('[data-rp]').forEach((b) => (b.onclick = () => {
         this.closeSheet();

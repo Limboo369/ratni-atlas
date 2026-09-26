@@ -1540,6 +1540,8 @@ RA.UI = class {
 
   /* ---------------- sheet helpers ---------------- */
   openSheet(html, onBind, keepScroll, redraw) {
+    if (keepScroll && this.sheetDrag) return;
+    this.sheetDrag = null;
     this.redraw = redraw || null;
     const s = this.$('sheet');
     const wasOpen = !this.$('sheetWrap').hidden;
@@ -1550,7 +1552,11 @@ RA.UI = class {
       for (const [el] of this.sheetInert) el.inert = true;
     }
     const top = keepScroll && wasOpen ? s.scrollTop : 0;
-    s.innerHTML = '<div class="grab"></div>' + html;
+    s.style.translate = '';
+    s.classList.remove('sheet-dragging');
+    s.innerHTML = `<button class="grab" aria-label="${RA.t("Drag down or press to close")}"></button>` + html;
+    s.querySelector('.grab').onclick = () => this.closeSheet();
+    this.bindSheetDrag(s);
     s.onclick = null; // a delegated handler belongs to one sheet only (bindDiplo)
     this.$('sheetWrap').hidden = false;
     s.scrollTop = top;
@@ -1564,6 +1570,9 @@ RA.UI = class {
     this.app.sheetPause(true);
   }
   closeSheet() {
+    this.sheetDrag = null;
+    this.$('sheet').style.translate = '';
+    this.$('sheet').classList.remove('sheet-dragging');
     this.redraw = null;
     this.$('sheetWrap').hidden = true;
     this.$('sheet').innerHTML = '';
@@ -1573,6 +1582,37 @@ RA.UI = class {
     if (this.sheetFocus && this.sheetFocus.isConnected && this.sheetFocus.getClientRects().length) this.sheetFocus.focus({ preventScroll: true });
     this.sheetFocus = null;
     this.app.sheetPause(false);
+  }
+  bindSheetDrag(s) {
+    if (s.dataset.dragBound) return;
+    s.dataset.dragBound = '1';
+    s.addEventListener('pointerdown', (e) => {
+      if (!e.isPrimary || e.button !== 0) return;
+      const grip = e.target.closest('.grab');
+      if (!grip && (!e.target.closest('.sh-head') || e.target.closest('button,input,select,a,textarea'))) return;
+      this.sheetDrag = { id: e.pointerId, x: e.clientX, y: e.clientY, dy: 0, grip: !!grip };
+      s.setPointerCapture(e.pointerId);
+    });
+    s.addEventListener('pointermove', (e) => {
+      const d = this.sheetDrag;
+      if (!d || d.id !== e.pointerId) return;
+      d.dy = Math.max(0, e.clientY - d.y);
+      if (d.dy < 5 && !s.classList.contains('sheet-dragging')) return;
+      s.classList.add('sheet-dragging');
+      s.style.translate = `0 ${d.dy}px`;
+    });
+    const end = (e) => {
+      const d = this.sheetDrag;
+      if (!d || d.id !== e.pointerId) return;
+      this.sheetDrag = null;
+      if (s.hasPointerCapture(e.pointerId)) s.releasePointerCapture(e.pointerId);
+      s.classList.remove('sheet-dragging');
+      s.style.translate = '';
+      if (e.type === 'pointerup' && ((d.dy > 72 && d.dy > Math.abs(e.clientX - d.x)) || (d.grip && d.dy < 5 && Math.abs(e.clientX - d.x) < 5))) this.closeSheet();
+    };
+    s.addEventListener('pointerup', end);
+    s.addEventListener('pointercancel', end);
+    s.addEventListener('lostpointercapture', end);
   }
   head(title, meta, color) {
     return `<div class="sh-head">${color ? `<span class="chip" style="background:${color}"></span>` : ''}<div><h2 id="sheetTitle">${RA.esc(title)}</h2>${meta ? `<div class="meta">${meta}</div>` : ''}</div><button class="sh-close" aria-label="${RA.t("Close")}">${RA.icon('close')}</button></div>`;

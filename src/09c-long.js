@@ -311,6 +311,7 @@ Object.assign(RA.UI.prototype, {
     const what = { war: RA.t("⚔ war"), fall: RA.t("☠ state fell"), ally: RA.t("🤝 alliance"), break: RA.t("✂ alliance broken"), allyEnd: RA.t("alliance expired"), trade: RA.t("⚖ trade"), vassal: RA.t("vassal"), pledge: RA.t("oath"), rebel: RA.t("revolt"), dome: RA.t("☢ dome"), strait: RA.t("strait"), straitO: RA.t("strait opened") };
     let h = this.head(RA.t("While you were away"), RA.t("{0} of real time · {1} moves · the computer led {2}", RA.fmtTime(secs), G.tick - was.tick, RA.esc(me.name)));
     h += RA.t("<div class=\"list\"><div class=\"prow wide\"><div class=\"pn\"><div class=\"nm\">Territory</div><div class=\"d\">{0}</div></div></div>\n      <div class=\"prow wide\"><div class=\"pn\"><div class=\"nm\">Cities</div><div class=\"d\">{1}</div></div></div>\n      <div class=\"prow wide\"><div class=\"pn\"><div class=\"nm\">Army</div><div class=\"d\">{2}</div></div></div>\n      <div class=\"prow wide\"><div class=\"pn\"><div class=\"nm\">Gold</div><div class=\"d\">{3}</div></div></div>\n      <div class=\"prow wide\"><div class=\"pn\"><div class=\"nm\">Allies</div><div class=\"d\">{4}</div></div></div></div>", d(a.share, b.share, pc), d(a.cities, b.cities, String), d(a.troops, b.troops, RA.fmt), d(a.gold, b.gold, RA.fmt), d(a.allies, b.allies, String));
+    h = h.replace('class="list"', 'class="list focus-report-metrics"');
     h += ev.length ? RA.t("<div class=\"sec-t\">Events</div><div class=\"list\">{0}</div>", ev.map((f) => `<div class="prow wide"><div class="pn"><div class="d">${what[f.t] || f.t}: ${this.feedName(f.a)}${f.b ? ' · ' + this.feedName(f.b) : ''}</div></div></div>`).join('')) : RA.t("<p class=\"note\">No wars or alliances with your state in the meantime.</p>");
     h += RA.t("<div class=\"btns\"><button class=\"btn primary\" data-ok><span class=\"t\">Continue</span></button></div>");
     this.openSheet(h, (s) => (s.querySelector('[data-ok]').onclick = () => this.closeSheet()));
@@ -353,7 +354,7 @@ Object.assign(RA.UI.prototype, {
       this.settings.name = this.$('nameIn').value.trim().slice(0, 18);
       this._save();
       if (l.length === 1) return this.app.long.open(e.code);
-      let h = this.head(RA.t("Your Focus games"), RA.t("Games go on while you're away — the computer leads your state")) + '<div class="list">';
+      let h = this.head(RA.t("Your Focus games"), RA.t("Games go on while you're away — the computer leads your state")) + '<div class="list focus-games">';
       for (const x of l) h += RA.t("<div class=\"prow wide\"><div class=\"pn\"><div class=\"nm\">{0}</div><div class=\"d\">~{1} {2} · last seen {3}</div></div><div class=\"bb\">{4}</div></div>", RA.esc(x.title || x.code), x.days || 1, (x.days || 1) === 1 ? RA.t('day') : RA.t('days'), new Date(x.at || 0).toLocaleString(RA.LOCALE), this.mini(RA.t("Continue"), `data-fo="${x.code}"`, 'ok'));
       this.openSheet(h + '</div>', (s) => s.querySelectorAll('[data-fo]').forEach((q) => (q.onclick = () => {
         this.closeSheet();
