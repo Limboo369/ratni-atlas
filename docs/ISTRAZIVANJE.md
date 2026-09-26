@@ -113,6 +113,43 @@ Moj prijedlog redoslijeda: **1–4** odmah (Focus postaje stvarno igriv danima, 
 | 62 Timelapse | AoE/Clash Royale replay; prijedlog 11 je replay, ne timelapse |
 | 44 Špijuni | Supremacy i Subterfuge ih imaju, ali dodaju složenost |
 
+## 8. Kako bismo to uradili — za tvoju odluku
+
+Brojevi 1–18 su isti kao u tački 6; 19–25 su dodatne stvari iz istraživanja (poglavlja 2–4). **Gdje**: Blitz, Focus ili
+oba (Kampanja gdje piše). **Obavezno / opcija**: obavezno = uvijek u igri; opcija = igrač bira (dugme, podešavanje ili
+prekidač u „Make your choice“). **Trud**: M malo (dan), S srednje (2–4 dana), V veliko (sedmica i više).
+
+| Br | Stavka | Kako kod nas | Gdje | Obavezno / opcija | Trud |
+| --- | --- | --- | --- | --- | --- |
+| 1 | Obavještenja (web push) | Server Focus igre (`deploy/game/long.js`) dobija radnika koji vrti istu simulaciju (kao `build/test_sim.js` u nodeu) i vidi događaje: napad na tebe, pad prijestolnice, ponuda saveza, kraj igre. Šalje Web Push (ključevi u GitHub Secrets) preko service workera (`sw.js` uz stranicu). U meniju: koja obavještenja želiš; najviše par na dan, spoji ih u jedno | Focus | opcija (pitamo za dozvolu tek u prvoj Focus igri; svako obavještenje se gasi zasebno) | V |
+| 2 | Naredbe za odsustvo | Nova komanda `stance` preko `G.exec` (snima se, ista na svim uređajima): Brani (nema novih ratova, gradi utvrde i PVO, prihvata savez), Gradi (ekonomija, fabrike, luke), Napadaj državu X, Kao kompjuter. `src/03-ai.js` čita stav dok tvojom državom upravlja kompjuter. U meniju „Dok me nema“ | Focus (može i online Blitz kad izađeš) | obavezno postoji, podrazumijevano „Kao kompjuter“ | M |
+| 3 | Focus igre na nalogu | Tabela na serveru (`deploy/api/stats.js`): tvoje Focus igre (kod, naslov, zadnji put). Prijavljen: sjedište u igri se veže za nalog, ne za preglednik — ista država sa svakog računara | Focus | obavezno kad si prijavljen (neprijavljen: kao sada, u pregledniku) | M |
+| 4 | Zašto me voli / mrzi | Uz broj odnosa `p.rel` pamtimo razloge (`p.relWhy`: savez, rat, napao saveznika, agresivna ekspanzija, nuklearka, trgovina, poklon…), koji blijede istom brzinom. Jedna funkcija za sve promjene odnosa u `02c-diplomacy.js`/`03-ai.js`. Meni države: 3–5 najvećih razloga s + i − | oba | obavezno | M |
+| 5 | Javna igra s ljudima | Server drži sat igre (kao Focus, ali 10 poteza u sekundi): javna soba kreće svakih nekoliko minuta s onima koji su ušli, ostale države vodi kompjuter; ko uđe kasnije, preuzme državu kompjutera. Dugme „Igraj s ljudima“. Uz to prijava igrača (25) | oba (Blitz sobe stalno; javni Focus „svjetovi“ npr. jednom dnevno) | opcija (novo dugme; privatne sobe ostaju) | V |
+| 6 | Formiranje historijskih država | Tabela po dobu (`RA.FORMABLES`): ime, titula vladara, koje zemlje treba držati (po historijskim granicama doba). Kad ih držiš, dugme „Formiraj Jugoslaviju“ (komanda `form`): novo ime države i titula vladara, vijest svima, dostignuće. Bez bonusa. Ista pravila i za kompjuter | oba + kampanja | opcija u „Make your choice“ (u Blitzu i Focusu uključeno) | S (najviše posla su podaci: 10–20 država po dobu) |
+| 7 | Vrijeme u satima | U Focusu svi tajmeri (desant, napad, raketa, mirno doba, punjenje) računaju se s brzinom sata servera: „stiže za 2 h 10 min“ | Focus | obavezno | M |
+| 8 | Timovi online | U lobiju: 2 na 2, 3 na 3, ljudi protiv država (sada: zajedno ili jedan protiv drugog). Timovi već postoje u simulaciji (`G.sameTeam`); pobjeda je 70% kopna cijelog tima | oba | opcija (izbor u lobiju) | S |
+| 9 | Kraj kad je ishod jasan | Komande `predaja` (tvoja država prelazi kompjuteru) i „Ponudi kraj“ (glasaju svi ljudi → pobjeđuje ko vodi). Ko je izgubio online, može preuzeti državu kompjutera i igrati dalje | oba (online) | opcija (dugmad) | S |
+| 10 | Identitet dinastije u kampanji | Boja, ime i grb dinastije isti u svakom dobu; vladar tvoje države je iz dinastije („Kotromanić VII“), u naslovu „Dinastija Kotromanić · Srbija“ | kampanja | obavezno | M |
+| 11 | Replay | Svaka igra je već zapis komandi (`G.rec`). Na kraju i u profilu „Pogledaj snimak“: igra se ponovo odigra 4–16× brže, kao gledalac. Čuvamo zadnjih nekoliko partija (preglednik + nalog) | oba (Focus: dani za par minuta) | opcija (dugme) | S |
+| 12 | Kartica za dijeljenje | Na kraju igre slika: konačna karta + tvoja država, statistika, logo; „Sačuvaj sliku“ ili „Podijeli“ (telefon) | oba | opcija (dugme) | M |
+| 13 | Klanovi | Oznaka `[TAG]` u profilu (ili ispred imena); ljestvica klanova (zbir pobjeda članova) u `stats.js` | oba | opcija (ko želi) | M |
+| 14 | Sezonska ljestvica | Mjesečna ljestvica i rejting (ELO) samo za online igre protiv ljudi. Rezultat mora potvrditi server (vidi 1: simulacija na serveru) ili svi igrači, da se ne može lažirati | oba (online) | opcija (važi samo za online) | S (V ako server računa rezultat) |
+| 15 | Prijedlozi između ljudi | Komande za ponude između ljudi: savez na N sati, zajednički cilj (ping), propuštanje brodova, zlato za zlato ili zemlju. Druga strana prihvata ili odbija. Bez slobodnog chata | Focus (i online Blitz) | opcija | S |
+| 16 | Igraj odmah | Dugme na početnom ekranu: Blitz na trenutnoj karti, nasumična država (ili tvoja zadnja), srednja težina — bez izbora | Blitz | opcija (dugme) | M |
+| 17 | Editor scenarija | Novi ekran: doba i karta, prebojiš zemlje (spoji, podijeli, promijeni vlasnika), odrediš mjesta za igrače; scenarij se čuva na nalogu i dijeli linkom `/scenario-<kod>` | oba | opcija | V |
+| 18 | Jači trenuci | Pad prijestolnice, formiranje države, velika pobjeda: veliki natpis, udarni talas na karti, zvuk (`07-render-fx.js`, `08g-audio.js`); gasi se s postojećim prekidačem animacija | oba | obavezno | M |
+| 19 | Pametnija izdaja kompjutera | `03-ai.js`: kompjuter raskida savez i napada saveznika samo kad se isplati (slab saveznik, mala osveta), ne nasumično | oba | obavezno | M |
+| 20 | Pobjeda saveza | Saveznici (ljudi) koji zajedno drže 70% pobjeđuju zajedno (kao koalicija u Supremacy) | Focus (i online Blitz) | opcija u „Make your choice“ | M |
+| 21 | Zaštita za kasni ulazak | Ko u Focus igru uđe kasnije, dobija npr. 6 sati mira od napada ljudi (kao zaštita početnika u Travianu) | Focus | opcija u „Make your choice“ (u Focusu uključeno) | M |
+| 22 | Nuklearke bez spama | Svaka sljedeća nuklearka istog igrača u kratkom roku je skuplja; PVO jače obara kad ih leti više odjednom | oba | obavezno (balans) | M |
+| 23 | Ključni trenuci na grafiku | Na grafiku na kraju oznake: ratovi, pad prijestolnica, nuklearke, formiranje država (iz `G.feed`) | oba | obavezno | M |
+| 24 | Aplikacija na telefonu (PWA) | Manifest i ikona: „Dodaj na početni ekran“ na Androidu, otvara se preko cijelog ekrana; treba i za obavještenja (1) na telefonu | oba | opcija (igrač instalira) | M |
+| 25 | Prijava igrača | U javnoj igri (5): dugme „Prijavi“ (timovanje, uvredljivo ime, varanje) → tabela na serveru; ti vidiš prijave i blokiraš nalog | oba (javne igre) | obavezno uz javne igre | M |
+
+Ranije odbijeno (tačka 7) — samo ako se predomisliš: 16 magla rata · 39 mirovni ugovor · 52 događaji s odlukom ·
+53 ratne novine · 62 timelapse · 44 špijuni.
+
 ## Izvori
 
 - [Sid Meier: interesting decisions (Game Developer)](https://www.gamedeveloper.com/design/gdc-2012-sid-meier-on-how-to-see-games-as-sets-of-interesting-decisions)
