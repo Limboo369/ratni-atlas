@@ -118,7 +118,7 @@ async def main():
             info.append(await pg.evaluate('''() => { const G = window.__ra.G; return { online: !!G.online, me: G.me && G.me.name, humans: G.humans.map(h => h.nick + '@' + h.name), tick: G.tick, team: G.me && G.me.team, seedOk: !!window.__ra.net.st }; }'''))
         print('A', info[0]); print('B', info[1])
         check(info[0]['online'] and info[1]['online'], 'both games online')
-        check(info[0]['me'] == 'Bosna i Hercegovina' and info[1]['me'] == 'Srbija', 'each player controls own country')
+        check(info[0]['me'] == 'Bosnia and Herzegovina' and info[1]['me'] == 'Serbia', 'each player controls own country')
         check(info[0]['humans'] == info[1]['humans'], 'same players on both devices')
         await A.evaluate('window.__ra.setSpeed(3)')
         # diagnostics: tick rate & frame rate of both devices
@@ -181,7 +181,7 @@ async def main():
                 break
             await asyncio.sleep(0.25)
         me = await B.evaluate('() => window.__ra.G && window.__ra.G.me && window.__ra.G.me.name')
-        check(me == 'Srbija', f'guest came back to the same country ({me})')
+        check(me == 'Serbia', f'guest came back to the same country ({me})')
         await sync_check('after guest came back')
 
         # the host reloads too: replays the log to where the game was and runs the clock again
@@ -194,7 +194,7 @@ async def main():
             await asyncio.sleep(0.25)
         await asyncio.sleep(1.5)
         me = await A.evaluate('() => window.__ra.G && window.__ra.G.me && window.__ra.G.me.name')
-        check(me == 'Bosna i Hercegovina', f'host came back to the same country ({me})')
+        check(me == 'Bosnia and Herzegovina', f'host came back to the same country ({me})')
         t1 = await B.evaluate('() => window.__ra.G.tick')
         t2 = t1
         for _ in range(60):  # the host replays the whole game first; slow CI needs time
