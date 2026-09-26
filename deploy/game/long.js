@@ -18,7 +18,7 @@ const crypto = require('crypto');
 const DIR = process.env.LONG_DIR || path.join(__dirname, 'long-data');
 const TICK_MS = +process.env.LONG_TICK_MS || 5000;
 const MAX_GAMES = 300, MAX_SLOTS = 8, MAX_BYTES = 4e6, IDLE_DAYS = 30;
-const KINDS = new Set(['atk', 'boat', 'para', 'build', 'rec', 'mv', 'dis', 'mis', 'mob', 'ret', 'aReq', 'aRes', 'tReq', 'tRes', 'ext', 'brk', 'tEnd', 'give', 'help', 'rcl', 'png', 'qm', 'tax', 'vas', 'loan', 'pay', 'str', 'buy', 'air', 'bomb']);
+const KINDS = new Set(['atk', 'boat', 'para', 'build', 'rec', 'mv', 'dis', 'mis', 'mob', 'ret', 'aReq', 'aRes', 'tReq', 'tRes', 'ext', 'brk', 'tEnd', 'give', 'help', 'rcl', 'png', 'qm', 'tax', 'vas', 'loan', 'pay', 'str', 'buy', 'air', 'bomb', 'tech']);
 const SET_KEYS = { map: /^[a-z]{2,12}$/, reg: /^[a-z0-9_-]{2,24}$/, era: /^[a-z0-9]{2,12}$/, gm: /^[a-z]{2,8}$/, dif: /^[a-z]{3,8}$/ };
 
 const games = new Map(); // code → {rec, file, socks: Set, bytes, dirty}
@@ -37,6 +37,51 @@ try {
   console.warn('long: no storage', e.message);
 }
 console.log(`long games: ${games.size} loaded from ${DIR}`);
+
+/* the server's own simulation of every game (simhost.js, a worker thread): the state without trusting any player */
+let sim = null, simReady = false, askId = 0;
+const asks = new Map();
+if (process.env.LONG_SIM !== '0') {
+  try {
+    const { Worker } = require('worker_threads');
+    sim = new Worker(path.join(__dirname, 'simhost.js'));
+    sim.on('message', (m) => {
+      if (m.ready) {
+        simReady = true;
+        for (const gm of games.values()) sim.postMessage({ add: gm.rec });
+        console.log('long: simulation ready');
+      }
+      if (m.err) console.warn('long sim:', m.err);
+      if (m.dead) sim = null;
+      if (m.id && asks.has(m.id)) {
+        asks.get(m.id)(m.st);
+        asks.delete(m.id);
+      } else if (m.st && m.st.over) {
+        const gm = games.get(m.st.code);
+        if (gm && !gm.rec.over) {
+          gm.rec.over = { tick: m.st.tick, winner: m.st.winner };
+          save(gm);
+        }
+      }
+    });
+    sim.on('error', (e) => {
+      console.warn('long sim died:', e.message);
+      sim = null;
+    });
+  } catch (e) {
+    console.warn('long: no simulation', e.message);
+  }
+}
+const simSend = (m) => sim && simReady && sim.postMessage(m);
+function simAsk(code) {
+  if (!sim || !simReady) return Promise.resolve(null);
+  const id = ++askId;
+  return new Promise((ok) => {
+    asks.set(id, ok);
+    sim.postMessage({ ask: [id, code] });
+    setTimeout(() => asks.has(id) && (asks.delete(id), ok(null)), 10000);
+  });
+}
 
 const tickOf = (rec) => Math.floor((Date.now() - rec.start) / rec.tickMs);
 const pub = (rec) => ({ code: rec.code, set: rec.set, seed: rec.seed, tickMs: rec.tickMs, start: rec.start, slots: rec.slots.map((s) => ({ name: s.name })), cmds: rec.cmds });
@@ -63,6 +108,7 @@ function add(gm, slot, kind, args) {
   if (gm.bytes + b > MAX_BYTES) return false;
   gm.bytes += b;
   gm.rec.cmds.push(e);
+  simSend({ c: [gm.rec.code, e] });
   gm.rec.seen = Date.now();
   save(gm);
   cast(gm, { t: 'c', e });
@@ -132,6 +178,7 @@ function handle(ws, q) {
         const rec = { code, set, seed: crypto.randomInt(1, 1e9), tickMs: TICK_MS * set.days, start: Date.now(), slots: [], cmds: [], created: Date.now(), seen: Date.now() };
         const g = { rec, socks: new Set(), bytes: 2, dirty: false };
         games.set(code, g);
+        simSend({ add: rec });
         return enter(g, name);
       }
       const g = /^[a-z0-9]{6}$/.test(want || '') && games.get(want);
@@ -149,6 +196,11 @@ function handle(ws, q) {
       }
       add(gm, slot, 'join', [id, gm.rec.slots[slot].name]);
       return send({ t: 'you', you: slot });
+    }
+    if (m.sim === 1) {
+      // the server's own state of the game (tick and checksum), for checking a device against it
+      simAsk(gm.rec.code).then((st) => send({ t: 'sim', st }));
+      return;
     }
     if (m.leave === 1 && slot >= 0) {
       // leaving for good: the computer keeps the state and nobody can come back to this seat
@@ -194,6 +246,7 @@ setInterval(() => {
   const old = Date.now() - IDLE_DAYS * 86400e3;
   for (const [code, gm] of games) if ((gm.rec.seen || gm.rec.created) < old && !gm.socks.size) {
     games.delete(code);
+    simSend({ drop: code });
     fs.unlink(path.join(DIR, code + '.json'), () => {});
   }
 }, 3600e3);
@@ -213,4 +266,4 @@ function flush() {
   }
 }
 
-module.exports = { handle, games, flush, TICK_MS };
+module.exports = { handle, games, flush, TICK_MS, simAsk };

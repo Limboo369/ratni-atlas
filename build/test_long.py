@@ -78,6 +78,12 @@ async def main():
         await A.evaluate('''() => { const G = window.__ra.G, me = G.me, W = G.map.W; for (let i = 0; i < me.tiles; i++) { const c = me.cells[i]; for (const n of [c - 1, c + 1, c - W, c + W]) { const o = G.P[G.owner[n]]; if (o && o !== me && o.type === 'nation') { window.__ra.ui.act('atk', [n, 0.2, 0]); return; } } } }''')
         await A.wait_for_function('window.__ra.G.attacks.some(a => !a.done && a.a === window.__ra.G.me.id) || window.__ra.G.feed.some(f => f.t === "war" && f.a === window.__ra.G.me.id)', timeout=20000)
         check(True, 'the attack command is run by the server clock')
+        # the server plays the same game itself (deploy/game/simhost.js): its checksum matches this device's
+        await asyncio.sleep(3)
+        await A.evaluate("() => { window.__ra.long.simSt = undefined; window.__ra.long.ws.send(JSON.stringify({ sim: 1 })); }")
+        await A.wait_for_function('window.__ra.long.simSt !== undefined', timeout=30000)
+        sv = await A.evaluate('() => { const st = window.__ra.long.simSt, h = window.__ra.G._hh; return st ? [st.tick, st.hash, h[st.tick]] : null; }')
+        check(sv and sv[0] > 0 and sv[1] == sv[2], f'the server simulates the same game (tick, server hash, device hash) {sv}')
         # Marko opens the same game: replays it and takes another state
         ctxB, B = await page_for(b, 'Marko', errs)
         await B.evaluate(f"window.__ra.long.open('{code}')")

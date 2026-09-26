@@ -14,3 +14,6 @@ build/svijet/core.json
 build/svijet/cities_raw.json
 __pycache__/
 deploy/game/long-data/
+dist/sim/
+deploy/game/sim/
+deploy/game/data/

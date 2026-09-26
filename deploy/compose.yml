@@ -10,7 +10,8 @@ services:
     build: ./game
     restart: unless-stopped
     init: true
-    mem_limit: 384m
+    # + the server's own simulation of every Focus game (simhost.js: Europe + the world map in memory)
+    mem_limit: 768m
     environment:
       ORIGINS: https://war.deovilab.com
     env_file:

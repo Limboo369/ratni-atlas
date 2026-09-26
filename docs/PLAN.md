@@ -241,11 +241,11 @@ Svijet dolazi prije ekonomije, vojske i kampanje: resursi, moreuzi, mornarica i 
 | 2 | Naredbe za odsustvo | da, samo Focus |
 | 3 | Focus igre na nalogu | da |
 | 4 | Zašto me voli / mrzi | da, + na karti ko je s kim u savezu |
-| 5 | Javna igra | = **Casual** u Online (ne miješati s rankedom) |
+| 5 | Javna igra | = **Skirmish** u Online (ne miješati s rankedom) |
 | 6 | Formiranje država | ne |
-| 7 | Vrijeme u satima (Focus) | da |
-| 8 | Online | početni ekran: **Online** ili **Conqueror** (solo). Online = **Casual** (Blitz / Focus / Make your choice, javne sobe, timovi, privatna soba po linku) i **Conquest League** (ranked) |
-| 9 | Predaja, Ponudi kraj, vote kick | da (Casual i Conquest League); vote kick samo 5v5 (4 od 5, kao CS2), kikovanog mijenja računar; predaja u ligi 4 od 5 |
+| 7 | Vrijeme u satima (Focus) | da; brzina Focusa ostaje (~1 / 3 / 7 dana) |
+| 8 | Online | početni ekran: **Online** ili **Conqueror** (solo). Online = **Skirmish** (Blitz / Focus / Make your choice, javne sobe, timovi, privatna soba po linku) i **Conquest League** (ranked) |
+| 9 | Predaja, Ponudi kraj, vote kick | da (Skirmish i Conquest League); vote kick samo 5v5 (4 od 5, kao CS2), kikovanog mijenja računar; predaja u ligi 4 od 5 |
 | 10 | Identitet dinastije | da |
 | 11 | Replay | da: profil → historija partija → Replay |
 | 12 | Kartica za dijeljenje | ne |
@@ -256,12 +256,12 @@ Svijet dolazi prije ekonomije, vojske i kampanje: resursi, moreuzi, mornarica i 
 | 17 | Editor scenarija | da, zove se **Community market**: praviš i objavljuješ scenarije, igraš tuđe |
 | 18 | Jači trenuci | ne |
 | 19 | Pametnija izdaja kompjutera | da |
-| 20 | Pobjeda saveza | da; u ligi pobjeda = uništiti sve protivnike (za Blitz ligu treba pravilo kraja — otvoreno pitanje) |
-| 21 | Kasni ulazak u Focus | otvoreno (prijedlog: zaštita dok prvi put ne napadneš čovjeka, najviše 3 h, + dotacija zlata i vojske) |
+| 20 | Pobjeda saveza | da; u ligi pobjeda = uništiti sve protivnike; Blitz liga: tim ispod 10% kopna 60 s kapitulira, a poslije 45 min pobjeđuje tim s više kopna (upozorenje na 35. min) |
+| 21 | Kasni ulazak u Focus | da: zaštita od napada ljudi dok prvi put ne napadneš čovjeka, najviše 3 h (širi se i ratuje s kompjuterom), + dotacija zlata i vojske prema starosti igre |
 | 22 | Nuklearke bez spama | da, tajmer ~50% kraći od prvog prijedloga (Blitz 1,5 min; Focus se razvuče s igrom); traka na ikoni do povratka cijene |
 | 23 | Ključni trenuci na grafiku | da |
 | 24 | Aplikacija (PWA) | da, instalira se kao prava aplikacija |
-| 25 | Prijava igrača + nalog | da; nalog obavezan za Online (Casual, liga, privatna soba); cijeli solo radi bez naloga |
+| 25 | Prijava igrača + nalog | da; nalog obavezan za Online (Skirmish, liga, privatna soba); cijeli solo radi bez naloga |
 
 **Conquest League (ranked)**: biraš Blitz ili Focus i 1v1, 2v2 ili 5v5; **Find match** sam ili s prijateljima (party).
 ELO: start 500, najniže 100; prvih 5 partija „Unranked“ (K = 40), zatim K = 24; 6 odvojenih ljestvica (3 veličine × Blitz/Focus).
@@ -284,14 +284,14 @@ Codex radi preko PR-a na `main`; poslije svake faze Claude upiše „Za Codex“
 | 12 | **Temelj**: server sam vrti simulaciju Focus i online igara (isti kod `src/00–04` u nodeu) → pošten rezultat (ELO se ne može lažirati), događaji za obavještenja; nalog obavezan za Online; skelet novog početnog ekrana (Online / Conqueror, prazna dugmad s oznakama) | C1: rank značke (5, SVG), logo Conquest League, ikona aplikacije; dotjerivanje Focus izvještaja, modova i stabla |
 | 13 | **Brze stvari**: 2 naredbe za odsustvo, 3 Focus na nalogu, 4 razlozi odnosa + linije saveza (tipka L), 7 vrijeme u satima, 10 dinastija, 16 Igraj odmah, 19 izdaja, 22 nuklearke + traka, 23 oznake na grafiku | C2: novi početni ekran Online / Conqueror (na Claudeov skelet) |
 | 14 | **Ponuda i potražnja** (15): komande `offer`/`counter`/`accept`, kompjuter procjenjuje ponude po vrijednosti | C3: izgled faze 13 (razlozi odnosa, linije saveza, traka nuklearke, grafik, meni „Dok me nema“, lista Focus igara) |
-| 15 | **Casual online**: javne sobe (Blitz / Focus / Make your choice), timovi 2v2, 3v3, ljudi protiv država, privatna soba, 9 predaja i ponudi kraj, 20 pobjeda saveza, 25 prijava igrača, 21 kasni ulazak (kad odlučiš) | C4: prozor pregovora (faza 14) |
-| 16 | **Conquest League**: ELO i 6 ljestvica, red za traženje i party, pick/ban (logika i tajnost na serveru), start od malih polja, pobjeda uništenjem, vote kick 5v5, predaja 4/5, world ranking top 100, historija partija | C5: Casual ekrani (lobi, traženje, timovi) |
+| 15 | **Skirmish online**: javne sobe (Blitz / Focus / Make your choice), timovi 2v2, 3v3, ljudi protiv država, privatna soba, 9 predaja i ponudi kraj, 20 pobjeda saveza, 25 prijava igrača, 21 kasni ulazak | C4: prozor pregovora (faza 14) |
+| 16 | **Conquest League**: ELO i 6 ljestvica, red za traženje i party, pick/ban (logika i tajnost na serveru), start od malih polja, pobjeda uništenjem, vote kick 5v5, predaja 4/5, world ranking top 100, historija partija | C5: Skirmish ekrani (lobi, traženje, timovi) |
 | 17 | **Replay** (11): server čuva zapis svake online i ligaške partije; profil → historija → Replay (4–16×) | C6: liga: ekran traženja, **animacija pick/ban**, rank u profilu, ljestvica |
 | 18 | **Aplikacija + obavještenja** (24 + 1): manifest, service worker, instalacija, web push iz servera (ključevi u GitHub Secrets) | C7: kontrole replaya, dugme i ekran instalacije, podešavanja obavještenja |
 | 19 | **Community market** (17): editor scenarija (doba, karta, granice, mjesta za igrače), objava na nalogu, pregled i igranje tuđih | C8: izgled editora i marketa |
 
 Zašto ovim redom: faza 12 je temelj za ligu (pošten rezultat) i obavještenja; brze stvari (13) odmah poboljšavaju igru i
-daju Codexu posao; pregovori (14) trebaju i Casual i ligi; Casual (15) postavlja sobe i timove na kojima liga (16) stoji;
+daju Codexu posao; pregovori (14) trebaju i Skirmish i ligi; Skirmish (15) postavlja sobe i timove na kojima liga (16) stoji;
 replay (17) koristi zapise iz lige; obavještenja (18) koriste serversku simulaciju iz 12; market (19) je najveći i
 najmanje hitan.
 

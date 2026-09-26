@@ -288,6 +288,23 @@ const check = (ok, msg) => {
   for (let i = 0; i < 3000; i++) TG.step();
   const aiTech = TG.P.filter((p) => p && p.alive && !p.human && p.tech).length;
   check(aiTech > 0 && TG.P.every((p) => !p || !p.stats || !p.stats.nukes), `the computer researches too (${aiTech} states), and nobody nukes`);
+  // the server steps many Focus games in one process (deploy/game/simhost.js), switching the era tables between them:
+  // a game stepped between steps of another era's game must stay the same as the game alone
+  const rec = (code, era, seed) => ({ code, seed, set: { map: 'evropa', reg: 'balkan', era, gm: 'klasik', dif: 'srednje', cs: 0, peace: 0, res: 1, tree: 1, nn: 0 } });
+  RA.applyEra('rim');
+  const A1 = RA.longGame(m, rec('aaaaaa', 'rim', 9));
+  RA.applyEra('ww1');
+  const B1 = RA.longGame(m, rec('bbbbbb', 'ww1', 4));
+  for (let i = 0; i < 400; i++) {
+    RA.applyEra('rim');
+    A1.step();
+    RA.applyEra('ww1');
+    B1.step();
+  }
+  RA.applyEra('rim');
+  const A2 = RA.longGame(m, rec('aaaaaa', 'rim', 9));
+  for (let i = 0; i < 400; i++) A2.step();
+  check(A1.hash() === A2.hash() && A1.tick === A2.tick, `a Focus game on the server: interleaved with another era = alone (${A1.hash()} / ${A2.hash()})`);
   console.log('FAILS:', fails.length ? fails : 'none');
   process.exit(fails.length ? 1 : 0);
 })();

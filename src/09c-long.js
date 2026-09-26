@@ -111,7 +111,8 @@ RA.Long = class {
       if (!this.rec) this.app.showStart();
       return;
     }
-    if (m.t === 'T') this.T = Math.max(this.T, m.T | 0);
+    if (m.t === 'sim') this.simSt = m.st; // the server's own simulation (tick, checksum), asked with {sim: 1}
+    else if (m.t === 'T') this.T = Math.max(this.T, m.T | 0);
     else if (m.t === 'you') this.you = m.you;
     else if (m.t === 'c') this.addEntry(m.e);
     else if (m.t === 'rec') {
@@ -154,15 +155,9 @@ RA.Long = class {
   }
   apply(G, e) {
     const [, slot, kind, args] = e, ui = this.app.ui;
-    if (kind === 'join') {
-      const p = RA.longJoin(G, slot, args[0], args[1]);
-      if (p && slot === this.you && !this.replaying) this.app.longJoined(p);
-      return;
-    }
-    const pid = G.slotPid[slot];
-    if (!pid) return;
-    const r = G.exec(pid, kind, Array.isArray(args) ? args : []);
-    if (!this.replaying && G.me && pid === G.me.id && kind !== 'ai' && kind !== 'back') ui.afterAct(kind, args, r);
+    const o = RA.longApply(G, e);
+    if (o.joined && slot === this.you && !this.replaying) this.app.longJoined(o.joined);
+    if (!this.replaying && o.pid && G.me && o.pid === G.me.id && kind !== 'ai' && kind !== 'back') ui.afterAct(kind, args, o.r);
   }
   /* live: follow the server's clock, one tick behind (a command is stamped with the server's current tick) */
   frame() {
@@ -219,20 +214,6 @@ RA.focusSnap = function (G, p) {
   return { share: p.area / G.landTotal(), cities: cities + (p.bcities ? p.bcities.length : 0), troops: Math.round(p.troops), gold: Math.round(p.gold), allies: p.allies.size };
 };
 
-/* a player takes over a computer state (deterministic: every device does the same at the same tick) */
-RA.longJoin = function (G, slot, id, name) {
-  const p = Number.isInteger(id) ? G.P[id] : null;
-  const had = G.P[G.slotPid[slot]];
-  if (!p || !p.alive || p.human || p.type !== 'nation' || (had && had.alive)) return null;
-  p.human = true;
-  p.ai = null;
-  p.slot = slot;
-  p.nick = RA.Net.str(name, 'Igrač');
-  G.slotPid[slot] = p.id;
-  if (!G.humans.includes(p)) G.humans.push(p);
-  return p;
-};
-
 Object.assign(RA.App.prototype, {
   /* build the long game from its record and replay it up to the server's clock */
   startLong(LG) {
@@ -241,13 +222,8 @@ Object.assign(RA.App.prototype, {
     this.setMap(this.maps[s.map]);
     document.getElementById('startScreen').hidden = true;
     document.getElementById('lobbyScreen').hidden = true;
-    const gm = RA.regionMap(RA.eraMap(this.map, s.era, 'granice'), s.reg);
-    const G = RA.newGame(gm, { seed: r.seed, difficulty: s.dif, cityStates: s.cs, peace: s.peace, era: s.era, start: 'granice', gm: s.gm, res: s.res === 1, tree: s.tree === 1, noNuke: s.nn === 1 });
-    RA.startGame(G);
-    G.online = true;
-    G.long = true;
-    G.slotPid = [];
-    G.gid = 'l' + r.code;
+    const G = RA.longGame(this.map, r);
+    const gm = G.map;
     this.setGame(G);
     this.attractMode = false;
     this.speed = 1;
