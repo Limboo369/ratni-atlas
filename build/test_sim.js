@@ -297,6 +297,29 @@ const check = (ok, msg) => {
   for (let i = 0; i < 3000; i++) TG.step();
   const aiTech = TG.P.filter((p) => p && p.alive && !p.human && p.tech).length;
   check(aiTech > 0 && TG.P.every((p) => !p || !p.stats || !p.stats.nukes), `the computer researches too (${aiTech} states), and nobody nukes`);
+  // offers and demands (plan 15): the computer takes a good deal, counters a thin one, refuses when it hates you
+  {
+    RA.applyEra('danas');
+    const OG = RA.newGame(RA.eraMap(m, 'danas', 'granice'), { seed: 81, difficulty: 'srednje', cityStates: 0, peace: 0, era: 'danas', start: 'granice', gm: 'klasik' });
+    RA.placeHuman(OG, OG.P.find((p) => p && p.iso === 'FRA').nation.c, 'Test');
+    RA.startGame(OG);
+    const me = OG.me, B = OG.P.find((p) => p && p.iso === 'BEL');
+    const ct = OG.cities.find((c) => c.owner === B.id && c.i !== B.capCity);
+    me.gold = 5e7;
+    const my0 = me.area;
+    B.rel[me.id] = 0;
+    const r1 = OG.exec(me.id, 'offer', [B.id, { g: 100 }, { c: ct.i }]);
+    check(r1.st === 'counter' && OG.offers.some((o) => o.from === B.id && o.to === me.id && o.want.g > 100), `a cheap offer for a city: the computer asks for more gold (${r1.st}, +${r1.more})`);
+    const c1 = OG.offers.find((o) => o.from === B.id && o.to === me.id);
+    const r2 = OG.exec(me.id, 'offerRes', [c1.id, 'yes']);
+    check(r2.st === 'deal' && ct.owner === me.id && me.area > my0, `the counter-offer accepted: ${ct.name} is mine (${r2.st})`);
+    const B2 = OG.P.find((p) => p && p.iso === 'ESP');
+    OG.relTo(B2, me.id, -80, 'atk');
+    const r3 = OG.exec(me.id, 'offer', [B2.id, { g: 9e6 }, { g: 1 }]);
+    check(r3.st === 'no', 'a state that hates you does not deal');
+    check(/zlata/.test(OG.exec(me.id, 'offer', [B.id, { g: 9e9 }, {}])) && /saveznik/.test(OG.exec(me.id, 'offer', [B.id, { t: 1000 }, {}])), 'no more gold than you have; troops only between allies');
+    check(OG.offerEmpty(OG.offerClean({ g: -5, c: 'x', r: 9 })), 'offer args from other devices are cleaned');
+  }
   // orders while away (Focus, plan 2): "defend" starts no war on a state, "auto" does
   const wars = (k) => {
     RA.applyEra('danas');

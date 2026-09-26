@@ -126,6 +126,7 @@ RA.Game = class Game {
     this.nextId = 1;
     this.hist = [];
     this.marks = [];
+    this.offers = []; // offers and demands waiting for an answer (02l-offers.js)
     this.dynasty = (opts.camp && opts.camp.dyn) || ''; // campaign: the dynasty's name (shown in the HUD) // key moments for the end-of-game chart: {t, a, b, tick}; never read by the sim
     this.winner = null;
     this.me = null;
@@ -1178,6 +1179,7 @@ RA.Game = class Game {
       this._stepStraits();
       if (this.tick % 20 === 0) this._stepAir();
       if (this.deps && this.tick % RA.CFG.RES_EVERY === 0) this._stepRes();
+      this._stepOffers();
       this._decayFallout();
     }
     // enclave check: one player per tick

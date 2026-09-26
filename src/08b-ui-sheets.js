@@ -12,7 +12,7 @@ RA.WHY = {
   betray: 'izdao si ih', traitor: 'izdao si saveznika', nuke: 'nuklearke', strike: 'raketni udari', para: 'padobranci na njihovu zemlju',
   tdecl: 'odbio si trgovinu', trade: 'trgovinski savez', tcancel: 'prekinuo si trgovinu', gift: 'poslao si im vojsku', vdecl: 'tražio si da budu vazal',
   vassal: 'vazal', rebel: 'pobuna protiv tebe', loan: 'vratio si zajam', pledge: 'nisi vratio zajam', strait: 'zatvoren moreuz', bomb: 'bombardovanje',
-  hegemon: 'previše si jak', ae: 'agresivna ekspanzija', tech: 'diplomatija (istraživanje)', camp: 'misija kampanje',
+  hegemon: 'previše si jak', deal: 'dogovori', ae: 'agresivna ekspanzija', tech: 'diplomatija (istraživanje)', camp: 'misija kampanje',
 };
 
 Object.assign(RA.UI.prototype, {
@@ -280,12 +280,20 @@ Object.assign(RA.UI.prototype, {
       // a weak neighbour (or a beaten enemy) can become a vassal instead of being conquered
       if (!(O.human && !O.ai) && !G.vassalErr(me, O)) b.push(this.mini('Vazal', `data-do="vas:${O.id}"`, 'ok', false, 'flag'));
     }
+    if (O.type !== 'bot') b.push(this.mini('Pregovaraj', `data-do="deal:${O.id}"`, '', false, 'trade'));
     if (me.trade.has(O.id)) b.push(this.mini('Prekini trgovinu', `data-do="endT:${O.id}"`, 'warn'));
     else b.push(this.mini('Trgovina', `data-do="propT:${O.id}"`, '', me.trade.size >= C.TRADE_MAX || O.trade.size >= C.TRADE_MAX || G.atWar(me, O), 'trade'));
     return b.join('');
   },
   diploAct(act, id) {
     if (act === 'chat') return this.quickSheet();
+    if (act === 'offY' || act === 'offN') return this.act('offerRes', [id, act === 'offY' ? 'yes' : 'no']);
+    if (act === 'offC') {
+      const o = this.G.offers.find((x) => x.id === id);
+      // a counter-offer: I give what they asked for and ask for what they offered — then change it
+      return o && this.dealSheet(o.from, { give: o.want, want: o.give, reply: o.id });
+    }
+    if (act === 'deal') return this.dealSheet(id);
     const G = this.G, me = G.me, O = G.P[id];
     if (!me || !O) return;
     const map = { accA: ['aRes', [id, 1]], decA: ['aRes', [id, 0]], accT: ['tRes', [id, 1]], decT: ['tRes', [id, 0]], propA: ['aReq', [id]], propT: ['tReq', [id]], send: ['give', [id, this.ratio]], help: ['help', [id]], vas: ['vas', [id]], ext: ['ext', [id]], endT: ['tEnd', [id]] };
@@ -329,6 +337,16 @@ Object.assign(RA.UI.prototype, {
       for (const [k, r] of offers) {
         const o = G.P[r.from];
         h += row(o, k === 'A' ? 'nudi <b>vojni savez</b>' : 'nudi <b>trgovinski savez</b>', this.mini('Prihvati', `data-do="acc${k}:${o.id}"`, 'ok') + this.mini('Odbij', `data-do="dec${k}:${o.id}"`));
+      }
+      h += '</div>';
+    }
+    // offers and demands from other states (02l-offers.js)
+    const deals = G.offers.filter((o) => o.to === me.id);
+    if (deals.length) {
+      h += '<div class="sec-t">Ponude za dogovor</div><div class="list">';
+      for (const d of deals) {
+        const o = G.P[d.from];
+        h += row(o, `daje: <b>${RA.esc(G.offerText(d.give))}</b><br>traži: <b>${RA.esc(G.offerText(d.want))}</b>`, this.mini('Prihvati', `data-do="offY:${d.id}"`, 'ok') + this.mini('Protivponuda', `data-do="offC:${d.id}"`) + this.mini('Odbij', `data-do="offN:${d.id}"`), true);
       }
       h += '</div>';
     }
@@ -558,6 +576,42 @@ Object.assign(RA.UI.prototype, {
     if ((M.kind !== 'nuke' && M.kind !== 'mirv') || !(me.nukeUntil > G.tick)) return '';
     const left = me.nukeUntil - G.tick, pct = Math.round((left / RA.CFG.NUKE_COOL) * 100);
     return `<span class="nuke-bar" title="Cijena se vraća na normalu"><i style="width:${pct}%"></i></span><span class="nuke-up">Skuplje ×${G.nukeMul(me).toFixed(1).replace('.', ',')} · normalna cijena za ${RA.dur(left)}</span>`;
+  },
+  /* offers and demands (plan 15): "Zahtijevam" from them, "Nudim" from me; pre = a counter-offer to fill in */
+  dealSheet(oid, pre) {
+    const G = this.G, me = G.me, O = G.P[oid];
+    if (!me || !O || !O.alive) return;
+    const E = { g: 0, t: 0, c: -1, r: -1, s: -1 };
+    const want = Object.assign({}, E, pre && pre.want), give = Object.assign({}, E, pre && pre.give);
+    const allied = me.allies.has(O.id);
+    const side = (P, b, k) => {
+      const cities = G.cities.filter((c) => c.owner === P.id && c.i !== P.capCity).sort((a, b2) => b2.tier - a.tier).slice(0, 40);
+      const res = G.deps && P.res ? [0, 1, 2].filter((s) => P.res[s]) : [];
+      const sts = (G.straits || []).map((st, i) => [st, i]).filter(([st]) => st.closed === P.id);
+      let h = `<div class="deal-side"><div class="sec-t">${k === 'want' ? `Zahtijevam od: ${RA.esc(P.name)}` : 'Nudim'}</div>`;
+      h += `<label class="deal-row">Zlato<input type="number" min="0" step="10000" data-k="${k}.g" value="${b.g || ''}" placeholder="0"><small>ima ${RA.fmt(P.gold)}</small></label>`;
+      if (allied) h += `<label class="deal-row">Vojska<input type="number" min="0" step="1000" data-k="${k}.t" value="${b.t || ''}" placeholder="0"><small>ima ${RA.fmt(P.troops)}</small></label>`;
+      h += `<label class="deal-row">Grad<select data-k="${k}.c"><option value="-1">—</option>${cities.map((c) => `<option value="${c.i}"${c.i === b.c ? ' selected' : ''}>${RA.esc(c.name)}${c.tier ? ' ' + '★'.repeat(c.tier) : ''}</option>`).join('')}</select></label>`;
+      if (res.length) h += `<label class="deal-row">Resurs<select data-k="${k}.r"><option value="-1">—</option>${res.map((s) => `<option value="${s}"${s === b.r ? ' selected' : ''}>${RA.resKind(s, G.era).name} (5 min)</option>`).join('')}</select></label>`;
+      if (sts.length) h += `<label class="deal-row">Moreuz<select data-k="${k}.s"><option value="-1">—</option>${sts.map(([st, i]) => `<option value="${i}"${i === b.s ? ' selected' : ''}>otvori ${RA.esc(st.name)}</option>`).join('')}</select></label>`;
+      return h + '</div>';
+    };
+    let h = '<div id="dealSheet"></div>' + this.head(pre && pre.reply ? 'Protivponuda' : 'Pregovori', `${RA.esc(O.name)} · ${O.ai && !O.human ? 'kompjuter odmah odgovara: prihvata, traži više ili odbija' : 'igrač: prihvata, odbija ili pravi protivponudu'}`, O.hex);
+    h += `<div class="deal-grid">${side(O, want, 'want')}${side(me, give, 'give')}</div>`;
+    if (!allied) h += '<p class="note">Vojsku možete razmjenjivati samo kad ste vojni saveznici. Grad se daje s okolinom (3 polja); prijestolnica se ne daje.</p>';
+    h += `<div class="btns"><button class="btn primary" data-send><span class="t">${pre && pre.reply ? 'Pošalji protivponudu' : 'Pošalji ponudu'}</span></button></div>`;
+    this.openSheet(h, (s) => {
+      s.querySelector('[data-send]').onclick = () => {
+        const b = { want: Object.assign({}, E), give: Object.assign({}, E) };
+        s.querySelectorAll('[data-k]').forEach((el) => {
+          const [k, f] = el.dataset.k.split('.');
+          const v = Math.floor(+el.value || 0);
+          b[k][f] = f === 'g' || f === 't' ? Math.max(0, v) : v;
+        });
+        if (pre && pre.reply) this.act('offerRes', [pre.reply, 'counter', b.give, b.want]);
+        else this.act('offer', [O.id, b.give, b.want]);
+      };
+    });
   },
   /* why a computer state likes or hates me (O.why[me.id], filled by G.relTo), and whom it is allied with */
   whyHtml(O) {

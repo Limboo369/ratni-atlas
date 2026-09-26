@@ -79,6 +79,9 @@ Opinions remember their reasons: change `o.rel[id]` only through `G.relTo(o, id,
 Focus orders while away: command `'stance'` (`p.stance`: def / eco / atk + target; the AI follows it when it plays a
 human's state). Signed in, a Focus seat belongs to the account (`acct<id>`, resolved by the relay from the `ot` cookie) and
 the list of my Focus games is on the account (`/api/focus`).
+Offers and demands (`src/02l-offers.js`): commands `'offer'` [to, give, want] and `'offerRes'` [id, yes|no|counter, give,
+want]; a bundle is {g gold, t troops (allies only), c city index (with its land), r resource slot (supply for a while,
+`p.giftRes`), s strait index (open it)}; a computer state answers at once (accept, counter for more gold, refuse).
 Long games (days): `deploy/game/long.js` (same server, `/ws?long=<code>`, link `/long-<code>`) is only the clock (one tick
 every `LONG_TICK_MS`, 5 s) and the archive (settings, seed, every command with its tick; files in the `longgames`
 volume); `src/09c-long.js` replays the record to the server's tick and follows it. A player takes over a computer state

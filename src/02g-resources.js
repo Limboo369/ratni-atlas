@@ -71,7 +71,7 @@ RA.resKind = function (slot, era) {
   };
   /* does p have this kind: its own deposit or a purchase */
   P.hasRes = function (p, s) {
-    return !this.opts.res || !p.res || p.res[s] > 0 || p.imp[s] > 0;
+    return !this.opts.res || !p.res || p.res[s] > 0 || p.imp[s] > 0 || !!(p.giftRes && p.giftRes[s] > this.tick);
   };
   /* the share of the buyer's gold income a seller asks for one kind */
   P.resRate = function (seller, s) {

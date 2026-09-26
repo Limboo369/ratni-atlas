@@ -101,6 +101,16 @@ async def main():
         check(cmp[0] >= 5 and cmp[1] == 0, f'both devices play the same game (ticks compared {cmp[0]}, different {cmp[1]})')
         hum = await B.evaluate(f'() => {{ const G = window.__ra.G; return [G.P[{ta}].human, G.P[{ta}].nick, G.P[{tb}].human]; }}')
         check(hum[0] and hum[1] == 'Darko' and hum[2], f'Marko sees Darko in the game {hum}')
+        # offers between players (plan 15): Darko offers Marko gold, Marko accepts — the same deal on both devices
+        g0 = await B.evaluate('window.__ra.G.me.gold')
+        await A.evaluate(f"() => {{ window.__ra.ui.act('offer', [{tb}, {{ g: 1000 }}, {{}}]); }}")
+        await B.wait_for_function('window.__ra.G.offers.some(o => o.to === window.__ra.G.me.id)', timeout=20000)
+        oid = await B.evaluate('window.__ra.G.offers.find(o => o.to === window.__ra.G.me.id).id')
+        await B.evaluate(f"window.__ra.ui.act('offerRes', [{oid}, 'yes'])")
+        await B.wait_for_function('!window.__ra.G.offers.length', timeout=20000)
+        await A.wait_for_function('!window.__ra.G.offers.length', timeout=20000)
+        deal = await B.evaluate(f'window.__ra.G.feed.some(f => f.t === "deal")')
+        check(deal, 'an offer between players: sent, accepted, a deal on both devices')
         # Darko leaves: the computer plays his state
         uid = await A.evaluate("localStorage.getItem('ra_uid')")
         await ctxA.close()

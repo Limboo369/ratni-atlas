@@ -1013,6 +1013,11 @@ RA.UI = class {
     } else if (kind === 'bomb') {
       if (r && typeof r === 'object') say('good', `${RA.airName('bomber')} su poletjeli.`);
       else if (err(r)) say('info', RA.esc(r));
+    } else if (kind === 'offer' || kind === 'offerRes') {
+      if (r && r.st === 'sent') say('good', 'Ponuda poslana — čeka odgovor (Savezi → Ponude).');
+      else if (r && r.st === 'deal') say('good', 'Dogovoreno!');
+      else if (err(r)) say('info', RA.esc(r));
+      if (!this.$('sheetWrap').hidden && this.$('sheet').querySelector('#dealSheet')) this.closeSheet();
     } else if (kind === 'buy') {
       if (err(r)) say('info', RA.esc(r));
     } else if (kind === 'str') {
