@@ -357,8 +357,12 @@ const check = (ok, msg) => {
     check(late.shieldUntil > LG.tick && late.gold > g0, `a late player: protected ${RA.dur(late.shieldUntil - LG.tick)} and +${Math.round(late.gold - g0)} gold`);
     const e1 = LG.cmdAttack(early.id, late.cells[0], 0.3);
     check(e1.err && /zaštićen/.test(e1.err), 'the protected player cannot be attacked by another player');
+    const nt = LG.tick - 1;
     LG.cmdAttack(late.id, early.cells[0], 0.1);
     check(!(late.shieldUntil > LG.tick), 'attacking a player ends the protection');
+    const ns = RA.longNotes(LG, nt);
+    check(ns.some((n) => n.slot === 0 && n.kind === 'war' && /Bosna|BiH|Bosn/.test(n.text + late.name)), `notes (web push): a war on a player's state ${JSON.stringify(ns)}`);
+    check(RA.longNotes(LG, LG.tick).length === 0, 'notes: nothing twice');
     LG.makeAlliance(early, late);
     const rt = LG._allyRoots();
     check(rt.get(early.id) === rt.get(late.id), 'allied players are one side (allies win together)');

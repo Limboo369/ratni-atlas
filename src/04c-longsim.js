@@ -102,3 +102,17 @@ RA.longApply = function (G, e) {
   if (!pid) return { pid: 0 };
   return { pid, r: G.exec(pid, kind, Array.isArray(args) ? args : []) };
 };
+
+/* what a player should hear about while away (plan phase 18, web push): events after tick `from` that hit a human
+   state — a war declared on it, its fall. The server's simulation asks this after every stretch of steps. */
+RA.longNotes = function (G, from) {
+  const out = [];
+  for (const f of G.feed) {
+    if (f.tick <= from) continue;
+    const A = G.P[f.a], B = f.b ? G.P[f.b] : null;
+    if (f.t === 'war' && B && B.human && B.alive && B.slot >= 0) out.push({ slot: B.slot, kind: 'war', text: `${A.name} je napao/la tvoju državu (${B.name}).` });
+    const V = f.t === 'fall' ? B || A : null;
+    if (V && V.human && V.slot >= 0) out.push({ slot: V.slot, kind: 'fall', text: `Tvoja država (${V.name}) je pala${B && A ? ' — osvajač: ' + A.name : ''}.` });
+  }
+  return out;
+};

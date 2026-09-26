@@ -161,6 +161,8 @@ function startMatch(l, n, teams) {
     send(p.id, { t: 'match', id, l, team: i + 1, teams: pubT, pool: { maps: MAPS.map((m) => m[0]), eras: ERAS }, secs: PICK_S });
   }));
   M.timer = setTimeout(() => resolve(M), PICK_S * 1000);
+  // a match found while the tab is in the background: a notification (the page ignores it when it is in front)
+  long.pushTo(teams.flat().map((p) => p.id).filter((x) => /^\d+$/.test(x)), `Meč je nađen (${l[0] === 'f' ? 'Focus' : 'Blitz'} ${n}v${n}) — pick & ban traje ${PICK_S} s.`, '/', 'match');
 }
 function teamOf(M, id) {
   return M.teams[0].some((p) => p.id === id) ? 1 : M.teams[1].some((p) => p.id === id) ? 2 : 0;

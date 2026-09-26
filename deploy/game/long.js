@@ -82,6 +82,7 @@ if (process.env.LONG_SIM !== '0') {
         console.log('long: simulation ready');
       }
       if (m.err) console.warn('long sim:', m.err);
+      if (m.note) note(m.note);
       if (m.dead) sim = null;
       if (m.id && asks.has(m.id)) {
         asks.get(m.id)(m.st);
@@ -92,6 +93,8 @@ if (process.env.LONG_SIM !== '0') {
           gm.rec.over = { tick: m.st.tick, winner: m.st.winner, lg: m.st.lg || undefined };
           save(gm);
           archive(gm);
+          // the players who are not looking hear it on their phone / computer (Focus games)
+          if (!gm.rec.set.fast) gm.rec.slots.forEach((s, i) => note({ code: gm.rec.code, slot: i, kind: 'over', text: `Focus igra je završena${m.st.wname ? ' — pobjednik: ' + m.st.wname : ''}. Pogledaj snimak.` }));
           // Conquest League: the ratings change (league.js), everyone in the game hears it
           if (hooks.over) Promise.resolve(hooks.over(gm, m.st)).then((res) => {
             if (!res) return;
@@ -110,6 +113,27 @@ if (process.env.LONG_SIM !== '0') {
   }
 }
 const hooks = { over: null }; // over(gm, st): a game ended (league.js)
+
+/* web push (plan phase 18): a note from the server's simulation (a war on my state, its fall, the end) goes to the
+   seat's account through the accounts API — only in Focus games, only while the player has no tab open, and the same
+   kind at most every 15 minutes per game */
+const API_INT = process.env.API_INT || '';
+const noted = new Map();
+function pushTo(ids, body, url, tag) {
+  if (!API_INT || !ids.length) return;
+  fetch(API_INT + '/int/push', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ users: ids, title: 'Overtake', body, url, tag }), signal: AbortSignal.timeout(15000) })
+    .catch((e) => console.warn('push', e.message));
+}
+function note(n) {
+  const gm = games.get(n.code), s = gm && gm.rec.slots[n.slot];
+  if (!s || gm.rec.set.fast || !/^acct\d+$/.test(s.uid || '')) return;
+  if ([...gm.socks].some((ws) => ws._uid === s.uid)) return; // looking at the game right now
+  const k = n.code + '|' + n.slot + '|' + n.kind, now = Date.now();
+  if (n.kind !== 'over' && now - (noted.get(k) || 0) < 15 * 60e3) return;
+  noted.set(k, now);
+  if (noted.size > 5000) noted.clear();
+  pushTo([s.uid.slice(4)], n.text, n.kind === 'over' ? '/replay-' + n.code : '/long-' + n.code, n.code);
+}
 const simSend = (m) => sim && simReady && sim.postMessage(m);
 function simAsk(code) {
   if (!sim || !simReady) return Promise.resolve(null);
@@ -407,4 +431,4 @@ function flush() {
   }
 }
 
-module.exports = { handle, lobby, replay, games, flush, TICK_MS, simAsk, newLeague, hooks };
+module.exports = { handle, lobby, replay, pushTo, games, flush, TICK_MS, simAsk, newLeague, hooks };

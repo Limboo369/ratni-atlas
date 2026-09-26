@@ -52,8 +52,26 @@ function __raFallback(){{
 '''
 os.makedirs(R + 'dist', exist_ok=True)
 open(R + 'dist/ratni-atlas.html', 'w').write(page)
-test = '<!doctype html><html lang="bs"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"></head><body>' + page + '</body></html>'
+# the installable app (plan phase 18): manifest, service worker (/sw.js) and icons next to the page
+APP_HEAD = ('<link rel="manifest" href="/manifest.webmanifest"><meta name="theme-color" content="#10171b">'
+            '<link rel="icon" href="/icons/icon-192.png"><link rel="apple-touch-icon" href="/icons/icon-192.png">'
+            '<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">'
+            # the install offer can come before the game has loaded: keep it for src/09h-app.js
+            '<script>addEventListener("beforeinstallprompt",function(e){e.preventDefault();window.__raInstall=e;});</script>')
+test = '<!doctype html><html lang="bs"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">' + APP_HEAD + '</head><body>' + page + '</body></html>'
 open(R + 'dist/test.html', 'w').write(test)
+shutil.copyfile(R + 'build/pwa/manifest.webmanifest', R + 'dist/manifest.webmanifest')
+open(R + 'dist/sw.js', 'w').write(open(R + 'build/pwa/sw.js').read().replace('__BUILD__', BUILD))
+os.makedirs(R + 'dist/icons', exist_ok=True)
+_ih = hashlib.sha1(open(R + 'build/icons.py', 'rb').read()).hexdigest()[:8]
+_stamp = R + 'dist/icons/.v'
+if not os.path.exists(_stamp) or open(_stamp).read() != _ih:
+    import sys
+    sys.path.insert(0, R + 'build')
+    import icons
+    for name, size, mask in (('icon-192', 192, False), ('icon-512', 512, False), ('maskable-512', 512, True)):
+        open(R + f'dist/icons/{name}.png', 'wb').write(icons.icon(size, mask))
+    open(_stamp, 'w').write(_ih)
 os.makedirs(R + 'dist/data/svijet', exist_ok=True)
 for f in world:
     shutil.copyfile(f, R + 'dist/data/svijet/' + os.path.basename(f))

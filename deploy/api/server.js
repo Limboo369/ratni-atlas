@@ -13,6 +13,7 @@
    POST /api/delete  → {ok}                     (deletes the account and everything on it)
    GET  /api/health  → {ok}
    Conquest League ratings, world ranking and match history: league.js (results only on the internal port).
+   Web push notifications: push.js (subscriptions; the game server sends through the internal port).
    Results, statistics, achievements and the leaderboard: stats.js.
    Every POST must be JSON from an allowed origin (ORIGINS), which together with SameSite=Lax stops CSRF. */
 const http = require('http');
@@ -213,12 +214,16 @@ Object.assign(routes, stats.routes);
 const league = require('./league')(db, sessionUser);
 SCHEMA.push(...league.SCHEMA);
 Object.assign(routes, league.routes);
+const push = require('./push')(db, sessionUser);
+SCHEMA.push(...push.SCHEMA);
+Object.assign(routes, push.routes);
+const INTERNAL = { ...league.internal, ...push.internal };
 
 /* the internal port (INT_PORT): only the game server reaches it, inside the compose network (it is not published and
    nginx never proxies to it) — league results and ratings */
 const INT_PORT = +process.env.INT_PORT || 8082;
 const internal = http.createServer(async (req, res) => {
-  const fn = league.internal[req.method + ' ' + (req.url || '').split('?')[0]];
+  const fn = INTERNAL[req.method + ' ' + (req.url || '').split('?')[0]];
   try {
     if (!fn || req.method !== 'POST') return send(res, 404, { e: 'nema' });
     const b = await body(req);

@@ -6,6 +6,7 @@ import asyncio, functools, http.server, os, socket, subprocess, sys, threading, 
 from playwright.async_api import async_playwright
 
 R = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + '/'
+os.environ['PW_EXPERIMENTAL_SERVICE_WORKER_NETWORK_EVENTS'] = '1'  # the page's service worker (/sw.js): its requests go through the test's routes too
 OUT = R + 'build/shots/'
 os.makedirs(OUT, exist_ok=True)
 LEAF = open(R + 'package/dist/leaflet.js').read()

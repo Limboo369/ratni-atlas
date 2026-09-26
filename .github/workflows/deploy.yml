@@ -49,6 +49,7 @@ jobs:
       - run: python3 build/test_world.py
       - run: node build/test_api.js
       - run: python3 build/test_account.py
+      - run: python3 build/test_pwa.py  # aplikacija: manifest, ikone, service worker, bez interneta, instalacija
       - if: failure()
         uses: actions/upload-artifact@v4
         with: { name: shots, path: build/shots/ }
@@ -59,7 +60,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: python3 build/make.py && mkdir -p deploy/public && cp dist/test.html deploy/public/index.html && cp -r dist/data deploy/public/ && rm -rf deploy/game/sim deploy/game/data && cp -r dist/sim dist/data deploy/game/
+      - run: python3 build/make.py && mkdir -p deploy/public && cp dist/test.html deploy/public/index.html && cp -r dist/data dist/icons dist/sw.js dist/manifest.webmanifest deploy/public/ && rm -rf deploy/game/sim deploy/game/data && cp -r dist/sim dist/data deploy/game/
       - name: Slanje na server
         env:
           IP: ${{ secrets.SERVER_IP }}

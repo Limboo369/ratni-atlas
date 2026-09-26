@@ -99,6 +99,13 @@ Replay (`src/09g-replay.js`): the server archives every finished long game (Skir
 `<LONG_DIR>/replays/` for `REPLAY_DAYS` (30); `/ws?replay=<code>` sends the record, the page rebuilds it with
 `RA.longGame` (`G.rp`, `G.long` false) and plays it at 1–16× (`app.replayStep`, `app.replaySeek`); link `/replay-<code>`,
 buttons in the profile history (`gid` `l<code>`) and the league history.
+The app (PWA) and notifications: `build/pwa/` (manifest, `sw.js` → `/sw.js`, cache per build; page and `/data/`
+network-first, the CDN files cached) and `build/icons.py` (PNG icons) are written to `dist/` by `make.py` and published next
+to `index.html`; `src/09h-app.js` (service worker, `#installBtn`, profile `#accPush`). Web push: `deploy/api/push.js`
+(VAPID key in table `kv`, subscriptions `push_subs`, RFC 8291 encryption with node crypto, `/int/push` on the internal
+port); the game server sends Focus notes (`RA.longNotes`: war on / fall of a human state, from `simhost.js`; the end)
+only to players with no tab open (`long.js` `note`), and "match found" (`league.js`). Browser tests over http need
+`PW_EXPERIMENTAL_SERVICE_WORKER_NETWORK_EVENTS=1` so the service worker's requests go through the test's routes.
 Long games (days): `deploy/game/long.js` (same server, `/ws?long=<code>`, link `/long-<code>`) is only the clock (one tick
 every `LONG_TICK_MS`, 5 s) and the archive (settings, seed, every command with its tick; files in the `longgames`
 volume); `src/09c-long.js` replays the record to the server's tick and follows it. A player takes over a computer state
@@ -176,6 +183,7 @@ python3 build/test_league.py               # Conquest League in the browser: fin
 python3 build/test_save.py klasik          # save + reload + "Nastavi igru": the replayed game is identical (also `granice`)
 node build/test_api.js                     # accounts API: Google token checks, sessions, rename, delete (real PostgreSQL)
 python3 build/test_account.py              # sign-in on the start screen (fake Google), reload keeps the session, logout
+python3 build/test_pwa.py                  # the app: manifest, icons, service worker, offline start, install button
 python3 build/test_tutorial.py desktop     # the guided tutorial, step by step (also `phone`)
 python3 build/test_eras.py 1200            # every era + battle royale
 python3 build/sim_eras.py rim:granice:klasik:evropa:DAC:30:11:srednje   # AI balance run

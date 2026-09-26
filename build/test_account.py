@@ -6,6 +6,7 @@ import asyncio, json, os, subprocess, sys
 from playwright.async_api import async_playwright
 
 R = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + '/'
+os.environ['PW_EXPERIMENTAL_SERVICE_WORKER_NETWORK_EVENTS'] = '1'  # the page's service worker (/sw.js): its requests go through the test's routes too
 OUT = R + 'build/shots/'
 os.makedirs(OUT, exist_ok=True)
 LEAF = open(R + 'package/dist/leaflet.js').read()
@@ -117,6 +118,9 @@ async def main():
             check(await ev('document.getElementById("nameIn").value') == 'Darko', 'account name fills the empty name field')
             await page.wait_for_selector('#accName')
             check(await ev('document.getElementById("accName").value') == 'Darko', 'the open sheet switches to the account view')
+            await page.wait_for_function('!document.querySelector("#accPush .d").textContent.includes("Učitavam")', timeout=15_000)
+            pt = await ev('document.querySelector("#accPush .d").textContent')
+            check(('Isključena' in pt or 'Blokirana' in pt) and await ev('!document.getElementById("accPush").disabled'), f'profile: notifications button ({pt})')
             await page.screenshot(path=OUT + 'account_2_signed_in.png')
             ow = await ev('() => { const s = document.getElementById("sheet"); return [s.scrollWidth, s.clientWidth, document.documentElement.scrollWidth, innerWidth]; }')
             check(ow[0] <= ow[1] + 1 and ow[2] <= ow[3] + 1, f'account sheet fits a 375 px phone {ow}')

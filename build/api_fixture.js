@@ -108,7 +108,7 @@ async function serve() {
   const port = await freePort();
   const url = `http://127.0.0.1:${port}`;
   const f = await startApi(url, 'ignore');
-  const types = { '.html': 'text/html; charset=utf-8', '.json': 'application/json', '.js': 'application/javascript' };
+  const types = { '.html': 'text/html; charset=utf-8', '.json': 'application/json', '.js': 'application/javascript', '.webmanifest': 'application/manifest+json', '.png': 'image/png' };
   const web = http.createServer((req, res) => {
     if (req.url.startsWith('/api/')) {
       const p = http.request({ host: '127.0.0.1', port: f.port, path: req.url, method: req.method, headers: { ...req.headers, 'x-real-ip': '127.0.0.1' } }, (r) => {

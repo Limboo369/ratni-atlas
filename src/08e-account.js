@@ -310,6 +310,7 @@ RA.Account = class {
       <div class="account-settings"><div class="sec-t">Postavke profila</div><p class="note">${RA.esc(u.email)}</p><div class="field acc-name"><label class="lab" for="accName">Ime u igri</label>
         <div class="acc-row"><input type="text" id="accName" maxlength="18" value="${RA.esc(u.name)}" autocomplete="nickname" spellcheck="false"><button class="btn good" id="accSave"><span class="t">Sačuvaj</span></button></div></div>
       <p class="note" id="accNote" aria-live="polite"></p>
+      <div class="btns"><button class="btn" id="accPush"><span class="t">Obavještenja</span><br><span class="d">Učitavam…</span></button></div>
       </div>
       <div class="btns" style="margin-top:14px">
         <button class="btn" id="accTop"><span class="t">Ljestvica</span></button>
@@ -319,6 +320,7 @@ RA.Account = class {
     ui.openSheet(h, (s) => {
       const note = s.querySelector('#accNote');
       s.querySelector('#accTop').onclick = () => this.topSheet('wins');
+      ui.pushButton(s.querySelector('#accPush')); // web push (src/09h-app.js)
       this.loadStats(s);
       const pick = s.querySelector('#embPick'), eb = s.querySelector('#embBtn');
       eb.onclick = () => {

@@ -53,7 +53,8 @@ async function mapFor(set) {
 
 async function add(rec) {
   if (games.has(rec.code)) return;
-  const g = { rec, G: null, queue: rec.cmds.slice(), era: RA.eraById(rec.set.era).id, over: false, loading: true };
+  // notes (web push) only for what happens from now on, not for the history replayed after a restart
+  const g = { rec, G: null, queue: rec.cmds.slice(), era: RA.eraById(rec.set.era).id, over: false, loading: true, noteT: Math.max(0, tickOf(rec) - 1) };
   games.set(rec.code, g);
   try {
     const base = await mapFor(rec.set);
@@ -70,7 +71,7 @@ async function add(rec) {
 const tickOf = (rec) => Math.floor((Date.now() - rec.start) / rec.tickMs);
 function status(g) {
   const G = g.G;
-  return { code: g.rec.code, tick: G ? G.tick : 0, hash: G ? G.hash() : 0, over: !!g.over, winner: G && G.winner ? G.winner.id : 0, lg: G && G.lgWin ? G.lgWin : null, kicked: G && G.opts.league ? G.humans.filter((p) => p.kicked).map((p) => p.slot) : [] };
+  return { code: g.rec.code, tick: G ? G.tick : 0, hash: G ? G.hash() : 0, over: !!g.over, winner: G && G.winner ? G.winner.id : 0, wname: G && G.winner ? G.winner.nick || G.winner.name : '', lg: G && G.lgWin ? G.lgWin : null, kicked: G && G.opts.league ? G.humans.filter((p) => p.kicked).map((p) => p.slot) : [] };
 }
 /* play one game up to one tick behind its clock (like the page), for at most BUDGET ms */
 function advance(g) {
@@ -82,6 +83,10 @@ function advance(g) {
     const q = g.queue;
     while (q.length && q[0][0] <= G.tick) RA.longApply(G, q.shift());
     G.step();
+  }
+  if (G.tick > g.noteT) {
+    for (const n of RA.longNotes(G, g.noteT)) parentPort.postMessage({ note: Object.assign({ code: g.rec.code }, n) });
+    g.noteT = G.tick;
   }
   if (G.state === 'over' && !g.over) {
     g.over = true;

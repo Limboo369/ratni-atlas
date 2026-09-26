@@ -17,3 +17,6 @@ deploy/game/long-data/
 dist/sim/
 deploy/game/sim/
 deploy/game/data/
+dist/icons/
+dist/sw.js
+dist/manifest.webmanifest

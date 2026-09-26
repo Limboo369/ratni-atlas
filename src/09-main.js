@@ -27,6 +27,7 @@ RA.App = class {
     this.ui = new RA.UI(this);
     this.net = new RA.Net(this);
     this.ui.initOnline();
+    this.ui.installInit(); // "Instaliraj aplikaciju" (09h-app.js)
     this.net.init();
     this.long = new RA.Long(this); // long games (09c-long.js)
     const lm = /^\/long-([a-z0-9]{6})\/?$/.exec(location.pathname);

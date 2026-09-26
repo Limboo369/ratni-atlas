@@ -1417,6 +1417,7 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
           <button class="command-quick solo-only" id="quickBtn"><b>Igraj odmah</b><small>Blitz · nasumična država · bez izbora</small></button>
           <button class="command-resume solo-only" id="resumeBtn" hidden></button>
           <button class="command-resume focus-resume solo-only" id="focusBtn" hidden></button>
+          <button class="command-quick command-install" id="installBtn" hidden><b>Instaliraj aplikaciju</b><small>Overtake kao prava aplikacija na računaru ili telefonu</small></button>
           <button class="command-config solo-only" id="configBtn" aria-haspopup="dialog" aria-controls="operationDialog"><span><span class="command-config-label">POSTAVKE OPERACIJE</span><span id="operationSummary">Evropa · Klasično · Srednje</span></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16M9 3v6M15 9v6M8 15v6"/></svg></button>
           <div class="online-pane online-only" id="onlinePane">
             <button class="online-card" id="leagueBtn"><b>Conquest League</b><small>Rangirane partije · 1v1 · 2v2 · 5v5 · uskoro</small></button>
@@ -7987,6 +7988,20 @@ RA.longApply = function (G, e) {
   return { pid, r: G.exec(pid, kind, Array.isArray(args) ? args : []) };
 };
 
+/* what a player should hear about while away (plan phase 18, web push): events after tick `from` that hit a human
+   state — a war declared on it, its fall. The server's simulation asks this after every stretch of steps. */
+RA.longNotes = function (G, from) {
+  const out = [];
+  for (const f of G.feed) {
+    if (f.tick <= from) continue;
+    const A = G.P[f.a], B = f.b ? G.P[f.b] : null;
+    if (f.t === 'war' && B && B.human && B.alive && B.slot >= 0) out.push({ slot: B.slot, kind: 'war', text: `${A.name} je napao/la tvoju državu (${B.name}).` });
+    const V = f.t === 'fall' ? B || A : null;
+    if (V && V.human && V.slot >= 0) out.push({ slot: V.slot, kind: 'fall', text: `Tvoja država (${V.name}) je pala${B && A ? ' — osvajač: ' + A.name : ''}.` });
+  }
+  return out;
+};
+
 
 /* Basemap: two Leaflet canvas GridLayers rendered from Natural Earth vectors.
    - land layer (below territories): hypsometric relief inside the playable area
@@ -13196,6 +13211,7 @@ RA.Account = class {
       <div class="account-settings"><div class="sec-t">Postavke profila</div><p class="note">${RA.esc(u.email)}</p><div class="field acc-name"><label class="lab" for="accName">Ime u igri</label>
         <div class="acc-row"><input type="text" id="accName" maxlength="18" value="${RA.esc(u.name)}" autocomplete="nickname" spellcheck="false"><button class="btn good" id="accSave"><span class="t">Sačuvaj</span></button></div></div>
       <p class="note" id="accNote" aria-live="polite"></p>
+      <div class="btns"><button class="btn" id="accPush"><span class="t">Obavještenja</span><br><span class="d">Učitavam…</span></button></div>
       </div>
       <div class="btns" style="margin-top:14px">
         <button class="btn" id="accTop"><span class="t">Ljestvica</span></button>
@@ -13205,6 +13221,7 @@ RA.Account = class {
     ui.openSheet(h, (s) => {
       const note = s.querySelector('#accNote');
       s.querySelector('#accTop').onclick = () => this.topSheet('wins');
+      ui.pushButton(s.querySelector('#accPush')); // web push (src/09h-app.js)
       this.loadStats(s);
       const pick = s.querySelector('#embPick'), eb = s.querySelector('#embBtn');
       eb.onclick = () => {
@@ -14472,6 +14489,7 @@ RA.App = class {
     this.ui = new RA.UI(this);
     this.net = new RA.Net(this);
     this.ui.initOnline();
+    this.ui.installInit(); // "Instaliraj aplikaciju" (09h-app.js)
     this.net.init();
     this.long = new RA.Long(this); // long games (09c-long.js)
     const lm = /^\/long-([a-z0-9]{6})\/?$/.exec(location.pathname);
@@ -16953,7 +16971,85 @@ Object.assign(RA.UI.prototype, {
   },
 });
 
-RA.BUILD = '06a30096';
+
+/* The installable app and notifications (plan phase 18). The service worker (/sw.js, build/pwa/sw.js) keeps the page
+   and the map data for a start without a connection and shows the server's web push notifications (deploy/api/push.js):
+   a war on my Focus state or its fall while I'm away, the end of a Focus game, a league match found.
+   Stable hooks for the look (Codex C7): #installBtn (.command-install), #accPush (profile → notifications). */
+RA.appSW = null;
+if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+  navigator.serviceWorker.register('/sw.js').then((r) => (RA.appSW = r), (e) => console.warn('sw', e && e.message));
+}
+RA.appInstalled = () => (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+
+Object.assign(RA.UI.prototype, {
+  /* "Instaliraj aplikaciju" on the start screen, while the browser offers it */
+  installInit() {
+    const b = this.$('installBtn');
+    if (!b) return;
+    const show = () => (b.hidden = !window.__raInstall || RA.appInstalled());
+    addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      window.__raInstall = e;
+      show();
+    });
+    addEventListener('appinstalled', () => {
+      window.__raInstall = null;
+      show();
+      this.toast('good', 'Overtake je instaliran — pokreni ga kao aplikaciju.', { ms: 6000 });
+    });
+    b.onclick = () => {
+      const e = window.__raInstall;
+      if (!e) return;
+      e.prompt();
+      (e.userChoice || Promise.resolve({})).then((c) => {
+        if (c.outcome === 'accepted') window.__raInstall = null;
+        show();
+      });
+    };
+    show();
+  },
+  /* profile → notifications on/off (this device); needs an account and a browser with web push */
+  async pushButton(b) {
+    if (!b) return;
+    const A = this.account;
+    const d = b.querySelector('.d');
+    const ok = 'PushManager' in window && 'Notification' in window && 'serviceWorker' in navigator && /^https?:$/.test(location.protocol);
+    if (!ok || !A || !A.user) {
+      d.textContent = 'Ovaj preglednik ne podržava obavještenja' + (navigator.userAgent.includes('iPhone') ? ' (na iPhoneu: prvo „Dodaj na početni ekran“).' : '.');
+      b.disabled = true;
+      return;
+    }
+    const reg = await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    const draw = () => (d.textContent = sub ? 'Uključena na ovom uređaju — napad na tvoju Focus državu, kraj igre, meč u ligi' : Notification.permission === 'denied' ? 'Blokirana u pregledniku (dozvoli ih u postavkama stranice)' : 'Isključena — dodirni da uključiš');
+    draw();
+    b.onclick = async () => {
+      try {
+        if (sub) {
+          await A.api('POST', '/api/push/unsub', { endpoint: sub.endpoint }).catch(() => {});
+          await sub.unsubscribe();
+          sub = null;
+        } else {
+          if ((await Notification.requestPermission()) !== 'granted') return draw();
+          const { key } = await A.api('GET', '/api/push/key');
+          sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: RA.b64key(key) });
+          await A.api('POST', '/api/push/sub', { sub: sub.toJSON() });
+          this.toast('good', 'Obavještenja su uključena.');
+        }
+      } catch (e) {
+        this.toast('bad', 'Obavještenja: ' + RA.esc(e.message || String(e)), { ms: 6000 });
+      }
+      draw();
+    };
+  },
+});
+RA.b64key = (s) => {
+  const b = atob(s.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((s.length + 3) % 4));
+  return Uint8Array.from(b, (c) => c.charCodeAt(0));
+};
+
+RA.BUILD = '4bea62b0';
 new RA.App().boot();
 }
 function __raFallback(){

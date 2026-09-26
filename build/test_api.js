@@ -13,6 +13,8 @@ const check = (ok, msg) => {
 };
 
 async function main() {
+  // web push: the fake push service below is on 127.0.0.1 (plain http, only in tests)
+  Object.assign(process.env, { PUSH_HOSTS: '127.0.0.1,fcm.googleapis.com', PUSH_ALLOW_HTTP: '1' });
   const f = await startApi(ORIGIN);
   const base = f.base;
   let jar = '';
@@ -236,6 +238,68 @@ async function main() {
       check(r.j.games.length === 7 && r.j.games[0].code === 'lgaab7' && !r.j.games[0].won && r.j.games[1].won && r.j.games[0].teams[1][0].me, 'league: match history (newest first)');
       const floor = await int('/int/league/elo', { ids: [anaId], l: 'b1' });
       check(floor.j.elo[anaId].elo >= 100, 'league: ELO never under 100');
+    }
+
+    // web push (plan phase 18): VAPID key, subscriptions, the encrypted message a push service gets
+    {
+      const crypto = require('crypto'), http = require('http');
+      const got = [];
+      const ps = http.createServer((q, res) => {
+        const ch = [];
+        q.on('data', (b) => ch.push(b));
+        q.on('end', () => {
+          got.push({ url: q.url, h: q.headers, body: Buffer.concat(ch) });
+          res.writeHead(q.url.includes('gone') ? 410 : 201).end();
+        });
+      });
+      await new Promise((ok) => ps.listen(0, '127.0.0.1', ok));
+      const ep = `http://127.0.0.1:${ps.address().port}/push/`;
+      r = await call('GET', '/api/push/key');
+      const key = r.j.key;
+      check(Buffer.from(key, 'base64url').length === 65, 'push: the public VAPID key');
+      r = await call('GET', '/api/push/key');
+      check(r.j.key === key, 'push: the key stays the same (kept in the database)');
+      const ua = crypto.createECDH('prime256v1');
+      ua.generateKeys();
+      const auth = crypto.randomBytes(16);
+      const sub = (e) => ({ sub: { endpoint: e, keys: { p256dh: ua.getPublicKey().toString('base64url'), auth: auth.toString('base64url') } } });
+      r = await call('POST', '/api/push/sub', sub(ep + 'ana1'), { cookie: '' });
+      check(r.status === 401, 'push: subscribing needs an account');
+      r = await call('POST', '/api/push/sub', sub('https://evil.test/x'), { cookie: cookieAna });
+      check(r.status === 400, 'push: only the browsers’ push services');
+      r = await call('POST', '/api/push/sub', sub(ep + 'ana1'), { cookie: cookieAna });
+      check(r.status === 200, 'push: subscribed');
+      await call('POST', '/api/push/sub', sub(ep + 'gone1'), { cookie: cookieAna });
+      const anaId = (await call('GET', '/api/me', null, { cookie: cookieAna })).j.user.id;
+      const x = await fetch(f.int + '/int/push', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ users: [anaId], title: 'Overtake', body: 'Srbija ti je objavila rat.', url: '/long-abcdef', tag: 'abcdef' }) });
+      const xr = await x.json();
+      check(xr.sent === 1 && xr.gone === 1, `push: sent to the device, a dead subscription removed ${JSON.stringify(xr)}`);
+      const m = got.find((g) => g.url.endsWith('ana1'));
+      // what the browser does: check the VAPID signature, decrypt (RFC 8291)
+      const [, t, k] = /^vapid t=([^,]+), k=(.+)$/.exec(m.h.authorization) || [];
+      const [h64, c64, s64] = t.split('.');
+      const raw = Buffer.from(k, 'base64url');
+      const pub = crypto.createPublicKey({ key: { kty: 'EC', crv: 'P-256', x: raw.subarray(1, 33).toString('base64url'), y: raw.subarray(33).toString('base64url') }, format: 'jwk' });
+      const claims = JSON.parse(Buffer.from(c64, 'base64url'));
+      check(k === key && crypto.verify('sha256', Buffer.from(h64 + '.' + c64), { key: pub, dsaEncoding: 'ieee-p1363' }, Buffer.from(s64, 'base64url')) && claims.aud === new URL(ep).origin && claims.exp > Date.now() / 1000, 'push: VAPID signature and audience are right');
+      const b = m.body, salt = b.subarray(0, 16), idlen = b[20], as = b.subarray(21, 21 + idlen), ct = b.subarray(21 + idlen);
+      const shared = ua.computeSecret(as);
+      const ikm = Buffer.from(crypto.hkdfSync('sha256', shared, auth, Buffer.concat([Buffer.from('WebPush: info\0'), ua.getPublicKey(), as]), 32));
+      const cek = Buffer.from(crypto.hkdfSync('sha256', ikm, salt, Buffer.from('Content-Encoding: aes128gcm\0'), 16));
+      const nonce = Buffer.from(crypto.hkdfSync('sha256', ikm, salt, Buffer.from('Content-Encoding: nonce\0'), 12));
+      const d = crypto.createDecipheriv('aes-128-gcm', cek, nonce);
+      d.setAuthTag(ct.subarray(ct.length - 16));
+      const plain = Buffer.concat([d.update(ct.subarray(0, ct.length - 16)), d.final()]);
+      const msg = JSON.parse(plain.subarray(0, plain.length - 1));
+      check(m.h['content-encoding'] === 'aes128gcm' && plain[plain.length - 1] === 2 && msg.body === 'Srbija ti je objavila rat.' && msg.url === '/long-abcdef', `push: the message decrypts on the device ${JSON.stringify(msg)}`);
+      got.length = 0;
+      await fetch(f.int + '/int/push', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ users: [anaId], body: 'x' }) });
+      check(got.length === 1, 'push: the dead subscription is not used again');
+      await call('POST', '/api/push/unsub', { endpoint: ep + 'ana1' }, { cookie: cookieAna });
+      got.length = 0;
+      const y = await (await fetch(f.int + '/int/push', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ users: [anaId], body: 'x' }) })).json();
+      check(y.sent === 0 && got.length === 0, 'push: unsubscribed, nothing sent');
+      ps.close();
     }
 
     // delete account
