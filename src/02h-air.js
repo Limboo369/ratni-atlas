@@ -187,11 +187,11 @@ RA.airName = (k) => {
     const M = RA.MISSILE[m.type];
     if (!M.hunt) return this._detonateConv(m);
     // hunter drone: enemy units in reach
-    const p = this.P[m.owner], R2 = (M.r + 0.5) * (M.r + 0.5);
+    const p = this.P[m.owner], r = this.wRad(p, m.type), R2 = (r + 0.5) * (r + 0.5);
     let n = 0;
     for (const u of this.units) {
       if (u.dead || !this.hostile(p, u.owner) || (u.x - m.tx) * (u.x - m.tx) + (u.y - m.ty) * (u.y - m.ty) > R2) continue;
-      u.hp -= 90;
+      u.hp -= 90 * this.droneMul(p) * this.armor(this.P[u.owner]);
       u.lastHit = this.tick;
       n++;
       if (u.hp <= 0) this._unitDied(u, 'dron');

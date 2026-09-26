@@ -647,6 +647,10 @@ Object.assign(RA.UI.prototype, {
         this.act('tech', [b.dataset.tech]);
         if (G.online || G.long) setTimeout(() => this.econSheet(true), 400);
       }));
+      s.querySelectorAll('[data-rsch]').forEach((b) => (b.onclick = () => {
+        this.act('rsch', [b.dataset.rsch]);
+        setTimeout(() => this.econSheet(true), G.online || G.long ? 1200 : 50);
+      }));
       s.querySelectorAll('[data-buy]').forEach((b) => (b.onclick = () => {
         const [k, sid] = b.dataset.buy.split(':').map(Number);
         this.act('buy', [k, sid]);
@@ -684,6 +688,15 @@ Object.assign(RA.UI.prototype, {
     for (const k of RA.TECH_ORDER) {
       const T = RA.TECH[k], lv = G.techLv(me, k), cost = G.techCost(me, k), max = lv >= RA.TECH_MAX;
       t += `<article class="research-card" data-branch="${k}"><div class="research-heading"><i>${RA.icon(T.icon)}</i><span>${T.name}<small>Nivo ${lv} / ${RA.TECH_MAX}</small></span></div>${this.techProgress(lv)}<p>${RA.esc(T.desc)}</p>${max ? '<span class="research-max">Potpuno razvijeno</span>' : this.mini(`Istraži · ${RA.fmt(cost)}`, `data-tech="${k}" aria-label="Istraži ${T.name}, nivo ${lv+1}, ${RA.fmt(cost)} zlata"`, 'ok', me.gold < cost)}</article>`;
+    }
+    t += '</div>';
+    // weapons research (03c-research.js): one at a time, it takes a while
+    const B = me.rsBusy, left = B ? B.done - G.clock() : 0, secs = G.sub ? left : left / 10;
+    t += `<div class="sec-t">Istraživanje oružja</div><p class="explain">Plati i sačekaj: oružje je bolje do kraja igre. Jedno istraživanje u isto vrijeme.${B ? ` Sada: <b>${RA.esc(RA.RSCH[B.k].name)} ${B.lv}</b> — još ${RA.fmtTime(Math.max(0, secs))}.` : ''}</p><div class="research-grid" id="rschGrid">`;
+    for (const k of RA.RSCH_ORDER) {
+      const R = RA.RSCH[k], lv = G.rsLv(me, k), cost = G.rsCost(me, k), max = lv >= R.max, busy = B && B.k === k;
+      const dur = G.sub ? G.rsTime(me, k) : G.rsTime(me, k) / 10;
+      t += `<article class="research-card" data-rsch-card="${k}"><div class="research-heading"><i>${RA.icon(R.icon)}</i><span>${R.name}<small>Nivo ${lv} / ${R.max}</small></span></div><p>${RA.esc(R.desc)}</p>${max ? '<span class="research-max">Potpuno razvijeno</span>' : busy ? '<span class="research-max">Istražuje se…</span>' : this.mini(`Istraži · ${RA.fmt(cost)} · ${RA.fmtTime(dur)}`, `data-rsch="${k}"`, 'ok', me.gold < cost || !!B)}</article>`;
     }
     t += '</div>';
     const i = h.indexOf('<div class="field">');

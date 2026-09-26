@@ -507,6 +507,26 @@ const check = (ok, msg) => {
     for (let i = 0; i < secs; i++) F2.step();
     check(F.hash() === F2.hash() && F.clock() === F2.clock(), 'Focus clock: deterministic');
   }
+  // weapons research (Darko, 27. 9.): pay, wait, the weapon is better
+  {
+    RA.applyEra('danas');
+    const rr = { code: 'rsch01', seed: 4, sub: 5, tickMs: 1000, set: { map: 'evropa', reg: 'balkan', era: 'danas', gm: 'klasik', dif: 'srednje', cs: 0, peace: 0, res: 0, tree: 1, nn: 0, days: 1 } };
+    const G = RA.longGame(m, rr);
+    const me = G.P.find((p) => p && p.iso === 'SRB');
+    RA.longApply(G, [0, 0, 'join', [me.id, 'Ana']]);
+    me.gold = 1e7;
+    const r0 = G.wRange(me, 'drone');
+    const a1 = RA.longApply(G, [0, 0, 'rsch', ['range']]);
+    const a2 = RA.longApply(G, [0, 0, 'rsch', ['drone']]);
+    check(a1.r && a1.r.k === 'range' && /Već istražuješ/.test(a2.r), 'research: started, one at a time');
+    const need = G.rsTime(me, 'range');
+    for (let i = 0; i < need - 1; i++) G.step();
+    check(G.rsLv(me, 'range') === 0, 'research: not before its time');
+    G.step();
+    check(G.rsLv(me, 'range') === 1 && Math.abs(G.wRange(me, 'drone') - r0 * 1.2) < 1e-9, `research: done after ${need} s, drone range ${r0} → ${G.wRange(me, 'drone')}`);
+    const nt = RA.newGame(RA.eraMap(m, 'danas', 'granice'), { seed: 1, difficulty: 'srednje', cityStates: 0, era: 'danas', start: 'granice', gm: 'klasik' });
+    check(/stablo/.test(nt.startResearch(nt.P[1].id, 'drone')), 'research: only with the tech tree');
+  }
   // the server steps many Focus games in one process (deploy/game/simhost.js), switching the era tables between them:
   // a game stepped between steps of another era's game must stay the same as the game alone
   const rec = (code, era, seed) => ({ code, seed, set: { map: 'evropa', reg: 'balkan', era, gm: 'klasik', dif: 'srednje', cs: 0, peace: 0, res: 1, tree: 1, nn: 0 } });

@@ -203,6 +203,7 @@ RA.UI = class {
       this._save();
       this.campaignSheet();
     };
+    $('campBigBtn').onclick = () => $('campBtn').onclick(); // the campaign, big on the Conqueror side
     try {
       if (!localStorage.getItem('ra_tut_done')) $('tutBtn').classList.add('fresh');
     } catch (_) {}
@@ -1021,6 +1022,9 @@ RA.UI = class {
       else if (r && r.st === 'deal') say('good', 'Dogovoreno!');
       else if (err(r)) say('info', RA.esc(r));
       if (!this.$('sheetWrap').hidden && this.$('sheet').querySelector('#dealSheet')) this.closeSheet();
+    } else if (kind === 'rsch') {
+      if (r && r.k) say('good', `Istraživanje počelo: ${RA.RSCH[r.k].name} ${r.lv}.`);
+      else if (err(r)) say('info', RA.esc(r));
     } else if (kind === 'buy') {
       if (err(r)) say('info', RA.esc(r));
     } else if (kind === 'str') {
@@ -1200,7 +1204,7 @@ RA.UI = class {
   samCovers(c) {
     const G = this.G, me = G.me, W = G.map.W, tk = G.tick;
     const x = c % W, y = (c / W) | 0;
-    return G.structs.some((s) => !s.dead && s.ready && s.type === 'sam' && s.owner !== me.id && !G.isFriendly(G.P[s.owner], me) && s.cd <= tk && s.empUntil <= tk && Math.hypot(s.x - x, s.y - y) <= RA.CFG.SAM_R);
+    return G.structs.some((s) => !s.dead && s.ready && s.type === 'sam' && s.owner !== me.id && !G.isFriendly(G.P[s.owner], me) && s.cd <= tk && s.empUntil <= tk && Math.hypot(s.x - x, s.y - y) <= G.samR(G.P[s.owner]));
   }
   aimMissile(type, c) {
     const G = this.G, me = G.me;

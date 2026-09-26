@@ -1168,6 +1168,7 @@ RA.Game = class Game {
       if (p.tSub && p.lord && this.P[p.lord]) this.P[p.lord].gold += p.tSub;
     }
     this._stepBuild();
+    this._stepResearch();
   }
   _stepBuild() {
     const P = this.P;
@@ -1212,8 +1213,9 @@ RA.Game = class Game {
     this._stepTrains();
     this._stepTrade();
     if (this.tick % 20 === 0) this.missiles = this.missiles.filter((m) => !m.done);
-    // construction
+    // construction and weapons research (03c-research.js)
     this._stepBuild();
+    this._stepResearch();
     if (this.tick % 10 === 0) {
       this._expireAlliances();
       this._vassals();

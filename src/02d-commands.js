@@ -3,7 +3,7 @@
    can replay exactly the same inputs on every device (lockstep). Args come from other players' devices:
    they are validated here and never trusted. */
 
-RA.CMD_KINDS = ['atk', 'boat', 'para', 'build', 'rec', 'mv', 'dis', 'mis', 'mob', 'ret', 'aReq', 'aRes', 'tReq', 'tRes', 'ext', 'brk', 'tEnd', 'give', 'help', 'ai', 'back', 'rcl', 'png', 'qm', 'tax', 'vas', 'loan', 'pay', 'str', 'buy', 'air', 'bomb', 'tech', 'stance', 'offer', 'offerRes', 'surr', 'endv', 'kick'];
+RA.CMD_KINDS = ['atk', 'boat', 'para', 'build', 'rec', 'mv', 'dis', 'mis', 'mob', 'ret', 'aReq', 'aRes', 'tReq', 'tRes', 'ext', 'brk', 'tEnd', 'give', 'help', 'ai', 'back', 'rcl', 'png', 'qm', 'tax', 'vas', 'loan', 'pay', 'str', 'buy', 'air', 'bomb', 'tech', 'stance', 'offer', 'offerRes', 'surr', 'endv', 'kick', 'rsch'];
 /* pings on the map and quick messages, seen by the sender's allies and team (plan item 57) */
 RA.PINGS = [
   { name: 'Napadni ovdje', icon: 'attack', color: '#ff5d5d' },
@@ -130,6 +130,9 @@ RA.QUICK_MSGS = ['Napadam!', 'Treba mi pomoć!', 'Pazi, napadaju nas!', 'Idem ta
         p.endVote = a[0] !== 0;
         this._endVotes();
         return { endv: p.endVote };
+      case 'rsch':
+        // weapons research (03c-research.js): [key]
+        return typeof a[0] === 'string' && Object.prototype.hasOwnProperty.call(RA.RSCH, a[0]) ? this.startResearch(pid, a[0]) : 'Nepoznato istraživanje.';
       case 'kick':
         // vote kick (Conquest League 5v5): [player of my team]
         return this.opts.league ? this.lgKick(p, player(a[0])) : 'Samo u ligi.';

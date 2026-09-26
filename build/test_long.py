@@ -92,12 +92,17 @@ async def main():
         await B.wait_for_function('window.__ra.G && window.__ra.G.long && !window.__ra.long.replaying && document.querySelector("#sheet [data-take]")', timeout=60000)
         tb = await B.evaluate(TAKE)
         await B.wait_for_function(f'window.__ra.G.me && window.__ra.G.me.id === {tb}', timeout=20000)
-        await B.evaluate(HASHES)
-        for _ in range(40):  # both devices have played the same ticks for a while (a slow machine needs longer)
+        # both devices record their checksums (again when a device rebuilt its game to catch up with the server) until
+        # they have played the same ticks for a while (a slow machine needs longer)
+        CMP = '''(hb) => { const h = window.__ra.G._hh || {}; const common = Object.keys(hb).filter((t) => h[t] !== undefined); return [common.length, common.filter((t) => h[t] !== hb[t]).length]; }'''
+        cmp = [0, 0]
+        for _ in range(60):
+            await A.evaluate(HASHES)
+            await B.evaluate(HASHES)
             await asyncio.sleep(0.5)
-            if await B.evaluate('Object.keys(window.__ra.G._hh).length') >= 12:
+            cmp = await A.evaluate(CMP, await B.evaluate('window.__ra.G._hh || {}'))
+            if cmp[0] >= 12 or cmp[1]:
                 break
-        cmp = await A.evaluate('''(hb) => { const h = window.__ra.G._hh; const common = Object.keys(hb).filter((t) => h[t] !== undefined); return [common.length, common.filter((t) => h[t] !== hb[t]).length]; }''', await B.evaluate('window.__ra.G._hh'))
         check(cmp[0] >= 5 and cmp[1] == 0, f'both devices play the same game (ticks compared {cmp[0]}, different {cmp[1]})')
         hum = await B.evaluate(f'() => {{ const G = window.__ra.G; return [G.P[{ta}].human, G.P[{ta}].nick, G.P[{tb}].human]; }}')
         check(hum[0] and hum[1] == 'Darko' and hum[2], f'Marko sees Darko in the game {hum}')

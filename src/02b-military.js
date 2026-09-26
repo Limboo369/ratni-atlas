@@ -336,7 +336,7 @@ RA.NUKE = RA.MISSILE;
         this._retarget(u, false);
       }
       if (u.path && u.pi < u.path.length) {
-        let step = U.speed * (wl > 0 && this.isSnow(c) ? 1 - 0.45 * wl : 1);
+        let step = U.speed * this.unitSpd(this.P[u.owner]) * (wl > 0 && this.isSnow(c) ? 1 - 0.45 * wl : 1);
         while (step > 0 && u.pi < u.path.length) {
           const tc = u.path[u.pi];
           const tx = (tc % W) + 0.5, ty = ((tc / W) | 0) + 0.5;
@@ -388,7 +388,7 @@ RA.NUKE = RA.MISSILE;
       }
     }
     if (u.path && u.pi < u.path.length) {
-      let step = U.speed;
+      let step = U.speed * this.unitSpd(this.P[u.owner]);
       while (step > 0 && u.pi < u.path.length) {
         const tc = u.path[u.pi];
         const tx = (tc % W) + 0.5, ty = ((tc / W) | 0) + 0.5;
@@ -558,7 +558,7 @@ RA.NUKE = RA.MISSILE;
           best = U.def;
           bestS = U.defSpd;
         }
-        u.hp -= U.dmg * press;
+        u.hp -= U.dmg * press * this.armor(T);
         u.lastHit = tk;
       }
       if (n) {
@@ -629,7 +629,7 @@ RA.NUKE = RA.MISSILE;
       if (s.dead || !s.ready || s.owner !== p.id || s.type !== 'silo') continue;
       if (!any && (s.cd > tk || s.empUntil > tk)) continue;
       const d = RA.dist(s.x - tx, s.y - ty);
-      if (M.range && d > M.range) continue;
+      if (M.range && d > this.wRange(p, type)) continue;
       if (d < bd) {
         bd = d;
         best = s;
@@ -661,7 +661,7 @@ RA.NUKE = RA.MISSILE;
     const SN = RA.STRUCT.silo.name;
     if (!best) {
       if (!p.n.silo) return `Treba ti zgrada: ${SN}.`;
-      if (M.range && !this.strikeSilo(p, type, c, true)) return `Meta je izvan dometa: ${M.range} polja od zgrade ${SN}.`;
+      if (M.range && !this.strikeSilo(p, type, c, true)) return `Meta je izvan dometa: ${Math.round(this.wRange(p, type))} polja od zgrade ${SN}.`;
       return `Zgrada ${SN} se puni (ili je pod EMP-om) — pričekaj.`;
     }
     p.gold -= cost;
@@ -696,7 +696,7 @@ RA.NUKE = RA.MISSILE;
     if (src < 0) return 'Nemaš odakle lansirati dron.';
     const sx = (src % W) + 0.5, sy = ((src / W) | 0) + 0.5, tx = (c % W) + 0.5, ty = ((c / W) | 0) + 0.5;
     const d = RA.dist(tx - sx, ty - sy);
-    if (d > M.range) return `Meta je predaleko: ${M.name} leti do ${M.range} polja od tvoje granice.`;
+    if (d > this.wRange(p, type)) return `Meta je predaleko: ${M.name} leti do ${Math.round(this.wRange(p, type))} polja od tvoje granice.`;
     p.gold -= cost;
     p.drones = (p.drones || 0) + 1;
     const victimId = this.owner[c];
@@ -735,11 +735,11 @@ RA.NUKE = RA.MISSILE;
     for (const s of this.structs) {
       if (s.dead || !s.ready || s.type !== 'sam' || s.cd > tk || s.empUntil > tk) continue;
       if (s.owner === p.id || this.isFriendly(this.P[s.owner], p)) continue;
-      if (RA.dist(s.x - tx, s.y - ty) <= RA.CFG.SAM_R) {
+      if (RA.dist(s.x - tx, s.y - ty) <= this.samR(this.P[s.owner])) {
         m.sam = s;
         m.samAt = m.kind === 'warhead' ? 0.55 : 0.62 + this.rng() * 0.2;
         // a nuclear salvo (several launches in a row): air defence reloads twice as fast
-        s.cd = tk + ((m.kind === 'nuke' || m.kind === 'mirv') && p.nukeN > 1 && p.nukeUntil > tk ? RA.CFG.SAM_CD >> 1 : RA.CFG.SAM_CD);
+        s.cd = tk + this.samCd(this.P[s.owner], (m.kind === 'nuke' || m.kind === 'mirv') && p.nukeN > 1 && p.nukeUntil > tk ? RA.CFG.SAM_CD >> 1 : RA.CFG.SAM_CD);
         return true;
       }
     }
@@ -788,7 +788,7 @@ RA.NUKE = RA.MISSILE;
     for (const u of this.units) {
       if (u.dead || u.owner === skipOwner || (onlyOwner && u.owner !== onlyOwner)) continue;
       if (RA.dist(u.x - cx, u.y - cy) <= r + 0.5) {
-        u.hp -= unitDmg * (u.type === 'tank' ? 0.65 : 1);
+        u.hp -= unitDmg * (u.type === 'tank' ? 0.65 : 1) * this.armor(this.P[u.owner]);
         u.lastHit = this.tick;
         if (u.hp <= 0) {
           add(u.owner, 'units');
@@ -887,21 +887,23 @@ RA.NUKE = RA.MISSILE;
     const map = this.map, W = map.W, H = map.H;
     const cx = Math.floor(m.tx), cy = Math.floor(m.ty);
     const attacker = this.P[m.owner];
+    // research: a bigger blast, stronger drones (03c-research.js)
+    const R = m.kind === 'drone' ? M.r : this.wRad(attacker, m.type), dm = m.kind === 'drone' ? this.droneMul(attacker) : 1;
     const cnt = new Map();
-    for (let dy = -M.r; dy <= M.r; dy++)
-      for (let dx = -M.r; dx <= M.r; dx++) {
-        if (dx * dx + dy * dy > M.r * M.r + 1) continue;
+    for (let dy = -R; dy <= R; dy++)
+      for (let dx = -R; dx <= R; dx++) {
+        if (dx * dx + dy * dy > R * R + 1) continue;
         const x = cx + dx, y = cy + dy;
         if (x < 0 || y < 0 || x >= W || y >= H) continue;
         const o = this.owner[y * W + x];
         if (o && o !== m.owner) cnt.set(o, (cnt.get(o) || 0) + 1);
       }
-    const assets = this._blastAssets(cx + 0.5, cy + 0.5, M.r + 0.5, m.owner, 0, 95);
+    const assets = this._blastAssets(cx + 0.5, cy + 0.5, R + 0.5, m.owner, 0, 95 * dm);
     let main = null;
     for (const o of new Set([...cnt.keys(), ...assets.keys()])) {
       const v = this.P[o];
       const n = cnt.get(o) || 0;
-      const kill = Math.min(v.troops * 0.25, n * (v.troops / Math.max(1, v.tiles)) * 3);
+      const kill = Math.min(v.troops * 0.25, n * (v.troops / Math.max(1, v.tiles)) * 3 * dm);
       v.troops = Math.max(0, v.troops - kill);
       const a = assets.get(o) || { structs: 0, units: 0 };
       const rep = { v, kill, structs: a.structs, units: a.units };
@@ -913,7 +915,7 @@ RA.NUKE = RA.MISSILE;
       if (main) this.tell(attacker, 'good', `Pogodak (${M.name}) — ${main.v.name}: −${RA.fmt(main.kill)} vojske${main.structs ? ', ' + main.structs + ' zgrada' : ''}${main.units ? ', ' + main.units + ' jedinica' : ''}.`, main.v.id, m.c);
       else this.tell(attacker, 'info', `${M.name}: udar u prazno, ništa vrijedno nije pogođeno.`, attacker.id, m.c);
     }
-    this.fx.push({ kind: 'conv', x: m.tx, y: m.ty, r: M.r + 0.5, tick: this.tick });
+    this.fx.push({ kind: 'conv', x: m.tx, y: m.ty, r: R + 0.5, tick: this.tick });
   };
   P._detonateEmp = function (m) {
     const R = RA.MISSILE.emp.r, tk = this.tick;

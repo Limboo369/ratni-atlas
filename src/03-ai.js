@@ -88,7 +88,7 @@ RA.AI = {
     RA.AI.maybeBuild(G, p, info);
     RA.AI.maybeRecruit(G, p, info);
     if (G.deps) RA.AI.maybeBuyRes(G, p);
-    if (G.opts.tree) RA.AI.maybeTech(G, p);
+    if (G.opts.tree) RA.AI.maybeTech(G, p), RA.AI.maybeResearch(G, p);
     if (st && st.k === 'eco') RA.AI.maybeBuild(G, p, info); // building comes first
     if (!peace && p.n.port) RA.AI.navy(G, p, info);
     if (!peace && !calm && p.n.airport && RA.airOn()) RA.AI.air(G, p, info);

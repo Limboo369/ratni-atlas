@@ -1441,6 +1441,7 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
           <button class="command-quick solo-only" id="quickBtn"><b>Igraj odmah</b><small>Blitz · nasumična država · bez izbora</small></button>
           <button class="command-resume solo-only" id="resumeBtn" hidden></button>
           <button class="command-resume focus-resume solo-only" id="focusBtn" hidden></button>
+          <button class="command-quick command-campaign solo-only" id="campBigBtn"><b>Kampanja</b><small>Tvoja dinastija kroz misije · od Bosne do cijelog svijeta</small></button>
           <button class="command-quick command-market" id="marketBtn"><b>Community market</b><small>Scenariji igrača · napravi svoj u editoru</small></button>
           <button class="command-quick command-install" id="installBtn" hidden><b>Instaliraj aplikaciju</b><small>Overtake kao prava aplikacija na računaru ili telefonu</small></button>
           <button class="command-config solo-only" id="configBtn" aria-haspopup="dialog" aria-controls="operationDialog"><span><span class="command-config-label">POSTAVKE OPERACIJE</span><span id="operationSummary">Evropa · Klasično · Srednje</span></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16M9 3v6M15 9v6M8 15v6"/></svg></button>
@@ -3225,6 +3226,7 @@ RA.Game = class Game {
       if (p.tSub && p.lord && this.P[p.lord]) this.P[p.lord].gold += p.tSub;
     }
     this._stepBuild();
+    this._stepResearch();
   }
   _stepBuild() {
     const P = this.P;
@@ -3269,8 +3271,9 @@ RA.Game = class Game {
     this._stepTrains();
     this._stepTrade();
     if (this.tick % 20 === 0) this.missiles = this.missiles.filter((m) => !m.done);
-    // construction
+    // construction and weapons research (03c-research.js)
     this._stepBuild();
+    this._stepResearch();
     if (this.tick % 10 === 0) {
       this._expireAlliances();
       this._vassals();
@@ -3884,7 +3887,7 @@ RA.NUKE = RA.MISSILE;
         this._retarget(u, false);
       }
       if (u.path && u.pi < u.path.length) {
-        let step = U.speed * (wl > 0 && this.isSnow(c) ? 1 - 0.45 * wl : 1);
+        let step = U.speed * this.unitSpd(this.P[u.owner]) * (wl > 0 && this.isSnow(c) ? 1 - 0.45 * wl : 1);
         while (step > 0 && u.pi < u.path.length) {
           const tc = u.path[u.pi];
           const tx = (tc % W) + 0.5, ty = ((tc / W) | 0) + 0.5;
@@ -3936,7 +3939,7 @@ RA.NUKE = RA.MISSILE;
       }
     }
     if (u.path && u.pi < u.path.length) {
-      let step = U.speed;
+      let step = U.speed * this.unitSpd(this.P[u.owner]);
       while (step > 0 && u.pi < u.path.length) {
         const tc = u.path[u.pi];
         const tx = (tc % W) + 0.5, ty = ((tc / W) | 0) + 0.5;
@@ -4106,7 +4109,7 @@ RA.NUKE = RA.MISSILE;
           best = U.def;
           bestS = U.defSpd;
         }
-        u.hp -= U.dmg * press;
+        u.hp -= U.dmg * press * this.armor(T);
         u.lastHit = tk;
       }
       if (n) {
@@ -4177,7 +4180,7 @@ RA.NUKE = RA.MISSILE;
       if (s.dead || !s.ready || s.owner !== p.id || s.type !== 'silo') continue;
       if (!any && (s.cd > tk || s.empUntil > tk)) continue;
       const d = RA.dist(s.x - tx, s.y - ty);
-      if (M.range && d > M.range) continue;
+      if (M.range && d > this.wRange(p, type)) continue;
       if (d < bd) {
         bd = d;
         best = s;
@@ -4209,7 +4212,7 @@ RA.NUKE = RA.MISSILE;
     const SN = RA.STRUCT.silo.name;
     if (!best) {
       if (!p.n.silo) return `Treba ti zgrada: ${SN}.`;
-      if (M.range && !this.strikeSilo(p, type, c, true)) return `Meta je izvan dometa: ${M.range} polja od zgrade ${SN}.`;
+      if (M.range && !this.strikeSilo(p, type, c, true)) return `Meta je izvan dometa: ${Math.round(this.wRange(p, type))} polja od zgrade ${SN}.`;
       return `Zgrada ${SN} se puni (ili je pod EMP-om) — pričekaj.`;
     }
     p.gold -= cost;
@@ -4244,7 +4247,7 @@ RA.NUKE = RA.MISSILE;
     if (src < 0) return 'Nemaš odakle lansirati dron.';
     const sx = (src % W) + 0.5, sy = ((src / W) | 0) + 0.5, tx = (c % W) + 0.5, ty = ((c / W) | 0) + 0.5;
     const d = RA.dist(tx - sx, ty - sy);
-    if (d > M.range) return `Meta je predaleko: ${M.name} leti do ${M.range} polja od tvoje granice.`;
+    if (d > this.wRange(p, type)) return `Meta je predaleko: ${M.name} leti do ${Math.round(this.wRange(p, type))} polja od tvoje granice.`;
     p.gold -= cost;
     p.drones = (p.drones || 0) + 1;
     const victimId = this.owner[c];
@@ -4283,11 +4286,11 @@ RA.NUKE = RA.MISSILE;
     for (const s of this.structs) {
       if (s.dead || !s.ready || s.type !== 'sam' || s.cd > tk || s.empUntil > tk) continue;
       if (s.owner === p.id || this.isFriendly(this.P[s.owner], p)) continue;
-      if (RA.dist(s.x - tx, s.y - ty) <= RA.CFG.SAM_R) {
+      if (RA.dist(s.x - tx, s.y - ty) <= this.samR(this.P[s.owner])) {
         m.sam = s;
         m.samAt = m.kind === 'warhead' ? 0.55 : 0.62 + this.rng() * 0.2;
         // a nuclear salvo (several launches in a row): air defence reloads twice as fast
-        s.cd = tk + ((m.kind === 'nuke' || m.kind === 'mirv') && p.nukeN > 1 && p.nukeUntil > tk ? RA.CFG.SAM_CD >> 1 : RA.CFG.SAM_CD);
+        s.cd = tk + this.samCd(this.P[s.owner], (m.kind === 'nuke' || m.kind === 'mirv') && p.nukeN > 1 && p.nukeUntil > tk ? RA.CFG.SAM_CD >> 1 : RA.CFG.SAM_CD);
         return true;
       }
     }
@@ -4336,7 +4339,7 @@ RA.NUKE = RA.MISSILE;
     for (const u of this.units) {
       if (u.dead || u.owner === skipOwner || (onlyOwner && u.owner !== onlyOwner)) continue;
       if (RA.dist(u.x - cx, u.y - cy) <= r + 0.5) {
-        u.hp -= unitDmg * (u.type === 'tank' ? 0.65 : 1);
+        u.hp -= unitDmg * (u.type === 'tank' ? 0.65 : 1) * this.armor(this.P[u.owner]);
         u.lastHit = this.tick;
         if (u.hp <= 0) {
           add(u.owner, 'units');
@@ -4435,21 +4438,23 @@ RA.NUKE = RA.MISSILE;
     const map = this.map, W = map.W, H = map.H;
     const cx = Math.floor(m.tx), cy = Math.floor(m.ty);
     const attacker = this.P[m.owner];
+    // research: a bigger blast, stronger drones (03c-research.js)
+    const R = m.kind === 'drone' ? M.r : this.wRad(attacker, m.type), dm = m.kind === 'drone' ? this.droneMul(attacker) : 1;
     const cnt = new Map();
-    for (let dy = -M.r; dy <= M.r; dy++)
-      for (let dx = -M.r; dx <= M.r; dx++) {
-        if (dx * dx + dy * dy > M.r * M.r + 1) continue;
+    for (let dy = -R; dy <= R; dy++)
+      for (let dx = -R; dx <= R; dx++) {
+        if (dx * dx + dy * dy > R * R + 1) continue;
         const x = cx + dx, y = cy + dy;
         if (x < 0 || y < 0 || x >= W || y >= H) continue;
         const o = this.owner[y * W + x];
         if (o && o !== m.owner) cnt.set(o, (cnt.get(o) || 0) + 1);
       }
-    const assets = this._blastAssets(cx + 0.5, cy + 0.5, M.r + 0.5, m.owner, 0, 95);
+    const assets = this._blastAssets(cx + 0.5, cy + 0.5, R + 0.5, m.owner, 0, 95 * dm);
     let main = null;
     for (const o of new Set([...cnt.keys(), ...assets.keys()])) {
       const v = this.P[o];
       const n = cnt.get(o) || 0;
-      const kill = Math.min(v.troops * 0.25, n * (v.troops / Math.max(1, v.tiles)) * 3);
+      const kill = Math.min(v.troops * 0.25, n * (v.troops / Math.max(1, v.tiles)) * 3 * dm);
       v.troops = Math.max(0, v.troops - kill);
       const a = assets.get(o) || { structs: 0, units: 0 };
       const rep = { v, kill, structs: a.structs, units: a.units };
@@ -4461,7 +4466,7 @@ RA.NUKE = RA.MISSILE;
       if (main) this.tell(attacker, 'good', `Pogodak (${M.name}) — ${main.v.name}: −${RA.fmt(main.kill)} vojske${main.structs ? ', ' + main.structs + ' zgrada' : ''}${main.units ? ', ' + main.units + ' jedinica' : ''}.`, main.v.id, m.c);
       else this.tell(attacker, 'info', `${M.name}: udar u prazno, ništa vrijedno nije pogođeno.`, attacker.id, m.c);
     }
-    this.fx.push({ kind: 'conv', x: m.tx, y: m.ty, r: M.r + 0.5, tick: this.tick });
+    this.fx.push({ kind: 'conv', x: m.tx, y: m.ty, r: R + 0.5, tick: this.tick });
   };
   P._detonateEmp = function (m) {
     const R = RA.MISSILE.emp.r, tk = this.tick;
@@ -5123,7 +5128,7 @@ Object.assign(RA.CFG, {
    can replay exactly the same inputs on every device (lockstep). Args come from other players' devices:
    they are validated here and never trusted. */
 
-RA.CMD_KINDS = ['atk', 'boat', 'para', 'build', 'rec', 'mv', 'dis', 'mis', 'mob', 'ret', 'aReq', 'aRes', 'tReq', 'tRes', 'ext', 'brk', 'tEnd', 'give', 'help', 'ai', 'back', 'rcl', 'png', 'qm', 'tax', 'vas', 'loan', 'pay', 'str', 'buy', 'air', 'bomb', 'tech', 'stance', 'offer', 'offerRes', 'surr', 'endv', 'kick'];
+RA.CMD_KINDS = ['atk', 'boat', 'para', 'build', 'rec', 'mv', 'dis', 'mis', 'mob', 'ret', 'aReq', 'aRes', 'tReq', 'tRes', 'ext', 'brk', 'tEnd', 'give', 'help', 'ai', 'back', 'rcl', 'png', 'qm', 'tax', 'vas', 'loan', 'pay', 'str', 'buy', 'air', 'bomb', 'tech', 'stance', 'offer', 'offerRes', 'surr', 'endv', 'kick', 'rsch'];
 /* pings on the map and quick messages, seen by the sender's allies and team (plan item 57) */
 RA.PINGS = [
   { name: 'Napadni ovdje', icon: 'attack', color: '#ff5d5d' },
@@ -5250,6 +5255,9 @@ RA.QUICK_MSGS = ['Napadam!', 'Treba mi pomoć!', 'Pazi, napadaju nas!', 'Idem ta
         p.endVote = a[0] !== 0;
         this._endVotes();
         return { endv: p.endVote };
+      case 'rsch':
+        // weapons research (03c-research.js): [key]
+        return typeof a[0] === 'string' && Object.prototype.hasOwnProperty.call(RA.RSCH, a[0]) ? this.startResearch(pid, a[0]) : 'Nepoznato istraživanje.';
       case 'kick':
         // vote kick (Conquest League 5v5): [player of my team]
         return this.opts.league ? this.lgKick(p, player(a[0])) : 'Samo u ligi.';
@@ -5929,11 +5937,11 @@ RA.airName = (k) => {
     const M = RA.MISSILE[m.type];
     if (!M.hunt) return this._detonateConv(m);
     // hunter drone: enemy units in reach
-    const p = this.P[m.owner], R2 = (M.r + 0.5) * (M.r + 0.5);
+    const p = this.P[m.owner], r = this.wRad(p, m.type), R2 = (r + 0.5) * (r + 0.5);
     let n = 0;
     for (const u of this.units) {
       if (u.dead || !this.hostile(p, u.owner) || (u.x - m.tx) * (u.x - m.tx) + (u.y - m.ty) * (u.y - m.ty) > R2) continue;
-      u.hp -= 90;
+      u.hp -= 90 * this.droneMul(p) * this.armor(this.P[u.owner]);
       u.lastHit = this.tick;
       n++;
       if (u.hp <= 0) this._unitDied(u, 'dron');
@@ -6400,7 +6408,7 @@ RA.AI = {
     RA.AI.maybeBuild(G, p, info);
     RA.AI.maybeRecruit(G, p, info);
     if (G.deps) RA.AI.maybeBuyRes(G, p);
-    if (G.opts.tree) RA.AI.maybeTech(G, p);
+    if (G.opts.tree) RA.AI.maybeTech(G, p), RA.AI.maybeResearch(G, p);
     if (st && st.k === 'eco') RA.AI.maybeBuild(G, p, info); // building comes first
     if (!peace && p.n.port) RA.AI.navy(G, p, info);
     if (!peace && !calm && p.n.airport && RA.airOn()) RA.AI.air(G, p, info);
@@ -7151,6 +7159,95 @@ RA.AI.maybeTech = function (G, p) {
     if (c < bc) (bc = c), (best = k);
   }
   if (best && p.gold >= G.techCost(p, best) * 1.3) G.buyTech(p.id, best);
+};
+
+
+/* Weapons research (Darko, 27. 9.; with the tech tree, opts.tree — Focus has it): pay gold, wait while it is researched,
+   then a weapon is better for the rest of the game. One research at a time; command 'rsch' [key].
+   The combat code asks: G.wRange / G.wRad / G.droneMul / G.samR / G.samCd / G.unitSpd / G.armor. */
+RA.RSCH = {
+  drone: { name: 'Dronovi', icon: 'drone', max: 3, desc: '+25% štete dronova po nivou' },
+  range: { name: 'Domet', icon: 'rocket', max: 3, desc: '+20% dometa raketa i dronova po nivou' },
+  blast: { name: 'Razorna moć', icon: 'nuke', max: 2, desc: '+1 polje kruga udara raketa i dronova lovaca' },
+  sam: { name: 'Protivvazdušna odbrana', icon: 'sam', max: 3, desc: '+20% dometa i 15% brže punjenje PVO po nivou' },
+  armor: { name: 'Oklop', icon: 'tank', max: 3, desc: 'jedinice gube 12% manje snage u borbi i od udara po nivou' },
+  speed: { name: 'Pokretljivost', icon: 'send', max: 3, desc: 'jedinice se kreću 15% brže po nivou' },
+};
+RA.RSCH_ORDER = ['drone', 'range', 'blast', 'sam', 'armor', 'speed'];
+Object.assign(RA.CFG, {
+  RSCH_COST: 150000, // × 2^level
+  RSCH_SECS: 60, // × (level + 1): seconds of research (Focus: real seconds; otherwise ×10 ticks)
+});
+
+(function (P) {
+  P.rsLv = function (p, k) {
+    return (p && p.rs && p.rs[k]) | 0;
+  };
+  P.rsCost = function (p, k) {
+    return Math.round(RA.CFG.RSCH_COST * RA.dpow(2, this.rsLv(p, k)) * (p.bCost || 1));
+  };
+  /* how long research of the next level takes, in the game's clock (Focus seconds, else ticks) */
+  P.rsTime = function (p, k) {
+    const secs = RA.CFG.RSCH_SECS * (this.rsLv(p, k) + 1);
+    return this.sub ? secs : secs * 10;
+  };
+  P.startResearch = function (pid, k) {
+    const p = this.P[pid], R = RA.RSCH[k];
+    if (!this.opts.tree) return 'Istraživanje je uz stablo tehnologija — nije uključeno u ovoj igri.';
+    if (!p || !p.alive) return 'Nisi u igri.';
+    if (!R) return 'Nepoznato istraživanje.';
+    if (p.rsBusy) return `Već istražuješ: ${RA.RSCH[p.rsBusy.k].name}.`;
+    const lv = this.rsLv(p, k);
+    if (lv >= R.max) return `${R.name} je već na najvišem nivou.`;
+    const cost = this.rsCost(p, k);
+    if (p.gold < cost) return `Za ${R.name} ${lv + 1} treba ${RA.fmt(cost)} zlata.`;
+    p.gold -= cost;
+    p.rsBusy = { k, lv: lv + 1, from: this.clock(), done: this.clock() + this.rsTime(p, k) };
+    return { k, lv: lv + 1, done: p.rsBusy.done };
+  };
+  /* research that is done (every second in Focus, every tick otherwise) */
+  P._stepResearch = function () {
+    const now = this.clock();
+    for (const p of this.P) {
+      if (!p || !p.rsBusy || p.rsBusy.done > now) continue;
+      const { k, lv } = p.rsBusy;
+      (p.rs || (p.rs = {}))[k] = lv;
+      p.rsBusy = null;
+      this.tell(p, 'good', `Istraženo: ${RA.RSCH[k].name} ${lv} (${RA.RSCH[k].desc}).`, p.id);
+    }
+  };
+  // what the research changes
+  P.wRange = function (p, type) {
+    const M = RA.MISSILE[type];
+    return M.range ? M.range * (1 + 0.2 * this.rsLv(p, 'range')) : 0;
+  };
+  P.wRad = function (p, type) {
+    return RA.MISSILE[type].r + this.rsLv(p, 'blast');
+  };
+  P.droneMul = function (p) {
+    return 1 + 0.25 * this.rsLv(p, 'drone');
+  };
+  P.samR = function (owner) {
+    return RA.CFG.SAM_R * (1 + 0.2 * this.rsLv(owner, 'sam'));
+  };
+  P.samCd = function (owner, cd) {
+    return Math.round(cd * (1 - 0.15 * this.rsLv(owner, 'sam')));
+  };
+  P.unitSpd = function (owner) {
+    return 1 + 0.15 * this.rsLv(owner, 'speed');
+  };
+  P.armor = function (owner) {
+    return 1 - 0.12 * this.rsLv(owner, 'armor');
+  };
+})(RA.Game.prototype);
+
+/* the computer researches too, now and then, with spare gold */
+RA.AI.maybeResearch = function (G, p) {
+  if (!G.opts.tree || p.rsBusy || G.rng() > 0.05) return;
+  const ks = RA.RSCH_ORDER.filter((k) => G.rsLv(p, k) < RA.RSCH[k].max);
+  if (!ks.length) return;
+  const k = ks[Math.floor(G.rng() * ks.length)];
+  if (p.gold >= G.rsCost(p, k) * 1.5) G.startResearch(p.id, k);
 };
 
 
@@ -10266,6 +10363,7 @@ RA.UI = class {
       this._save();
       this.campaignSheet();
     };
+    $('campBigBtn').onclick = () => $('campBtn').onclick(); // the campaign, big on the Conqueror side
     try {
       if (!localStorage.getItem('ra_tut_done')) $('tutBtn').classList.add('fresh');
     } catch (_) {}
@@ -11084,6 +11182,9 @@ RA.UI = class {
       else if (r && r.st === 'deal') say('good', 'Dogovoreno!');
       else if (err(r)) say('info', RA.esc(r));
       if (!this.$('sheetWrap').hidden && this.$('sheet').querySelector('#dealSheet')) this.closeSheet();
+    } else if (kind === 'rsch') {
+      if (r && r.k) say('good', `Istraživanje počelo: ${RA.RSCH[r.k].name} ${r.lv}.`);
+      else if (err(r)) say('info', RA.esc(r));
     } else if (kind === 'buy') {
       if (err(r)) say('info', RA.esc(r));
     } else if (kind === 'str') {
@@ -11263,7 +11364,7 @@ RA.UI = class {
   samCovers(c) {
     const G = this.G, me = G.me, W = G.map.W, tk = G.tick;
     const x = c % W, y = (c / W) | 0;
-    return G.structs.some((s) => !s.dead && s.ready && s.type === 'sam' && s.owner !== me.id && !G.isFriendly(G.P[s.owner], me) && s.cd <= tk && s.empUntil <= tk && Math.hypot(s.x - x, s.y - y) <= RA.CFG.SAM_R);
+    return G.structs.some((s) => !s.dead && s.ready && s.type === 'sam' && s.owner !== me.id && !G.isFriendly(G.P[s.owner], me) && s.cd <= tk && s.empUntil <= tk && Math.hypot(s.x - x, s.y - y) <= G.samR(G.P[s.owner]));
   }
   aimMissile(type, c) {
     const G = this.G, me = G.me;
@@ -12204,6 +12305,10 @@ Object.assign(RA.UI.prototype, {
         this.act('tech', [b.dataset.tech]);
         if (G.online || G.long) setTimeout(() => this.econSheet(true), 400);
       }));
+      s.querySelectorAll('[data-rsch]').forEach((b) => (b.onclick = () => {
+        this.act('rsch', [b.dataset.rsch]);
+        setTimeout(() => this.econSheet(true), G.online || G.long ? 1200 : 50);
+      }));
       s.querySelectorAll('[data-buy]').forEach((b) => (b.onclick = () => {
         const [k, sid] = b.dataset.buy.split(':').map(Number);
         this.act('buy', [k, sid]);
@@ -12241,6 +12346,15 @@ Object.assign(RA.UI.prototype, {
     for (const k of RA.TECH_ORDER) {
       const T = RA.TECH[k], lv = G.techLv(me, k), cost = G.techCost(me, k), max = lv >= RA.TECH_MAX;
       t += `<article class="research-card" data-branch="${k}"><div class="research-heading"><i>${RA.icon(T.icon)}</i><span>${T.name}<small>Nivo ${lv} / ${RA.TECH_MAX}</small></span></div>${this.techProgress(lv)}<p>${RA.esc(T.desc)}</p>${max ? '<span class="research-max">Potpuno razvijeno</span>' : this.mini(`Istraži · ${RA.fmt(cost)}`, `data-tech="${k}" aria-label="Istraži ${T.name}, nivo ${lv+1}, ${RA.fmt(cost)} zlata"`, 'ok', me.gold < cost)}</article>`;
+    }
+    t += '</div>';
+    // weapons research (03c-research.js): one at a time, it takes a while
+    const B = me.rsBusy, left = B ? B.done - G.clock() : 0, secs = G.sub ? left : left / 10;
+    t += `<div class="sec-t">Istraživanje oružja</div><p class="explain">Plati i sačekaj: oružje je bolje do kraja igre. Jedno istraživanje u isto vrijeme.${B ? ` Sada: <b>${RA.esc(RA.RSCH[B.k].name)} ${B.lv}</b> — još ${RA.fmtTime(Math.max(0, secs))}.` : ''}</p><div class="research-grid" id="rschGrid">`;
+    for (const k of RA.RSCH_ORDER) {
+      const R = RA.RSCH[k], lv = G.rsLv(me, k), cost = G.rsCost(me, k), max = lv >= R.max, busy = B && B.k === k;
+      const dur = G.sub ? G.rsTime(me, k) : G.rsTime(me, k) / 10;
+      t += `<article class="research-card" data-rsch-card="${k}"><div class="research-heading"><i>${RA.icon(R.icon)}</i><span>${R.name}<small>Nivo ${lv} / ${R.max}</small></span></div><p>${RA.esc(R.desc)}</p>${max ? '<span class="research-max">Potpuno razvijeno</span>' : busy ? '<span class="research-max">Istražuje se…</span>' : this.mini(`Istraži · ${RA.fmt(cost)} · ${RA.fmtTime(dur)}`, `data-rsch="${k}"`, 'ok', me.gold < cost || !!B)}</article>`;
     }
     t += '</div>';
     const i = h.indexOf('<div class="field">');
@@ -17645,7 +17759,7 @@ Object.assign(RA.UI.prototype, {
   },
 });
 
-RA.BUILD = '0af53d1f';
+RA.BUILD = 'a4828553';
 new RA.App().boot();
 }
 function __raFallback(){
