@@ -222,7 +222,7 @@ RA.Account = class {
     const how = [RA.eraById(r.era).short, r.online ? (r.mode === 'coop' ? 'online tim' : 'online 1 na 1') : '', r.gm === 'br' ? 'battle royale' : r.gm === 'defcon' ? 'DEFCON' : '', r.difficulty === 'tesko' ? 'teško' : r.difficulty === 'lako' ? 'lako' : ''].filter(Boolean).join(' · ');
     const d = new Date(r.at), pad = (n) => String(n).padStart(2, '0');
     const when = `${d.getDate()}. ${d.getMonth() + 1}. ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-    return `<li class="${r.won ? 'w' : 'l'}"><span class="res">${r.won ? 'Pobjeda' : 'Poraz'}</span><span class="what"><b>${RA.esc(where)}</b><small>${RA.esc(how)}</small></span><span class="num">${RA.fmtTime(r.secs)}<small>${String(Math.round(r.peak * 10) / 10).replace('.', ',')}% · ${when}</small></span></li>`;
+    return `<li class="${r.won ? 'w' : 'l'}"><span class="res">${r.won ? 'Pobjeda' : 'Poraz'}</span><span class="what"><b>${RA.esc(where)}</b><small>${RA.esc(how)}</small></span><span class="num">${RA.fmtTime(r.secs)}<small>${String(Math.round(r.peak * 10) / 10).replace('.', ',')}% · ${when}</small></span>${/^l[a-z0-9]{6}$/.test(r.gid || '') ? `<button class="mini ok" data-rp="${r.gid.slice(1)}">Replay</button>` : ''}</li>`;
   }
   fillStats(s, j) {
     const st = j.stats, rk = st.rank, pct = (v) => String(v).replace('.', ',') + '%';
@@ -238,6 +238,11 @@ RA.Account = class {
     put('#accAchT', `Dostignuća · ${got}/${j.achievements.length}`);
     put('#accAch', j.achievements.map((a) => `<div class="ach${a.at ? ' on' : ''}"><i class="ach-mark" aria-hidden="true">${RA.icon(a.at ? 'check' : 'lock')}</i><div><b>${RA.esc(a.name)}</b><span>${RA.esc(a.desc)}</span><small>${a.at ? 'OTKLJUČANO' : 'ZAKLJUČANO'}</small></div></div>`).join(''));
     put('#accHist', j.recent.length ? `<ol class="hist">${j.recent.map((r) => this.gameLine(r)).join('')}</ol>` : '<p class="note">Još nema završenih partija. Odigraj jednu do kraja — pobjeda ili poraz se ovdje upisuju.</p>');
+    // online games (Skirmish, league, Focus) have a replay on the server
+    s.querySelectorAll('#accHist [data-rp]').forEach((b) => (b.onclick = () => {
+      this.ui.closeSheet();
+      this.ui.app.replayOpen(b.dataset.rp);
+    }));
   }
   async loadStats(s) {
     if (this.stats) this.fillStats(s, this.stats);

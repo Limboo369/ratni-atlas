@@ -31,6 +31,8 @@ RA.App = class {
     this.long = new RA.Long(this); // long games (09c-long.js)
     const lm = /^\/long-([a-z0-9]{6})\/?$/.exec(location.pathname);
     if (lm) setTimeout(() => this.long.open(lm[1]), 0);
+    const rm = /^\/replay-([a-z0-9]{6})\/?$/.exec(location.pathname); // a finished game's replay (09g-replay.js)
+    if (rm) setTimeout(() => this.replayOpen(rm[1]), 0);
     this.attract();
     this.showStart();
     document.getElementById('loading').hidden = true;
@@ -289,6 +291,9 @@ RA.App = class {
       this.long.close();
       if (/^\/long-/.test(location.pathname)) history.replaceState(null, '', '/');
     }
+    const rb = document.getElementById('replayBar');
+    if (rb) rb.remove(); // leaving a replay
+    if (/^\/replay-/.test(location.pathname)) history.replaceState(null, '', '/');
     this.autosave(true); // leaving a game: keep it for "Nastavi igru"
     if (ui.tut) ui.tut.end(false);
     if (this.net && (this.net.inGame || this.net.role)) this.net.endGame();
@@ -487,9 +492,9 @@ RA.App = class {
     }
   }
   frameBody(now) {
-    const dt = Math.min(250, now - (this.last || now));
-    this.last = now;
     const G = this.G;
+    const dt = Math.min(G && G.rp ? 1000 : 250, now - (this.last || now)); // a replay keeps its speed on a slow screen
+    this.last = now;
     const net = this.net;
     // The opaque launcher has its own atlas. Do not run or draw the hidden demo
     // behind it; the real single-player / online loop below is unchanged.
@@ -561,11 +566,12 @@ RA.App = class {
       this.simMs = performance.now() - t0;
     } else if (G && G.state === 'play' && !this.paused && !this.sheetPaused) {
       this.acc += dt * this.speed;
-      const maxSteps = 3 + this.speed * 2;
+      const maxSteps = G.rp ? 3 + this.speed * 10 : 3 + this.speed * 2;
       let n = 0;
       const t0 = performance.now();
       while (this.acc >= RA.CFG.TICK_MS && n < maxSteps) {
-        G.step();
+        if (G.rp) this.replayStep(G); // a replay: the record's commands at their ticks (09g-replay.js)
+        else G.step();
         this.acc -= RA.CFG.TICK_MS;
         n++;
         if (performance.now() - t0 > 45) {

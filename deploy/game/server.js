@@ -115,6 +115,14 @@ wss.on('connection', (ws, req) => {
     });
     return long.lobby(ws); // Skirmish: the list of public games
   }
+  if (q.has('replay')) {
+    ws.on('close', () => {
+      const c = (perIp.get(ip) || 1) - 1;
+      if (c > 0) perIp.set(ip, c);
+      else perIp.delete(ip);
+    });
+    return long.replay(ws, q.get('replay')); // a finished game's record (plan phase 17)
+  }
   if (q.has('league')) {
     ws.alive = true;
     ws.on('pong', () => (ws.alive = true));

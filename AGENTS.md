@@ -95,6 +95,10 @@ win by elimination, Blitz capitulation under 10% for 60 s and the 45-min limit, 
 `deploy/api/league.js` (ELO, 6 ladders b1 b2 b5 f1 f2 f5, top 100, history; results only on the API's internal port
 `INT_PORT` 8082 = `API_INT`, never published), `src/09f-league.js` (sheets: league, pick/ban, reveal, ladder, history).
 The server's simulation ends the game (`st.lg`), `long.hooks.over` reports it; without `API_INT` ratings live in memory.
+Replay (`src/09g-replay.js`): the server archives every finished long game (Skirmish, league, Focus) in
+`<LONG_DIR>/replays/` for `REPLAY_DAYS` (30); `/ws?replay=<code>` sends the record, the page rebuilds it with
+`RA.longGame` (`G.rp`, `G.long` false) and plays it at 1–16× (`app.replayStep`, `app.replaySeek`); link `/replay-<code>`,
+buttons in the profile history (`gid` `l<code>`) and the league history.
 Long games (days): `deploy/game/long.js` (same server, `/ws?long=<code>`, link `/long-<code>`) is only the clock (one tick
 every `LONG_TICK_MS`, 5 s) and the archive (settings, seed, every command with its tick; files in the `longgames`
 volume); `src/09c-long.js` replays the record to the server's tick and follows it. A player takes over a computer state

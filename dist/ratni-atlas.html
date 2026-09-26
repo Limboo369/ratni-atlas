@@ -1284,6 +1284,15 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
 .lg-tier.lg-raider { border-color: #9aa7ad; color: #9aa7ad; }
 #lgCode { width: 90px; padding: 6px 8px; border: 1px solid var(--line); background: var(--ink-2); color: var(--text); font: inherit; text-transform: lowercase; }
 
+/* Replay (src/09g-replay.js) — working look; Codex C7 styles it */
+.replay-bar { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 900; display: flex; align-items: center; gap: 8px; width: min(720px, calc(100vw - 32px)); padding: 8px 10px; border: 1px solid var(--line); border-radius: 2px; background: var(--ink-glass, rgba(10,16,20,.88)); color: var(--text); }
+.replay-bar .btn { min-height: 36px; padding: 6px 10px; }
+.replay-bar .btn svg { width: 18px; height: 18px; }
+.replay-bar .seg button { padding: 6px 8px; }
+.replay-bar #rpSeek { flex: 1; min-width: 60px; }
+.replay-bar #rpTime { font-size: 13px; white-space: nowrap; color: var(--muted); }
+@media (max-width: 520px) { .replay-bar { flex-wrap: wrap; bottom: 8px; } .replay-bar #rpSeek { order: 5; flex-basis: 100%; } }
+
 #app{touch-action:none}#sheet,.screen{touch-action:pan-y}</style>
 <div id="app">
   <div id="map" aria-label="Karta Evrope"></div>
@@ -13099,7 +13108,7 @@ RA.Account = class {
     const how = [RA.eraById(r.era).short, r.online ? (r.mode === 'coop' ? 'online tim' : 'online 1 na 1') : '', r.gm === 'br' ? 'battle royale' : r.gm === 'defcon' ? 'DEFCON' : '', r.difficulty === 'tesko' ? 'teško' : r.difficulty === 'lako' ? 'lako' : ''].filter(Boolean).join(' · ');
     const d = new Date(r.at), pad = (n) => String(n).padStart(2, '0');
     const when = `${d.getDate()}. ${d.getMonth() + 1}. ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-    return `<li class="${r.won ? 'w' : 'l'}"><span class="res">${r.won ? 'Pobjeda' : 'Poraz'}</span><span class="what"><b>${RA.esc(where)}</b><small>${RA.esc(how)}</small></span><span class="num">${RA.fmtTime(r.secs)}<small>${String(Math.round(r.peak * 10) / 10).replace('.', ',')}% · ${when}</small></span></li>`;
+    return `<li class="${r.won ? 'w' : 'l'}"><span class="res">${r.won ? 'Pobjeda' : 'Poraz'}</span><span class="what"><b>${RA.esc(where)}</b><small>${RA.esc(how)}</small></span><span class="num">${RA.fmtTime(r.secs)}<small>${String(Math.round(r.peak * 10) / 10).replace('.', ',')}% · ${when}</small></span>${/^l[a-z0-9]{6}$/.test(r.gid || '') ? `<button class="mini ok" data-rp="${r.gid.slice(1)}">Replay</button>` : ''}</li>`;
   }
   fillStats(s, j) {
     const st = j.stats, rk = st.rank, pct = (v) => String(v).replace('.', ',') + '%';
@@ -13115,6 +13124,11 @@ RA.Account = class {
     put('#accAchT', `Dostignuća · ${got}/${j.achievements.length}`);
     put('#accAch', j.achievements.map((a) => `<div class="ach${a.at ? ' on' : ''}"><i class="ach-mark" aria-hidden="true">${RA.icon(a.at ? 'check' : 'lock')}</i><div><b>${RA.esc(a.name)}</b><span>${RA.esc(a.desc)}</span><small>${a.at ? 'OTKLJUČANO' : 'ZAKLJUČANO'}</small></div></div>`).join(''));
     put('#accHist', j.recent.length ? `<ol class="hist">${j.recent.map((r) => this.gameLine(r)).join('')}</ol>` : '<p class="note">Još nema završenih partija. Odigraj jednu do kraja — pobjeda ili poraz se ovdje upisuju.</p>');
+    // online games (Skirmish, league, Focus) have a replay on the server
+    s.querySelectorAll('#accHist [data-rp]').forEach((b) => (b.onclick = () => {
+      this.ui.closeSheet();
+      this.ui.app.replayOpen(b.dataset.rp);
+    }));
   }
   async loadStats(s) {
     if (this.stats) this.fillStats(s, this.stats);
@@ -14462,6 +14476,8 @@ RA.App = class {
     this.long = new RA.Long(this); // long games (09c-long.js)
     const lm = /^\/long-([a-z0-9]{6})\/?$/.exec(location.pathname);
     if (lm) setTimeout(() => this.long.open(lm[1]), 0);
+    const rm = /^\/replay-([a-z0-9]{6})\/?$/.exec(location.pathname); // a finished game's replay (09g-replay.js)
+    if (rm) setTimeout(() => this.replayOpen(rm[1]), 0);
     this.attract();
     this.showStart();
     document.getElementById('loading').hidden = true;
@@ -14720,6 +14736,9 @@ RA.App = class {
       this.long.close();
       if (/^\/long-/.test(location.pathname)) history.replaceState(null, '', '/');
     }
+    const rb = document.getElementById('replayBar');
+    if (rb) rb.remove(); // leaving a replay
+    if (/^\/replay-/.test(location.pathname)) history.replaceState(null, '', '/');
     this.autosave(true); // leaving a game: keep it for "Nastavi igru"
     if (ui.tut) ui.tut.end(false);
     if (this.net && (this.net.inGame || this.net.role)) this.net.endGame();
@@ -14918,9 +14937,9 @@ RA.App = class {
     }
   }
   frameBody(now) {
-    const dt = Math.min(250, now - (this.last || now));
-    this.last = now;
     const G = this.G;
+    const dt = Math.min(G && G.rp ? 1000 : 250, now - (this.last || now)); // a replay keeps its speed on a slow screen
+    this.last = now;
     const net = this.net;
     // The opaque launcher has its own atlas. Do not run or draw the hidden demo
     // behind it; the real single-player / online loop below is unchanged.
@@ -14992,11 +15011,12 @@ RA.App = class {
       this.simMs = performance.now() - t0;
     } else if (G && G.state === 'play' && !this.paused && !this.sheetPaused) {
       this.acc += dt * this.speed;
-      const maxSteps = 3 + this.speed * 2;
+      const maxSteps = G.rp ? 3 + this.speed * 10 : 3 + this.speed * 2;
       let n = 0;
       const t0 = performance.now();
       while (this.acc >= RA.CFG.TICK_MS && n < maxSteps) {
-        G.step();
+        if (G.rp) this.replayStep(G); // a replay: the record's commands at their ticks (09g-replay.js)
+        else G.step();
         this.acc -= RA.CFG.TICK_MS;
         n++;
         if (performance.now() - t0 > 45) {
@@ -16749,13 +16769,191 @@ Object.assign(RA.UI.prototype, {
     this.account.api('GET', '/api/league/history').then((j) => {
       const W = { elim: 'uništenje', cap: 'kapitulacija', time: '45 min', surr: 'predaja', vote: 'glasanje' };
       let h = this.head('Historija partija', 'Tvoji ligaški mečevi (zadnjih 30)') + '<div class="list">';
-      h += j.games.length ? j.games.map((g) => `<div class="prow wide"><div class="pn"><div class="nm">${g.won ? 'Pobjeda' : g.left ? 'Napušteno' : 'Poraz'} · ${RA.lgName(g.l)} · ${g.delta >= 0 ? '+' : ''}${g.delta} (${g.elo})</div><div class="d">${RA.esc(RA.lgMapName(g.map))} · ${RA.esc(RA.eraById(g.era).short)} · ${W[g.why] || ''} · ${RA.fmtTime(g.secs)} · ${new Date(g.at).toLocaleString('bs')}<br>${g.teams.map((t) => t.map((p) => (p.me ? '<b>' + RA.esc(p.name) + '</b>' : RA.esc(p.name))).join(', ')).join(' vs ')}</div></div></div>`).join('') : '<p class="note">Još nemaš ligaških partija.</p>';
-      this.openSheet(h + '</div>');
+      h += j.games.length ? j.games.map((g) => `<div class="prow wide"><div class="pn"><div class="nm">${g.won ? 'Pobjeda' : g.left ? 'Napušteno' : 'Poraz'} · ${RA.lgName(g.l)} · ${g.delta >= 0 ? '+' : ''}${g.delta} (${g.elo})</div><div class="d">${RA.esc(RA.lgMapName(g.map))} · ${RA.esc(RA.eraById(g.era).short)} · ${W[g.why] || ''} · ${RA.fmtTime(g.secs)} · ${new Date(g.at).toLocaleString('bs')}<br>${g.teams.map((t) => t.map((p) => (p.me ? '<b>' + RA.esc(p.name) + '</b>' : RA.esc(p.name))).join(', ')).join(' vs ')}</div></div><div class="bb">${this.mini('Replay', `data-rp="${g.code}"`, 'ok')}</div></div>`).join('') : '<p class="note">Još nemaš ligaških partija.</p>';
+      this.openSheet(h + '</div>', (s) => s.querySelectorAll('[data-rp]').forEach((b) => (b.onclick = () => {
+        this.closeSheet();
+        this.app.replayOpen(b.dataset.rp);
+      })));
     }, (e) => this.toast('bad', RA.esc(e.message)));
   },
 });
 
-RA.BUILD = '735a7c0b';
+
+/* Replay (plan phase 17): the server keeps the record of every finished online game (Skirmish, Conquest League, Focus;
+   deploy/game/long.js, /ws?replay=<code>, 30 days). The page rebuilds the game from the record and plays it at
+   1–16× with pause and a time line (seeking back replays from the start). Opened from the profile's history, the
+   league's match history or the link /replay-<code>.
+   Stable hooks for the look (Codex C7): #replayBar, #rpPlay, #rpSpeed button[data-v], #rpSeek, #rpTime, #rpExit. */
+RA.RP_SPEEDS = [1, 4, 8, 16];
+
+Object.assign(RA.App.prototype, {
+  replayOpen(code) {
+    const url = this.net && this.net.wsUrl;
+    if (!url) return this.ui.toast('info', 'Snimci rade na war.deovilab.com.', { ms: 4000 });
+    if (!/^[a-z0-9]{6}$/.test(code || '')) return;
+    const ws = new WebSocket(url + '?replay=' + code);
+    const ov = document.getElementById('loading');
+    ov.hidden = false;
+    document.getElementById('loadMsg').textContent = 'Učitavam snimak…';
+    let got = false;
+    ws.onmessage = (ev) => {
+      let m;
+      try {
+        m = JSON.parse(ev.data);
+      } catch (_) {
+        return;
+      }
+      got = true;
+      if (m.t === 'replay' && m.rec && m.rec.set) return this.replayStart(m.rec);
+      ov.hidden = true;
+      this.ui.toast('bad', RA.esc(String(m.e || 'Snimak nije dostupan.')), { ms: 6000 });
+    };
+    ws.onclose = () => {
+      if (got) return;
+      ov.hidden = true;
+      this.ui.toast('bad', 'Server snimaka nije dostupan.', { ms: 5000 });
+    };
+  },
+  /* build the game at tick 0 (the same as every player's device had it) */
+  replayBuild(rec) {
+    const G = RA.longGame(this.map, rec);
+    G.long = false; // not following a server clock: the replay bar drives the time
+    G.rp = { rec, q: rec.cmds.slice(), end: rec.over && rec.over.tick ? rec.over.tick : rec.cmds.length ? rec.cmds[rec.cmds.length - 1][0] + 50 : 0 };
+    G.gid = ''; // a replay reports no result
+    return G;
+  },
+  replayStart(rec) {
+    const s = rec.set, ui = this.ui;
+    if (!this.mapReady(s.map, s.era)) return this.withMap(s.map, s.era, () => this.replayStart(rec));
+    if (this.long && this.long.rec) this.long.close();
+    this.setMap(this.maps[s.map]);
+    document.getElementById('startScreen').hidden = true;
+    document.getElementById('lobbyScreen').hidden = true;
+    document.getElementById('endScreen').hidden = true;
+    const G = this.replayBuild(rec);
+    this.setGame(G);
+    this.attractMode = false;
+    this.paused = false;
+    this.speed = 4;
+    ui.watching = true;
+    ui.fxList = [];
+    ui.closeSheet();
+    ui.spawnUI(false);
+    ui.showPlayUI(true);
+    this.terr.reset(G);
+    this.terr.updatePalette();
+    document.getElementById('loading').hidden = true;
+    const gm = G.map;
+    if (gm.region) {
+      const bx = gm.region.box;
+      this.lmap.setMaxBounds(L.latLngBounds([[bx[1], bx[0]], [bx[3], bx[2]]]).pad(0.7));
+      this.lmap.fitBounds(L.latLngBounds([[bx[1], bx[0]], [bx[3], bx[2]]]));
+    } else this.lmap.setMaxBounds(this.defBounds);
+    if (/^https?:$/.test(location.protocol)) history.replaceState(null, '', '/replay-' + rec.code);
+    const who = (rec.slots || []).map((x) => x.name).filter(Boolean);
+    ui.toast('info', `Snimak ${s.lg ? `lige ${s.lg}v${s.lg}` : s.fast ? 'Skirmish igre' : 'Focus igre'}${who.length ? ': ' + who.map(RA.esc).join(', ') : ''}`, { ms: 6000 });
+    ui.replayBar();
+  },
+  /* one tick of the replay: the record's commands of this tick, then the step */
+  replayStep(G) {
+    const q = G.rp.q;
+    while (q.length && q[0][0] <= G.tick) RA.longApply(G, q.shift());
+    if (G.state === 'play') G.step(); // a command may have ended the game (a surrender) before this tick's step
+  },
+  /* jump to a tick: forward from here, or back = the game again from tick 0 (time-sliced, with the loading bar) */
+  replaySeek(t) {
+    let G = this.G;
+    if (!G || !G.rp) return;
+    t = Math.max(0, Math.min(G.rp.end, t | 0));
+    if (t < G.tick) {
+      G = this.replayBuild(G.rp.rec);
+      this.setGame(G);
+      this.terr.reset(G);
+    }
+    const ov = document.getElementById('loading'), msg = document.getElementById('loadMsg');
+    this.replaying = true;
+    ov.hidden = false;
+    const slice = () => {
+      if (this.G !== G) return;
+      const t0 = performance.now();
+      while (G.tick < t && G.state === 'play' && performance.now() - t0 < 60) this.replayStep(G);
+      if (G.tick >= t) while (G.rp.q.length && G.rp.q[0][0] <= G.tick) RA.longApply(G, G.rp.q.shift()); // this tick's commands too
+      if (G.tick < t && G.state === 'play') {
+        msg.textContent = `Premotavam… ${Math.round((G.tick / Math.max(1, t)) * 100)}%`;
+        return setTimeout(slice, 0);
+      }
+      this.replaying = false;
+      G.events.length = 0;
+      G.fx.length = 0;
+      this.ui.feedReset();
+      this.ui.feedSeen = G.feed.length;
+      this.terr.reset(G);
+      this.terr.updatePalette();
+      ov.hidden = true;
+    };
+    slice();
+  },
+  replayExit() {
+    const b = document.getElementById('replayBar');
+    if (b) b.remove();
+    clearInterval(this.ui._rpIv);
+    if (/^\/replay-/.test(location.pathname)) history.replaceState(null, '', '/');
+    this.showStart();
+  },
+});
+
+Object.assign(RA.UI.prototype, {
+  /* the replay controls: play/pause, 1/4/8/16×, the time line, exit */
+  replayBar() {
+    const app = this.app;
+    let b = document.getElementById('replayBar');
+    if (b) b.remove();
+    b = document.createElement('div');
+    b.id = 'replayBar';
+    b.className = 'replay-bar';
+    b.innerHTML = `<button class="btn" id="rpPlay" aria-label="Pauza">${RA.icon('pause')}</button>
+      <div class="seg" id="rpSpeed">${RA.RP_SPEEDS.map((v) => `<button data-v="${v}" aria-pressed="${v === app.speed}">${v}×</button>`).join('')}</div>
+      <input type="range" id="rpSeek" min="0" max="${app.G.rp.end}" value="0" step="1" aria-label="Vrijeme snimka">
+      <span id="rpTime">0:00</span>
+      <button class="btn" id="rpExit">Izađi</button>`;
+    document.body.appendChild(b);
+    const play = b.querySelector('#rpPlay'), seek = b.querySelector('#rpSeek'), time = b.querySelector('#rpTime');
+    const syncPlay = () => {
+      play.innerHTML = RA.icon(app.paused ? 'play' : 'pause');
+      play.setAttribute('aria-label', app.paused ? 'Nastavi' : 'Pauza');
+    };
+    play.onclick = () => {
+      app.paused = !app.paused;
+      syncPlay();
+    };
+    b.querySelectorAll('#rpSpeed button').forEach((x) => (x.onclick = () => {
+      app.speed = +x.dataset.v;
+      b.querySelectorAll('#rpSpeed button').forEach((y) => y.setAttribute('aria-pressed', String(y === x)));
+    }));
+    let dragging = false;
+    seek.oninput = () => (dragging = true);
+    seek.onchange = () => {
+      dragging = false;
+      app.replaySeek(+seek.value);
+    };
+    b.querySelector('#rpExit').onclick = () => app.replayExit();
+    clearInterval(this._rpIv);
+    this._rpIv = setInterval(() => {
+      const G = app.G;
+      if (!G || !G.rp || !document.getElementById('replayBar')) {
+        clearInterval(this._rpIv);
+        if (!(G && G.rp)) b.remove();
+        return;
+      }
+      if (!dragging) seek.value = G.tick;
+      const r = G.rp.rec, secs = (G.tick * r.tickMs) / 1000, all = (G.rp.end * r.tickMs) / 1000;
+      time.textContent = `${RA.fmtTime(secs)} / ${RA.fmtTime(all)}`;
+      if (G.state !== 'play' || G.tick >= G.rp.end) (app.paused = true), syncPlay();
+    }, 250);
+  },
+});
+
+RA.BUILD = '06a30096';
 new RA.App().boot();
 }
 function __raFallback(){

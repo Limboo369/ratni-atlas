@@ -122,6 +122,14 @@ function client(url) {
     const A2 = await lobby('Darko');
     const hi2 = A2.got.filter((m) => m.t === 'hi').pop();
     check(hi2.elo.b1.elo === 480 && hi2.elo.b1.games === 1 && hi2.elo.b2.games === 0, `the new rating on the next visit (${JSON.stringify(hi2.elo.b1)}), ladders separate`);
+    // the replay of the finished game (plan phase 17)
+    const RP = client(U + '?replay=' + ra.code);
+    await RP.open;
+    const rp = await RP.wait((m) => m.t === 'replay' || m.t === 'err', 5000, 'replay');
+    check(rp.t === 'replay' && rp.rec.over && rp.rec.over.lg && rp.rec.cmds.some((e) => e[2] === 'surr') && rp.rec.slots.length === 2, 'replay: the server keeps the finished game (record, end, winner)');
+    const RX = client(U + '?replay=zzzzzz');
+    await RX.open;
+    check((await RX.wait((m) => m.t === 'err', 5000, 'no replay')).e.length > 0, 'replay: an unknown game is refused');
     for (const c of [A, B, LA, LB, C, A2]) c.ws.close();
 
     // parties: together in one team; only the leader queues; too big for the size

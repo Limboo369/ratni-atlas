@@ -258,7 +258,7 @@ module.exports = function statsRoutes(db, sessionUser) {
         const [s, a, recent] = await Promise.all([
           totals(db, u.id),
           db.query('select id, at from achievements where user_id = $1', [u.id]),
-          db.query(`select at, online, mode, map, region, era, gm, start, difficulty, won, secs, peak, cities, kills, nukes, players from results where user_id = $1 order by at desc limit 20`, [u.id]),
+          db.query(`select at, gid, online, mode, map, region, era, gm, start, difficulty, won, secs, peak, cities, kills, nukes, players from results where user_id = $1 order by at desc limit 20`, [u.id]),
         ]);
         const have = new Map(a.rows.map((x) => [x.id, x.at]));
         return {

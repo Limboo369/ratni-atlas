@@ -271,8 +271,11 @@ Object.assign(RA.UI.prototype, {
     this.account.api('GET', '/api/league/history').then((j) => {
       const W = { elim: 'uništenje', cap: 'kapitulacija', time: '45 min', surr: 'predaja', vote: 'glasanje' };
       let h = this.head('Historija partija', 'Tvoji ligaški mečevi (zadnjih 30)') + '<div class="list">';
-      h += j.games.length ? j.games.map((g) => `<div class="prow wide"><div class="pn"><div class="nm">${g.won ? 'Pobjeda' : g.left ? 'Napušteno' : 'Poraz'} · ${RA.lgName(g.l)} · ${g.delta >= 0 ? '+' : ''}${g.delta} (${g.elo})</div><div class="d">${RA.esc(RA.lgMapName(g.map))} · ${RA.esc(RA.eraById(g.era).short)} · ${W[g.why] || ''} · ${RA.fmtTime(g.secs)} · ${new Date(g.at).toLocaleString('bs')}<br>${g.teams.map((t) => t.map((p) => (p.me ? '<b>' + RA.esc(p.name) + '</b>' : RA.esc(p.name))).join(', ')).join(' vs ')}</div></div></div>`).join('') : '<p class="note">Još nemaš ligaških partija.</p>';
-      this.openSheet(h + '</div>');
+      h += j.games.length ? j.games.map((g) => `<div class="prow wide"><div class="pn"><div class="nm">${g.won ? 'Pobjeda' : g.left ? 'Napušteno' : 'Poraz'} · ${RA.lgName(g.l)} · ${g.delta >= 0 ? '+' : ''}${g.delta} (${g.elo})</div><div class="d">${RA.esc(RA.lgMapName(g.map))} · ${RA.esc(RA.eraById(g.era).short)} · ${W[g.why] || ''} · ${RA.fmtTime(g.secs)} · ${new Date(g.at).toLocaleString('bs')}<br>${g.teams.map((t) => t.map((p) => (p.me ? '<b>' + RA.esc(p.name) + '</b>' : RA.esc(p.name))).join(', ')).join(' vs ')}</div></div><div class="bb">${this.mini('Replay', `data-rp="${g.code}"`, 'ok')}</div></div>`).join('') : '<p class="note">Još nemaš ligaških partija.</p>';
+      this.openSheet(h + '</div>', (s) => s.querySelectorAll('[data-rp]').forEach((b) => (b.onclick = () => {
+        this.closeSheet();
+        this.app.replayOpen(b.dataset.rp);
+      })));
     }, (e) => this.toast('bad', RA.esc(e.message)));
   },
 });

@@ -40,6 +40,33 @@ try {
   console.warn('long: no storage', e.message);
 }
 console.log(`long games: ${games.size} loaded from ${DIR}`);
+/* replays (plan phase 17): the record of every finished online game (Skirmish, league, Focus) stays REPLAY_DAYS here,
+   also after the game itself is dropped; /ws?replay=<code> sends it (the page plays it at 1–16×) */
+const RDIR = path.join(DIR, 'replays');
+const REPLAY_DAYS = +process.env.REPLAY_DAYS || 30;
+try {
+  fs.mkdirSync(RDIR, { recursive: true });
+} catch (e) {
+  console.warn('long: no replay storage', e.message);
+}
+function archive(gm) {
+  const r = gm.rec;
+  fs.writeFile(path.join(RDIR, r.code + '.json'), JSON.stringify({ ...pub(r), over: r.over, end: Date.now() }), (e) => e && console.warn('replay save', e.message));
+}
+function replay(ws, code) {
+  const send = (m) => ws.readyState === 1 && ws.send(JSON.stringify(m), () => ws.close());
+  if (!/^[a-z0-9]{6}$/.test(code || '')) return send({ t: 'err', e: 'Nevažeći kod.' });
+  const gm = games.get(code);
+  if (gm && gm.rec.over) return send({ t: 'replay', rec: { ...pub(gm.rec), over: gm.rec.over } });
+  fs.readFile(path.join(RDIR, code + '.json'), 'utf8', (e, txt) => {
+    if (e) return send({ t: 'err', e: gm ? 'Igra još traje — snimak je dostupan kad se završi.' : 'Snimak te igre ne postoji (ili je istekao).' });
+    try {
+      send({ t: 'replay', rec: JSON.parse(txt) });
+    } catch {
+      send({ t: 'err', e: 'Snimak je oštećen.' });
+    }
+  });
+}
 
 /* the server's own simulation of every game (simhost.js, a worker thread): the state without trusting any player */
 let sim = null, simReady = false, askId = 0;
@@ -64,6 +91,7 @@ if (process.env.LONG_SIM !== '0') {
         if (gm && !gm.rec.over) {
           gm.rec.over = { tick: m.st.tick, winner: m.st.winner, lg: m.st.lg || undefined };
           save(gm);
+          archive(gm);
           // Conquest League: the ratings change (league.js), everyone in the game hears it
           if (hooks.over) Promise.resolve(hooks.over(gm, m.st)).then((res) => {
             if (!res) return;
@@ -352,6 +380,10 @@ setInterval(() => {
   }
 }, 60e3);
 setInterval(() => {
+  const oldR = Date.now() - REPLAY_DAYS * 86400e3;
+  fs.readdir(RDIR, (e, fl) => {
+    for (const f of fl || []) fs.stat(path.join(RDIR, f), (e2, st) => !e2 && st.mtimeMs < oldR && fs.unlink(path.join(RDIR, f), () => {}));
+  });
   const old = Date.now() - IDLE_DAYS * 86400e3;
   for (const [code, gm] of games) if ((gm.rec.seen || gm.rec.created) < old && !gm.socks.size) {
     games.delete(code);
@@ -375,4 +407,4 @@ function flush() {
   }
 }
 
-module.exports = { handle, lobby, games, flush, TICK_MS, simAsk, newLeague, hooks };
+module.exports = { handle, lobby, replay, games, flush, TICK_MS, simAsk, newLeague, hooks };
