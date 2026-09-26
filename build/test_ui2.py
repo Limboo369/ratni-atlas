@@ -301,7 +301,9 @@ async def main():
         await steps(40)
         await page.wait_for_timeout(300)
         await ev('() => { document.getElementById("toasts").innerHTML = ""; window.__ra.ui.reqToasts.clear(); }')  # offer cards would catch the tap
-        upt = await ev('() => { const a = window.__ra, u = a.G.me.units[0]; if (!u) return null; const v = a.terr.view(); return [v.ox + u.x * v.cell, v.oy + u.y * v.cell]; }')
+        await page.wait_for_timeout(1200)  # the unit's picture glides to where it is (slow on a slow machine)
+        # tap where the unit is drawn (its animated pose), like a player does
+        upt = await ev('() => { const a = window.__ra, u = a.G.me.units[0]; if (!u) return null; const v = a.terr.view(); const q = a.fx.unitMotion ? a.fx.unitMotion.get(u) || u : u; return [v.ox + q.x * v.cell, v.oy + q.y * v.cell]; }')
         if upt:
             await tap_xy(upt[0], upt[1])
             await page.wait_for_timeout(300)
