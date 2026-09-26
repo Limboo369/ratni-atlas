@@ -66,7 +66,7 @@ async def main():
         ev = page.evaluate
         check(await ev('document.getElementById("resumeBtn").hidden'), 'no save yet: no "Nastavi igru"')
 
-        await ev('''() => { const ui = window.__ra.ui; Object.assign(ui.settings, { map: 'evropa', region: 'balkan', era: 'danas', start: '%s', gm: 'klasik', difficulty: 'lako', peace: 180, res: %s }); window.__ra.newGame(); }''' % (START, 'true' if START == 'granice' else 'false'))
+        await ev('''() => { const ui = window.__ra.ui; Object.assign(ui.settings, { pace: 'custom', cPace: 'blitz', tree: true, map: 'evropa', region: 'balkan', era: 'danas', start: '%s', gm: 'klasik', difficulty: 'lako', peace: 180, res: %s }); window.__ra.newGame(); }''' % (START, 'true' if START == 'granice' else 'false'))
         await page.wait_for_function('window.__ra.G && window.__ra.G.state === "spawn"', timeout=30_000)
         # two picks (the second one moves the player): both are replayed
         await ev('''() => { const G = window.__ra.G, ui = window.__ra.ui, ns = G.P.filter(p => p && p.type === 'nation' && p.alive).sort((x, y) => x.area - y.area);
@@ -133,6 +133,13 @@ async def main():
         # plays on and keeps recording into the same save
         d = await ev(PLAY, 2)
         check(d[0] > a[0] and d[2] >= c[2], f'plays on after continue: tick {d[0]}, commands {d[2]}')
+        # the tech tree (Make your choice → Stablo tehnologija): bought in the economy sheet, after the replay
+        await ev('() => { window.__ra.G.me.gold += 300000; window.__ra.ui.econSheet(true); }')
+        await page.wait_for_selector('[data-tech="eco"]:not([disabled])')
+        await page.click('[data-tech="eco"]')
+        tk = await ev('[window.__ra.G.me.tech && window.__ra.G.me.tech.eco, window.__ra.G.me.bGold]')
+        check(tk[0] == 1 and abs(tk[1] - 1.08) < 1e-9, f'tech tree: Ekonomija 1 bought ({tk})')
+        await ev('window.__ra.ui.closeSheet()')
         # vassals (plan 40): a weak neighbour accepts, pays tribute, fights at your side; "Oslobodi" lets it go
         vid = await ev('''() => { const G = window.__ra.G, me = G.me;
           me.troops = Math.max(me.troops, 500000);

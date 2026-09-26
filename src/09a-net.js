@@ -212,6 +212,7 @@ RA.Net = class {
   }
   setStatus(s) {
     this.status = s;
+    if (this.app.ui && this.app.ui.focusOffer) this.app.ui.focusOffer();
     this.changed();
   }
   onChange(fn) {

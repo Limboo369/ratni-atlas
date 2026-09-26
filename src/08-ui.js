@@ -50,6 +50,14 @@ RA.ICONS = {
   chat: '<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/>',
   user: '<circle cx="12" cy="8" r="3.6"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/>',
 };
+/* game modes (start screen): Blitz and Focus fix the rules, Make your choice leaves them to the player */
+RA.MODES = {
+  blitz: { name: 'Blitz', rules: { pace: 'blitz', tree: false, res: false, noNuke: false, peace: 60 },
+    note: 'Blitz: brza, direktna partija — bez stabla tehnologija i resursa, 1 min mira, sve oružje dozvoljeno.' },
+  focus: { name: 'Focus', rules: { pace: 'focus', tree: true, res: true, noNuke: false, peace: 180 },
+    note: 'Focus: igra traje danima i teče i dok nisi tu (kompjuter vodi tvoju državu). Stablo tehnologija, resursi i trgovina, duže mirno doba; kad se vratiš, izvještaj šta se desilo.' },
+  custom: { name: 'Make your choice', rules: null, note: '' },
+};
 RA.icon = (n, cls) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"${cls ? ` class="${cls}"` : ''} aria-hidden="true">${RA.ICONS[n] || ''}</svg>`;
 
 RA.TERR_NAME = ['more', 'ravnica', 'brda', 'planine'];
@@ -116,24 +124,44 @@ RA.UI = class {
     });
     this.startNotes();
     this._seg('diffSeg', this.settings.difficulty, (v) => (this.settings.difficulty = v));
-    this._seg('peaceSeg', String(this.settings.peace), (v) => (this.settings.peace = +v));
+    this._seg('peaceSeg', String(this.settings.peace), (v) => {
+      this.settings.peace = +v;
+      this.paceShow();
+    });
     this._seg('csSeg', String(this.settings.cityStates), (v) => (this.settings.cityStates = +v));
-    this._seg('resSeg', this.settings.res ? '1' : '0', (v) => (this.settings.res = v === '1'));
+    this._seg('resSeg', this.settings.res ? '1' : '0', (v) => {
+      this.settings.res = v === '1';
+      this.paceShow();
+    });
     $('colorSeg').innerHTML = RA.PLAYER_COLORS.map((c) => `<button data-v="${c}" aria-pressed="false" aria-label="Boja ${c}" style="--sw:${c}"><span></span></button>`).join('');
     this._seg('colorSeg', RA.PLAYER_COLORS.includes(this.settings.color) ? this.settings.color : RA.PLAYER_COLORS[0], (v) => (this.settings.color = v));
     this._seg('cbSeg', this.settings.cb ? '1' : '0', (v) => this.setColorblind(v === '1'));
 
-    // Blitz (the quick game) or Focus (a game of days on the server, see 09c-long.js); the settings below apply to both
-    this._seg('paceSeg', this.settings.pace === 'focus' ? 'focus' : 'blitz', (v) => {
+    // the game's mode: Blitz and Focus are presets of the rules, "Make your choice" lets you set every rule
+    // (map, era, start, game type and difficulty are yours in every mode); see RA.MODES and playSet()
+    this._seg('paceSeg', RA.MODES[this.settings.pace] ? this.settings.pace : 'blitz', (v) => {
       this.settings.pace = v;
       this.paceShow();
+      if (v === 'custom') this.$('operationDialog').showModal();
     });
     this._seg('daysSeg', String([1, 3, 7].includes(this.settings.days) ? this.settings.days : 1), (v) => (this.settings.days = +v));
+    this._seg('cPaceSeg', this.settings.cPace === 'focus' ? 'focus' : 'blitz', (v) => {
+      this.settings.cPace = v;
+      this.paceShow();
+    });
+    this._seg('treeSeg', this.settings.tree ? '1' : '0', (v) => {
+      this.settings.tree = v === '1';
+      this.paceShow();
+    });
+    this._seg('nukeSeg', this.settings.noNuke ? '1' : '0', (v) => {
+      this.settings.noNuke = v === '1';
+      this.paceShow();
+    });
     this.paceShow();
     $('goBtn').onclick = () => {
       this.settings.name = $('nameIn').value.trim().slice(0, 18);
       this._save();
-      if (this.settings.pace === 'focus') this.confirmLong();
+      if (this.playSet().pace === 'focus') this.confirmLong();
       else app.newGame();
     };
     $('resumeBtn').onclick = () => {
@@ -447,10 +475,23 @@ RA.UI = class {
     const E = RA.ERA;
     this.$('aStrike').innerHTML = `${RA.icon(E.strikeIcon)}<span>${RA.esc(E.strikeTab)}</span>`;
   }
+  /* the rules a new game gets: the mode's preset, or (Make your choice) the player's own */
+  playSet() {
+    const s = this.settings, M = RA.MODES[s.pace] || RA.MODES.blitz;
+    if (!M.rules) return Object.assign({}, s, { pace: s.cPace === 'focus' ? 'focus' : 'blitz' });
+    return Object.assign({}, s, M.rules);
+  }
   paceShow() {
-    const f = this.settings.pace === 'focus';
+    const s = this.settings, P = this.playSet(), f = P.pace === 'focus', M = RA.MODES[s.pace] || RA.MODES.blitz;
     this.$('paceDays').hidden = !f;
     this.$('goBtn').firstElementChild.textContent = f ? 'Započni Focus igru' : 'Započni osvajanje';
+    const custom = s.pace === 'custom';
+    this.$('operationDialog').classList.toggle('preset', !custom);
+    const rules = `${f ? 'Focus' : 'Blitz'} · stablo ${P.tree ? 'da' : 'ne'} · resursi ${P.res ? 'da' : 'ne'} · nuklearke ${P.noNuke ? 'ne' : 'da'} · mir ${P.peace ? Math.round(P.peace / 60) + ' min' : 'bez'}`;
+    this.$('paceNote').innerHTML = custom ? `<b>Tvoja pravila:</b> ${rules} — <button class="linkish" id="paceEdit">promijeni</button>` : RA.esc(M.note);
+    const pe = this.$('paceEdit');
+    if (pe) pe.onclick = () => this.$('operationDialog').showModal();
+    this.$('rulesNote').innerHTML = `${RA.esc(M.name)}: ${RA.esc(rules)}. Svoja pravila biraš u modu <b>Make your choice</b>.`;
   }
   _save() {
     if (this.command) this.command.refresh();

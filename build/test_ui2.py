@@ -80,7 +80,7 @@ async def main():
         await page.click('#startSeg button[data-v="slobodno"]')
         await page.click('#gmSeg button[data-v="klasik"]')
         await page.click(f'#regSeg button[data-v="{REGION}"]')
-        await page.click('#peaceSeg button[data-v="60"]')
+        # peace: the Blitz preset (1 min) — the field is only in Make your choice
         await page.click('#configDone')
         await page.click('#goBtn')
         await page.wait_for_timeout(900)

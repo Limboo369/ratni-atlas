@@ -78,6 +78,8 @@ function cleanSet(s) {
   out.cs = Math.max(0, Math.min(50, s.cs | 0));
   out.peace = Math.max(0, Math.min(600, s.peace | 0));
   out.res = s.res === 1 ? 1 : 0;
+  out.tree = s.tree === 1 ? 1 : 0;
+  out.nn = s.nn === 1 ? 1 : 0;
   out.days = [1, 3, 7].includes(s.days) ? s.days : 1; // Focus: ~1, 3 or 7 days (the clock turns slower)
   return out;
 }
@@ -133,7 +135,7 @@ function handle(ws, q) {
         return enter(g, name);
       }
       const g = /^[a-z0-9]{6}$/.test(want || '') && games.get(want);
-      if (!g) return send({ t: 'err', e: 'Ta Focus igra ne postoji (ili je istekla).' });
+      if (!g) return send({ t: 'err', e: 'Ta Focus igra ne postoji (ili je istekla).', gone: 1 });
       return enter(g, name);
     }
     if (Array.isArray(m.join)) {
@@ -147,6 +149,15 @@ function handle(ws, q) {
       }
       add(gm, slot, 'join', [id, gm.rec.slots[slot].name]);
       return send({ t: 'you', you: slot });
+    }
+    if (m.leave === 1 && slot >= 0) {
+      // leaving for good: the computer keeps the state and nobody can come back to this seat
+      const s = gm.rec.slots[slot];
+      s.uid = '';
+      s.away = true;
+      add(gm, slot, 'ai', []);
+      slot = -1;
+      return send({ t: 'you', you: -1 });
     }
     if (Array.isArray(m.c) && slot >= 0) {
       const [kind, args] = m.c;

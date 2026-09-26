@@ -1146,3 +1146,20 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
 .pace-days { display: flex; align-items: center; gap: 10px; width: min(100%, 378px); margin: -4px 0 12px; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: #9eacb4; }
 .pace-days[hidden] { display: none; }
 .pace-days .seg { flex: 1; }
+.sw.tech-ic { display: grid; place-items: center; background: rgba(255,255,255,.06); color: var(--accent, #8fb8ff); }
+.sw.tech-ic svg { width: 14px; height: 14px; }
+.tech-pips { margin-left: 6px; color: var(--danger); letter-spacing: 2px; font-size: 11px; }
+.pace-seg { grid-template-columns: 1fr 1fr 1.25fr; }
+.pace-seg button b { font-size: 13px; letter-spacing: .08em; line-height: 1.15; }
+.pace-note { width: min(100%, 378px); margin: -4px 0 12px; font-size: 12px; line-height: 1.45; color: #aeb9bf; }
+.pace-note b { color: var(--launch-text, #e8eef0); }
+.linkish { background: none; border: 0; padding: 0; color: var(--danger); font: inherit; text-decoration: underline; cursor: pointer; }
+.operation-dialog.preset .custom-only { display: none; }
+.operation-dialog:not(.preset) .preset-only { display: none; }
+.focus-resume { border-color: rgba(255,93,93,.45) !important; }
+@media (max-width: 420px) {
+  .pace-seg { gap: 6px; }
+  .pace-seg button { padding: 8px 8px; }
+  .pace-seg button b { font-size: 12px; letter-spacing: .04em; }
+  .pace-seg button small { font-size: 10px; }
+}

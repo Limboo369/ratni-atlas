@@ -56,8 +56,16 @@ Campaign: `src/08k-campaign.js` (screen, missions, goals; progress in localStora
 `src/09d-campaign-app.js` (starting a mission), `src/02j-campaign.js` (sim: `opts.camp` sets the mission up and applies
 the dynasty's tree bonuses `p.bGold`, `p.bGrow`, `p.bCost`).
 
-Blitz / Focus (start screen `#paceSeg`, `settings.pace`): Blitz is the normal game; Focus creates a long game with the same
-settings and a length of ~1/3/7 days (`settings.days` → `set.days`, the clock is `LONG_TICK_MS × days`).
+Game modes (start screen `#paceSeg`, `settings.pace`, `RA.MODES` in `src/08-ui.js`): **Blitz** and **Focus** are presets of
+the rules (tempo, tech tree, resources, nukes, peace); **Make your choice** (`pace: 'custom'`) lets the player set them all
+in the operation dialog (`cPace`, `tree`, `noNuke`, `res`, `peace`). Map, era, start, game type and difficulty are free in
+every mode. Every new game takes its rules from `ui.playSet()`. Focus creates a long game (below) of ~1/3/7 days
+(`settings.days` → `set.days`, the clock is `LONG_TICK_MS × days`). My Focus games are listed in localStorage `ra_focus`
+("Nastavi Focus igru"; the main menu or closing the tab keeps them, a finished game drops out); "Napusti igru" asks twice,
+then sends `{leave: 1}` (the server clears the seat's uid, the computer keeps the state). Coming back shows "Dok te nije
+bilo" (`ui.focusReport`, from the last snapshot of my state).
+Tech tree (`opts.tree`, `src/03b-tech.js`): command `'tech'` (eco/mil/sci/dip, 5 levels, 200k × 2^level), multiplies
+`p.bGold`/`p.bGrow`/`p.bCost` on top of the campaign's bonuses; the AI researches too. `opts.noNuke` refuses nuclear weapons.
 Long games (days): `deploy/game/long.js` (same server, `/ws?long=<code>`, link `/long-<code>`) is only the clock (one tick
 every `LONG_TICK_MS`, 5 s) and the archive (settings, seed, every command with its tick; files in the `longgames`
 volume); `src/09c-long.js` replays the record to the server's tick and follows it. A player takes over a computer state

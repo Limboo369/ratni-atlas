@@ -1151,6 +1151,23 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
 .pace-days { display: flex; align-items: center; gap: 10px; width: min(100%, 378px); margin: -4px 0 12px; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: #9eacb4; }
 .pace-days[hidden] { display: none; }
 .pace-days .seg { flex: 1; }
+.sw.tech-ic { display: grid; place-items: center; background: rgba(255,255,255,.06); color: var(--accent, #8fb8ff); }
+.sw.tech-ic svg { width: 14px; height: 14px; }
+.tech-pips { margin-left: 6px; color: var(--danger); letter-spacing: 2px; font-size: 11px; }
+.pace-seg { grid-template-columns: 1fr 1fr 1.25fr; }
+.pace-seg button b { font-size: 13px; letter-spacing: .08em; line-height: 1.15; }
+.pace-note { width: min(100%, 378px); margin: -4px 0 12px; font-size: 12px; line-height: 1.45; color: #aeb9bf; }
+.pace-note b { color: var(--launch-text, #e8eef0); }
+.linkish { background: none; border: 0; padding: 0; color: var(--danger); font: inherit; text-decoration: underline; cursor: pointer; }
+.operation-dialog.preset .custom-only { display: none; }
+.operation-dialog:not(.preset) .preset-only { display: none; }
+.focus-resume { border-color: rgba(255,93,93,.45) !important; }
+@media (max-width: 420px) {
+  .pace-seg { gap: 6px; }
+  .pace-seg button { padding: 8px 8px; }
+  .pace-seg button b { font-size: 12px; letter-spacing: .04em; }
+  .pace-seg button small { font-size: 10px; }
+}
 
 #app{touch-action:none}#sheet,.screen{touch-action:pan-y}</style>
 <div id="app">
@@ -1263,7 +1280,8 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
           <p class="command-headline">Granice se mijenjaju.<br><strong>Ti odlučuješ kako.</strong></p>
           <p class="command-description">Izgradi carstvo. Sklopi saveze. Preuzmi kontrolu.<br> <span class="tagline">Evropa čeka tvoj prvi potez.</span></p>
           <div id="joinBanner" class="btns" hidden></div>
-          <div class="pace-seg" id="paceSeg" role="group" aria-label="Tempo igre"><button data-v="blitz" aria-pressed="true"><b>Blitz</b><small>brza partija · 20–40 min</small></button><button data-v="focus" aria-pressed="false"><b>Focus</b><small>igra danima, teče i bez tebe</small></button></div>
+          <div class="pace-seg" id="paceSeg" role="group" aria-label="Mod igre"><button data-v="blitz" aria-pressed="true"><b>Blitz</b><small>brza partija, 20–40 min</small></button><button data-v="focus" aria-pressed="false"><b>Focus</b><small>igra danima, teče i bez tebe</small></button><button data-v="custom" aria-pressed="false"><b>Make your choice</b><small>sam biraš pravila</small></button></div>
+          <p class="pace-note" id="paceNote"></p>
           <div class="pace-days" id="paceDays" hidden><span>Trajanje</span><div class="seg" id="daysSeg" role="group" aria-label="Trajanje Focus igre"><button data-v="1" aria-pressed="true">~1 dan</button><button data-v="3" aria-pressed="false">~3 dana</button><button data-v="7" aria-pressed="false">~7 dana</button></div></div>
 
           <div class="command-player field">
@@ -1272,6 +1290,7 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
           </div>
           <button class="go command-play" id="goBtn"><span>Započni osvajanje</span><span aria-hidden="true">↗</span></button>
           <button class="command-resume" id="resumeBtn" hidden></button>
+          <button class="command-resume focus-resume" id="focusBtn" hidden></button>
           <button class="command-config" id="configBtn" aria-haspopup="dialog" aria-controls="operationDialog"><span><span class="command-config-label">POSTAVKE OPERACIJE</span><span id="operationSummary">Evropa · Klasično · Srednje</span></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16M9 3v6M15 9v6M8 15v6"/></svg></button>
           <div class="command-secondary"><button id="onlineToggle" aria-expanded="false" aria-controls="onlineBox"><i data-ic="ally"></i>S prijateljem<span aria-hidden="true">↗</span></button><button id="howBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 .5c0 1.5-2.5 1.5-2.5 3.5M12 16v1"/></svg>Kako se igra</button><button id="campBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M5 21V4l7 3 7-3v12l-7 3-7-3"/></svg>Kampanja</button><button id="tutBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3 9l9-5 9 5-9 5-9-5z"/><path d="M7 11.5V16c0 1.5 2.2 3 5 3s5-1.5 5-3v-4.5M21 9v6"/></svg>Tutorijal</button><button id="leaderboardBtn" hidden aria-haspopup="dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 4h8v6a4 4 0 0 1-8 0V4ZM8 6H4v3a4 4 0 0 0 4 4m8-7h4v3a4 4 0 0 1-4 4M12 14v6m-4 0h8"/></svg>Ljestvica</button></div>
           <div class="online-box command-online" id="onlineBox" hidden>
@@ -1300,12 +1319,16 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
     <dialog id="operationDialog" class="operation-dialog" aria-labelledby="operationTitle">
       <div class="operation-head"><div><span class="command-kicker">PRIPREMA ZA OSVAJANJE</span><h2 id="operationTitle">Tvoja operacija.</h2></div><button id="configClose" class="command-tool" aria-label="Zatvori postavke"><i data-ic="close"></i></button></div>
       <div class="operation-body">
+        <div class="field preset-only"><span class="lab">Pravila moda</span><p class="note era-note" id="rulesNote"></p></div>
+        <div class="field custom-only"><span class="lab" id="cPaceLabel">Tempo</span><div class="seg" id="cPaceSeg" role="group" aria-labelledby="cPaceLabel"><button data-v="blitz" aria-pressed="true">Blitz · brzo</button><button data-v="focus" aria-pressed="false">Focus · danima</button></div><p class="note era-note">Focus igra teče na serveru i dok nisi tu; trajanje biraš na početnom ekranu.</p></div>
+        <div class="field custom-only"><span class="lab" id="treeLabel">Stablo tehnologija</span><div class="seg" id="treeSeg" role="group" aria-labelledby="treeLabel"><button data-v="0" aria-pressed="true">Isključeno</button><button data-v="1" aria-pressed="false">Uključeno</button></div><p class="note era-note">Istraživanje za zlato: ekonomija, vojska, nauka i diplomatija, po 5 nivoa (Ekonomija → Stablo tehnologija).</p></div>
+        <div class="field custom-only"><span class="lab" id="nukeLabel">Nuklearno oružje</span><div class="seg" id="nukeSeg" role="group" aria-labelledby="nukeLabel"><button data-v="0" aria-pressed="true">Dozvoljeno</button><button data-v="1" aria-pressed="false">Zabranjeno</button></div></div>
         <div class="field"><span class="lab" id="startLabel">Početak</span><div class="seg" id="startSeg" role="group" aria-labelledby="startLabel"><button data-v="granice" aria-pressed="true">Stvarne granice</button><button data-v="slobodno" aria-pressed="false">Od prijestolnice</button></div></div>
         <div class="field"><span class="lab" id="gmLabel">Način igre</span><div class="seg" id="gmSeg" role="group" aria-labelledby="gmLabel"><button data-v="klasik" aria-pressed="true">Klasično</button><button data-v="br" aria-pressed="false">Battle royale</button><button data-v="defcon" aria-pressed="false">DEFCON</button></div><p class="note era-note" id="modeNote"></p></div>
         <div class="field" id="regField"><span class="lab" id="regLabel">Dio Evrope</span><div class="seg wrap" id="regSeg" role="group" aria-labelledby="regLabel"></div></div>
         <div class="field"><span class="lab" id="diffLabel">Težina</span><div class="seg" id="diffSeg" role="group" aria-labelledby="diffLabel"><button data-v="lako" aria-pressed="false">Lako</button><button data-v="srednje" aria-pressed="true">Srednje</button><button data-v="tesko" aria-pressed="false">Teško</button></div></div>
-        <div class="field"><span class="lab" id="peaceLabel">Mirno doba na početku</span><div class="seg" id="peaceSeg" role="group" aria-labelledby="peaceLabel"><button data-v="0" aria-pressed="false">Bez</button><button data-v="60" aria-pressed="true">1 min</button><button data-v="180" aria-pressed="false">3 min</button></div><p class="note era-note">Vrijeme za razvoj prije prvih napada na države.</p></div>
-        <div class="field"><span class="lab" id="resLabel">Resursi i trgovina</span><div class="seg" id="resSeg" role="group" aria-labelledby="resLabel"><button data-v="0" aria-pressed="true">Isključeno</button><button data-v="1" aria-pressed="false">Uključeno</button></div><p class="note era-note">Žito, metal i gorivo na stvarnim nalazištima; što nemaš, kupuješ od trgovinskih partnera. Isključeno: brza igra kao do sada.</p></div>
+        <div class="field custom-only"><span class="lab" id="peaceLabel">Mirno doba na početku</span><div class="seg" id="peaceSeg" role="group" aria-labelledby="peaceLabel"><button data-v="0" aria-pressed="false">Bez</button><button data-v="60" aria-pressed="true">1 min</button><button data-v="180" aria-pressed="false">3 min</button></div><p class="note era-note">Vrijeme za razvoj prije prvih napada na države.</p></div>
+        <div class="field custom-only"><span class="lab" id="resLabel">Resursi i trgovina</span><div class="seg" id="resSeg" role="group" aria-labelledby="resLabel"><button data-v="0" aria-pressed="true">Isključeno</button><button data-v="1" aria-pressed="false">Uključeno</button></div><p class="note era-note">Žito, metal i gorivo na stvarnim nalazištima; što nemaš, kupuješ od trgovinskih partnera. Isključeno: brza igra kao do sada.</p></div>
         <div class="field" id="csField"><span class="lab" id="csLabel">Gradovi-države · mali protivnici</span><div class="seg" id="csSeg" role="group" aria-labelledby="csLabel"><button data-v="0" aria-pressed="false">Bez</button><button data-v="25" aria-pressed="false">25</button><button data-v="50" aria-pressed="true">50</button></div></div>
         <div class="field"><span class="lab" id="colorLabel">Tvoja boja</span><div class="seg wrap swatches" id="colorSeg" role="group" aria-labelledby="colorLabel"></div></div>
         <div class="field"><span class="lab" id="cbLabel">Mod za daltoniste</span><div class="seg" id="cbSeg" role="group" aria-labelledby="cbLabel"><button data-v="0" aria-pressed="true">Isključen</button><button data-v="1" aria-pressed="false">Uključen</button></div><p class="note era-note">Boje država koje razlikuju i ljudi s daltonizmom; susjedi nikad iste boje.</p></div>
@@ -3868,6 +3891,7 @@ RA.NUKE = RA.MISSILE;
     if (!p || !p.alive || !M) return 'Nisi u igri.';
     if (M.na) return 'To oružje ne postoji u ovom dobu.';
     if (c < 0) return 'Nevažeća meta.';
+    if (this.opts.noNuke && (M.kind === 'nuke' || M.kind === 'mirv')) return 'Nuklearno oružje je isključeno u ovoj igri.';
     const de = this.defconErr(M.kind === 'nuke' || M.kind === 'mirv' ? 'nuke' : 'conv');
     if (de) return de;
     if (this.tick < this.peaceUntil) return `Mirno doba — udari su dozvoljeni za ${this.peaceLeft()} s.`;
@@ -4787,7 +4811,7 @@ Object.assign(RA.CFG, {
    can replay exactly the same inputs on every device (lockstep). Args come from other players' devices:
    they are validated here and never trusted. */
 
-RA.CMD_KINDS = ['atk', 'boat', 'para', 'build', 'rec', 'mv', 'dis', 'mis', 'mob', 'ret', 'aReq', 'aRes', 'tReq', 'tRes', 'ext', 'brk', 'tEnd', 'give', 'help', 'ai', 'back', 'rcl', 'png', 'qm', 'tax', 'vas', 'loan', 'pay', 'str', 'buy', 'air', 'bomb'];
+RA.CMD_KINDS = ['atk', 'boat', 'para', 'build', 'rec', 'mv', 'dis', 'mis', 'mob', 'ret', 'aReq', 'aRes', 'tReq', 'tRes', 'ext', 'brk', 'tEnd', 'give', 'help', 'ai', 'back', 'rcl', 'png', 'qm', 'tax', 'vas', 'loan', 'pay', 'str', 'buy', 'air', 'bomb', 'tech'];
 /* pings on the map and quick messages, seen by the sender's allies and team (plan item 57) */
 RA.PINGS = [
   { name: 'Napadni ovdje', icon: 'attack', color: '#ff5d5d' },
@@ -4899,6 +4923,8 @@ RA.QUICK_MSGS = ['Napadam!', 'Treba mi pomoć!', 'Pazi, napadaju nas!', 'Idem ta
         return typeof a[0] === 'string' ? this.buyAir(pid, a[0]) : 'Nepoznata vrsta aviona.';
       case 'bomb':
         return this.bombRaid(pid, cell(a[0]));
+      case 'tech':
+        return typeof a[0] === 'string' && RA.TECH_ORDER.includes(a[0]) ? this.buyTech(pid, a[0]) : 'Nepoznata grana.';
       case 'buy':
         return this.buyRes(pid, Number.isInteger(a[0]) ? a[0] : -1, player(a[1]));
       case 'str':
@@ -5757,6 +5783,7 @@ RA.AI = {
     RA.AI.maybeBuild(G, p, info);
     RA.AI.maybeRecruit(G, p, info);
     if (G.deps) RA.AI.maybeBuyRes(G, p);
+    if (G.opts.tree) RA.AI.maybeTech(G, p);
     if (!peace && p.n.port) RA.AI.navy(G, p, info);
     if (!peace && p.n.airport && RA.airOn()) RA.AI.air(G, p, info);
     if (!peace && !RA.MISSILE.drone.na) RA.AI.drones(G, p, info);
@@ -6067,7 +6094,7 @@ RA.AI = {
       }
     }
     // an iron dome once nuclear weapons are about (the richer and the more threatened, the more likely)
-    if (!S.dome.na && !RA.MISSILE.atom.na && p.built.silo && p.built.dome < (p.tiles > 2500 ? 2 : 1) && G.tick > G.diff.nukeAfter && p.gold >= cost('dome') * 1.3 && G.rng() < 0.2 * pers.nuke) {
+    if (!G.opts.noNuke && !S.dome.na && !RA.MISSILE.atom.na && p.built.silo && p.built.dome < (p.tiles > 2500 ? 2 : 1) && G.tick > G.diff.nukeAfter && p.gold >= cost('dome') * 1.3 && G.rng() < 0.2 * pers.nuke) {
       if (place('dome', (c) => RA.AI.interior(G, p, c))) return;
     }
     // missile defence once somebody has silos
@@ -6197,7 +6224,7 @@ RA.AI = {
 
   maybeNuke(G, p, info) {
     const MI = RA.MISSILE;
-    if (MI.atom.na || (MI.atom.from && G.tick < MI.atom.from)) return;
+    if (G.opts.noNuke || MI.atom.na || (MI.atom.from && G.tick < MI.atom.from)) return;
     if (G.tick < G.diff.nukeAfter || !p.n.silo) return;
     if (p.gold < RA.MISSILE.atom.cost * 1.15 || G.tick - p.ai.lastNuke < 900) return;
     const pers = RA.PERS[p.ai.pers];
@@ -6442,6 +6469,60 @@ RA.AI = {
 };
 
 
+/* The tech tree inside a game (option opts.tree; Focus has it, Blitz not, "Make your choice" either way).
+   Four branches of five levels, bought with gold during the game (command 'tech'); the same branches as the
+   campaign's dynasty tree (RA.CAMP_TREE), which is bought with XP between missions and stacks with this one.
+   Every level multiplies p.bGold / p.bGrow / p.bCost (read by the economy and the costs), diplomacy warms every state. */
+RA.TECH = {
+  eco: { name: 'Ekonomija', icon: 'market', step: 0.08, desc: '+8% zlata po nivou' },
+  mil: { name: 'Vojska', icon: 'army', step: 0.06, desc: '+6% rasta vojske po nivou' },
+  sci: { name: 'Nauka', icon: 'factory', step: 0.06, desc: 'zgrade, jedinice i rakete 6% jeftinije po nivou' },
+  dip: { name: 'Diplomatija', icon: 'ally', step: 10, desc: 'sve države te vole više (+10 po nivou)' },
+};
+RA.TECH_ORDER = ['eco', 'mil', 'sci', 'dip'];
+RA.TECH_MAX = 5;
+
+(function (P) {
+  P.techLv = function (p, k) {
+    return (p.tech && p.tech[k]) | 0;
+  };
+  P.techCost = function (p, k) {
+    return 200000 * RA.dpow(2, this.techLv(p, k));
+  };
+  P.buyTech = function (pid, k) {
+    const p = this.P[pid], T = RA.TECH[k];
+    if (!this.opts.tree) return 'Stablo tehnologija nije uključeno u ovoj igri.';
+    if (!p || !p.alive) return 'Nisi u igri.';
+    if (!T) return 'Nepoznata grana.';
+    const lv = this.techLv(p, k);
+    if (lv >= RA.TECH_MAX) return `${T.name} je već na najvišem nivou.`;
+    const cost = this.techCost(p, k);
+    if (p.gold < cost) return `Za ${T.name} ${lv + 1} treba ${RA.fmt(cost)} zlata.`;
+    p.gold -= cost;
+    if (!p.tech) p.tech = { eco: 0, mil: 0, sci: 0, dip: 0 };
+    p.tech[k] = lv + 1;
+    if (k === 'eco') p.bGold = ((p.bGold || 1) * (1 + T.step * (lv + 1))) / (1 + T.step * lv);
+    else if (k === 'mil') p.bGrow = ((p.bGrow || 1) * (1 + T.step * (lv + 1))) / (1 + T.step * lv);
+    else if (k === 'sci') p.bCost = ((p.bCost || 1) * (1 - T.step * (lv + 1))) / (1 - T.step * lv);
+    else for (const o of this.P) if (o && o !== p && o.rel) o.rel[p.id] = Math.min(100, o.rel[p.id] + T.step);
+    if (p.human) this.tell(p, 'good', `Istraženo: ${T.name} ${lv + 1} (${T.desc}).`);
+    return { k, lv: lv + 1 };
+  };
+})(RA.Game.prototype);
+
+/* the computer researches too: with spare gold, the cheapest branch it likes (economy first when it is poor) */
+RA.AI.maybeTech = function (G, p) {
+  if (G.rng() > 0.08) return;
+  let best = null, bc = Infinity;
+  for (const k of RA.TECH_ORDER) {
+    if (G.techLv(p, k) >= RA.TECH_MAX) continue;
+    const c = G.techCost(p, k) * (k === 'eco' ? 0.8 : k === 'dip' ? 1.3 : 1);
+    if (c < bc) (bc = c), (best = k);
+  }
+  if (best && p.gold >= G.techCost(p, best) * 1.3) G.buyTech(p.id, best);
+};
+
+
 /* Game setup: nations at real capitals, city-states at real towns, human spawn / nation takeover */
 
 RA.ME_COLOR = '#2f7bff';
@@ -6484,7 +6565,7 @@ RA.setupOnline = function (baseMap, st, mySlot) {
   const set = st.set;
   const era = set.era || 'danas', start = set.st || 'slobodno';
   const gm = RA.regionMap(RA.eraMap(baseMap, era, start), set.reg);
-  const G = RA.newGame(gm, { seed: st.seed, difficulty: set.dif, cityStates: set.cs, peace: set.peace, era, start, gm: set.gm, res: set.res === 1 });
+  const G = RA.newGame(gm, { seed: st.seed, difficulty: set.dif, cityStates: set.cs, peace: set.peace, era, start, gm: set.gm, res: set.res === 1, tree: set.tree === 1, noNuke: set.nn === 1 });
   G.online = true;
   G.humans = [];
   st.slots.forEach((sl, i) => {
@@ -9089,6 +9170,14 @@ RA.ICONS = {
   chat: '<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/>',
   user: '<circle cx="12" cy="8" r="3.6"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/>',
 };
+/* game modes (start screen): Blitz and Focus fix the rules, Make your choice leaves them to the player */
+RA.MODES = {
+  blitz: { name: 'Blitz', rules: { pace: 'blitz', tree: false, res: false, noNuke: false, peace: 60 },
+    note: 'Blitz: brza, direktna partija — bez stabla tehnologija i resursa, 1 min mira, sve oružje dozvoljeno.' },
+  focus: { name: 'Focus', rules: { pace: 'focus', tree: true, res: true, noNuke: false, peace: 180 },
+    note: 'Focus: igra traje danima i teče i dok nisi tu (kompjuter vodi tvoju državu). Stablo tehnologija, resursi i trgovina, duže mirno doba; kad se vratiš, izvještaj šta se desilo.' },
+  custom: { name: 'Make your choice', rules: null, note: '' },
+};
 RA.icon = (n, cls) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"${cls ? ` class="${cls}"` : ''} aria-hidden="true">${RA.ICONS[n] || ''}</svg>`;
 
 RA.TERR_NAME = ['more', 'ravnica', 'brda', 'planine'];
@@ -9155,24 +9244,44 @@ RA.UI = class {
     });
     this.startNotes();
     this._seg('diffSeg', this.settings.difficulty, (v) => (this.settings.difficulty = v));
-    this._seg('peaceSeg', String(this.settings.peace), (v) => (this.settings.peace = +v));
+    this._seg('peaceSeg', String(this.settings.peace), (v) => {
+      this.settings.peace = +v;
+      this.paceShow();
+    });
     this._seg('csSeg', String(this.settings.cityStates), (v) => (this.settings.cityStates = +v));
-    this._seg('resSeg', this.settings.res ? '1' : '0', (v) => (this.settings.res = v === '1'));
+    this._seg('resSeg', this.settings.res ? '1' : '0', (v) => {
+      this.settings.res = v === '1';
+      this.paceShow();
+    });
     $('colorSeg').innerHTML = RA.PLAYER_COLORS.map((c) => `<button data-v="${c}" aria-pressed="false" aria-label="Boja ${c}" style="--sw:${c}"><span></span></button>`).join('');
     this._seg('colorSeg', RA.PLAYER_COLORS.includes(this.settings.color) ? this.settings.color : RA.PLAYER_COLORS[0], (v) => (this.settings.color = v));
     this._seg('cbSeg', this.settings.cb ? '1' : '0', (v) => this.setColorblind(v === '1'));
 
-    // Blitz (the quick game) or Focus (a game of days on the server, see 09c-long.js); the settings below apply to both
-    this._seg('paceSeg', this.settings.pace === 'focus' ? 'focus' : 'blitz', (v) => {
+    // the game's mode: Blitz and Focus are presets of the rules, "Make your choice" lets you set every rule
+    // (map, era, start, game type and difficulty are yours in every mode); see RA.MODES and playSet()
+    this._seg('paceSeg', RA.MODES[this.settings.pace] ? this.settings.pace : 'blitz', (v) => {
       this.settings.pace = v;
       this.paceShow();
+      if (v === 'custom') this.$('operationDialog').showModal();
     });
     this._seg('daysSeg', String([1, 3, 7].includes(this.settings.days) ? this.settings.days : 1), (v) => (this.settings.days = +v));
+    this._seg('cPaceSeg', this.settings.cPace === 'focus' ? 'focus' : 'blitz', (v) => {
+      this.settings.cPace = v;
+      this.paceShow();
+    });
+    this._seg('treeSeg', this.settings.tree ? '1' : '0', (v) => {
+      this.settings.tree = v === '1';
+      this.paceShow();
+    });
+    this._seg('nukeSeg', this.settings.noNuke ? '1' : '0', (v) => {
+      this.settings.noNuke = v === '1';
+      this.paceShow();
+    });
     this.paceShow();
     $('goBtn').onclick = () => {
       this.settings.name = $('nameIn').value.trim().slice(0, 18);
       this._save();
-      if (this.settings.pace === 'focus') this.confirmLong();
+      if (this.playSet().pace === 'focus') this.confirmLong();
       else app.newGame();
     };
     $('resumeBtn').onclick = () => {
@@ -9486,10 +9595,23 @@ RA.UI = class {
     const E = RA.ERA;
     this.$('aStrike').innerHTML = `${RA.icon(E.strikeIcon)}<span>${RA.esc(E.strikeTab)}</span>`;
   }
+  /* the rules a new game gets: the mode's preset, or (Make your choice) the player's own */
+  playSet() {
+    const s = this.settings, M = RA.MODES[s.pace] || RA.MODES.blitz;
+    if (!M.rules) return Object.assign({}, s, { pace: s.cPace === 'focus' ? 'focus' : 'blitz' });
+    return Object.assign({}, s, M.rules);
+  }
   paceShow() {
-    const f = this.settings.pace === 'focus';
+    const s = this.settings, P = this.playSet(), f = P.pace === 'focus', M = RA.MODES[s.pace] || RA.MODES.blitz;
     this.$('paceDays').hidden = !f;
     this.$('goBtn').firstElementChild.textContent = f ? 'Započni Focus igru' : 'Započni osvajanje';
+    const custom = s.pace === 'custom';
+    this.$('operationDialog').classList.toggle('preset', !custom);
+    const rules = `${f ? 'Focus' : 'Blitz'} · stablo ${P.tree ? 'da' : 'ne'} · resursi ${P.res ? 'da' : 'ne'} · nuklearke ${P.noNuke ? 'ne' : 'da'} · mir ${P.peace ? Math.round(P.peace / 60) + ' min' : 'bez'}`;
+    this.$('paceNote').innerHTML = custom ? `<b>Tvoja pravila:</b> ${rules} — <button class="linkish" id="paceEdit">promijeni</button>` : RA.esc(M.note);
+    const pe = this.$('paceEdit');
+    if (pe) pe.onclick = () => this.$('operationDialog').showModal();
+    this.$('rulesNote').innerHTML = `${RA.esc(M.name)}: ${RA.esc(rules)}. Svoja pravila biraš u modu <b>Make your choice</b>.`;
   }
   _save() {
     if (this.command) this.command.refresh();
@@ -10618,6 +10740,7 @@ Object.assign(RA.UI.prototype, {
     const peace = G.inPeace();
     for (const t of RA.missileTypes()) {
       const M = RA.MISSILE[t];
+      if (G.opts.noNuke && (M.kind === 'nuke' || M.kind === 'mirv')) continue;
       const cost = G.missileCost(t, me);
       const wait = M.from && tk < M.from;
       h += this.btn({
@@ -10947,7 +11070,11 @@ Object.assign(RA.UI.prototype, {
       <p class="note">Viši porez: više zlata, ali vojska sporije raste. Niži: vojska brže raste, zlata manje.<br>Sada: zlato ${cur.g === 1 ? 'normalno' : pct(cur.g)}, rast vojske ${cur.grow === 1 ? 'normalan' : pct(cur.grow)}.</p></div>
       <div class="field"><span class="lab">Kamata</span><p class="note">Ušteđeno zlato donosi 1% u minuti, najviše četvrtinu tvog prihoda. Sada: <b>+${RA.fmt(me.interest || 0)}/s</b>.</p></div>` +
       this.resHtml() + this.loanHtml() + this.straitHtml();
-    this.openSheet(h, (s) => {
+    this.openSheet(this.techHtml(h), (s) => {
+      s.querySelectorAll('[data-tech]').forEach((b) => (b.onclick = () => {
+        this.act('tech', [b.dataset.tech]);
+        if (G.online || G.long) setTimeout(() => this.econSheet(true), 400);
+      }));
       s.querySelectorAll('[data-buy]').forEach((b) => (b.onclick = () => {
         const [k, sid] = b.dataset.buy.split(':').map(Number);
         this.act('buy', [k, sid]);
@@ -10976,6 +11103,20 @@ Object.assign(RA.UI.prototype, {
         if (G.online) setTimeout(() => this.econSheet(true), 400);
       }));
     }, keep, () => this.econSheet(true));
+  },
+  /* the tech tree of this game (opts.tree), put right under the sheet's head */
+  techHtml(h) {
+    const G = this.G, me = G.me;
+    if (!G.opts.tree) return h;
+    let t = '<div class="sec-t">Stablo tehnologija</div><p class="explain">Istraživanje za zlato: svaka grana ima 5 nivoa, svaki nivo je duplo skuplji. Traje do kraja igre.</p><div class="list">';
+    for (const k of RA.TECH_ORDER) {
+      const T = RA.TECH[k], lv = G.techLv(me, k), cost = G.techCost(me, k), max = lv >= RA.TECH_MAX;
+      const pips = '●'.repeat(lv) + '○'.repeat(RA.TECH_MAX - lv);
+      t += `<div class="prow wide"><span class="sw tech-ic">${RA.icon(T.icon)}</span><div class="pn"><div class="nm">${T.name} <span class="tech-pips">${pips}</span></div><div class="d">${RA.esc(T.desc)}</div></div><div class="bb">${max ? '<span class="pos">max</span>' : this.mini(`${RA.fmt(cost)}`, `data-tech="${k}"`, 'ok', me.gold < cost)}</div></div>`;
+    }
+    t += '</div>';
+    const i = h.indexOf('<div class="field">');
+    return i < 0 ? h + t : h.slice(0, i) + t + h.slice(i);
   },
   /* resources: what you have, buy, or miss (and what missing costs you); partners' offers with their prices */
   resHtml() {
@@ -11067,7 +11208,8 @@ Object.assign(RA.UI.prototype, {
       <button class="btn" data-m="sfx"><span class="t">Zvučni efekti</span><span class="r" style="font-size:14px">${this.audio.s.sfx ? 'Uključeno' : 'Isključeno'}</span></button>
       <button class="btn" data-m="music"><span class="t">Muzika</span><span class="r" style="font-size:14px">${this.audio.s.music ? 'Uključeno' : 'Isključeno'}</span></button>
       <button class="btn" data-m="rulers"><span class="t">Komentari vladara</span><span class="r" style="font-size:14px">${this.settings.rulers === false ? 'Isključeno' : 'Uključeno'}</span></button>
-      <button class="btn danger" data-m="new"><span><span class="t">${G.online ? 'Napusti online igru' : 'Nova igra'}</span><br><span class="d">${G.online ? 'Tvoju državu preuzima kompjuter' : 'Trenutna partija se prekida'}</span></span></button>
+      ${G.long ? `<button class="btn" data-m="home"><span><span class="t">Glavni meni</span><br><span class="d">Igra teče dalje, kompjuter vodi tvoju državu — vratiš se preko „Nastavi Focus igru”</span></span></button>
+      <button class="btn danger" data-m="leave"><span><span class="t">Napusti igru</span><br><span class="d">Zauvijek — progres ove Focus igre se briše</span></span></button>` : `<button class="btn danger" data-m="new"><span><span class="t">${G.online ? 'Napusti online igru' : 'Nova igra'}</span><br><span class="d">${G.online ? 'Tvoju državu preuzima kompjuter' : 'Trenutna partija se prekida'}</span></span></button>`}
     </div>
     <p class="note">Tipke: Space pauza · 1–3 brzina · Q/E snaga napada · V vojska · B gradnja · D desant · P padobranci · R rakete · S savezi · M mobilizacija · Esc odustani.</p>`;
     this.openSheet(h, (s) => {
@@ -11095,6 +11237,15 @@ Object.assign(RA.UI.prototype, {
         } else if (m === 'tips') {
           this.noTips = !this.noTips;
           this.closeSheet();
+        } else if (m === 'home') {
+          app.long.snap();
+          app.showStart();
+        } else if (m === 'leave') {
+          this.confirm('Napustiti Focus igru?', 'Tvoja država zauvijek prelazi kompjuteru i ne možeš joj se vratiti. Sav tvoj progres u ovoj igri se briše.', 'Napusti', () =>
+            setTimeout(() => this.confirm('Sigurno? Ovo se ne može vratiti.', `Posljednja provjera: progres Focus igre (${G.me ? G.me.name : ''}) biće obrisan. Ako samo želiš pauzu, izaberi „Glavni meni” — igra te čeka.`, 'Da, obriši progres', () => {
+              app.long.leave();
+              app.showStart();
+            }), 50));
         } else if (m === 'new') {
           if (G.online) this.confirm('Napustiti online igru?', app.net && app.net.role === 'host' ? 'Ti si domaćin: kad izađeš, igra staje i za prijatelja.' : 'Tvoju državu preuzima kompjuter, a prijatelj nastavlja.', 'Napusti', () => app.showStart());
           else this.confirm('Prekinuti partiju?', 'Počinješ ispočetka sa novim postavkama.', 'Nova igra', () => app.showStart());
@@ -11112,6 +11263,10 @@ Object.assign(RA.UI.prototype, {
     const eras = RA.ERAS.map((e) => `<li><b>${RA.esc(e.name)}</b> (${RA.esc(e.sub)}) — ${RA.esc(RA.eraBlurb(e, M.id))}</li>`).join('');
     const h = this.head('Kako se igra', 'Overtake — pravila ukratko') + `<div class="howto">
       <h4>Cilj</h4><p>Zauzmi ${win}% kopna odabranog dijela karte ili ostani posljednja država. Kad pobijediš, možeš nastaviti igru i osvojiti sve. Ko drži više od ${pc(35)}% karte, plaća svako novo osvajanje skuplje.</p>
+      <h4>Modovi</h4><ul>
+        <li><b>Blitz</b>: brza partija (20–40 min), bez stabla tehnologija i resursa, 1 min mira.</li>
+        <li><b>Focus</b>: igra traje danima (~1, 3 ili 7) na serveru i teče i dok nisi tu — kompjuter vodi tvoju državu. Stablo tehnologija, resursi i trgovina, duže mirno doba. Glavni meni čuva igru (<i>Nastavi Focus igru</i>), a kad se vratiš, vidiš šta se desilo. <i>Napusti igru</i> briše tvoj progres zauvijek.</li>
+        <li><b>Make your choice</b>: sam biraš tempo, stablo tehnologija, resurse, nuklearno oružje i mirno doba.</li></ul>
       <h4>Doba</h4><p>Na početnom ekranu biraš period u kojem se boriš. Svako doba ima svoje granice, gradove, jedinice, zgrade i oružje:</p><ul>${eras}</ul>
       <h4>Početak</h4><ul>
         <li><b>Stvarne granice</b>: sve države kreću sa svojom teritorijom iz tog doba. Dodirni državu ili je izaberi sa spiska — dobijaš njenu zemlju, vojsku i zlato.</li>
@@ -11258,7 +11413,7 @@ Object.assign(RA.UI.prototype, {
 Object.assign(RA.UI.prototype, {
   initOnline() {
     const $ = this.$, s = this.settings;
-    this.lobbySet = { map: s.map, reg: s.region, dif: s.difficulty, peace: s.peace, cs: s.cityStates, mode: s.mode === 'vs' ? 'vs' : 'coop', era: s.era, st: s.start, gm: s.gm, res: s.res ? 1 : 0 };
+    this.lobbySet = { map: s.map, reg: s.region, dif: s.difficulty, peace: s.peace, cs: s.cityStates, mode: s.mode === 'vs' ? 'vs' : 'coop', era: s.era, st: s.start, gm: s.gm, res: s.res ? 1 : 0, tree: s.tree ? 1 : 0, nn: s.noNuke ? 1 : 0 };
     this.natCache = {};
     $('lMapSeg').innerHTML = RA.MAPS.map((m) => `<button data-v="${m.id}" aria-pressed="false"${m.id === 'evropa' ? '' : ' hidden'}>${RA.esc(m.name)}<small>${RA.esc(m.sub)}</small></button>`).join('');
     this.lobbyRegs();
@@ -11346,12 +11501,15 @@ Object.assign(RA.UI.prototype, {
         this.lobbyRegs();
         this.lobbySet.reg = this.settings.region;
         this.lobbySet.dif = this.settings.difficulty;
-        this.lobbySet.peace = this.settings.peace;
+        const R = this.playSet(); // the mode's rules (online is always Blitz pace)
+        this.lobbySet.peace = R.peace;
         this.lobbySet.cs = this.settings.cityStates;
         this.lobbySet.era = this.settings.era;
         this.lobbySet.st = this.settings.start;
         this.lobbySet.gm = this.settings.gm;
-        this.lobbySet.res = this.settings.res ? 1 : 0;
+        this.lobbySet.res = R.res ? 1 : 0;
+        this.lobbySet.tree = R.tree ? 1 : 0;
+        this.lobbySet.nn = R.noNuke ? 1 : 0;
         for (const [id, v] of [['lMapSeg', this.lobbySet.map], ['lEraSeg', this.lobbySet.era], ['lStartSeg', this.lobbySet.st], ['lGmSeg', this.lobbySet.gm], ['lRegSeg', this.lobbySet.reg]]) this._press(id, v);
         net.host(Object.assign({}, this.lobbySet));
       } else net.join(b.dataset.on);
@@ -13556,6 +13714,7 @@ RA.App = class {
   showStart() {
     const ui = this.ui;
     if (this.long && this.long.rec) {
+      this.long.snap(); // the Focus game stays in "Nastavi Focus igru"
       this.long.close();
       if (/^\/long-/.test(location.pathname)) history.replaceState(null, '', '/');
     }
@@ -13586,17 +13745,17 @@ RA.App = class {
     document.getElementById('startScreen').hidden = false;
   }
   newGame() {
-    const s = this.ui.settings;
+    const s = this.ui.playSet(); // the mode's rules (Blitz preset or Make your choice)
     if (!this.mapReady(s.map, s.era)) return this.withMap(s.map, s.era, () => this.newGame());
     this.setMap(this.maps[s.map]);
     document.getElementById('startScreen').hidden = true;
     const gm = RA.regionMap(RA.eraMap(this.map, s.era, s.start), s.region);
     RA.ME_COLOR = RA.PLAYER_COLORS.includes(s.color) ? s.color : RA.PLAYER_COLORS[0];
     const seed = (Math.random() * 1e9) | 0;
-    const G = RA.newGame(gm, { seed, difficulty: s.difficulty, cityStates: s.cityStates, peace: s.peace, era: s.era, start: s.start, gm: s.gm, res: !!s.res });
+    const G = RA.newGame(gm, { seed, difficulty: s.difficulty, cityStates: s.cityStates, peace: s.peace, era: s.era, start: s.start, gm: s.gm, res: !!s.res, tree: !!s.tree, noNuke: !!s.noNuke });
     G.gid = 's' + Math.random().toString(36).slice(2, 12); // this game on the player's account (results)
     // the record of this game for "Nastavi igru": settings + seed + spawn + every command at its tick (09b-save.js)
-    G.rec = { v: 1, build: RA.BUILD, gid: G.gid, set: { map: s.map, region: s.region, era: s.era, start: s.start, gm: s.gm, difficulty: s.difficulty, cityStates: s.cityStates, peace: s.peace, res: !!s.res, seed, color: RA.ME_COLOR }, picks: [], name: '', cmds: [] };
+    G.rec = { v: 1, build: RA.BUILD, gid: G.gid, set: { map: s.map, region: s.region, era: s.era, start: s.start, gm: s.gm, difficulty: s.difficulty, cityStates: s.cityStates, peace: s.peace, res: !!s.res, tree: !!s.tree, noNuke: !!s.noNuke, seed, color: RA.ME_COLOR }, picks: [], name: '', cmds: [] };
     this.setGame(G);
     this.attractMode = false;
     this.speed = 1;
@@ -14068,6 +14227,7 @@ RA.Net = class {
   }
   setStatus(s) {
     this.status = s;
+    if (this.app.ui && this.app.ui.focusOffer) this.app.ui.focusOffer();
     this.changed();
   }
   onChange(fn) {
@@ -14646,7 +14806,7 @@ Object.assign(RA.App.prototype, {
     document.getElementById('startScreen').hidden = true;
     const gm = RA.regionMap(RA.eraMap(this.map, s.era, s.start), s.region);
     RA.ME_COLOR = s.color || RA.PLAYER_COLORS[0];
-    const G = RA.newGame(gm, { seed: s.seed, difficulty: s.difficulty, cityStates: s.cityStates, peace: s.peace, era: s.era, start: s.start, gm: s.gm, res: !!s.res, camp: s.camp });
+    const G = RA.newGame(gm, { seed: s.seed, difficulty: s.difficulty, cityStates: s.cityStates, peace: s.peace, era: s.era, start: s.start, gm: s.gm, res: !!s.res, tree: !!s.tree, noNuke: !!s.noNuke, camp: s.camp });
     G.gid = r.gid;
     G.rec = r; // the game goes on recording into the same record
     this.setGame(G);
@@ -14720,6 +14880,7 @@ Object.assign(RA.App.prototype, {
 Object.assign(RA.UI.prototype, {
   /* the start screen's "Nastavi igru" button (a save in this browser or on the account) */
   async resumeOffer() {
+    if (this.focusOffer) this.focusOffer();
     const b = this.$('resumeBtn');
     const sv = await this.app.findSave();
     this.resumeSv = sv;
@@ -14746,6 +14907,7 @@ RA.Long = class {
     this.queue = []; // entries not applied yet: [tick, slot, kind, args]
     this.known = 0; // entries of the record received so far
     this.code = '';
+    addEventListener('pagehide', () => this.rec && this.snap());
   }
   get url() {
     return this.app.net && this.app.net.wsUrl;
@@ -14771,8 +14933,8 @@ RA.Long = class {
   }
   /* a new long game with the start screen's settings */
   create() {
-    const s = this.app.ui.settings;
-    const set = { map: s.map, reg: s.region, era: s.era, gm: s.gm === 'br' ? 'klasik' : s.gm, dif: s.difficulty, cs: s.cityStates, peace: s.peace, res: s.res ? 1 : 0, days: [1, 3, 7].includes(s.days) ? s.days : 1 };
+    const s = this.app.ui.playSet(); // Focus preset or Make your choice
+    const set = { map: s.map, reg: s.region, era: s.era, gm: s.gm === 'br' ? 'klasik' : s.gm, dif: s.difficulty, cs: s.cityStates, peace: s.peace, res: s.res ? 1 : 0, tree: s.tree ? 1 : 0, nn: s.noNuke ? 1 : 0, days: [1, 3, 7].includes(s.days) ? s.days : 1 };
     this.connect('new', { create: { set, name: this.name(), uid: this.uid() } });
   }
   open(code) {
@@ -14825,6 +14987,12 @@ RA.Long = class {
   send(kind, args) {
     if (this.ws && this.ws.readyState === 1) this.ws.send(JSON.stringify({ c: [kind, args] }));
   }
+  /* leave for good: my seat goes to the computer and can't be taken back (the progress is gone) */
+  leave() {
+    if (this.ws && this.ws.readyState === 1) this.ws.send(JSON.stringify({ leave: 1 }));
+    RA.focusDrop(this.code);
+    this.left = this.code; // no snapshot may put it back
+  }
   join(id) {
     if (this.ws && this.ws.readyState === 1) this.ws.send(JSON.stringify({ join: [id, this.name()] }));
   }
@@ -14832,6 +15000,7 @@ RA.Long = class {
     const ui = this.app.ui;
     if (m.t === 'err') {
       ui.toast('bad', RA.esc(String(m.e || 'Greška Focus igre.')), { ms: 6000 });
+      if (m.gone && this.code) RA.focusDrop(this.code);
       if (!this.rec) this.app.showStart();
       return;
     }
@@ -14852,6 +15021,7 @@ RA.Long = class {
       this.queue = m.rec.cmds.slice();
       this.known = m.rec.cmds.length;
       if (/^https?:$/.test(location.protocol)) history.replaceState(null, '', '/long-' + this.code);
+      if (!RA.focusGet(this.code) && this.you >= 0) RA.focusPut(this.code, {});
       this.app.startLong(this);
     }
   }
@@ -14896,7 +15066,50 @@ RA.Long = class {
       if (!this.applyDue(G)) return;
       G.step();
     }
+    if (G.state === 'over' && !G.continued) RA.focusDrop(this.code); // the game is finished: nothing to continue
+    else if (t0 - (this.snapAt || 0) > 10000) {
+      this.snapAt = t0;
+      this.snap();
+    }
   }
+  /* what my state looks like now, for "Dok te nije bilo" next time */
+  snap() {
+    const G = this.app.G, me = G && G.me;
+    if (!G || !G.long || !me || !me.alive || this.replaying || this.left === this.code) return;
+    RA.focusPut(this.code, { tick: G.tick, snap: RA.focusSnap(G, me) });
+  }
+};
+
+/* my Focus games in this browser (localStorage ra_focus): code, title, last snapshot of my state.
+   A game stays here until it is finished or I leave it ("Napusti"); closing the tab or the main menu keeps it. */
+RA.focusList = function () {
+  try {
+    const l = JSON.parse(localStorage.getItem('ra_focus') || '[]');
+    return Array.isArray(l) ? l.filter((e) => e && /^[a-z0-9]{6}$/.test(e.code)) : [];
+  } catch (_) {
+    return [];
+  }
+};
+RA.focusSet = function (l) {
+  try {
+    localStorage.setItem('ra_focus', JSON.stringify(l.slice(0, 12)));
+  } catch (_) {}
+};
+RA.focusGet = (code) => RA.focusList().find((e) => e.code === code);
+RA.focusPut = function (code, patch) {
+  const l = RA.focusList(), i = l.findIndex((e) => e.code === code);
+  const e = Object.assign(i >= 0 ? l[i] : { code }, patch, { at: Date.now() });
+  if (i >= 0) l.splice(i, 1);
+  l.unshift(e);
+  RA.focusSet(l);
+};
+RA.focusDrop = function (code) {
+  RA.focusSet(RA.focusList().filter((e) => e.code !== code));
+};
+RA.focusSnap = function (G, p) {
+  let cities = 0;
+  for (const ct of G.cities) if (ct.owner === p.id && ct.tier >= 1) cities++;
+  return { share: p.area / G.landTotal(), cities: cities + (p.bcities ? p.bcities.length : 0), troops: Math.round(p.troops), gold: Math.round(p.gold), allies: p.allies.size };
 };
 
 /* a player takes over a computer state (deterministic: every device does the same at the same tick) */
@@ -14922,7 +15135,7 @@ Object.assign(RA.App.prototype, {
     document.getElementById('startScreen').hidden = true;
     document.getElementById('lobbyScreen').hidden = true;
     const gm = RA.regionMap(RA.eraMap(this.map, s.era, 'granice'), s.reg);
-    const G = RA.newGame(gm, { seed: r.seed, difficulty: s.dif, cityStates: s.cs, peace: s.peace, era: s.era, start: 'granice', gm: s.gm, res: s.res === 1 });
+    const G = RA.newGame(gm, { seed: r.seed, difficulty: s.dif, cityStates: s.cs, peace: s.peace, era: s.era, start: 'granice', gm: s.gm, res: s.res === 1, tree: s.tree === 1, noNuke: s.nn === 1 });
     RA.startGame(G);
     G.online = true;
     G.long = true;
@@ -14967,15 +15180,22 @@ Object.assign(RA.App.prototype, {
         this.lmap.setMaxBounds(L.latLngBounds([[bx[1], bx[0]], [bx[3], bx[2]]]).pad(0.7));
       } else this.lmap.setMaxBounds(this.defBounds);
       const mine = G.P[G.slotPid[LG.you]];
-      if (mine && mine.alive) this.longJoined(mine);
-      else ui.longPick();
+      const was = RA.focusGet(r.code);
+      if (mine && mine.alive) {
+        this.longJoined(mine);
+        if (was && was.snap && G.tick - was.tick > 20) ui.focusReport(was, r);
+      } else ui.longPick();
+      if (G.state === 'over' && !G.continued) RA.focusDrop(r.code);
       ui.toast('info', `Focus: 1 potez svakih ${Math.round(r.tickMs / 1000)} s — igra teče i kad nisi tu. Link: <b>${RA.esc(location.origin + '/long-' + r.code)}</b>`, { ms: 9000 });
     };
     slice();
   },
   longJoined(p) {
-    const G = this.G, ui = this.ui;
+    const G = this.G, ui = this.ui, s = this.long.rec.set;
     G.me = p;
+    this.long.left = '';
+    const reg = RA.REGIONS.find((x) => x.id === s.reg && x.map === s.map);
+    RA.focusPut(this.long.code, { title: `${p.name} · ${reg ? reg.name : RA.mapInfo(s.map).all} · ${RA.eraById(s.era).short}`, days: s.days || 1, tick: G.tick, snap: RA.focusSnap(G, p) });
     ui.watching = false;
     ui.closeSheet();
     ui.showPlayUI(true);
@@ -14987,6 +15207,43 @@ Object.assign(RA.App.prototype, {
 });
 
 Object.assign(RA.UI.prototype, {
+  /* "Dok te nije bilo": what happened to my state since I last looked (the record replays the same game) */
+  focusReport(was, r) {
+    const G = this.G, me = G.me, a = was.snap, b = RA.focusSnap(G, me);
+    const secs = ((G.tick - was.tick) * r.tickMs) / 1000;
+    const pc = (v) => (v * 100).toFixed(1).replace('.', ',') + '%';
+    const d = (x, y, f) => `${f(x)} → <b>${f(y)}</b>${y > x ? ' <span class="pos">▲</span>' : y < x ? ' <span class="neg">▼</span>' : ''}`;
+    const ev = G.feed.filter((f) => f.tick > was.tick && (f.a === me.id || f.b === me.id)).slice(-10);
+    const what = { war: '⚔ rat', fall: '☠ pala država', ally: '🤝 savez', break: '✂ savez raskinut', allyEnd: 'savez istekao', trade: '⚖ trgovina', vassal: 'vazal', pledge: 'zakletva', rebel: 'pobuna', dome: '☢ kupola', strait: 'moreuz', straitO: 'moreuz otvoren' };
+    let h = this.head('Dok te nije bilo', `${RA.fmtTime(secs)} stvarnog vremena · ${G.tick - was.tick} poteza · kompjuter je vodio ${RA.esc(me.name)}`);
+    h += `<div class="list"><div class="prow wide"><div class="pn"><div class="nm">Teritorija</div><div class="d">${d(a.share, b.share, pc)}</div></div></div>
+      <div class="prow wide"><div class="pn"><div class="nm">Gradovi</div><div class="d">${d(a.cities, b.cities, String)}</div></div></div>
+      <div class="prow wide"><div class="pn"><div class="nm">Vojska</div><div class="d">${d(a.troops, b.troops, RA.fmt)}</div></div></div>
+      <div class="prow wide"><div class="pn"><div class="nm">Zlato</div><div class="d">${d(a.gold, b.gold, RA.fmt)}</div></div></div>
+      <div class="prow wide"><div class="pn"><div class="nm">Saveznici</div><div class="d">${d(a.allies, b.allies, String)}</div></div></div></div>`;
+    h += ev.length ? `<div class="sec-t">Događaji</div><div class="list">${ev.map((f) => `<div class="prow wide"><div class="pn"><div class="d">${what[f.t] || f.t}: ${this.feedName(f.a)}${f.b ? ' · ' + this.feedName(f.b) : ''}</div></div></div>`).join('')}</div>` : '<p class="note">Nijedan rat ni savez s tvojom državom u međuvremenu.</p>';
+    h += '<div class="btns"><button class="btn primary" data-ok><span class="t">Nastavi</span></button></div>';
+    this.openSheet(h, (s) => (s.querySelector('[data-ok]').onclick = () => this.closeSheet()));
+  },
+  /* the start screen's "Nastavi Focus igru" (my Focus games in this browser) */
+  focusOffer() {
+    const b = this.$('focusBtn'), l = RA.focusList(), net = this.app.net;
+    b.hidden = !l.length || !(net && net.wsUrl);
+    if (b.hidden) return;
+    const e = l[0];
+    b.innerHTML = `<span class="t">Nastavi Focus igru${l.length > 1 ? ` (${l.length})` : ''}</span><span class="d">${RA.esc(e.title || 'Focus · ' + e.code)} · ~${e.days || 1} ${(e.days || 1) === 1 ? 'dan' : 'dana'}</span>`;
+    b.onclick = () => {
+      this.settings.name = this.$('nameIn').value.trim().slice(0, 18);
+      this._save();
+      if (l.length === 1) return this.app.long.open(e.code);
+      let h = this.head('Tvoje Focus igre', 'Igre teku i dok nisi tu — kompjuter vodi tvoju državu') + '<div class="list">';
+      for (const x of l) h += `<div class="prow wide"><div class="pn"><div class="nm">${RA.esc(x.title || x.code)}</div><div class="d">~${x.days || 1} ${(x.days || 1) === 1 ? 'dan' : 'dana'} · zadnji put ${new Date(x.at || 0).toLocaleString('bs')}</div></div><div class="bb">${this.mini('Nastavi', `data-fo="${x.code}"`, 'ok')}</div></div>`;
+      this.openSheet(h + '</div>', (s) => s.querySelectorAll('[data-fo]').forEach((q) => (q.onclick = () => {
+        this.closeSheet();
+        this.app.long.open(q.dataset.fo);
+      })));
+    };
+  },
   /* not playing yet (or my state fell): choose a computer state to take over */
   longPick() {
     const G = this.G, L = this.app.long;
@@ -15069,7 +15326,7 @@ Object.assign(RA.App.prototype, {
   },
 });
 
-RA.BUILD = 'f6d76f57';
+RA.BUILD = 'e798c85f';
 new RA.App().boot();
 }
 function __raFallback(){

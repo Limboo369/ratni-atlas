@@ -33,7 +33,7 @@ async def main():
             print('checking', width, height, 'settings', flush=True)
             await page.fill('#nameIn', 'Test Komandant')
             await page.click('#eraSeg [data-v="rim"]')
-            await page.click('#configBtn')
+            await page.click('#paceSeg [data-v="custom"]')  # Make your choice opens the dialog with every rule
             print('dialog opened', width, flush=True)
             assert await page.locator('#operationDialog').evaluate('(e)=>e.open')
             await page.click('#startSeg [data-v="slobodno"]')

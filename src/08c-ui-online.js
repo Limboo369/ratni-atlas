@@ -4,7 +4,7 @@
 Object.assign(RA.UI.prototype, {
   initOnline() {
     const $ = this.$, s = this.settings;
-    this.lobbySet = { map: s.map, reg: s.region, dif: s.difficulty, peace: s.peace, cs: s.cityStates, mode: s.mode === 'vs' ? 'vs' : 'coop', era: s.era, st: s.start, gm: s.gm, res: s.res ? 1 : 0 };
+    this.lobbySet = { map: s.map, reg: s.region, dif: s.difficulty, peace: s.peace, cs: s.cityStates, mode: s.mode === 'vs' ? 'vs' : 'coop', era: s.era, st: s.start, gm: s.gm, res: s.res ? 1 : 0, tree: s.tree ? 1 : 0, nn: s.noNuke ? 1 : 0 };
     this.natCache = {};
     $('lMapSeg').innerHTML = RA.MAPS.map((m) => `<button data-v="${m.id}" aria-pressed="false"${m.id === 'evropa' ? '' : ' hidden'}>${RA.esc(m.name)}<small>${RA.esc(m.sub)}</small></button>`).join('');
     this.lobbyRegs();
@@ -92,12 +92,15 @@ Object.assign(RA.UI.prototype, {
         this.lobbyRegs();
         this.lobbySet.reg = this.settings.region;
         this.lobbySet.dif = this.settings.difficulty;
-        this.lobbySet.peace = this.settings.peace;
+        const R = this.playSet(); // the mode's rules (online is always Blitz pace)
+        this.lobbySet.peace = R.peace;
         this.lobbySet.cs = this.settings.cityStates;
         this.lobbySet.era = this.settings.era;
         this.lobbySet.st = this.settings.start;
         this.lobbySet.gm = this.settings.gm;
-        this.lobbySet.res = this.settings.res ? 1 : 0;
+        this.lobbySet.res = R.res ? 1 : 0;
+        this.lobbySet.tree = R.tree ? 1 : 0;
+        this.lobbySet.nn = R.noNuke ? 1 : 0;
         for (const [id, v] of [['lMapSeg', this.lobbySet.map], ['lEraSeg', this.lobbySet.era], ['lStartSeg', this.lobbySet.st], ['lGmSeg', this.lobbySet.gm], ['lRegSeg', this.lobbySet.reg]]) this._press(id, v);
         net.host(Object.assign({}, this.lobbySet));
       } else net.join(b.dataset.on);

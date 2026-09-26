@@ -82,7 +82,7 @@ Object.assign(RA.App.prototype, {
     document.getElementById('startScreen').hidden = true;
     const gm = RA.regionMap(RA.eraMap(this.map, s.era, s.start), s.region);
     RA.ME_COLOR = s.color || RA.PLAYER_COLORS[0];
-    const G = RA.newGame(gm, { seed: s.seed, difficulty: s.difficulty, cityStates: s.cityStates, peace: s.peace, era: s.era, start: s.start, gm: s.gm, res: !!s.res, camp: s.camp });
+    const G = RA.newGame(gm, { seed: s.seed, difficulty: s.difficulty, cityStates: s.cityStates, peace: s.peace, era: s.era, start: s.start, gm: s.gm, res: !!s.res, tree: !!s.tree, noNuke: !!s.noNuke, camp: s.camp });
     G.gid = r.gid;
     G.rec = r; // the game goes on recording into the same record
     this.setGame(G);
@@ -156,6 +156,7 @@ Object.assign(RA.App.prototype, {
 Object.assign(RA.UI.prototype, {
   /* the start screen's "Nastavi igru" button (a save in this browser or on the account) */
   async resumeOffer() {
+    if (this.focusOffer) this.focusOffer();
     const b = this.$('resumeBtn');
     const sv = await this.app.findSave();
     this.resumeSv = sv;

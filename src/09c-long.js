@@ -14,6 +14,7 @@ RA.Long = class {
     this.queue = []; // entries not applied yet: [tick, slot, kind, args]
     this.known = 0; // entries of the record received so far
     this.code = '';
+    addEventListener('pagehide', () => this.rec && this.snap());
   }
   get url() {
     return this.app.net && this.app.net.wsUrl;
@@ -39,8 +40,8 @@ RA.Long = class {
   }
   /* a new long game with the start screen's settings */
   create() {
-    const s = this.app.ui.settings;
-    const set = { map: s.map, reg: s.region, era: s.era, gm: s.gm === 'br' ? 'klasik' : s.gm, dif: s.difficulty, cs: s.cityStates, peace: s.peace, res: s.res ? 1 : 0, days: [1, 3, 7].includes(s.days) ? s.days : 1 };
+    const s = this.app.ui.playSet(); // Focus preset or Make your choice
+    const set = { map: s.map, reg: s.region, era: s.era, gm: s.gm === 'br' ? 'klasik' : s.gm, dif: s.difficulty, cs: s.cityStates, peace: s.peace, res: s.res ? 1 : 0, tree: s.tree ? 1 : 0, nn: s.noNuke ? 1 : 0, days: [1, 3, 7].includes(s.days) ? s.days : 1 };
     this.connect('new', { create: { set, name: this.name(), uid: this.uid() } });
   }
   open(code) {
@@ -93,6 +94,12 @@ RA.Long = class {
   send(kind, args) {
     if (this.ws && this.ws.readyState === 1) this.ws.send(JSON.stringify({ c: [kind, args] }));
   }
+  /* leave for good: my seat goes to the computer and can't be taken back (the progress is gone) */
+  leave() {
+    if (this.ws && this.ws.readyState === 1) this.ws.send(JSON.stringify({ leave: 1 }));
+    RA.focusDrop(this.code);
+    this.left = this.code; // no snapshot may put it back
+  }
   join(id) {
     if (this.ws && this.ws.readyState === 1) this.ws.send(JSON.stringify({ join: [id, this.name()] }));
   }
@@ -100,6 +107,7 @@ RA.Long = class {
     const ui = this.app.ui;
     if (m.t === 'err') {
       ui.toast('bad', RA.esc(String(m.e || 'Greška Focus igre.')), { ms: 6000 });
+      if (m.gone && this.code) RA.focusDrop(this.code);
       if (!this.rec) this.app.showStart();
       return;
     }
@@ -120,6 +128,7 @@ RA.Long = class {
       this.queue = m.rec.cmds.slice();
       this.known = m.rec.cmds.length;
       if (/^https?:$/.test(location.protocol)) history.replaceState(null, '', '/long-' + this.code);
+      if (!RA.focusGet(this.code) && this.you >= 0) RA.focusPut(this.code, {});
       this.app.startLong(this);
     }
   }
@@ -164,7 +173,50 @@ RA.Long = class {
       if (!this.applyDue(G)) return;
       G.step();
     }
+    if (G.state === 'over' && !G.continued) RA.focusDrop(this.code); // the game is finished: nothing to continue
+    else if (t0 - (this.snapAt || 0) > 10000) {
+      this.snapAt = t0;
+      this.snap();
+    }
   }
+  /* what my state looks like now, for "Dok te nije bilo" next time */
+  snap() {
+    const G = this.app.G, me = G && G.me;
+    if (!G || !G.long || !me || !me.alive || this.replaying || this.left === this.code) return;
+    RA.focusPut(this.code, { tick: G.tick, snap: RA.focusSnap(G, me) });
+  }
+};
+
+/* my Focus games in this browser (localStorage ra_focus): code, title, last snapshot of my state.
+   A game stays here until it is finished or I leave it ("Napusti"); closing the tab or the main menu keeps it. */
+RA.focusList = function () {
+  try {
+    const l = JSON.parse(localStorage.getItem('ra_focus') || '[]');
+    return Array.isArray(l) ? l.filter((e) => e && /^[a-z0-9]{6}$/.test(e.code)) : [];
+  } catch (_) {
+    return [];
+  }
+};
+RA.focusSet = function (l) {
+  try {
+    localStorage.setItem('ra_focus', JSON.stringify(l.slice(0, 12)));
+  } catch (_) {}
+};
+RA.focusGet = (code) => RA.focusList().find((e) => e.code === code);
+RA.focusPut = function (code, patch) {
+  const l = RA.focusList(), i = l.findIndex((e) => e.code === code);
+  const e = Object.assign(i >= 0 ? l[i] : { code }, patch, { at: Date.now() });
+  if (i >= 0) l.splice(i, 1);
+  l.unshift(e);
+  RA.focusSet(l);
+};
+RA.focusDrop = function (code) {
+  RA.focusSet(RA.focusList().filter((e) => e.code !== code));
+};
+RA.focusSnap = function (G, p) {
+  let cities = 0;
+  for (const ct of G.cities) if (ct.owner === p.id && ct.tier >= 1) cities++;
+  return { share: p.area / G.landTotal(), cities: cities + (p.bcities ? p.bcities.length : 0), troops: Math.round(p.troops), gold: Math.round(p.gold), allies: p.allies.size };
 };
 
 /* a player takes over a computer state (deterministic: every device does the same at the same tick) */
@@ -190,7 +242,7 @@ Object.assign(RA.App.prototype, {
     document.getElementById('startScreen').hidden = true;
     document.getElementById('lobbyScreen').hidden = true;
     const gm = RA.regionMap(RA.eraMap(this.map, s.era, 'granice'), s.reg);
-    const G = RA.newGame(gm, { seed: r.seed, difficulty: s.dif, cityStates: s.cs, peace: s.peace, era: s.era, start: 'granice', gm: s.gm, res: s.res === 1 });
+    const G = RA.newGame(gm, { seed: r.seed, difficulty: s.dif, cityStates: s.cs, peace: s.peace, era: s.era, start: 'granice', gm: s.gm, res: s.res === 1, tree: s.tree === 1, noNuke: s.nn === 1 });
     RA.startGame(G);
     G.online = true;
     G.long = true;
@@ -235,15 +287,22 @@ Object.assign(RA.App.prototype, {
         this.lmap.setMaxBounds(L.latLngBounds([[bx[1], bx[0]], [bx[3], bx[2]]]).pad(0.7));
       } else this.lmap.setMaxBounds(this.defBounds);
       const mine = G.P[G.slotPid[LG.you]];
-      if (mine && mine.alive) this.longJoined(mine);
-      else ui.longPick();
+      const was = RA.focusGet(r.code);
+      if (mine && mine.alive) {
+        this.longJoined(mine);
+        if (was && was.snap && G.tick - was.tick > 20) ui.focusReport(was, r);
+      } else ui.longPick();
+      if (G.state === 'over' && !G.continued) RA.focusDrop(r.code);
       ui.toast('info', `Focus: 1 potez svakih ${Math.round(r.tickMs / 1000)} s — igra teče i kad nisi tu. Link: <b>${RA.esc(location.origin + '/long-' + r.code)}</b>`, { ms: 9000 });
     };
     slice();
   },
   longJoined(p) {
-    const G = this.G, ui = this.ui;
+    const G = this.G, ui = this.ui, s = this.long.rec.set;
     G.me = p;
+    this.long.left = '';
+    const reg = RA.REGIONS.find((x) => x.id === s.reg && x.map === s.map);
+    RA.focusPut(this.long.code, { title: `${p.name} · ${reg ? reg.name : RA.mapInfo(s.map).all} · ${RA.eraById(s.era).short}`, days: s.days || 1, tick: G.tick, snap: RA.focusSnap(G, p) });
     ui.watching = false;
     ui.closeSheet();
     ui.showPlayUI(true);
@@ -255,6 +314,43 @@ Object.assign(RA.App.prototype, {
 });
 
 Object.assign(RA.UI.prototype, {
+  /* "Dok te nije bilo": what happened to my state since I last looked (the record replays the same game) */
+  focusReport(was, r) {
+    const G = this.G, me = G.me, a = was.snap, b = RA.focusSnap(G, me);
+    const secs = ((G.tick - was.tick) * r.tickMs) / 1000;
+    const pc = (v) => (v * 100).toFixed(1).replace('.', ',') + '%';
+    const d = (x, y, f) => `${f(x)} → <b>${f(y)}</b>${y > x ? ' <span class="pos">▲</span>' : y < x ? ' <span class="neg">▼</span>' : ''}`;
+    const ev = G.feed.filter((f) => f.tick > was.tick && (f.a === me.id || f.b === me.id)).slice(-10);
+    const what = { war: '⚔ rat', fall: '☠ pala država', ally: '🤝 savez', break: '✂ savez raskinut', allyEnd: 'savez istekao', trade: '⚖ trgovina', vassal: 'vazal', pledge: 'zakletva', rebel: 'pobuna', dome: '☢ kupola', strait: 'moreuz', straitO: 'moreuz otvoren' };
+    let h = this.head('Dok te nije bilo', `${RA.fmtTime(secs)} stvarnog vremena · ${G.tick - was.tick} poteza · kompjuter je vodio ${RA.esc(me.name)}`);
+    h += `<div class="list"><div class="prow wide"><div class="pn"><div class="nm">Teritorija</div><div class="d">${d(a.share, b.share, pc)}</div></div></div>
+      <div class="prow wide"><div class="pn"><div class="nm">Gradovi</div><div class="d">${d(a.cities, b.cities, String)}</div></div></div>
+      <div class="prow wide"><div class="pn"><div class="nm">Vojska</div><div class="d">${d(a.troops, b.troops, RA.fmt)}</div></div></div>
+      <div class="prow wide"><div class="pn"><div class="nm">Zlato</div><div class="d">${d(a.gold, b.gold, RA.fmt)}</div></div></div>
+      <div class="prow wide"><div class="pn"><div class="nm">Saveznici</div><div class="d">${d(a.allies, b.allies, String)}</div></div></div></div>`;
+    h += ev.length ? `<div class="sec-t">Događaji</div><div class="list">${ev.map((f) => `<div class="prow wide"><div class="pn"><div class="d">${what[f.t] || f.t}: ${this.feedName(f.a)}${f.b ? ' · ' + this.feedName(f.b) : ''}</div></div></div>`).join('')}</div>` : '<p class="note">Nijedan rat ni savez s tvojom državom u međuvremenu.</p>';
+    h += '<div class="btns"><button class="btn primary" data-ok><span class="t">Nastavi</span></button></div>';
+    this.openSheet(h, (s) => (s.querySelector('[data-ok]').onclick = () => this.closeSheet()));
+  },
+  /* the start screen's "Nastavi Focus igru" (my Focus games in this browser) */
+  focusOffer() {
+    const b = this.$('focusBtn'), l = RA.focusList(), net = this.app.net;
+    b.hidden = !l.length || !(net && net.wsUrl);
+    if (b.hidden) return;
+    const e = l[0];
+    b.innerHTML = `<span class="t">Nastavi Focus igru${l.length > 1 ? ` (${l.length})` : ''}</span><span class="d">${RA.esc(e.title || 'Focus · ' + e.code)} · ~${e.days || 1} ${(e.days || 1) === 1 ? 'dan' : 'dana'}</span>`;
+    b.onclick = () => {
+      this.settings.name = this.$('nameIn').value.trim().slice(0, 18);
+      this._save();
+      if (l.length === 1) return this.app.long.open(e.code);
+      let h = this.head('Tvoje Focus igre', 'Igre teku i dok nisi tu — kompjuter vodi tvoju državu') + '<div class="list">';
+      for (const x of l) h += `<div class="prow wide"><div class="pn"><div class="nm">${RA.esc(x.title || x.code)}</div><div class="d">~${x.days || 1} ${(x.days || 1) === 1 ? 'dan' : 'dana'} · zadnji put ${new Date(x.at || 0).toLocaleString('bs')}</div></div><div class="bb">${this.mini('Nastavi', `data-fo="${x.code}"`, 'ok')}</div></div>`;
+      this.openSheet(h + '</div>', (s) => s.querySelectorAll('[data-fo]').forEach((q) => (q.onclick = () => {
+        this.closeSheet();
+        this.app.long.open(q.dataset.fo);
+      })));
+    };
+  },
   /* not playing yet (or my state fell): choose a computer state to take over */
   longPick() {
     const G = this.G, L = this.app.long;

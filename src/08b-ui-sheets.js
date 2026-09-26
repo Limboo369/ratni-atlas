@@ -188,6 +188,7 @@ Object.assign(RA.UI.prototype, {
     const peace = G.inPeace();
     for (const t of RA.missileTypes()) {
       const M = RA.MISSILE[t];
+      if (G.opts.noNuke && (M.kind === 'nuke' || M.kind === 'mirv')) continue;
       const cost = G.missileCost(t, me);
       const wait = M.from && tk < M.from;
       h += this.btn({
@@ -517,7 +518,11 @@ Object.assign(RA.UI.prototype, {
       <p class="note">Viši porez: više zlata, ali vojska sporije raste. Niži: vojska brže raste, zlata manje.<br>Sada: zlato ${cur.g === 1 ? 'normalno' : pct(cur.g)}, rast vojske ${cur.grow === 1 ? 'normalan' : pct(cur.grow)}.</p></div>
       <div class="field"><span class="lab">Kamata</span><p class="note">Ušteđeno zlato donosi 1% u minuti, najviše četvrtinu tvog prihoda. Sada: <b>+${RA.fmt(me.interest || 0)}/s</b>.</p></div>` +
       this.resHtml() + this.loanHtml() + this.straitHtml();
-    this.openSheet(h, (s) => {
+    this.openSheet(this.techHtml(h), (s) => {
+      s.querySelectorAll('[data-tech]').forEach((b) => (b.onclick = () => {
+        this.act('tech', [b.dataset.tech]);
+        if (G.online || G.long) setTimeout(() => this.econSheet(true), 400);
+      }));
       s.querySelectorAll('[data-buy]').forEach((b) => (b.onclick = () => {
         const [k, sid] = b.dataset.buy.split(':').map(Number);
         this.act('buy', [k, sid]);
@@ -546,6 +551,20 @@ Object.assign(RA.UI.prototype, {
         if (G.online) setTimeout(() => this.econSheet(true), 400);
       }));
     }, keep, () => this.econSheet(true));
+  },
+  /* the tech tree of this game (opts.tree), put right under the sheet's head */
+  techHtml(h) {
+    const G = this.G, me = G.me;
+    if (!G.opts.tree) return h;
+    let t = '<div class="sec-t">Stablo tehnologija</div><p class="explain">Istraživanje za zlato: svaka grana ima 5 nivoa, svaki nivo je duplo skuplji. Traje do kraja igre.</p><div class="list">';
+    for (const k of RA.TECH_ORDER) {
+      const T = RA.TECH[k], lv = G.techLv(me, k), cost = G.techCost(me, k), max = lv >= RA.TECH_MAX;
+      const pips = '●'.repeat(lv) + '○'.repeat(RA.TECH_MAX - lv);
+      t += `<div class="prow wide"><span class="sw tech-ic">${RA.icon(T.icon)}</span><div class="pn"><div class="nm">${T.name} <span class="tech-pips">${pips}</span></div><div class="d">${RA.esc(T.desc)}</div></div><div class="bb">${max ? '<span class="pos">max</span>' : this.mini(`${RA.fmt(cost)}`, `data-tech="${k}"`, 'ok', me.gold < cost)}</div></div>`;
+    }
+    t += '</div>';
+    const i = h.indexOf('<div class="field">');
+    return i < 0 ? h + t : h.slice(0, i) + t + h.slice(i);
   },
   /* resources: what you have, buy, or miss (and what missing costs you); partners' offers with their prices */
   resHtml() {
@@ -637,7 +656,8 @@ Object.assign(RA.UI.prototype, {
       <button class="btn" data-m="sfx"><span class="t">Zvučni efekti</span><span class="r" style="font-size:14px">${this.audio.s.sfx ? 'Uključeno' : 'Isključeno'}</span></button>
       <button class="btn" data-m="music"><span class="t">Muzika</span><span class="r" style="font-size:14px">${this.audio.s.music ? 'Uključeno' : 'Isključeno'}</span></button>
       <button class="btn" data-m="rulers"><span class="t">Komentari vladara</span><span class="r" style="font-size:14px">${this.settings.rulers === false ? 'Isključeno' : 'Uključeno'}</span></button>
-      <button class="btn danger" data-m="new"><span><span class="t">${G.online ? 'Napusti online igru' : 'Nova igra'}</span><br><span class="d">${G.online ? 'Tvoju državu preuzima kompjuter' : 'Trenutna partija se prekida'}</span></span></button>
+      ${G.long ? `<button class="btn" data-m="home"><span><span class="t">Glavni meni</span><br><span class="d">Igra teče dalje, kompjuter vodi tvoju državu — vratiš se preko „Nastavi Focus igru”</span></span></button>
+      <button class="btn danger" data-m="leave"><span><span class="t">Napusti igru</span><br><span class="d">Zauvijek — progres ove Focus igre se briše</span></span></button>` : `<button class="btn danger" data-m="new"><span><span class="t">${G.online ? 'Napusti online igru' : 'Nova igra'}</span><br><span class="d">${G.online ? 'Tvoju državu preuzima kompjuter' : 'Trenutna partija se prekida'}</span></span></button>`}
     </div>
     <p class="note">Tipke: Space pauza · 1–3 brzina · Q/E snaga napada · V vojska · B gradnja · D desant · P padobranci · R rakete · S savezi · M mobilizacija · Esc odustani.</p>`;
     this.openSheet(h, (s) => {
@@ -665,6 +685,15 @@ Object.assign(RA.UI.prototype, {
         } else if (m === 'tips') {
           this.noTips = !this.noTips;
           this.closeSheet();
+        } else if (m === 'home') {
+          app.long.snap();
+          app.showStart();
+        } else if (m === 'leave') {
+          this.confirm('Napustiti Focus igru?', 'Tvoja država zauvijek prelazi kompjuteru i ne možeš joj se vratiti. Sav tvoj progres u ovoj igri se briše.', 'Napusti', () =>
+            setTimeout(() => this.confirm('Sigurno? Ovo se ne može vratiti.', `Posljednja provjera: progres Focus igre (${G.me ? G.me.name : ''}) biće obrisan. Ako samo želiš pauzu, izaberi „Glavni meni” — igra te čeka.`, 'Da, obriši progres', () => {
+              app.long.leave();
+              app.showStart();
+            }), 50));
         } else if (m === 'new') {
           if (G.online) this.confirm('Napustiti online igru?', app.net && app.net.role === 'host' ? 'Ti si domaćin: kad izađeš, igra staje i za prijatelja.' : 'Tvoju državu preuzima kompjuter, a prijatelj nastavlja.', 'Napusti', () => app.showStart());
           else this.confirm('Prekinuti partiju?', 'Počinješ ispočetka sa novim postavkama.', 'Nova igra', () => app.showStart());
@@ -682,6 +711,10 @@ Object.assign(RA.UI.prototype, {
     const eras = RA.ERAS.map((e) => `<li><b>${RA.esc(e.name)}</b> (${RA.esc(e.sub)}) — ${RA.esc(RA.eraBlurb(e, M.id))}</li>`).join('');
     const h = this.head('Kako se igra', 'Overtake — pravila ukratko') + `<div class="howto">
       <h4>Cilj</h4><p>Zauzmi ${win}% kopna odabranog dijela karte ili ostani posljednja država. Kad pobijediš, možeš nastaviti igru i osvojiti sve. Ko drži više od ${pc(35)}% karte, plaća svako novo osvajanje skuplje.</p>
+      <h4>Modovi</h4><ul>
+        <li><b>Blitz</b>: brza partija (20–40 min), bez stabla tehnologija i resursa, 1 min mira.</li>
+        <li><b>Focus</b>: igra traje danima (~1, 3 ili 7) na serveru i teče i dok nisi tu — kompjuter vodi tvoju državu. Stablo tehnologija, resursi i trgovina, duže mirno doba. Glavni meni čuva igru (<i>Nastavi Focus igru</i>), a kad se vratiš, vidiš šta se desilo. <i>Napusti igru</i> briše tvoj progres zauvijek.</li>
+        <li><b>Make your choice</b>: sam biraš tempo, stablo tehnologija, resurse, nuklearno oružje i mirno doba.</li></ul>
       <h4>Doba</h4><p>Na početnom ekranu biraš period u kojem se boriš. Svako doba ima svoje granice, gradove, jedinice, zgrade i oružje:</p><ul>${eras}</ul>
       <h4>Početak</h4><ul>
         <li><b>Stvarne granice</b>: sve države kreću sa svojom teritorijom iz tog doba. Dodirni državu ili je izaberi sa spiska — dobijaš njenu zemlju, vojsku i zlato.</li>

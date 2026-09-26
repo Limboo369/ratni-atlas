@@ -71,6 +71,7 @@ RA.AI = {
     RA.AI.maybeBuild(G, p, info);
     RA.AI.maybeRecruit(G, p, info);
     if (G.deps) RA.AI.maybeBuyRes(G, p);
+    if (G.opts.tree) RA.AI.maybeTech(G, p);
     if (!peace && p.n.port) RA.AI.navy(G, p, info);
     if (!peace && p.n.airport && RA.airOn()) RA.AI.air(G, p, info);
     if (!peace && !RA.MISSILE.drone.na) RA.AI.drones(G, p, info);
@@ -381,7 +382,7 @@ RA.AI = {
       }
     }
     // an iron dome once nuclear weapons are about (the richer and the more threatened, the more likely)
-    if (!S.dome.na && !RA.MISSILE.atom.na && p.built.silo && p.built.dome < (p.tiles > 2500 ? 2 : 1) && G.tick > G.diff.nukeAfter && p.gold >= cost('dome') * 1.3 && G.rng() < 0.2 * pers.nuke) {
+    if (!G.opts.noNuke && !S.dome.na && !RA.MISSILE.atom.na && p.built.silo && p.built.dome < (p.tiles > 2500 ? 2 : 1) && G.tick > G.diff.nukeAfter && p.gold >= cost('dome') * 1.3 && G.rng() < 0.2 * pers.nuke) {
       if (place('dome', (c) => RA.AI.interior(G, p, c))) return;
     }
     // missile defence once somebody has silos
@@ -511,7 +512,7 @@ RA.AI = {
 
   maybeNuke(G, p, info) {
     const MI = RA.MISSILE;
-    if (MI.atom.na || (MI.atom.from && G.tick < MI.atom.from)) return;
+    if (G.opts.noNuke || MI.atom.na || (MI.atom.from && G.tick < MI.atom.from)) return;
     if (G.tick < G.diff.nukeAfter || !p.n.silo) return;
     if (p.gold < RA.MISSILE.atom.cost * 1.15 || G.tick - p.ai.lastNuke < 900) return;
     const pers = RA.PERS[p.ai.pers];
