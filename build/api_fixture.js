@@ -75,12 +75,12 @@ async function startApi(origins, log) {
   });
   const certPort = await freePort();
   certs.listen(certPort, '127.0.0.1');
-  const port = await freePort();
+  const port = await freePort(), intPort = await freePort();
   const api = spawn('node', [path.join(R, 'deploy/api/server.js')], {
-    env: { ...process.env, PGDATABASE: dbName, PORT: String(port), GOOGLE_CLIENT_ID: CLIENT_ID, GOOGLE_CERTS_URL: `http://127.0.0.1:${certPort}/certs`, ORIGINS: origins, COOKIE_SECURE: '0' },
+    env: { ...process.env, PGDATABASE: dbName, PORT: String(port), INT_PORT: String(intPort), GOOGLE_CLIENT_ID: CLIENT_ID, GOOGLE_CERTS_URL: `http://127.0.0.1:${certPort}/certs`, ORIGINS: origins, COOKIE_SECURE: '0' },
     stdio: ['ignore', log || 'inherit', 'pipe'],
   });
-  const f = { port, base: `http://127.0.0.1:${port}`, stderr: '', token, evil, CLIENT_ID };
+  const f = { port, base: `http://127.0.0.1:${port}`, int: `http://127.0.0.1:${intPort}`, db: dbName, stderr: '', token, evil, CLIENT_ID };
   api.stderr.on('data', (b) => {
     f.stderr += b;
     if (log === 'ignore') process.stderr.write(b); // serve mode: the browser test shows API errors
@@ -125,7 +125,7 @@ async function serve() {
   });
   web.listen(port, '127.0.0.1');
   const tokens = { darko: token(), ana: token({ sub: '2002', given_name: 'Ana', email: 'ana@example.com' }), evil: token({}, { key: evil }) };
-  process.stdout.write(JSON.stringify({ url, tokens }) + '\n');
+  process.stdout.write(JSON.stringify({ url, tokens, api: f.base, int: f.int }) + '\n');
   process.stdin.resume();
   process.stdin.on('end', async () => {
     web.close();

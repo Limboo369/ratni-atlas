@@ -363,6 +363,67 @@ const check = (ok, msg) => {
     const rt = LG._allyRoots();
     check(rt.get(early.id) === rt.get(late.id), 'allied players are one side (allies win together)');
   }
+  // Conquest League (plan phase 16): players only from small fields, two teams, team votes, Blitz ends
+  {
+    RA.applyEra('ww2');
+    const lrec = (size, seed) => ({ code: 'lg' + size + 'aaa', seed, set: { map: 'evropa', reg: 'evropa', era: 'ww2', gm: 'klasik', dif: 'srednje', cs: 0, peace: 0, res: 0, tree: 0, nn: 0, days: 1, fast: 1, lg: size },
+      slots: Array.from({ length: size * 2 }, (_, i) => ({ name: 'P' + i, team: i < size ? 1 : 2 })) });
+    const L2 = RA.longGame(m, lrec(2, 31));
+    const alive = L2.P.filter((p) => p && p.alive);
+    const hs = L2.humans;
+    check(alive.length === 4 && alive.every((p) => p.human) && hs.every((p) => p.tiles > 0 && p.tiles < 60), `league 2v2: only the 4 players, each on a small field (${hs.map((p) => p.tiles)})`);
+    check(hs[0].allies.has(hs[1].id) && !hs[0].allies.has(hs[2].id) && hs[2].team === 2, 'league: teammates allied, the other team not');
+    const dd = (a, b) => RA.dist((a.capital % m.W) - (b.capital % m.W), ((a.capital / m.W) | 0) - ((b.capital / m.W) | 0));
+    check(dd(hs[0], hs[1]) < dd(hs[0], hs[2]) + dd(hs[0], hs[3]), `league: teammates start side by side (${dd(hs[0], hs[1]).toFixed(0)} / ${dd(hs[0], hs[2]).toFixed(0)}, ${dd(hs[0], hs[3]).toFixed(0)})`);
+    check(L2.slotPid.join() === hs.map((p) => p.id).join() && hs.every((p) => p.ai), 'league: seats fixed, the computer plays until a player connects');
+    RA.longApply(L2, [0, 0, 'back', []]);
+    check(!hs[0].ai, "league: 'back' gives the state to its player");
+    check(/savez/.test(L2.exec(hs[0].id, 'aReq', [hs[2].id]) || ''), 'league: no alliance with the other team');
+    for (let i = 0; i < 300; i++) L2.step();
+    const L2b = RA.longGame(m, lrec(2, 31));
+    RA.longApply(L2b, [0, 0, 'back', []]);
+    for (let i = 0; i < 300; i++) L2b.step();
+    check(L2.hash() === L2b.hash(), 'league: deterministic');
+    RA.longApply(L2, [300, 0, 'surr', []]);
+    check(L2.state === 'play', 'league 2v2: one surrender vote is not enough');
+    RA.longApply(L2, [300, 1, 'surr', []]);
+    for (let i = 0; i < 10; i++) L2.step();
+    check(L2.state === 'over' && L2.lgWin && L2.lgWin.team === 2 && L2.lgWin.why === 'surr', `league 2v2: both vote → team 1 surrenders, team 2 wins ${JSON.stringify(L2.lgWin)}`);
+    // 5v5: vote kick (4 of the other 4)
+    const L5 = RA.longGame(m, lrec(5, 8));
+    const h5 = L5.humans;
+    check(L5.P.filter((p) => p && p.alive).length === 10, 'league 5v5: 10 players');
+    for (let s = 1; s <= 3; s++) RA.longApply(L5, [0, s, 'kick', [h5[0].id]]);
+    check(!h5[0].kicked, 'league 5v5: 3 kick votes are not enough');
+    const kr = RA.longApply(L5, [0, 4, 'kick', [h5[0].id]]);
+    check(h5[0].kicked && h5[0].ai && /izbac/i.test(L5.exec(h5[0].id, 'atk', [h5[5].capital, 0.3]) || ''), `league 5v5: 4 votes kick the player, the computer plays, their commands are refused ${JSON.stringify(kr.r)}`);
+    check(/5v5/.test(L2b.exec(hs[0].id, 'kick', [hs[1].id]) || ''), 'league: vote kick only in 5v5');
+    // Blitz: a team under 10% of the players' land for 60 s capitulates
+    const L1 = RA.longGame(m, lrec(1, 12));
+    const [a1, b1] = L1.humans;
+    for (let i = 0; i < 200; i++) L1.step();
+    const give = a1.cells.slice(0, Math.floor(a1.cells.length * 0.97));
+    for (const c of give) L1.setOwner(c, b1.id);
+    // the rule alone (without armies moving): 61 checks, one every 10 ticks
+    for (let i = 0; i < 61 && L1.state === 'play'; i++) {
+      L1.tick += 10;
+      L1._stepLeague();
+    }
+    check(L1.state === 'over' && L1.lgWin && L1.lgWin.team === 2 && L1.lgWin.why === 'cap', `league 1v1: under 10% for 60 s capitulates ${JSON.stringify(L1.lgWin)}`);
+    // Blitz: after 45 min the team with more land wins
+    const LT = RA.longGame(m, lrec(1, 12));
+    for (let i = 0; i < 100; i++) LT.step();
+    LT.tick = RA.CFG.LG_END - 5;
+    for (let i = 0; i < 10; i++) LT.step();
+    const big = LT.humans[0].area >= LT.humans[1].area ? 1 : 2;
+    check(LT.state === 'over' && LT.lgWin.why === 'time' && LT.lgWin.team === big, `league: after 45 min the team with more land wins ${JSON.stringify(LT.lgWin)}`);
+    // elimination
+    const LE = RA.longGame(m, lrec(1, 12));
+    LE._kill(LE.humans[1]);
+    LE.tick = 9;
+    LE.step();
+    check(LE.state === 'over' && LE.lgWin.team === 1 && LE.lgWin.why === 'elim', `league: the last team standing wins ${JSON.stringify(LE.lgWin)}`);
+  }
   // the server steps many Focus games in one process (deploy/game/simhost.js), switching the era tables between them:
   // a game stepped between steps of another era's game must stay the same as the game alone
   const rec = (code, era, seed) => ({ code, seed, set: { map: 'evropa', reg: 'balkan', era, gm: 'klasik', dif: 'srednje', cs: 0, peace: 0, res: 1, tree: 1, nn: 0 } });

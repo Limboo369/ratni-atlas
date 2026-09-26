@@ -272,6 +272,7 @@ Object.assign(RA.CFG, {
     const C = RA.CFG;
     if (!a || !b || !a.alive || !b.alive || a === b) return 'Nevažeći igrač.';
     if (b.human && !b.ai) return 'Igrač ne može biti vazal.';
+    if (this.opts.league) return 'U ligi nema vazala.';
     if (b.lord === a.id) return `${b.name} ti je već vazal.`;
     if (b.lord) return `${b.name} je već vazal (${this.P[b.lord].name}).`;
     if (a.lord) return 'Vazal ne može imati vazale.';

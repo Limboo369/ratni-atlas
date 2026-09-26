@@ -70,7 +70,7 @@ async function add(rec) {
 const tickOf = (rec) => Math.floor((Date.now() - rec.start) / rec.tickMs);
 function status(g) {
   const G = g.G;
-  return { code: g.rec.code, tick: G ? G.tick : 0, hash: G ? G.hash() : 0, over: !!g.over, winner: G && G.winner ? G.winner.id : 0 };
+  return { code: g.rec.code, tick: G ? G.tick : 0, hash: G ? G.hash() : 0, over: !!g.over, winner: G && G.winner ? G.winner.id : 0, lg: G && G.lgWin ? G.lgWin : null, kicked: G && G.opts.league ? G.humans.filter((p) => p.kicked).map((p) => p.slot) : [] };
 }
 /* play one game up to one tick behind its clock (like the page), for at most BUDGET ms */
 function advance(g) {

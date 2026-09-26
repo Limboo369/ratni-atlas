@@ -21,7 +21,7 @@ const TICK_MS = +process.env.LONG_TICK_MS || 5000;
 const FAST_MS = +process.env.LONG_FAST_MS || 100;
 const WAIT_S = +process.env.SKIRMISH_WAIT || 60;
 const MAX_GAMES = 300, MAX_SLOTS = 8, MAX_BYTES = 4e6, IDLE_DAYS = 30;
-const KINDS = new Set(['atk', 'boat', 'para', 'build', 'rec', 'mv', 'dis', 'mis', 'mob', 'ret', 'aReq', 'aRes', 'tReq', 'tRes', 'ext', 'brk', 'tEnd', 'give', 'help', 'rcl', 'png', 'qm', 'tax', 'vas', 'loan', 'pay', 'str', 'buy', 'air', 'bomb', 'tech', 'stance', 'offer', 'offerRes', 'surr', 'endv']);
+const KINDS = new Set(['atk', 'boat', 'para', 'build', 'rec', 'mv', 'dis', 'mis', 'mob', 'ret', 'aReq', 'aRes', 'tReq', 'tRes', 'ext', 'brk', 'tEnd', 'give', 'help', 'rcl', 'png', 'qm', 'tax', 'vas', 'loan', 'pay', 'str', 'buy', 'air', 'bomb', 'tech', 'stance', 'offer', 'offerRes', 'surr', 'endv', 'kick']);
 const SET_KEYS = { map: /^[a-z]{2,12}$/, reg: /^[a-z0-9_-]{2,24}$/, era: /^[a-z0-9]{2,12}$/, gm: /^[a-z]{2,8}$/, dif: /^[a-z]{3,8}$/ };
 
 const games = new Map(); // code → {rec, file, socks: Set, bytes, dirty}
@@ -62,8 +62,14 @@ if (process.env.LONG_SIM !== '0') {
       } else if (m.st && m.st.over) {
         const gm = games.get(m.st.code);
         if (gm && !gm.rec.over) {
-          gm.rec.over = { tick: m.st.tick, winner: m.st.winner };
+          gm.rec.over = { tick: m.st.tick, winner: m.st.winner, lg: m.st.lg || undefined };
           save(gm);
+          // Conquest League: the ratings change (league.js), everyone in the game hears it
+          if (hooks.over) Promise.resolve(hooks.over(gm, m.st)).then((res) => {
+            if (!res) return;
+            save(gm);
+            cast(gm, { t: 'lg', res, l: gm.rec.league.l });
+          }, (e) => console.warn('long over hook', e.message));
         }
       }
     });
@@ -75,6 +81,7 @@ if (process.env.LONG_SIM !== '0') {
     console.warn('long: no simulation', e.message);
   }
 }
+const hooks = { over: null }; // over(gm, st): a game ended (league.js)
 const simSend = (m) => sim && simReady && sim.postMessage(m);
 function simAsk(code) {
   if (!sim || !simReady) return Promise.resolve(null);
@@ -87,7 +94,7 @@ function simAsk(code) {
 }
 
 const tickOf = (rec) => Math.max(0, Math.floor((Date.now() - rec.start) / rec.tickMs));
-const pub = (rec) => ({ code: rec.code, set: rec.set, seed: rec.seed, tickMs: rec.tickMs, start: rec.start, slots: rec.slots.map((s) => ({ name: s.name })), cmds: rec.cmds });
+const pub = (rec) => ({ code: rec.code, set: rec.set, seed: rec.seed, tickMs: rec.tickMs, start: rec.start, slots: rec.slots.map((s) => (s.team ? { name: s.name, team: s.team } : { name: s.name })), cmds: rec.cmds, league: rec.league ? { l: rec.league.l, res: rec.league.res } : undefined });
 const str = (v, n) => (typeof v === 'string' ? v.replace(/[\u0000-\u001f]/g, '').slice(0, n) : '');
 function save(gm) {
   gm.dirty = true;
@@ -146,6 +153,18 @@ function newCode() {
 function newGame(set) {
   const now = Date.now();
   const rec = { code: newCode(), set, seed: crypto.randomInt(1, 1e9), tickMs: set.fast ? FAST_MS : TICK_MS * set.days, start: now + (set.pub ? WAIT_S * 1000 : 0), slots: [], cmds: [], created: now, seen: now };
+  const g = { rec, socks: new Set(), bytes: 2, dirty: false };
+  games.set(rec.code, g);
+  simSend({ add: rec });
+  save(g);
+  return g;
+}
+
+/* Conquest League (league.js): a game with its seats fixed (players only, two teams); the countdown starts after the
+   pick/ban reveal */
+function newLeague(set, slots, meta, waitMs) {
+  const now = Date.now();
+  const rec = { code: newCode(), set, seed: crypto.randomInt(1, 1e9), tickMs: set.fast ? FAST_MS : TICK_MS * set.days, start: now + waitMs, slots: slots.map((s) => ({ ...s, awayAt: now })), cmds: [], created: now, seen: now, league: meta };
   const g = { rec, socks: new Set(), bytes: 2, dirty: false };
   games.set(rec.code, g);
   simSend({ add: rec });
@@ -261,6 +280,7 @@ function handle(ws, q, account) {
       // take over a computer state: a new seat, or my seat again after my state fell
       const id = m.join[0];
       if (!Number.isInteger(id) || id < 1 || id > 4000) return;
+      if (gm.rec.league) return send({ t: 'err', e: 'U ligi su mjesta određena prije igre.' });
       if (slot < 0) {
         if (gm.rec.slots.length >= MAX_SLOTS) return send({ t: 'err', e: `Igra je puna (${MAX_SLOTS} igrača).` });
         gm.rec.slots.push({ uid, name: str(m.join[1], 18) || 'Igrač', away: false });
@@ -279,6 +299,8 @@ function handle(ws, q, account) {
       const s = gm.rec.slots[slot];
       s.uid = '';
       s.away = true;
+      s.awayAt = Date.now();
+      if (gm.rec.league) s.left = true; // the league: leaving loses ELO (you can search again at once)
       add(gm, slot, 'ai', []);
       slot = -1;
       return send({ t: 'you', you: -1 });
@@ -298,6 +320,7 @@ function handle(ws, q, account) {
       const s = gm.rec.slots[slot];
       if (s && !s.away) {
         s.away = true;
+        s.awayAt = Date.now();
         add(gm, slot, 'ai', []);
       }
     }
@@ -352,4 +375,4 @@ function flush() {
   }
 }
 
-module.exports = { handle, lobby, games, flush, TICK_MS, simAsk };
+module.exports = { handle, lobby, games, flush, TICK_MS, simAsk, newLeague, hooks };

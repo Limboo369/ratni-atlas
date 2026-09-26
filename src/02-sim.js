@@ -978,6 +978,7 @@ RA.Game = class Game {
     const a = this.P[fromId], b = this.P[toId];
     if (!a || !b || !a.alive || !b.alive || a === b) return 'Nevažeći igrač.';
     if (a.allies.has(toId)) return 'Već ste saveznici.';
+    if (this.opts.league) return 'U ligi nema saveza s protivničkim timom.';
     if (a.lord || b.lord) return a.lord ? 'Vazal ne sklapa saveze.' : `${b.name} je vazal (${this.P[b.lord].name}) — ne sklapa saveze.`;
     if (this.allyCount(a) >= RA.CFG.ALLY_MAX) return `Možeš imati najviše ${RA.CFG.ALLY_MAX} saveza.`;
     if (this.allyCount(b) >= RA.CFG.ALLY_MAX) return `${b.name} već ima ${RA.CFG.ALLY_MAX} saveza.`;
@@ -1263,6 +1264,7 @@ RA.Game = class Game {
     this.hist.push(snap);
   }
   _checkWin() {
+    if (this.opts.league) return this._stepLeague(); // Conquest League: its own ends (02m-league.js)
     if (this.winner && !this.continued) return;
     const tot = this.landTotal();
     // sides: a co-op team plays as one side; with opts.allyWin players in a military alliance win together
@@ -1321,6 +1323,10 @@ RA.Game = class Game {
   }
   /* end now: the side with the most land wins */
   _decide() {
+    if (this.opts.league) {
+      const a = this._lgArea();
+      return this._lgEnd(a[1] >= a[2] ? 1 : 2, 'vote');
+    }
     const tot = this.landTotal(), root = this.opts.allyWin ? this._allyRoots() : null, sides = new Map();
     for (const p of this.P) {
       if (!p || !p.alive || !p.spawned || p.type === 'bot') continue;

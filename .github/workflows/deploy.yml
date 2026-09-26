@@ -41,6 +41,8 @@ jobs:
       - run: python3 build/test_mp.py
       - run: python3 build/test_long.py  # duga igra: pravi server, brzi sat
       - run: python3 build/test_skirmish.py  # javne online igre: lista, timovi, odbrojavanje, predaja
+      - run: node build/test_league.js  # Conquest League na serveru: red, party, pick/ban, predaja → ELO
+      - run: python3 build/test_league.py  # Conquest League u pregledniku: traženje, pick/ban, igra, ELO
       - run: python3 build/test_campaign.py desktop && python3 build/test_campaign.py phone
       - run: python3 build/test_tutorial.py desktop && python3 build/test_tutorial.py phone
       - run: python3 build/test_save.py klasik && python3 build/test_save.py granice

@@ -1263,3 +1263,18 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
 .deal-row { display: grid; grid-template-columns: 70px 1fr; align-items: center; gap: 4px 8px; margin: 6px 0; font-size: 13px; }
 .deal-row input, .deal-row select { width: 100%; min-width: 0; padding: 6px 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,.18); background: rgba(0,0,0,.25); color: inherit; font: inherit; }
 .deal-row small { grid-column: 2; opacity: .6; font-size: 11px; }
+
+/* Conquest League (src/09f-league.js) — simple working look; Codex C6 does the real one */
+.lg-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 10px; }
+.lg-chip { padding: 7px 10px; border: 1px solid var(--line); border-radius: 2px; background: var(--ink-2); color: var(--text); font: inherit; font-size: 14px; cursor: pointer; }
+.lg-chip.pick { border-color: var(--ok); box-shadow: inset 0 -3px 0 var(--ok); }
+.lg-chip.ban { border-color: var(--danger); color: var(--muted); text-decoration: line-through; }
+.lg-chip.draw { border-color: var(--signal); background: var(--ink-3); }
+.lg-chip.won { border-color: var(--signal); background: var(--signal); color: var(--signal-ink); font-weight: 700; }
+.lg-tier { display: inline-block; padding: 2px 7px; border: 1px solid var(--line); border-radius: 2px; font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.lg-tier.lg-overlord { border-color: #e0b84a; color: #e0b84a; }
+.lg-tier.lg-emperor { border-color: #b98cff; color: #b98cff; }
+.lg-tier.lg-warlord { border-color: #ff6b5b; color: #ff6b5b; }
+.lg-tier.lg-vanguard { border-color: #5bb8ff; color: #5bb8ff; }
+.lg-tier.lg-raider { border-color: #9aa7ad; color: #9aa7ad; }
+#lgCode { width: 90px; padding: 6px 8px; border: 1px solid var(--line); background: var(--ink-2); color: var(--text); font: inherit; text-transform: lowercase; }

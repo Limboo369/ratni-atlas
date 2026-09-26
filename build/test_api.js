@@ -202,6 +202,42 @@ async function main() {
     r = await call('GET', '/api/focus', null, { cookie: '' });
     check(r.status === 401, 'Focus list: only signed in');
 
+    // Conquest League (plan phase 16): ratings on the internal port only, per-player ELO, top 100, history
+    {
+      const anaId = (await call('GET', '/api/me', null, { cookie: cookieAna })).j.user.id;
+      const int = async (p, b) => {
+        const x = await fetch(f.int + p, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(b) });
+        return { status: x.status, j: await x.json().catch(() => null) };
+      };
+      r = await call('POST', '/int/league/result', {});
+      check(r.status === 404, 'league results are not reachable on the public port');
+      r = await int('/int/league/elo', { ids: [id, anaId], l: 'b1' });
+      check(r.j.elo[id].elo === 500 && r.j.elo[anaId].games === 0, 'league: everybody starts at 500');
+      const res = { code: 'lgaaa1', l: 'b1', winner: 1, why: 'elim', secs: 900, map: 'evropa', era: 'ww2', teams: [[{ id }], [{ id: anaId }]] };
+      r = await int('/int/league/result', res);
+      check(r.j.res[id].delta === 20 && r.j.res[anaId].delta === -20 && r.j.res[id].elo === 520, `league: placement K=40, equal players ±20 (${JSON.stringify(r.j.res)})`);
+      r = await int('/int/league/result', res);
+      check(r.j.dup && r.j.res[id].elo === 520, 'league: the same game counts once');
+      for (let i = 2; i <= 5; i++) await int('/int/league/result', { ...res, code: 'lgaaa' + i });
+      r = await int('/int/league/elo', { ids: [id, anaId], l: 'b1' });
+      const e5 = r.j.elo[id].elo;
+      r = await int('/int/league/result', { ...res, code: 'lgaab6', winner: 2 });
+      const up = r.j.res[anaId].delta, down = r.j.res[id].delta;
+      check(r.j.res[id].elo === e5 + down && up > 12 && down < -12 && Math.abs(down) < 24, `league: after placement K=24, the favourite loses more (${down}), the underdog wins more (${up})`);
+      r = await int('/int/league/result', { ...res, code: 'lgaab7', winner: 1, teams: [[{ id, left: true }], [{ id: anaId }]] });
+      check(r.j.res[id].delta < 0, 'league: a player who left loses ELO even when the team won');
+      r = await call('GET', '/api/league/top?l=b1', null, { cookie: cookie1 });
+      check(r.j.rows.length === 2 && /Darko/.test(r.j.rows[0].name) && r.j.rows[0].rank === 1 && ['Warlord', 'Emperor'].includes(r.j.rows[0].tier) && r.j.me && r.j.me.rank === 1, `league: world ranking ${JSON.stringify(r.j.rows[0])}`);
+      r = await call('GET', '/api/league/top?l=f5');
+      check(r.j.rows.length === 0, 'league: every ladder separate');
+      r = await call('GET', '/api/league', null, { cookie: cookieAna });
+      check(r.j.me.b1.games === 7 && r.j.me.b1.rank !== 'Unranked' && r.j.me.b5.rank === 'Unranked', `league: my ladders ${JSON.stringify(r.j.me.b1)}`);
+      r = await call('GET', '/api/league/history', null, { cookie: cookieAna });
+      check(r.j.games.length === 7 && r.j.games[0].code === 'lgaab7' && !r.j.games[0].won && r.j.games[1].won && r.j.games[0].teams[1][0].me, 'league: match history (newest first)');
+      const floor = await int('/int/league/elo', { ids: [anaId], l: 'b1' });
+      check(floor.j.elo[anaId].elo >= 100, 'league: ELO never under 100');
+    }
+
     // delete account
     jar = cookie1;
     r = await call('POST', '/api/delete', {});

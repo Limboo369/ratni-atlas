@@ -67,7 +67,7 @@ bilo" (`ui.focusReport`, from the last snapshot of my state).
 Tech tree (`opts.tree`, `src/03b-tech.js`): command `'tech'` (eco/mil/sci/dip, 5 levels, 200k × 2^level), multiplies
 `p.bGold`/`p.bGrow`/`p.bCost` on top of the campaign's bonuses; the AI researches too. `opts.noNuke` refuses nuclear weapons.
 Start screen: `#sideSeg` = **Conqueror** (solo, `.solo-only`: modes, campaign, tutorial; no account needed) or **Online**
-(`.online-only`: `#leagueBtn` Conquest League, `#skirmishBtn` Skirmish — both still to come — and `#onlineToggle` private
+(`.online-only`: `#leagueBtn` Conquest League, `#skirmishBtn` Skirmish (public games, `src/09e-skirmish.js`) and `#onlineToggle` private
 room). Online needs an account: `ui.needAccount(fn)` opens the sign-in sheet first; the relay (`REQUIRE_LOGIN=1`,
 `API_URL`) asks `/api/me` about the `ot` cookie before a room's hello and closes a signed-out socket with 4401.
 The server plays every Focus game itself: `deploy/game/simhost.js` (worker thread) runs `dist/sim/sim.js` (= `src/00–04`,
@@ -88,6 +88,13 @@ open. `set.teams` ('0', '2', '3', 'hvs') puts joining players in teams (`join` [
 players win together (`G._allyRoots`). Online commands `'surr'` (surrender) and `'endv'` (vote to end: all players agree →
 the biggest side wins, `G._decide`). A late player in a Focus game gets `p.shieldUntil` (safe from players until it attacks
 one, `G.shieldErr`) and gold/troops to catch up. Reports: `/api/report`.
+Conquest League (ranked): `deploy/game/league.js` (`/ws?league=1`: queue per ladder, parties, matchmaking by ELO, the
+secret pick/ban and the draw; the match becomes a long game with fixed seats `rec.slots[{uid, lid, name, team}]` and
+`set.lg` = team size), `src/02m-league.js` (sim: players only from small fields via `RA.leagueSetup` in `04c-longsim.js`,
+win by elimination, Blitz capitulation under 10% for 60 s and the 45-min limit, `surr` as a team vote 4/5, `kick` in 5v5),
+`deploy/api/league.js` (ELO, 6 ladders b1 b2 b5 f1 f2 f5, top 100, history; results only on the API's internal port
+`INT_PORT` 8082 = `API_INT`, never published), `src/09f-league.js` (sheets: league, pick/ban, reveal, ladder, history).
+The server's simulation ends the game (`st.lg`), `long.hooks.over` reports it; without `API_INT` ratings live in memory.
 Long games (days): `deploy/game/long.js` (same server, `/ws?long=<code>`, link `/long-<code>`) is only the clock (one tick
 every `LONG_TICK_MS`, 5 s) and the archive (settings, seed, every command with its tick; files in the `longgames`
 volume); `src/09c-long.js` replays the record to the server's tick and follows it. A player takes over a computer state
@@ -150,7 +157,7 @@ Rebuild era data: `scripts/fetch_data.sh && python3 build/eras.py`.
   with `RA.takeBorders`.
 - Internal names stay as they are (`RA` namespace, storage keys, room ids, file names) — renaming them breaks saves and online play.
 
-## Tests (CI runs `make.py`, `test_ui2.py` (phone and desktop), `test_mp.py`, `test_world.py`, `test_api.js`, `test_account.py` and `test_tutorial.py` before every publish; a failed check blocks it)
+## Tests (CI runs `make.py`, `test_ui2.py` (phone and desktop), `test_mp.py`, `test_long.py`, `test_skirmish.py`, `test_league.js` + `.py`, `test_world.py`, `test_api.js`, `test_account.py` and `test_tutorial.py` before every publish; a failed check blocks it)
 
 ```
 python3 build/make.py
@@ -160,6 +167,8 @@ python3 build/test_long.py                 # long games (days): real server with
 python3 build/test_campaign.py desktop     # campaign: dynasty, mission, XP, tech tree, failure, survive (also `phone`)
 python3 build/test_world.py                # world map over http: switch, regions, play, online on the world
 node build/test_sim.js                     # sim rules without a browser: straits and canals, determinism
+node build/test_league.js                  # Conquest League on the real server: queue, party, pick/ban, surrender → ELO
+python3 build/test_league.py               # Conquest League in the browser: find match, pick/ban, game, ELO
 python3 build/test_save.py klasik          # save + reload + "Nastavi igru": the replayed game is identical (also `granice`)
 node build/test_api.js                     # accounts API: Google token checks, sessions, rename, delete (real PostgreSQL)
 python3 build/test_account.py              # sign-in on the start screen (fake Google), reload keeps the session, logout

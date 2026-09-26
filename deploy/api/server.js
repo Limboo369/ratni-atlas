@@ -12,6 +12,7 @@
    POST /api/icon    {icon} → {user}            (one of ICONS)
    POST /api/delete  → {ok}                     (deletes the account and everything on it)
    GET  /api/health  → {ok}
+   Conquest League ratings, world ranking and match history: league.js (results only on the internal port).
    Results, statistics, achievements and the leaderboard: stats.js.
    Every POST must be JSON from an allowed origin (ORIGINS), which together with SameSite=Lax stops CSRF. */
 const http = require('http');
@@ -209,6 +210,26 @@ const routes = {
 const stats = require('./stats')(db, sessionUser);
 SCHEMA.push(...stats.SCHEMA);
 Object.assign(routes, stats.routes);
+const league = require('./league')(db, sessionUser);
+SCHEMA.push(...league.SCHEMA);
+Object.assign(routes, league.routes);
+
+/* the internal port (INT_PORT): only the game server reaches it, inside the compose network (it is not published and
+   nginx never proxies to it) — league results and ratings */
+const INT_PORT = +process.env.INT_PORT || 8082;
+const internal = http.createServer(async (req, res) => {
+  const fn = league.internal[req.method + ' ' + (req.url || '').split('?')[0]];
+  try {
+    if (!fn || req.method !== 'POST') return send(res, 404, { e: 'nema' });
+    const b = await body(req);
+    const out = await fn(req, b && typeof b === 'object' ? b : {}, res);
+    if (Array.isArray(out)) send(res, out[0], out[1]);
+    else send(res, 200, out);
+  } catch (e) {
+    console.error('int', req.url, e);
+    if (!res.headersSent) send(res, e.code === 413 || e.code === 400 ? e.code : 500, { e: 'greška' });
+  }
+});
 
 const server = http.createServer(async (req, res) => {
   const ip = String(req.headers['x-real-ip'] || req.socket.remoteAddress || '');
@@ -248,6 +269,7 @@ async function start() {
   }
   if (!CLIENT_ID) console.warn('GOOGLE_CLIENT_ID is not set: Google sign-in is off');
   server.listen(PORT, () => console.log(`api on :${PORT}`));
+  internal.listen(INT_PORT, () => console.log(`api internal on :${INT_PORT}`));
 }
 process.on('SIGTERM', () => server.close(() => db.end().then(() => process.exit(0))));
 start().catch((e) => {

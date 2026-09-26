@@ -162,7 +162,7 @@ RA.UI = class {
       this.app.showStart();
       this.needAccount(() => {});
     });
-    $('leagueBtn').onclick = () => this.needAccount(() => this.toast('info', 'Conquest League stiže uskoro: rangirane partije 1v1, 2v2 i 5v5.', { ms: 5000 }));
+    $('leagueBtn').onclick = () => this.needAccount(() => this.leagueSheet());
     $('skirmishBtn').onclick = () => this.needAccount(() => this.skirmishSheet());
     this._seg('daysSeg', String([1, 3, 7].includes(this.settings.days) ? this.settings.days : 1), (v) => (this.settings.days = +v));
     this._seg('cPaceSeg', this.settings.cPace === 'focus' ? 'focus' : 'blitz', (v) => {

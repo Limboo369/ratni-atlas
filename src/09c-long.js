@@ -111,6 +111,7 @@ RA.Long = class {
       if (!this.rec) this.app.showStart();
       return;
     }
+    if (m.t === 'lg') return ui.leagueResult(m); // Conquest League: my new rating
     if (m.t === 'sim') this.simSt = m.st; // the server's own simulation (tick, checksum), asked with {sim: 1}
     else if (m.t === 'T') this.T = Math.max(this.T, m.T | 0);
     else if (m.t === 'you') this.you = m.you;
@@ -270,7 +271,9 @@ Object.assign(RA.App.prototype, {
       if (mine && mine.alive) {
         this.longJoined(mine);
         if (was && was.snap && G.tick - was.tick > 20) ui.focusReport(was, r);
-      } else ui.longPick();
+      } else if (r.set.lg) ui.toast('info', 'Gledaš ligašku partiju.', { ms: 4000 });
+      else ui.longPick();
+      if (r.set.lg && LG.startAt > Date.now()) ui.toast('info', `Conquest League ${r.set.lg}v${r.set.lg}: počinje za ${Math.ceil((LG.startAt - Date.now()) / 1000)} s — uništi protivnički tim.`, { ms: 6000 });
       if (G.state === 'over' && !G.continued) RA.focusDrop(r.code);
       if (!r.set.fast) ui.toast('info', `Focus: 1 potez svakih ${Math.round(r.tickMs / 1000)} s — igra teče i kad nisi tu. Link: <b>${RA.esc(location.origin + '/long-' + r.code)}</b>`, { ms: 9000 });
     };

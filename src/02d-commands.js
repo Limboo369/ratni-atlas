@@ -3,7 +3,7 @@
    can replay exactly the same inputs on every device (lockstep). Args come from other players' devices:
    they are validated here and never trusted. */
 
-RA.CMD_KINDS = ['atk', 'boat', 'para', 'build', 'rec', 'mv', 'dis', 'mis', 'mob', 'ret', 'aReq', 'aRes', 'tReq', 'tRes', 'ext', 'brk', 'tEnd', 'give', 'help', 'ai', 'back', 'rcl', 'png', 'qm', 'tax', 'vas', 'loan', 'pay', 'str', 'buy', 'air', 'bomb', 'tech', 'stance', 'offer', 'offerRes', 'surr', 'endv'];
+RA.CMD_KINDS = ['atk', 'boat', 'para', 'build', 'rec', 'mv', 'dis', 'mis', 'mob', 'ret', 'aReq', 'aRes', 'tReq', 'tRes', 'ext', 'brk', 'tEnd', 'give', 'help', 'ai', 'back', 'rcl', 'png', 'qm', 'tax', 'vas', 'loan', 'pay', 'str', 'buy', 'air', 'bomb', 'tech', 'stance', 'offer', 'offerRes', 'surr', 'endv', 'kick'];
 /* pings on the map and quick messages, seen by the sender's allies and team (plan item 57) */
 RA.PINGS = [
   { name: 'Napadni ovdje', icon: 'attack', color: '#ff5d5d' },
@@ -18,6 +18,7 @@ RA.QUICK_MSGS = ['Napadam!', 'Treba mi pomoć!', 'Pazi, napadaju nas!', 'Idem ta
   P.exec = function (pid, kind, a) {
     const p = this.P[pid];
     if (!p || !p.alive) return 'Nisi u igri.';
+    if (p.kicked && kind !== 'ai') return 'Tim te je izbacio iz igre.';
     a = Array.isArray(a) ? a : [];
     const N = this.map.N;
     const cell = (v) => (Number.isInteger(v) && v >= 0 && v < N ? v : -1);
@@ -118,6 +119,7 @@ RA.QUICK_MSGS = ['Napadam!', 'Treba mi pomoć!', 'Pazi, napadaju nas!', 'Idem ta
       case 'surr':
         // surrender (online): the computer takes my state, I have lost
         if (!this.online || p.surr) return 'Predaja je samo u online igri.';
+        if (this.opts.league) return this.lgSurr(p); // Conquest League: a team vote
         p.surr = true;
         if (!p.ai) RA.AI.init(this, p);
         this.tellAll('info', `${p.nick || p.name} se predao/la.`, pid);
@@ -128,6 +130,9 @@ RA.QUICK_MSGS = ['Napadam!', 'Treba mi pomoć!', 'Pazi, napadaju nas!', 'Idem ta
         p.endVote = a[0] !== 0;
         this._endVotes();
         return { endv: p.endVote };
+      case 'kick':
+        // vote kick (Conquest League 5v5): [player of my team]
+        return this.opts.league ? this.lgKick(p, player(a[0])) : 'Samo u ligi.';
       case 'offer':
         // offers and demands (02l-offers.js): [to, what I give, what I want]
         return player(a[0]) ? this.makeOffer(pid, a[0], a[1], a[2]) : 'Nevažeća država.';

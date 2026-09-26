@@ -14,6 +14,7 @@
 const { WebSocketServer } = require('ws');
 const crypto = require('crypto');
 const long = require('./long'); // long games (days): /ws?long=<code>
+const league = require('./league'); // Conquest League: /ws?league=1
 
 const PORT = +process.env.PORT || 8080;
 const SECRET = process.env.WS_SECRET || crypto.randomBytes(16).toString('hex');
@@ -113,6 +114,16 @@ wss.on('connection', (ws, req) => {
       else perIp.delete(ip);
     });
     return long.lobby(ws); // Skirmish: the list of public games
+  }
+  if (q.has('league')) {
+    ws.alive = true;
+    ws.on('pong', () => (ws.alive = true));
+    ws.on('close', () => {
+      const c = (perIp.get(ip) || 1) - 1;
+      if (c > 0) perIp.set(ip, c);
+      else perIp.delete(ip);
+    });
+    return league.handle(ws, q, () => accountOf(req)); // Conquest League: queue, party, pick/ban
   }
   if (q.has('long')) {
     ws.alive = true;

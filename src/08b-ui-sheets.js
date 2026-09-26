@@ -282,6 +282,8 @@ Object.assign(RA.UI.prototype, {
     }
     if (O.type !== 'bot') b.push(this.mini('Pregovaraj', `data-do="deal:${O.id}"`, '', false, 'trade'));
     if (G.online && O.human && O !== me) b.push(this.mini('Prijavi', `data-do="rep:${O.id}"`, 'warn'));
+    // Conquest League 5v5: vote to kick a teammate (4 of the other 4; the computer takes the state)
+    if (G.opts.league === 5 && me && O.human && O !== me && O.team === me.team && !O.kicked) b.push(this.mini(me.kickVote === O.id ? 'Glas dat' : 'Izbaci', `data-do="kick:${O.id}"`, 'warn', me.kickVote === O.id));
     if (me.trade.has(O.id)) b.push(this.mini('Prekini trgovinu', `data-do="endT:${O.id}"`, 'warn'));
     else b.push(this.mini('Trgovina', `data-do="propT:${O.id}"`, '', me.trade.size >= C.TRADE_MAX || O.trade.size >= C.TRADE_MAX || G.atWar(me, O), 'trade'));
     return b.join('');
@@ -296,6 +298,7 @@ Object.assign(RA.UI.prototype, {
     }
     if (act === 'deal') return this.dealSheet(id);
     if (act === 'rep') return this.reportSheet(this.G.P[id]);
+    if (act === 'kick') return this.confirm(`Izbaciti ${RA.esc(this.G.P[id].nick || this.G.P[id].name)}?`, 'Glasaš za izbacivanje iz tima. Kad glasaju 4 saigrača, državu preuzima kompjuter.', 'Glasaj', () => this.act('kick', [id]));
     const G = this.G, me = G.me, O = G.P[id];
     if (!me || !O) return;
     const map = { accA: ['aRes', [id, 1]], decA: ['aRes', [id, 0]], accT: ['tRes', [id, 1]], decT: ['tRes', [id, 0]], propA: ['aReq', [id]], propT: ['tReq', [id]], send: ['give', [id, this.ratio]], help: ['help', [id]], vas: ['vas', [id]], ext: ['ext', [id]], endT: ['tEnd', [id]] };
@@ -778,14 +781,15 @@ Object.assign(RA.UI.prototype, {
       <button class="btn" data-m="sfx"><span class="t">Zvučni efekti</span><span class="r" style="font-size:14px">${this.audio.s.sfx ? 'Uključeno' : 'Isključeno'}</span></button>
       <button class="btn" data-m="music"><span class="t">Muzika</span><span class="r" style="font-size:14px">${this.audio.s.music ? 'Uključeno' : 'Isključeno'}</span></button>
       <button class="btn" data-m="rulers"><span class="t">Komentari vladara</span><span class="r" style="font-size:14px">${this.settings.rulers === false ? 'Isključeno' : 'Uključeno'}</span></button>
-      ${G.online && G.me && !G.me.surr && (!G.long || (this.app.long.rec && this.app.long.rec.set.fast)) ? (() => {
+      ${G.online && G.me && !G.me.surr && (!G.long || G.opts.league || (this.app.long.rec && this.app.long.rec.set.fast)) ? (() => {
         const hs = G.activeHumans(), v = hs.filter((p) => p.endVote).length;
-        return `<button class="btn" data-m="endv"><span><span class="t">${G.me.endVote ? 'Povuci glas za kraj' : 'Ponudi kraj igre'}</span><br><span class="d">Glasova ${v}/${hs.length} — kad glasaju svi, pobjeđuje ko ima najviše kopna</span></span></button>
-        <button class="btn danger" data-m="surr"><span><span class="t">Predaja</span><br><span class="d">Tvoju državu preuzima kompjuter, partija je izgubljena</span></span></button>`;
+        const lt = G.opts.league ? G.lgTeam(G.me.team).filter((p) => p.alive && !p.kicked) : null;
+        return `<button class="btn" data-m="endv"><span><span class="t">${G.me.endVote ? 'Povuci glas za kraj' : 'Ponudi kraj igre'}</span><br><span class="d">Glasova ${v}/${hs.length} — kad glasaju svi, pobjeđuje ${G.opts.league ? 'tim s više zemlje' : 'ko ima najviše kopna'}</span></span></button>
+        <button class="btn danger" data-m="surr" ${G.me.surrVote ? 'disabled' : ''}><span><span class="t">${lt ? (G.me.surrVote ? 'Glasao/la si za predaju' : 'Glasaj za predaju') : 'Predaja'}</span><br><span class="d">${lt ? `Tim se predaje kad glasa ${G.lgNeed(lt.length)} od ${lt.length} (sada ${lt.filter((p) => p.surrVote).length})` : 'Tvoju državu preuzima kompjuter, partija je izgubljena'}</span></span></button>`;
       })() : ''}
       ${G.long && !(this.app.long.rec && this.app.long.rec.set.fast) ? `<button class="btn" data-m="stance"><span><span class="t">Dok me nema: ${RA.esc(this.stanceName())}</span><br><span class="d">Šta kompjuter radi s tvojom državom kad zatvoriš igru</span></span></button>
       <button class="btn" data-m="home"><span><span class="t">Glavni meni</span><br><span class="d">Igra teče dalje, kompjuter vodi tvoju državu — vratiš se preko „Nastavi Focus igru”</span></span></button>
-      <button class="btn danger" data-m="leave"><span><span class="t">Napusti igru</span><br><span class="d">Zauvijek — progres ove Focus igre se briše</span></span></button>` : `<button class="btn danger" data-m="new"><span><span class="t">${G.online ? 'Napusti online igru' : 'Nova igra'}</span><br><span class="d">${G.online ? 'Tvoju državu preuzima kompjuter' : 'Trenutna partija se prekida'}</span></span></button>`}
+      <button class="btn danger" data-m="leave"><span><span class="t">Napusti igru</span><br><span class="d">Zauvijek — progres ove Focus igre se briše</span></span></button>` : `<button class="btn danger" data-m="new"><span><span class="t">${G.online ? 'Napusti online igru' : 'Nova igra'}</span><br><span class="d">${G.opts.league ? 'Kompjuter preuzima tvoju državu — napuštanje lige gubi ELO' : G.online ? 'Tvoju državu preuzima kompjuter' : 'Trenutna partija se prekida'}</span></span></button>`}
     </div>
     <p class="note">Tipke: Space pauza · 1–3 brzina · Q/E snaga napada · V vojska · B gradnja · D desant · P padobranci · R rakete · S savezi · L savezi na karti · M mobilizacija · Esc odustani.</p>`;
     this.openSheet(h, (s) => {
@@ -817,7 +821,8 @@ Object.assign(RA.UI.prototype, {
           this.act('endv', [G.me.endVote ? 0 : 1]);
           this.closeSheet();
         } else if (m === 'surr') {
-          this.confirm('Predati se?', 'Tvoju državu preuzima kompjuter i partija se računa kao izgubljena.', 'Predaja', () => this.act('surr', []));
+          if (G.opts.league) this.confirm('Glasati za predaju?', `Tim se predaje kad glasa ${G.lgNeed(G.lgTeam(G.me.team).filter((p) => p.alive && !p.kicked).length)} igrača; tada je partija izgubljena za cijeli tim.`, 'Glasaj', () => this.act('surr', []));
+          else this.confirm('Predati se?', 'Tvoju državu preuzima kompjuter i partija se računa kao izgubljena.', 'Predaja', () => this.act('surr', []));
         } else if (m === 'stance') {
           this.stanceSheet();
         } else if (m === 'home') {
@@ -830,7 +835,11 @@ Object.assign(RA.UI.prototype, {
               app.showStart();
             }), 50));
         } else if (m === 'new') {
-          if (G.online) this.confirm('Napustiti online igru?', app.net && app.net.role === 'host' ? 'Ti si domaćin: kad izađeš, igra staje i za prijatelja.' : 'Tvoju državu preuzima kompjuter, a prijatelj nastavlja.', 'Napusti', () => app.showStart());
+          if (G.opts.league) this.confirm('Napustiti ligašku partiju?', 'Kompjuter preuzima tvoju državu i gubiš ELO kao da je tim izgubio. Novi meč možeš tražiti odmah.', 'Napusti', () => {
+            app.long.leave();
+            app.showStart();
+          });
+          else if (G.online) this.confirm('Napustiti online igru?', app.net && app.net.role === 'host' ? 'Ti si domaćin: kad izađeš, igra staje i za prijatelja.' : 'Tvoju državu preuzima kompjuter, a prijatelj nastavlja.', 'Napusti', () => app.showStart());
           else this.confirm('Prekinuti partiju?', 'Počinješ ispočetka sa novim postavkama.', 'Nova igra', () => app.showStart());
         }
       }));

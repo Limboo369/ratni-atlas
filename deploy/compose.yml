@@ -17,6 +17,8 @@ services:
       # online (rooms) needs an account: the relay asks the accounts API about the session cookie
       API_URL: http://api:8081
       REQUIRE_LOGIN: "1"
+      # Conquest League ratings: the API's internal port (not published, not behind nginx)
+      API_INT: http://api:8082
     env_file:
       - path: ./secret.env
         required: true

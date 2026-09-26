@@ -1269,6 +1269,21 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
 .deal-row input, .deal-row select { width: 100%; min-width: 0; padding: 6px 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,.18); background: rgba(0,0,0,.25); color: inherit; font: inherit; }
 .deal-row small { grid-column: 2; opacity: .6; font-size: 11px; }
 
+/* Conquest League (src/09f-league.js) — simple working look; Codex C6 does the real one */
+.lg-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 10px; }
+.lg-chip { padding: 7px 10px; border: 1px solid var(--line); border-radius: 2px; background: var(--ink-2); color: var(--text); font: inherit; font-size: 14px; cursor: pointer; }
+.lg-chip.pick { border-color: var(--ok); box-shadow: inset 0 -3px 0 var(--ok); }
+.lg-chip.ban { border-color: var(--danger); color: var(--muted); text-decoration: line-through; }
+.lg-chip.draw { border-color: var(--signal); background: var(--ink-3); }
+.lg-chip.won { border-color: var(--signal); background: var(--signal); color: var(--signal-ink); font-weight: 700; }
+.lg-tier { display: inline-block; padding: 2px 7px; border: 1px solid var(--line); border-radius: 2px; font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.lg-tier.lg-overlord { border-color: #e0b84a; color: #e0b84a; }
+.lg-tier.lg-emperor { border-color: #b98cff; color: #b98cff; }
+.lg-tier.lg-warlord { border-color: #ff6b5b; color: #ff6b5b; }
+.lg-tier.lg-vanguard { border-color: #5bb8ff; color: #5bb8ff; }
+.lg-tier.lg-raider { border-color: #9aa7ad; color: #9aa7ad; }
+#lgCode { width: 90px; padding: 6px 8px; border: 1px solid var(--line); background: var(--ink-2); color: var(--text); font: inherit; text-transform: lowercase; }
+
 #app{touch-action:none}#sheet,.screen{touch-action:pan-y}</style>
 <div id="app">
   <div id="map" aria-label="Karta Evrope"></div>
@@ -2985,6 +3000,7 @@ RA.Game = class Game {
     const a = this.P[fromId], b = this.P[toId];
     if (!a || !b || !a.alive || !b.alive || a === b) return 'Nevažeći igrač.';
     if (a.allies.has(toId)) return 'Već ste saveznici.';
+    if (this.opts.league) return 'U ligi nema saveza s protivničkim timom.';
     if (a.lord || b.lord) return a.lord ? 'Vazal ne sklapa saveze.' : `${b.name} je vazal (${this.P[b.lord].name}) — ne sklapa saveze.`;
     if (this.allyCount(a) >= RA.CFG.ALLY_MAX) return `Možeš imati najviše ${RA.CFG.ALLY_MAX} saveza.`;
     if (this.allyCount(b) >= RA.CFG.ALLY_MAX) return `${b.name} već ima ${RA.CFG.ALLY_MAX} saveza.`;
@@ -3270,6 +3286,7 @@ RA.Game = class Game {
     this.hist.push(snap);
   }
   _checkWin() {
+    if (this.opts.league) return this._stepLeague(); // Conquest League: its own ends (02m-league.js)
     if (this.winner && !this.continued) return;
     const tot = this.landTotal();
     // sides: a co-op team plays as one side; with opts.allyWin players in a military alliance win together
@@ -3328,6 +3345,10 @@ RA.Game = class Game {
   }
   /* end now: the side with the most land wins */
   _decide() {
+    if (this.opts.league) {
+      const a = this._lgArea();
+      return this._lgEnd(a[1] >= a[2] ? 1 : 2, 'vote');
+    }
     const tot = this.landTotal(), root = this.opts.allyWin ? this._allyRoots() : null, sides = new Map();
     for (const p of this.P) {
       if (!p || !p.alive || !p.spawned || p.type === 'bot') continue;
@@ -4848,6 +4869,7 @@ Object.assign(RA.CFG, {
     const C = RA.CFG;
     if (!a || !b || !a.alive || !b.alive || a === b) return 'Nevažeći igrač.';
     if (b.human && !b.ai) return 'Igrač ne može biti vazal.';
+    if (this.opts.league) return 'U ligi nema vazala.';
     if (b.lord === a.id) return `${b.name} ti je već vazal.`;
     if (b.lord) return `${b.name} je već vazal (${this.P[b.lord].name}).`;
     if (a.lord) return 'Vazal ne može imati vazale.';
@@ -5027,7 +5049,7 @@ Object.assign(RA.CFG, {
    can replay exactly the same inputs on every device (lockstep). Args come from other players' devices:
    they are validated here and never trusted. */
 
-RA.CMD_KINDS = ['atk', 'boat', 'para', 'build', 'rec', 'mv', 'dis', 'mis', 'mob', 'ret', 'aReq', 'aRes', 'tReq', 'tRes', 'ext', 'brk', 'tEnd', 'give', 'help', 'ai', 'back', 'rcl', 'png', 'qm', 'tax', 'vas', 'loan', 'pay', 'str', 'buy', 'air', 'bomb', 'tech', 'stance', 'offer', 'offerRes', 'surr', 'endv'];
+RA.CMD_KINDS = ['atk', 'boat', 'para', 'build', 'rec', 'mv', 'dis', 'mis', 'mob', 'ret', 'aReq', 'aRes', 'tReq', 'tRes', 'ext', 'brk', 'tEnd', 'give', 'help', 'ai', 'back', 'rcl', 'png', 'qm', 'tax', 'vas', 'loan', 'pay', 'str', 'buy', 'air', 'bomb', 'tech', 'stance', 'offer', 'offerRes', 'surr', 'endv', 'kick'];
 /* pings on the map and quick messages, seen by the sender's allies and team (plan item 57) */
 RA.PINGS = [
   { name: 'Napadni ovdje', icon: 'attack', color: '#ff5d5d' },
@@ -5042,6 +5064,7 @@ RA.QUICK_MSGS = ['Napadam!', 'Treba mi pomoć!', 'Pazi, napadaju nas!', 'Idem ta
   P.exec = function (pid, kind, a) {
     const p = this.P[pid];
     if (!p || !p.alive) return 'Nisi u igri.';
+    if (p.kicked && kind !== 'ai') return 'Tim te je izbacio iz igre.';
     a = Array.isArray(a) ? a : [];
     const N = this.map.N;
     const cell = (v) => (Number.isInteger(v) && v >= 0 && v < N ? v : -1);
@@ -5142,6 +5165,7 @@ RA.QUICK_MSGS = ['Napadam!', 'Treba mi pomoć!', 'Pazi, napadaju nas!', 'Idem ta
       case 'surr':
         // surrender (online): the computer takes my state, I have lost
         if (!this.online || p.surr) return 'Predaja je samo u online igri.';
+        if (this.opts.league) return this.lgSurr(p); // Conquest League: a team vote
         p.surr = true;
         if (!p.ai) RA.AI.init(this, p);
         this.tellAll('info', `${p.nick || p.name} se predao/la.`, pid);
@@ -5152,6 +5176,9 @@ RA.QUICK_MSGS = ['Napadam!', 'Treba mi pomoć!', 'Pazi, napadaju nas!', 'Idem ta
         p.endVote = a[0] !== 0;
         this._endVotes();
         return { endv: p.endVote };
+      case 'kick':
+        // vote kick (Conquest League 5v5): [player of my team]
+        return this.opts.league ? this.lgKick(p, player(a[0])) : 'Samo u ligi.';
       case 'offer':
         // offers and demands (02l-offers.js): [to, what I give, what I want]
         return player(a[0]) ? this.makeOffer(pid, a[0], a[1], a[2]) : 'Nevažeća država.';
@@ -6109,6 +6136,104 @@ Object.assign(RA.CFG, {
     return out.join(', ') || 'ništa';
   };
   P.EMPTY_OFFER = EMPTY;
+})(RA.Game.prototype);
+
+
+/* Conquest League rules (plan phase 16): two teams of players only (1v1, 2v2, 5v5), no computer states, start from
+   small fields. A team wins when every opponent is gone. Blitz: a team under 10% of the players' land for 60 s
+   capitulates; after 45 min the team with more land wins (warning at 35 min). Surrender and vote kick (5v5) are team
+   votes: 4 of 5 (in 1v1 one, in 2v2 both). A kicked player's state is played by the computer.
+   opts.league = team size (1, 2 or 5); the teams are p.team 1 and 2. */
+Object.assign(RA.CFG, {
+  LG_CAP: 0.1, // a team under this share of the players' land…
+  LG_CAP_T: 600, // …for this many ticks capitulates (Blitz)
+  LG_END: 27000, // Blitz: 45 min, then the team with more land wins
+  LG_WARN: 21000, // warning at 35 min
+});
+
+(function (P) {
+  /* the players of a team (every one, kicked and fallen too) */
+  P.lgTeam = function (t) {
+    return (this.humans || []).filter((p) => p.team === t);
+  };
+  /* votes a team needs: 4 of 5, both of 2, the one of 1 */
+  P.lgNeed = function (n) {
+    return Math.max(1, Math.ceil(n * 0.8));
+  };
+  P.lgSurr = function (p) {
+    if (p.surrVote) return 'Već si glasao/la za predaju.';
+    p.surrVote = true;
+    const team = this.lgTeam(p.team).filter((q) => q.alive && !q.kicked);
+    const votes = team.filter((q) => q.surrVote).length, need = this.lgNeed(team.length);
+    for (const q of team) this.tell(q, 'info', `${p.nick || p.name} glasa za predaju (${votes}/${need}).`, p.id);
+    if (votes >= need) {
+      for (const q of this.lgTeam(p.team)) q.surr = true;
+      this._lgEnd(3 - p.team, 'surr');
+    }
+    return { surr: votes >= need, votes, need };
+  };
+  /* vote kick (5v5 only): the other players of the team vote; 4 votes (or all of them, when fewer are left) */
+  P.lgKick = function (p, tid) {
+    const t = this.P[tid];
+    if (this.opts.league !== 5) return 'Izbacivanje glasanjem je samo u 5v5.';
+    if (!t || t === p || !t.human || t.team !== p.team || !t.alive) return 'Izaberi igrača iz svog tima.';
+    if (t.kicked) return 'Već je izbačen/a.';
+    p.kickVote = tid;
+    const voters = this.lgTeam(p.team).filter((q) => q.alive && !q.kicked && q !== t);
+    const votes = voters.filter((q) => q.kickVote === tid).length, need = Math.min(4, voters.length);
+    for (const q of voters) this.tell(q, 'info', `Glasanje: izbaciti ${t.nick || t.name}? (${votes}/${need})`, t.id);
+    if (votes >= need) {
+      t.kicked = true;
+      if (!t.ai) RA.AI.init(this, t);
+      for (const q of voters) if (q.kickVote === tid) q.kickVote = 0;
+      this.tell(t, 'bad', 'Tim te je izbacio iz igre — tvoju državu vodi kompjuter.', t.id);
+      this.tellAll('info', `${t.nick || t.name} je izbačen/a glasanjem tima; državu vodi kompjuter.`, t.id);
+    }
+    return { kicked: !!t.kicked, votes, need };
+  };
+  /* land of each team (1, 2) */
+  P._lgArea = function () {
+    const a = [0, 0, 0];
+    for (const p of this.humans || []) if (p.alive && (p.team === 1 || p.team === 2)) a[p.team] += p.area;
+    return a;
+  };
+  /* every 10 ticks, instead of the usual win check */
+  P._stepLeague = function () {
+    if (this.state !== 'play') return;
+    const L = this.lg || (this.lg = { low: [0, 0, 0], warned: false });
+    const up = [0, 0, 0];
+    for (const p of this.humans || []) if (p.alive && !p.surr) up[p.team] = 1;
+    // a team is gone: the other one wins
+    if (!up[1] || !up[2]) return this._lgEnd(up[1] ? 1 : 2, 'elim');
+    if (!this.opts.fast || this.tick < this.peaceUntil) return;
+    const a = this._lgArea(), tot = a[1] + a[2], C = RA.CFG;
+    for (const t of [1, 2]) {
+      if (tot > 0 && a[t] / tot < C.LG_CAP) {
+        if (!L.low[t]) {
+          L.low[t] = this.tick;
+          for (const q of this.lgTeam(t)) this.tell(q, 'bad', `Tvoj tim ima manje od ${Math.round(C.LG_CAP * 100)}% zemlje igrača: za ${RA.dur(C.LG_CAP_T)} kapitulira ako se ne oporavi.`, q.id);
+        } else if (this.tick - L.low[t] >= C.LG_CAP_T) return this._lgEnd(3 - t, 'cap');
+      } else L.low[t] = 0;
+    }
+    if (!L.warned && this.tick >= C.LG_WARN) {
+      L.warned = true;
+      this.tellAll('info', `Još ${RA.dur(C.LG_END - C.LG_WARN)}: tada pobjeđuje tim s više zemlje.`, 0);
+    }
+    if (this.tick >= C.LG_END) this._lgEnd(a[1] > a[2] ? 1 : a[2] > a[1] ? 2 : this._lgTroops(1) >= this._lgTroops(2) ? 1 : 2, 'time');
+  };
+  P._lgTroops = function (t) {
+    return this.lgTeam(t).reduce((s, p) => s + (p.alive ? p.troops : 0), 0);
+  };
+  P._lgEnd = function (team, why) {
+    if (this.state !== 'play') return;
+    const best = this.lgTeam(team).filter((p) => p.alive).sort((a, b) => b.area - a.area)[0] || this.lgTeam(team)[0];
+    this.lgWin = { team, why };
+    this.winner = best || null;
+    this.state = 'over';
+    this._history();
+    const W = { elim: 'protivnici su uništeni', cap: 'protivnički tim je kapitulirao', time: 'više zemlje nakon 45 min', surr: 'protivnički tim se predao', vote: 'glasanje za kraj' };
+    this.tellAll('over', `Pobjeđuje tim ${team} — ${W[why] || ''}.`, best ? best.id : 0);
+  };
 })(RA.Game.prototype);
 
 
@@ -7754,15 +7879,63 @@ RA.applyEra('danas');
 
 /* the game at tick 0: settings + seed (the map is the era/region map of `base`) */
 RA.longGame = function (base, rec) {
-  const s = rec.set;
-  const gm = RA.regionMap(RA.eraMap(base, s.era, 'granice'), s.reg);
-  const G = RA.newGame(gm, { seed: rec.seed, difficulty: s.dif, cityStates: s.cs, peace: s.peace, era: s.era, start: 'granice', gm: s.gm, res: s.res === 1, tree: s.tree === 1, noNuke: s.nn === 1, teams: s.teams || '0', allyWin: s.aw === 1, fast: s.fast === 1, days: s.days || 1 });
+  const s = rec.set, lg = [1, 2, 5].includes(s.lg) ? s.lg : 0;
+  const start = lg ? 'slobodno' : 'granice';
+  const gm = RA.regionMap(RA.eraMap(base, s.era, start), s.reg);
+  const G = RA.newGame(gm, { seed: rec.seed, difficulty: s.dif, cityStates: lg ? 0 : s.cs, peace: s.peace, era: s.era, start, gm: s.gm, res: s.res === 1, tree: s.tree === 1, noNuke: s.nn === 1, teams: lg ? '0' : s.teams || '0', allyWin: s.aw === 1, fast: s.fast === 1, days: s.days || 1, league: lg });
   RA.startGame(G);
+  if (lg) RA.leagueSetup(G, rec.slots);
   G.online = true;
   G.long = true;
   G.slotPid = [];
   G.gid = 'l' + rec.code;
+  if (lg) G.slotPid = G.humans.map((p) => p.id);
   return G;
+};
+
+/* Conquest League (plan phase 16): only the matched players, each from a small field at a real capital, teammates
+   side by side and the two teams facing each other; every other state leaves the map. The seats (rec.slots: name,
+   team) are fixed when the match is made; until a player connects the computer plays their state. */
+RA.LG_COLORS = [['#2f7bff', '#3ec7c2', '#6ee05a', '#8fb8ff', '#1fa37a'], ['#ff4f4f', '#ff9f1c', '#ff4fc3', '#ffd23f', '#b061ff']];
+RA.leagueSetup = function (G, slots) {
+  const n = slots.length, W = G.map.W;
+  const nats = G.P.filter((p) => p && p.type === 'nation' && p.alive && p.spawned && p.nation);
+  const xy = (p) => [p.nation.c % W, (p.nation.c / W) | 0];
+  const d = (a, b) => {
+    const [ax, ay] = xy(a), [bx, by] = xy(b);
+    return RA.dist(ax - bx, ay - by);
+  };
+  // a cluster of capitals around a random one, at least SP cells apart (less when the map is crowded)
+  const a0 = nats[Math.floor(G.rng() * nats.length)];
+  const byD = nats.slice().sort((a, b) => d(a0, a) - d(a0, b) || a.id - b.id);
+  let pick = [];
+  for (const SP of [16, 12, 8, 4, 0]) {
+    pick = [];
+    for (const q of byD) if (pick.length < n && pick.every((r) => d(r, q) >= SP)) pick.push(q);
+    if (pick.length >= n) break;
+  }
+  // the two halves along the cluster's longer side: one team each
+  const xs = pick.map((p) => xy(p)[0]), ys = pick.map((p) => xy(p)[1]);
+  const k = Math.max(...xs) - Math.min(...xs) >= Math.max(...ys) - Math.min(...ys) ? 0 : 1;
+  pick.sort((a, b) => xy(a)[k] - xy(b)[k] || a.id - b.id);
+  const half = [pick.slice(0, Math.ceil(pick.length / 2)), pick.slice(Math.ceil(pick.length / 2))];
+  const used = [0, 0];
+  G.humans = [];
+  slots.forEach((sl, i) => {
+    const t = sl.team === 2 ? 2 : 1;
+    const nat = half[t - 1][used[t - 1]++] || pick.find((q) => q.alive);
+    const p = RA.addHuman(G, typeof sl.name === 'string' ? sl.name.slice(0, 18) : 'Igrač', RA.LG_COLORS[t - 1][(used[t - 1] - 1) % 5]);
+    p.slot = i;
+    p.team = t;
+    if (nat) RA.takeOverNation(G, p, nat);
+    RA.AI.init(G, p); // the computer plays it until the player connects ('back')
+  });
+  for (const p of G.P) if (p && !p.human && (p.alive || p.spawned)) {
+    G.unspawn(p);
+    p.alive = false;
+    p.spawned = false;
+  }
+  for (const t of [1, 2]) RA.makeTeam(G, G.humans.filter((p) => p.team === t), t);
 };
 
 /* a player takes over a computer state (deterministic: every device does the same at the same tick) */
@@ -9857,7 +10030,7 @@ RA.UI = class {
       this.app.showStart();
       this.needAccount(() => {});
     });
-    $('leagueBtn').onclick = () => this.needAccount(() => this.toast('info', 'Conquest League stiže uskoro: rangirane partije 1v1, 2v2 i 5v5.', { ms: 5000 }));
+    $('leagueBtn').onclick = () => this.needAccount(() => this.leagueSheet());
     $('skirmishBtn').onclick = () => this.needAccount(() => this.skirmishSheet());
     this._seg('daysSeg', String([1, 3, 7].includes(this.settings.days) ? this.settings.days : 1), (v) => (this.settings.days = +v));
     this._seg('cPaceSeg', this.settings.cPace === 'focus' ? 'focus' : 'blitz', (v) => {
@@ -11462,6 +11635,8 @@ Object.assign(RA.UI.prototype, {
     }
     if (O.type !== 'bot') b.push(this.mini('Pregovaraj', `data-do="deal:${O.id}"`, '', false, 'trade'));
     if (G.online && O.human && O !== me) b.push(this.mini('Prijavi', `data-do="rep:${O.id}"`, 'warn'));
+    // Conquest League 5v5: vote to kick a teammate (4 of the other 4; the computer takes the state)
+    if (G.opts.league === 5 && me && O.human && O !== me && O.team === me.team && !O.kicked) b.push(this.mini(me.kickVote === O.id ? 'Glas dat' : 'Izbaci', `data-do="kick:${O.id}"`, 'warn', me.kickVote === O.id));
     if (me.trade.has(O.id)) b.push(this.mini('Prekini trgovinu', `data-do="endT:${O.id}"`, 'warn'));
     else b.push(this.mini('Trgovina', `data-do="propT:${O.id}"`, '', me.trade.size >= C.TRADE_MAX || O.trade.size >= C.TRADE_MAX || G.atWar(me, O), 'trade'));
     return b.join('');
@@ -11476,6 +11651,7 @@ Object.assign(RA.UI.prototype, {
     }
     if (act === 'deal') return this.dealSheet(id);
     if (act === 'rep') return this.reportSheet(this.G.P[id]);
+    if (act === 'kick') return this.confirm(`Izbaciti ${RA.esc(this.G.P[id].nick || this.G.P[id].name)}?`, 'Glasaš za izbacivanje iz tima. Kad glasaju 4 saigrača, državu preuzima kompjuter.', 'Glasaj', () => this.act('kick', [id]));
     const G = this.G, me = G.me, O = G.P[id];
     if (!me || !O) return;
     const map = { accA: ['aRes', [id, 1]], decA: ['aRes', [id, 0]], accT: ['tRes', [id, 1]], decT: ['tRes', [id, 0]], propA: ['aReq', [id]], propT: ['tReq', [id]], send: ['give', [id, this.ratio]], help: ['help', [id]], vas: ['vas', [id]], ext: ['ext', [id]], endT: ['tEnd', [id]] };
@@ -11958,14 +12134,15 @@ Object.assign(RA.UI.prototype, {
       <button class="btn" data-m="sfx"><span class="t">Zvučni efekti</span><span class="r" style="font-size:14px">${this.audio.s.sfx ? 'Uključeno' : 'Isključeno'}</span></button>
       <button class="btn" data-m="music"><span class="t">Muzika</span><span class="r" style="font-size:14px">${this.audio.s.music ? 'Uključeno' : 'Isključeno'}</span></button>
       <button class="btn" data-m="rulers"><span class="t">Komentari vladara</span><span class="r" style="font-size:14px">${this.settings.rulers === false ? 'Isključeno' : 'Uključeno'}</span></button>
-      ${G.online && G.me && !G.me.surr && (!G.long || (this.app.long.rec && this.app.long.rec.set.fast)) ? (() => {
+      ${G.online && G.me && !G.me.surr && (!G.long || G.opts.league || (this.app.long.rec && this.app.long.rec.set.fast)) ? (() => {
         const hs = G.activeHumans(), v = hs.filter((p) => p.endVote).length;
-        return `<button class="btn" data-m="endv"><span><span class="t">${G.me.endVote ? 'Povuci glas za kraj' : 'Ponudi kraj igre'}</span><br><span class="d">Glasova ${v}/${hs.length} — kad glasaju svi, pobjeđuje ko ima najviše kopna</span></span></button>
-        <button class="btn danger" data-m="surr"><span><span class="t">Predaja</span><br><span class="d">Tvoju državu preuzima kompjuter, partija je izgubljena</span></span></button>`;
+        const lt = G.opts.league ? G.lgTeam(G.me.team).filter((p) => p.alive && !p.kicked) : null;
+        return `<button class="btn" data-m="endv"><span><span class="t">${G.me.endVote ? 'Povuci glas za kraj' : 'Ponudi kraj igre'}</span><br><span class="d">Glasova ${v}/${hs.length} — kad glasaju svi, pobjeđuje ${G.opts.league ? 'tim s više zemlje' : 'ko ima najviše kopna'}</span></span></button>
+        <button class="btn danger" data-m="surr" ${G.me.surrVote ? 'disabled' : ''}><span><span class="t">${lt ? (G.me.surrVote ? 'Glasao/la si za predaju' : 'Glasaj za predaju') : 'Predaja'}</span><br><span class="d">${lt ? `Tim se predaje kad glasa ${G.lgNeed(lt.length)} od ${lt.length} (sada ${lt.filter((p) => p.surrVote).length})` : 'Tvoju državu preuzima kompjuter, partija je izgubljena'}</span></span></button>`;
       })() : ''}
       ${G.long && !(this.app.long.rec && this.app.long.rec.set.fast) ? `<button class="btn" data-m="stance"><span><span class="t">Dok me nema: ${RA.esc(this.stanceName())}</span><br><span class="d">Šta kompjuter radi s tvojom državom kad zatvoriš igru</span></span></button>
       <button class="btn" data-m="home"><span><span class="t">Glavni meni</span><br><span class="d">Igra teče dalje, kompjuter vodi tvoju državu — vratiš se preko „Nastavi Focus igru”</span></span></button>
-      <button class="btn danger" data-m="leave"><span><span class="t">Napusti igru</span><br><span class="d">Zauvijek — progres ove Focus igre se briše</span></span></button>` : `<button class="btn danger" data-m="new"><span><span class="t">${G.online ? 'Napusti online igru' : 'Nova igra'}</span><br><span class="d">${G.online ? 'Tvoju državu preuzima kompjuter' : 'Trenutna partija se prekida'}</span></span></button>`}
+      <button class="btn danger" data-m="leave"><span><span class="t">Napusti igru</span><br><span class="d">Zauvijek — progres ove Focus igre se briše</span></span></button>` : `<button class="btn danger" data-m="new"><span><span class="t">${G.online ? 'Napusti online igru' : 'Nova igra'}</span><br><span class="d">${G.opts.league ? 'Kompjuter preuzima tvoju državu — napuštanje lige gubi ELO' : G.online ? 'Tvoju državu preuzima kompjuter' : 'Trenutna partija se prekida'}</span></span></button>`}
     </div>
     <p class="note">Tipke: Space pauza · 1–3 brzina · Q/E snaga napada · V vojska · B gradnja · D desant · P padobranci · R rakete · S savezi · L savezi na karti · M mobilizacija · Esc odustani.</p>`;
     this.openSheet(h, (s) => {
@@ -11997,7 +12174,8 @@ Object.assign(RA.UI.prototype, {
           this.act('endv', [G.me.endVote ? 0 : 1]);
           this.closeSheet();
         } else if (m === 'surr') {
-          this.confirm('Predati se?', 'Tvoju državu preuzima kompjuter i partija se računa kao izgubljena.', 'Predaja', () => this.act('surr', []));
+          if (G.opts.league) this.confirm('Glasati za predaju?', `Tim se predaje kad glasa ${G.lgNeed(G.lgTeam(G.me.team).filter((p) => p.alive && !p.kicked).length)} igrača; tada je partija izgubljena za cijeli tim.`, 'Glasaj', () => this.act('surr', []));
+          else this.confirm('Predati se?', 'Tvoju državu preuzima kompjuter i partija se računa kao izgubljena.', 'Predaja', () => this.act('surr', []));
         } else if (m === 'stance') {
           this.stanceSheet();
         } else if (m === 'home') {
@@ -12010,7 +12188,11 @@ Object.assign(RA.UI.prototype, {
               app.showStart();
             }), 50));
         } else if (m === 'new') {
-          if (G.online) this.confirm('Napustiti online igru?', app.net && app.net.role === 'host' ? 'Ti si domaćin: kad izađeš, igra staje i za prijatelja.' : 'Tvoju državu preuzima kompjuter, a prijatelj nastavlja.', 'Napusti', () => app.showStart());
+          if (G.opts.league) this.confirm('Napustiti ligašku partiju?', 'Kompjuter preuzima tvoju državu i gubiš ELO kao da je tim izgubio. Novi meč možeš tražiti odmah.', 'Napusti', () => {
+            app.long.leave();
+            app.showStart();
+          });
+          else if (G.online) this.confirm('Napustiti online igru?', app.net && app.net.role === 'host' ? 'Ti si domaćin: kad izađeš, igra staje i za prijatelja.' : 'Tvoju državu preuzima kompjuter, a prijatelj nastavlja.', 'Napusti', () => app.showStart());
           else this.confirm('Prekinuti partiju?', 'Počinješ ispočetka sa novim postavkama.', 'Nova igra', () => app.showStart());
         }
       }));
@@ -15848,6 +16030,7 @@ RA.Long = class {
       if (!this.rec) this.app.showStart();
       return;
     }
+    if (m.t === 'lg') return ui.leagueResult(m); // Conquest League: my new rating
     if (m.t === 'sim') this.simSt = m.st; // the server's own simulation (tick, checksum), asked with {sim: 1}
     else if (m.t === 'T') this.T = Math.max(this.T, m.T | 0);
     else if (m.t === 'you') this.you = m.you;
@@ -16007,7 +16190,9 @@ Object.assign(RA.App.prototype, {
       if (mine && mine.alive) {
         this.longJoined(mine);
         if (was && was.snap && G.tick - was.tick > 20) ui.focusReport(was, r);
-      } else ui.longPick();
+      } else if (r.set.lg) ui.toast('info', 'Gledaš ligašku partiju.', { ms: 4000 });
+      else ui.longPick();
+      if (r.set.lg && LG.startAt > Date.now()) ui.toast('info', `Conquest League ${r.set.lg}v${r.set.lg}: počinje za ${Math.ceil((LG.startAt - Date.now()) / 1000)} s — uništi protivnički tim.`, { ms: 6000 });
       if (G.state === 'over' && !G.continued) RA.focusDrop(r.code);
       if (!r.set.fast) ui.toast('info', `Focus: 1 potez svakih ${Math.round(r.tickMs / 1000)} s — igra teče i kad nisi tu. Link: <b>${RA.esc(location.origin + '/long-' + r.code)}</b>`, { ms: 9000 });
     };
@@ -16291,7 +16476,286 @@ Object.assign(RA.UI.prototype, {
   },
 });
 
-RA.BUILD = '58cbff7b';
+
+/* Conquest League (plan phase 16; server: deploy/game/league.js, ratings: deploy/api/league.js).
+   Online → Conquest League: Blitz or Focus, 1v1 / 2v2 / 5v5, Find match alone or with a party. A match opens the
+   secret pick/ban (2 maps + 2 eras picked and 1 of each banned per team), the reveal draws from the picks nobody banned,
+   then the game starts: only players, from small fields, win by eliminating the other team.
+   Stable hooks for the look (Codex C6): #lgSheet, #lgMode, #lgSize, #lgFind, #lgParty, .lg-tier.lg-<rank>, #lgPick,
+   .lg-chip[data-k][data-v].pick|.ban, #lgLock, #lgReveal, .lg-chip.draw, .lg-chip.won, #lgTop, #lgHist. */
+RA.LG_TIERS = [[800, 'Overlord'], [600, 'Emperor'], [450, 'Warlord'], [300, 'Vanguard'], [0, 'Raider']];
+RA.lgTier = (e) => (!e || e.games < 5 ? 'Unranked' : RA.LG_TIERS.find((t) => e.elo >= t[0])[1]);
+RA.lgName = (l) => `${l[0] === 'f' ? 'Focus' : 'Blitz'} ${l[1]}v${l[1]}`;
+RA.lgMapName = (id) => (RA.THEATRES.find((t) => t.id === id) || { name: id }).name;
+
+RA.League = class {
+  constructor(app) {
+    this.app = app;
+    this.ws = null;
+    this.elo = null;
+    this.party = null;
+    this.queue = null;
+    this.match = null;
+    this.mine = null; // my team's pick (what I send)
+    this.mate = null; // a teammate's pick
+    this.reveal = null;
+    this.m = 'b';
+    this.n = 1;
+  }
+  get url() {
+    return this.app.net && this.app.net.wsUrl;
+  }
+  connect() {
+    if (this.ws && this.ws.readyState <= 1) return;
+    const ws = new WebSocket(this.url + '?league=1');
+    this.ws = ws;
+    ws.onopen = () => ws.send(JSON.stringify({ hello: { name: this.app.long.name(), uid: this.app.long.uid() } }));
+    ws.onmessage = (ev) => {
+      let m;
+      try {
+        m = JSON.parse(ev.data);
+      } catch (_) {
+        return;
+      }
+      this.onMsg(m);
+    };
+    ws.onclose = (ev) => {
+      if (this.ws !== ws) return;
+      this.ws = null;
+      this.queue = null;
+      if (ev.code === 4401) dispatchEvent(new Event('ra-login'));
+      this.app.ui.leagueRefresh();
+    };
+  }
+  send(m) {
+    if (this.ws && this.ws.readyState === 1) this.ws.send(JSON.stringify(m));
+  }
+  onMsg(m) {
+    const ui = this.app.ui;
+    if (m.t === 'err') return ui.toast('bad', RA.esc(String(m.e || 'Greška lige.')), { ms: 5000 });
+    if (m.t === 'hi') (this.elo = m.elo), (this.me = m.me);
+    else if (m.t === 'party') this.party = m;
+    else if (m.t === 'queue') this.queue = m.l ? m : null;
+    else if (m.t === 'match') {
+      this.queue = null;
+      this.match = m;
+      this.mine = { maps: [], eras: [], bm: '', be: '' };
+      this.mate = null;
+      this.reveal = null;
+      this.matchEnd = Date.now() + m.secs * 1000;
+      return ui.leaguePick();
+    } else if (m.t === 'tpick') {
+      this.mate = m;
+      return ui.leaguePickDraw();
+    } else if (m.t === 'reveal') {
+      this.reveal = m;
+      return ui.leagueReveal();
+    }
+    ui.leagueRefresh();
+  }
+  pick(lock) {
+    this.send({ pick: Object.assign({}, this.mine, { lock: lock ? 1 : 0 }) });
+  }
+};
+
+Object.assign(RA.UI.prototype, {
+  leagueSheet() {
+    const app = this.app;
+    if (!app.net || !app.net.wsUrl) return this.toast('info', 'Conquest League radi na war.deovilab.com.', { ms: 4000 });
+    const L = (app.league = app.league || new RA.League(app));
+    L.connect();
+    const l = L.m + L.n, e = L.elo && L.elo[l], tier = RA.lgTier(e);
+    let h = '<div id="lgSheet"></div>' + this.head('Conquest League', 'Rangirane partije · samo igrači · pobjeda uništenjem protivnika');
+    h += `<div class="field"><span class="lab">Mod</span><div class="seg" id="lgMode"><button data-v="b" aria-pressed="${L.m === 'b'}">Blitz</button><button data-v="f" aria-pressed="${L.m === 'f'}">Focus</button></div></div>`;
+    h += `<div class="field"><span class="lab">Veličina</span><div class="seg" id="lgSize">${[1, 2, 5].map((n) => `<button data-v="${n}" aria-pressed="${L.n === n}">${n}v${n}</button>`).join('')}</div></div>`;
+    h += `<div class="list"><div class="prow wide"><span class="lg-tier lg-${tier.toLowerCase()}">${tier}</span><div class="pn"><div class="nm">${RA.lgName(l)} · ELO ${e ? e.elo : 500}</div><div class="d">${e && e.games >= 5 ? `${e.games} partija` : `Kvalifikacije: ${e ? e.games : 0}/5 partija`}</div></div></div></div>`;
+    // party
+    const P = L.party;
+    h += '<div class="sec-t">Party</div><div id="lgParty">';
+    if (P) {
+      h += `<p class="explain">Kod partyja: <b>${RA.esc(P.code)}</b> — prijatelj ga upiše pod „Uđi u party”.${P.lead !== L.me ? ' Traženje pokreće vođa.' : ''}</p><div class="list">${P.members.map((x) => `<div class="prow wide"><div class="pn"><div class="nm">${RA.esc(x.name)}${x.id === P.lead ? ' · vođa' : ''}</div></div></div>`).join('')}</div>`;
+      h += `<div class="btns"><button class="btn" data-lgp="leave"><span class="t">Napusti party</span></button></div>`;
+    } else {
+      h += `<div class="btns"><button class="btn" data-lgp="new"><span class="t">Napravi party</span><br><span class="d">Igraj s prijateljima u istom timu (razlika ELO najviše 250)</span></button></div>
+        <div class="field"><span class="lab">Uđi u party</span><input id="lgCode" maxlength="6" placeholder="kod" autocomplete="off"> ${this.mini('Uđi', 'data-lgp="join"', 'ok')}</div>`;
+    }
+    h += '</div>';
+    const Q = L.queue;
+    h += `<div class="btns"><button class="btn primary" id="lgFind"><span class="t">${Q ? 'Otkaži traženje' : 'Find match'}</span><br><span class="d">${Q ? `Tražim ${RA.lgName(Q.l)}… <span id="lgWait">0:00</span>` : `${RA.lgName(l)}${P ? ' · party ' + P.members.length : ' · sam'}`}</span></button></div>`;
+    const acct = this.account && this.account.ok;
+    if (acct) h += `<div class="btns"><button class="btn" id="lgTop"><span class="t">Svjetska ljestvica</span><br><span class="d">Top 100 po ljestvici</span></button><button class="btn" id="lgHist"><span class="t">Historija partija</span><br><span class="d">Moji ligaški mečevi</span></button></div>`;
+    h += `<p class="note">Pick/ban: svaki tim tajno bira 2 mape i 2 doba i banuje po jedno; računar izvlači između izabranih. Blitz: tim ispod 10% zemlje igrača 60 s kapitulira; poslije 45 min pobjeđuje tim s više zemlje. Predaja: 4 od 5 glasova; u 5v5 i izbacivanje (4 glasa). Napuštanje gubi ELO. Rankovi: Raider · Vanguard · Warlord · Emperor · Overlord.</p>`;
+    this.openSheet(h, (s) => {
+      for (const [id, k] of [['lgMode', 'm'], ['lgSize', 'n']]) s.querySelectorAll(`#${id} button`).forEach((b) => (b.onclick = () => {
+        L[k] = k === 'n' ? +b.dataset.v : b.dataset.v;
+        this.leagueSheet();
+      }));
+      s.querySelectorAll('[data-lgp]').forEach((b) => (b.onclick = () => {
+        const v = b.dataset.lgp;
+        if (v === 'new') L.send({ party: 'new' });
+        else if (v === 'leave') {
+          L.send({ party: '' });
+          L.party = null;
+          this.leagueSheet();
+        } else {
+          const c = (s.querySelector('#lgCode').value || '').trim().toLowerCase();
+          if (/^[a-z0-9]{6}$/.test(c)) L.send({ party: c });
+          else this.toast('bad', 'Kod partyja ima 6 znakova.');
+        }
+      }));
+      s.querySelector('#lgFind').onclick = () => {
+        if (L.queue) {
+          L.send({ unqueue: 1 });
+          L.queue = null;
+          return this.leagueSheet();
+        }
+        L.send({ queue: { m: L.m, n: L.n } });
+      };
+      const t = s.querySelector('#lgTop'), hi = s.querySelector('#lgHist');
+      if (t) t.onclick = () => this.leagueTop(l);
+      if (hi) hi.onclick = () => this.leagueHistory();
+      clearInterval(this._lgIv);
+      if (Q) this._lgIv = setInterval(() => {
+        const w = document.getElementById('lgWait');
+        if (!w) return clearInterval(this._lgIv);
+        w.textContent = RA.fmtTime((Date.now() - Q.since) / 1000);
+      }, 500);
+    });
+  },
+  /* the league sheet redraws itself on news from the server while it is open */
+  leagueRefresh() {
+    if (document.getElementById('lgSheet')) this.leagueSheet();
+  },
+  /* pick/ban: a chip cycles none → pick (2 at most) → ban (1) → none */
+  leaguePick() {
+    const L = this.app.league, M = L.match;
+    const teams = M.teams.map((t, i) => `<b>${i + 1 === M.team ? 'Tvoj tim' : 'Protivnici'}:</b> ${t.map((p) => `${RA.esc(p.name)} (${p.elo})`).join(', ')}`).join('<br>');
+    let h = '<div id="lgPick"></div>' + this.head('Pick & ban', `${RA.lgName(M.l)} · još <span id="lgPickT">${M.secs}</span> s`);
+    h += `<p class="explain">${teams}</p><p class="note">Dodirni: jednom = biraš (najviše 2), dvaput = banuješ (1), triput = poništi. Protivnik ne vidi tvoj izbor dok računar ne izvuče.</p><div id="lgPickBody"></div>`;
+    h += '<div class="btns"><button class="btn primary" id="lgLock"><span class="t">Potvrdi izbor</span></button></div>';
+    this.openSheet(h, (s) => {
+      this.leaguePickDraw();
+      s.querySelector('#lgLock').onclick = () => {
+        L.pick(true);
+        L.locked = true;
+        this.leaguePickDraw();
+      };
+      clearInterval(this._lgIv);
+      this._lgIv = setInterval(() => {
+        const t = document.getElementById('lgPickT');
+        if (!t) return clearInterval(this._lgIv);
+        t.textContent = Math.max(0, Math.ceil((L.matchEnd - Date.now()) / 1000));
+      }, 300);
+    });
+    L.locked = false;
+  },
+  leaguePickDraw() {
+    const L = this.app.league, M = L.match, box = document.getElementById('lgPickBody');
+    if (!box || !M) return;
+    const my = L.mine, mate = L.mate && L.mate.pick;
+    // a teammate's newer pick is the team's pick: show it and keep it
+    if (mate && !L.locked) Object.assign(my, { maps: mate.maps.slice(), eras: mate.eras.slice(), bm: mate.bm, be: mate.be }), (L.mate.pick = null);
+    const chip = (k, v, name) => {
+      const list = k === 'map' ? my.maps : my.eras, ban = k === 'map' ? my.bm : my.be;
+      const st = list.includes(v) ? 'pick' : ban === v ? 'ban' : '';
+      return `<button class="lg-chip ${st}" data-k="${k}" data-v="${v}">${st === 'pick' ? '✓ ' : st === 'ban' ? '✕ ' : ''}${RA.esc(name)}</button>`;
+    };
+    let h = `<div class="sec-t">Mape (izabrano ${my.maps.length}/2, ban ${my.bm ? 1 : 0}/1)</div><div class="lg-chips">${M.pool.maps.map((v) => chip('map', v, RA.lgMapName(v))).join('')}</div>`;
+    h += `<div class="sec-t">Doba (izabrano ${my.eras.length}/2, ban ${my.be ? 1 : 0}/1)</div><div class="lg-chips">${M.pool.eras.map((v) => chip('era', v, RA.eraById(v).short)).join('')}</div>`;
+    if (L.mate) h += `<p class="note">Saigrač ${RA.esc(L.mate.by)} je mijenjao izbor tima.</p>`;
+    if (L.locked) h += '<p class="note">Potvrđeno — čekam protivnike.</p>';
+    box.innerHTML = h;
+    box.querySelectorAll('.lg-chip').forEach((b) => (b.onclick = () => {
+      if (L.locked) return;
+      const k = b.dataset.k, v = b.dataset.v, lk = k === 'map' ? 'maps' : 'eras', bk = k === 'map' ? 'bm' : 'be';
+      if (my[lk].includes(v)) {
+        my[lk] = my[lk].filter((x) => x !== v);
+        if (!my[bk]) my[bk] = v;
+      } else if (my[bk] === v) my[bk] = '';
+      else if (my[lk].length < 2) my[lk].push(v);
+      else if (!my[bk]) my[bk] = v;
+      else return this.toast('info', 'Već si izabrao/la 2 i banovao/la 1 — dodirni jedno da ga poništiš.');
+      L.pick(false);
+      this.leaguePickDraw();
+    }));
+  },
+  /* the reveal: both teams' picks and bans, then the draw lands on the chosen map and era */
+  leagueReveal() {
+    const L = this.app.league, R = L.reveal, M = L.match;
+    const side = (t) => {
+      const p = R.picks[t];
+      return `<div class="prow wide"><div class="pn"><div class="nm">${M && t === M.team ? 'Tvoj tim' : 'Protivnici'}</div><div class="d">Mape: ${p.maps.map(RA.lgMapName).join(', ') || '—'} · ban ${p.bm ? RA.lgMapName(p.bm) : '—'}<br>Doba: ${p.eras.map((e) => RA.eraById(e).short).join(', ') || '—'} · ban ${p.be ? RA.eraById(p.be).short : '—'}</div></div></div>`;
+    };
+    const cands = (k) => {
+      const all = [...R.picks[1][k === 'map' ? 'maps' : 'eras'], ...R.picks[2][k === 'map' ? 'maps' : 'eras']].filter((x) => !R.bans[k === 'map' ? 'maps' : 'eras'].includes(x));
+      return [...new Set(all.length ? all : [k === 'map' ? R.chosen.map : R.chosen.era])];
+    };
+    const cm = cands('map'), ce = cands('era');
+    let h = '<div id="lgReveal"></div>' + this.head('Računar izvlači', 'Između izabranih mapa i doba koje niko nije banovao');
+    h += `<div class="list">${side(1)}${side(2)}</div>`;
+    h += `<div class="lg-chips" id="lgDrawMap">${cm.map((v) => `<span class="lg-chip" data-v="${v}">${RA.esc(RA.lgMapName(v))}</span>`).join('')}</div>`;
+    h += `<div class="lg-chips" id="lgDrawEra">${ce.map((v) => `<span class="lg-chip" data-v="${v}">${RA.esc(RA.eraById(v).short)}</span>`).join('')}</div>`;
+    h += '<p class="note" id="lgDrawNote">…</p>';
+    this.openSheet(h, (s) => {
+      let i = 0;
+      const spin = (id, list, win, step) => {
+        const els = s.querySelectorAll(`#${id} .lg-chip`);
+        els.forEach((e) => e.classList.remove('draw'));
+        const j = step < 14 ? step % list.length : list.indexOf(win);
+        if (els[j]) els[j].classList.add(step < 14 ? 'draw' : 'won');
+      };
+      clearInterval(this._lgIv);
+      this._lgIv = setInterval(() => {
+        if (!document.getElementById('lgReveal')) return clearInterval(this._lgIv);
+        spin('lgDrawMap', cm, R.chosen.map, i);
+        spin('lgDrawEra', ce, R.chosen.era, i + 3);
+        if (++i > 14) {
+          clearInterval(this._lgIv);
+          document.getElementById('lgDrawNote').innerHTML = `<b>${RA.esc(RA.lgMapName(R.chosen.map))} · ${RA.esc(RA.eraById(R.chosen.era).short)}</b> — igra počinje…`;
+          setTimeout(() => {
+            L.match = null;
+            this.closeSheet();
+            this.app.long.open(R.code);
+          }, 1500);
+        }
+      }, 160);
+    });
+  },
+  /* the result of my league game (the server's simulation decided it) */
+  leagueResult(m) {
+    const L = this.app.league, G = this.G, me = G && G.me;
+    const id = Object.keys(m.res).find((k) => this._lgMine(k));
+    const r = id ? m.res[id] : null;
+    if (L && L.elo && r) L.elo[m.l] = Object.assign({}, L.elo[m.l], { elo: r.elo, games: ((L.elo[m.l] || {}).games || 0) + 1 });
+    if (r) this.toast(r.won ? 'good' : 'bad', `${RA.lgName(m.l)}: ${r.won ? 'pobjeda' : r.left ? 'napustio/la si partiju' : 'poraz'} · ELO ${r.elo} (${r.delta >= 0 ? '+' : ''}${r.delta})`, { ms: 9000 });
+    else if (me) this.toast('info', `Liga: rezultat je upisan (${RA.lgName(m.l)}).`, { ms: 5000 });
+  },
+  _lgMine(k) {
+    const A = this.account;
+    return (A && A.user && String(A.user.id) === k) || k === 'dev' + this.app.long.uid();
+  },
+  leagueTop(l) {
+    const A = this.account;
+    const tabs = ['b1', 'b2', 'b5', 'f1', 'f2', 'f5'].map((x) => `<button data-v="${x}" aria-pressed="${x === l}">${RA.lgName(x)}</button>`).join('');
+    A.api('GET', '/api/league/top?l=' + l).then((j) => {
+      let h = this.head('Svjetska ljestvica', `${RA.lgName(l)} · top 100 (poslije 5 kvalifikacionih partija)`) + `<div class="seg wrap" id="lgTopSeg">${tabs}</div><div class="list">`;
+      const row = (r) => `<div class="prow wide"><div class="pn"><div class="nm">${r.rank}. ${RA.esc(r.name)}</div><div class="d"><span class="lg-tier lg-${r.tier.toLowerCase()}">${r.tier}</span> · ELO ${r.elo} · ${r.wins}/${r.games} pobjeda</div></div></div>`;
+      h += j.rows.length ? j.rows.map(row).join('') : '<p class="note">Još niko nije završio kvalifikacije na ovoj ljestvici.</p>';
+      h += '</div>' + (j.me && j.me.rank > 100 ? `<div class="sec-t">Ti</div><div class="list">${row(j.me)}</div>` : '');
+      this.openSheet(h, (s) => s.querySelectorAll('#lgTopSeg button').forEach((b) => (b.onclick = () => this.leagueTop(b.dataset.v))));
+    }, (e) => this.toast('bad', RA.esc(e.message)));
+  },
+  leagueHistory() {
+    this.account.api('GET', '/api/league/history').then((j) => {
+      const W = { elim: 'uništenje', cap: 'kapitulacija', time: '45 min', surr: 'predaja', vote: 'glasanje' };
+      let h = this.head('Historija partija', 'Tvoji ligaški mečevi (zadnjih 30)') + '<div class="list">';
+      h += j.games.length ? j.games.map((g) => `<div class="prow wide"><div class="pn"><div class="nm">${g.won ? 'Pobjeda' : g.left ? 'Napušteno' : 'Poraz'} · ${RA.lgName(g.l)} · ${g.delta >= 0 ? '+' : ''}${g.delta} (${g.elo})</div><div class="d">${RA.esc(RA.lgMapName(g.map))} · ${RA.esc(RA.eraById(g.era).short)} · ${W[g.why] || ''} · ${RA.fmtTime(g.secs)} · ${new Date(g.at).toLocaleString('bs')}<br>${g.teams.map((t) => t.map((p) => (p.me ? '<b>' + RA.esc(p.name) + '</b>' : RA.esc(p.name))).join(', ')).join(' vs ')}</div></div></div>`).join('') : '<p class="note">Još nemaš ligaških partija.</p>';
+      this.openSheet(h + '</div>');
+    }, (e) => this.toast('bad', RA.esc(e.message)));
+  },
+});
+
+RA.BUILD = '735a7c0b';
 new RA.App().boot();
 }
 function __raFallback(){
