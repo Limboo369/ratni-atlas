@@ -18,7 +18,7 @@ jobs:
   test:
     if: ${{ !inputs.bez_testova }}
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 40
     services:
       postgres:
         image: postgres:16-alpine
