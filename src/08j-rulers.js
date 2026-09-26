@@ -259,7 +259,7 @@ Object.assign(RA.UI.prototype, {
     box.hidden = false;
     box._cell = cell >= 0 ? cell : p.capital >= 0 ? p.capital : p.tiles ? p.cells[0] : -1;
     box._until = performance.now() + Math.max(5000, 2600 + txt.length * 55);
-    box.onclick = () => this.focusPlayer(p.id);
+    // no click: the bubble sits over the state's land, where the player aims attacks (pointer-events: none)
     this.rulerPlace();
     if (this.audio) this.audio.play('msg', 1500);
   },

@@ -70,7 +70,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 .stat.troops { flex: 0 1 200px; }
 .stat.gold { cursor: pointer; }
 /* a ruler's speech bubble over its land (08j-rulers.js) */
-.ruler-bubble { position: fixed; left: 0; top: 0; z-index: 1145; display: flex; gap: 10px; align-items: flex-start; max-width: min(340px, calc(100vw - 16px)); padding: 9px 12px 10px 9px; border-radius: 12px; background: #f6f1e4; color: #1d232a; box-shadow: 0 8px 26px rgba(0,0,0,.45); border: 2px solid #d9cfb4; cursor: pointer; animation: rb-pop .25s ease-out; }
+.ruler-bubble { position: fixed; left: 0; top: 0; z-index: 1145; display: flex; gap: 10px; align-items: flex-start; max-width: min(340px, calc(100vw - 16px)); padding: 9px 12px 10px 9px; border-radius: 12px; background: #f6f1e4; color: #1d232a; box-shadow: 0 8px 26px rgba(0,0,0,.45); border: 2px solid #d9cfb4; pointer-events: none; animation: rb-pop .25s ease-out; }
 .ruler-bubble[hidden] { display: none; }
 .ruler-bubble::after { content: ''; position: absolute; left: 26px; bottom: -10px; border: 10px solid transparent; border-bottom: 0; border-top-color: #f6f1e4; }
 .ruler-bubble.angry { background: #fbe4df; border-color: #e19a8f; }
@@ -13389,7 +13389,7 @@ Object.assign(RA.UI.prototype, {
     box.hidden = false;
     box._cell = cell >= 0 ? cell : p.capital >= 0 ? p.capital : p.tiles ? p.cells[0] : -1;
     box._until = performance.now() + Math.max(5000, 2600 + txt.length * 55);
-    box.onclick = () => this.focusPlayer(p.id);
+    // no click: the bubble sits over the state's land, where the player aims attacks (pointer-events: none)
     this.rulerPlace();
     if (this.audio) this.audio.play('msg', 1500);
   },
@@ -15835,7 +15835,7 @@ Object.assign(RA.App.prototype, {
   },
 });
 
-RA.BUILD = '321679a7';
+RA.BUILD = 'e768164e';
 new RA.App().boot();
 }
 function __raFallback(){
