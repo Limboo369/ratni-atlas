@@ -12,7 +12,6 @@ RA.CommandScreen = class {
     this.motion = !this.reduced.matches;
     try { if (localStorage.getItem('ra_menu_motion') === 'off') this.motion = false; } catch (_) {}
     this.decorateEras();
-    for (const b of this.$('paceSeg').querySelectorAll('button')) b.insertAdjacentHTML('afterbegin', `<span class="mode-symbol" aria-hidden="true">${RA.icon({blitz:'rocket',focus:'clock',custom:'menu'}[b.dataset.v])}</span>`);
     this.$('configBtn').onclick = () => this.dialog.showModal();
     for (const id of ['configClose', 'configDone']) this.$(id).onclick = () => this.dialog.close();
     this.dialog.addEventListener('click', (e) => {

@@ -374,3 +374,5 @@ engleskom. `build/test_lang.py` (i u CI-ju) pada ako na engleskoj stranici ostan
 - Oko regije gusti, lagano animirani oblaci umjesto oštre linije.
 - Focus: magla rata — tuđa zemlja daleko od tvoje (i saveznika) je pod oblacima; vidi se agentom (izviđanje) ili dronom/raketom.
 - Focus: vozovi i trgovački brodovi normalnom brzinom (kao u Blitzu, u stvarnom vremenu); osnovni prihod +20%.
+
+- Početne kartice (27. 9., večernja dorada): isti raspored, fontovi i položaj imena za Online i Conqueror; Blitz dijeli istaknuti stil lige. Campaign i Community market su kartice odmah ispod Make your choice.

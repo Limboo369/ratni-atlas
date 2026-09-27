@@ -39,6 +39,25 @@ async def main():
             assert not await page.locator('#languageMenu').is_visible()
             cards = await page.locator('#paceSeg button').evaluate_all('(els)=>els.map(e=>({top:e.getBoundingClientRect().top,bottom:e.getBoundingClientRect().bottom,width:e.getBoundingClientRect().width}))')
             assert cards[1]['top'] >= cards[0]['bottom'] and cards[2]['top'] >= cards[1]['bottom'], cards
+            # Both home tabs keep the title, identity and first card in the same position.
+            geometry = """() => {
+                const screen=document.getElementById('startScreen');
+                const rect=s=>{const r=document.querySelector(s).getBoundingClientRect(); return [r.x,r.y+screen.scrollTop,r.width,r.height];};
+                const type=s=>{const c=getComputedStyle(document.querySelector(s));return [c.fontSize,c.lineHeight,c.letterSpacing];};
+                return {title:rect('.command-title'),headline:rect('.command-headline'),tabs:rect('#sideSeg'),name:rect('.command-player'),
+                    card:rect(screen.classList.contains('side-online')?'#leagueBtn':'#paceSeg button'),
+                    heading:type(screen.classList.contains('side-online')?'#skirmishBtn b':'#paceSeg [data-v="focus"] b')};
+            }"""
+            solo = await page.evaluate(geometry)
+            order = await page.locator('#paceSeg button,.solo-extras button').evaluate_all('(els)=>els.map(e=>e.getBoundingClientRect().top)')
+            assert len(order)==5 and all(a<b for a,b in zip(order,order[1:])), order
+            await page.click('#sideSeg [data-v="online"]')
+            online = await page.evaluate(geometry)
+            for key in ['title','headline','tabs','name','card']:
+                assert all(abs(a-b)<1 for a,b in zip(solo[key],online[key])), (width,key,solo[key],online[key])
+            assert solo['heading']==online['heading'], (solo,online)
+            assert not await page.locator('#marketBtn').is_visible()
+            await page.click('#sideSeg [data-v="solo"]')
             await page.fill('#nameIn', 'Test Komandant')
             assert not await page.locator('.command-eras').is_visible()
             await page.click('#paceSeg [data-v="custom"]')
