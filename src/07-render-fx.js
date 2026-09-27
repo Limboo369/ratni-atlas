@@ -968,7 +968,7 @@ RA.FxLayer = L.Layer.extend({
       }
     }
     // clouds around the region and, in Focus, the fog of war (07d-render-clouds.js): over everything else
-    RA.Clouds.draw(ctx, G, v, this.w, this.h, now);
+    if (!ui.app.attractMode) RA.Clouds.draw(ctx, G, v, this.w, this.h, now); // (not behind the start screen)
     // tap feedback
     if (ui.pingState && now - ui.pingState.t0 < 600) {
       const k = (now - ui.pingState.t0) / 600;

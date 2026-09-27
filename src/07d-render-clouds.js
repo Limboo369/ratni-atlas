@@ -149,7 +149,7 @@ RA.Clouds = (function () {
         buildMask(G);
         st.key = key;
       }
-      const s = 0.5, ow = Math.ceil(w * s), oh = Math.ceil(h * s);
+      const s = 0.4, ow = Math.ceil(w * s), oh = Math.ceil(h * s); // clouds are soft: a small canvas is enough
       const off = st.off || (st.off = document.createElement('canvas'));
       const ms = st.ms || (st.ms = document.createElement('canvas'));
       if (off.width !== ow || off.height !== oh) (off.width = ms.width = ow), (off.height = ms.height = oh);
