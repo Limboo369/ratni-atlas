@@ -380,5 +380,5 @@ engleskom. `build/test_lang.py` (i u CI-ju) pada ako na engleskoj stranici ostan
 ## Liga s računarom 27. 9. (Darko)
 
 Nema protivnika za 30 s → prazna mjesta (protivnici i saigrači) popunjava računar; jačina po rangu (Raider lako,
-Vanguard/bez ranga srednje, Warlord teško, Emperor/Overlord ekspert); takav meč pomjera ELO upola; računar bira/banuje
+Vanguard/bez ranga srednje, Warlord teško, Emperor/Overlord ekspert); meč se računa u punom ELO-u (Darko 28. 9.: nije igrač kriv što nema drugih); računar bira/banuje
 nasumično. Urađeno.

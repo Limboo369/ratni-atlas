@@ -215,7 +215,7 @@ RA.SR = {
   "<p class=\"note\">No agent is ready now.</p>": "<p class=\"note\">Nijedan agent sada nije spreman.</p>",
   "<p class=\"note\">No finished games yet. Play one to the end — wins and losses are recorded here.</p>": "<p class=\"note\">Još nema završenih partija. Odigraj jednu do kraja — pobjeda ili poraz se ovdje upisuju.</p>",
   "<p class=\"note\">No open games — create one.</p>": "<p class=\"note\">Nema otvorenih igara — napravi jednu.</p>",
-  "<p class=\"note\">No players found in {0} s? The computer takes the empty seats — it plays as well as your rank (Raider easy … Emperor and Overlord expert), and such a match moves ELO half as much.</p>": "<p class=\"note\">Nema igrača za {0} s? Prazna mjesta preuzima računar — igra onoliko dobro koliko je tvoj rang (Raider lako … Emperor i Overlord ekspert), a takav meč pomjera ELO upola manje.</p>",
+  "<p class=\"note\">No players found in {0} s? The computer takes the empty seats — it plays as well as your rank (Raider easy … Emperor and Overlord expert), and the match counts in full.</p>": "<p class=\"note\">Nema igrača za {0} s? Prazna mjesta preuzima računar — igra onoliko dobro koliko je tvoj rang (Raider lako … Emperor i Overlord ekspert), a meč se računa u punom ELO-u.</p>",
   "<p class=\"note\">No wars or alliances with your state in the meantime.</p>": "<p class=\"note\">Nijedan rat ni savez s tvojom državom u međuvremenu.</p>",
   "<p class=\"note\">Nobody has a win yet. Be the first!</p>": "<p class=\"note\">Još niko nema pobjedu. Budi prvi!</p>",
   "<p class=\"note\">Nobody has finished the qualifiers on this ladder yet.</p>": "<p class=\"note\">Još niko nije završio kvalifikacije na ovoj ljestvici.</p>",

@@ -120,7 +120,7 @@ win by elimination, Blitz capitulation under 10% for 60 s and the 45-min limit, 
 The server's simulation ends the game (`st.lg`), `long.hooks.over` reports it; without `API_INT` ratings live in memory.
 No opponents after `LEAGUE_BOT_WAIT` s (30): `matchmake` fills the empty seats with computer players (`bot:<id>`, slot
 `bot: 1`, never joined; they pick/ban at random), `set.dif` from the waiting players' rank (Raider `lako`, Vanguard and
-unranked `srednje`, Warlord `tesko`, Emperor/Overlord `ekspert` = `RA.DIFF.ekspert`); ELO moves half as much and only
+unranked `srednje`, Warlord `tesko`, Emperor/Overlord `ekspert` = `RA.DIFF.ekspert`); ELO counts in full (a computer with its elo) and only
 players are saved (`deploy/api/league.js` accepts `{bot: true, elo}` entries, refuses a game of computers only).
 Replay (`src/09g-replay.js`): the server archives every finished long game (Skirmish, league, Focus) in
 `<LONG_DIR>/replays/` for `REPLAY_DAYS` (30); `/ws?replay=<code>` sends the record, the page rebuilds it with

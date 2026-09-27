@@ -159,7 +159,7 @@ function client(url) {
     check(['okeanija', 'jam'].includes(rv.chosen.map) && ['rim', 'ww1'].includes(rv.chosen.era), `no lock from one team: the reveal comes at the deadline, drawn from the picks (${JSON.stringify(rv.chosen)})`);
     for (const c of [P1, P2, S1, S2]) c.ws.close();
 
-    // nobody to play against (Darko 27. 9.): after the wait the computer takes the empty seat; half the ELO
+    // nobody to play against (Darko 27. 9.): after the wait the computer takes the empty seat; full ELO
     const SO = await lobby('Solo');
     SO.send({ queue: { m: 'b', n: 1 } });
     const t0 = Date.now(), mb1 = await SO.wait((m) => m.t === 'match', 15000, 'bot match');
@@ -178,7 +178,7 @@ function client(url) {
     LS.send({ c: ['surr', []] });
     const lgb = await LS.wait((m) => m.t === 'lg', 30000, 'bot result');
     const rs = lgb.res['dev' + uid('Solo')];
-    check(rs && rs.delta === -10 && Object.keys(lgb.res).length === 1, `against the computer the ELO moves half as much (${JSON.stringify(lgb.res)})`);
+    check(rs && rs.delta === -20 && Object.keys(lgb.res).length === 1, `against the computer the ELO moves in full (${JSON.stringify(lgb.res)})`);
     for (const c of [SO, LS]) c.ws.close();
   } catch (e) {
     check(false, 'error: ' + e.message);

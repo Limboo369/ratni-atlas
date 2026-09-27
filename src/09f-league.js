@@ -109,7 +109,7 @@ Object.assign(RA.UI.prototype, {
     h += `<div class="btns"><button class="btn primary" id="lgFind"><span class="t">${Q ? RA.t("Cancel search") : 'Find match'}</span><br><span class="d">${Q ? RA.t("Searching {0}… <span id=\"lgWait\">0:00</span>", RA.lgName(Q.l)) : `${RA.lgName(l)}${P ? RA.t(" · party ") + P.members.length : RA.t(" · solo")}`}</span></button></div>`;
     const acct = this.account && this.account.ok;
     if (acct) h += RA.t("<div class=\"btns\"><button class=\"btn\" id=\"lgTop\"><span class=\"t\">World ladder</span><br><span class=\"d\">Top 100 on the ladder</span></button><button class=\"btn\" id=\"lgHist\"><span class=\"t\">Match history</span><br><span class=\"d\">My league matches</span></button></div>");
-    h += RA.t("<p class=\"note\">No players found in {0} s? The computer takes the empty seats — it plays as well as your rank (Raider easy … Emperor and Overlord expert), and such a match moves ELO half as much.</p>", 30);
+    h += RA.t("<p class=\"note\">No players found in {0} s? The computer takes the empty seats — it plays as well as your rank (Raider easy … Emperor and Overlord expert), and the match counts in full.</p>", 30);
     h += RA.t("<p class=\"note\">Pick/ban: each team secretly picks 2 maps and 2 ages and bans one of each; the computer draws from the picks. Blitz: a team under 10% of the players' land for 60 s capitulates; after 45 min the team with more land wins. Surrender: 4 of 5 votes; in 5v5 also kick (4 votes). Leaving loses ELO. Ranks: Raider · Vanguard · Warlord · Emperor · Overlord.</p>");
     this.openSheet(h, (s) => {
       const retry = s.querySelector('#lgRetry');

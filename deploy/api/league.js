@@ -23,12 +23,12 @@ function rate(teams, winner) {
   const avg = (t) => t.reduce((s, p) => s + p.elo, 0) / Math.max(1, t.length);
   const out = {};
   teams.forEach((team, i) => {
-    const opp = avg(teams[1 - i]), half = teams.flat().some((q) => q.bot) ? 0.5 : 1; // against the computer: half
+    const opp = avg(teams[1 - i]); // a computer counts with its elo, full K (Darko 28. 9.)
     for (const p of team) {
       if (p.bot) continue;
       const E = 1 / (1 + Math.pow(10, (opp - p.elo) / 400));
       const S = winner === i + 1 && !p.left ? 1 : 0;
-      const K = (p.games < PLACEMENT ? 40 : 24) * half;
+      const K = p.games < PLACEMENT ? 40 : 24;
       const elo = Math.max(FLOOR, Math.round(p.elo + K * (S - E)));
       out[p.id] = { elo, delta: elo - p.elo, won: S === 1, left: !!p.left };
     }

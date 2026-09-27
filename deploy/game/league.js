@@ -23,7 +23,8 @@ const MAPS = [['svijet', 'svijet', 'svijet'], ['evropa', 'evropa', 'evropa'], ['
 const ERAS = ['rim', 'srednji', 'napoleon', 'ww1', 'ww2', 'hladni', 'danas'];
 const SIZES = [1, 2, 5];
 // Darko 27. 9.: nobody to play against → after BOT_WAIT seconds the computer takes the empty seats (opponents and
-// teammates); how well it plays follows the rank of the players waiting; such a match moves ELO half as much
+// teammates); how well it plays follows the rank of the players waiting; full ELO
+// (Darko 28. 9.: the player is not to blame that nobody else was there, and the computer is as strong as the rank)
 const BOT_WAIT = +process.env.LEAGUE_BOT_WAIT || 30;
 const BOT_NAMES = ['Aldric', 'Brenna', 'Casimir', 'Dragana', 'Edvin', 'Freya', 'Goran', 'Helga', 'Ivor', 'Jelena', 'Konrad', 'Lucija', 'Marek', 'Nadia', 'Oskar', 'Petra', 'Radek', 'Selma', 'Tomas', 'Vesna'];
 /* the computer's difficulty for a match of players with this average ELO (ranks as in deploy/api/league.js) */
@@ -36,12 +37,12 @@ function rate(teams, winner) {
   const avg = (t) => t.reduce((s, p) => s + p.elo, 0) / Math.max(1, t.length);
   const out = {};
   teams.forEach((team, i) => {
-    const opp = avg(teams[1 - i]), half = teams.flat().some((q) => q.bot) ? 0.5 : 1;
+    const opp = avg(teams[1 - i]);
     for (const p of team) {
       if (p.bot) continue;
       const E = 1 / (1 + Math.pow(10, (opp - p.elo) / 400));
       const S = winner === i + 1 && !p.left ? 1 : 0;
-      const elo = Math.max(100, Math.round(p.elo + (p.games < 5 ? 40 : 24) * half * (S - E)));
+      const elo = Math.max(100, Math.round(p.elo + (p.games < 5 ? 40 : 24) * (S - E)));
       out[p.id] = { elo, delta: elo - p.elo, won: S === 1, left: !!p.left };
     }
   });
