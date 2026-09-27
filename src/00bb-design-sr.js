@@ -24,3 +24,5 @@ Object.assign(RA.SR, {
   'The connection was interrupted. Try again.': 'Veza je prekinuta. Pokušaj ponovo.',
   'Try again': 'Pokušaj ponovo'
 });
+
+Object.assign(RA.SR, {"CONQUEROR": "OSVAJAČ"});
