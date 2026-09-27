@@ -330,6 +330,11 @@ izvještaj / ratne novine · F12 neutralni pobunjenici i blago na mapi.
 Darkove odluke (27. 9.): **F2 da** (red proizvodnje), **F3 da** (nivoi zgrada 1–3), **F11 da** — ali pregledno i vizuelno
 sređeno, ne log od 200 redova. **F4** ideja dobra, treba razrađen koncept. **F5, F7, F8, F10, F12**: traži detaljnije
 objašnjenje prije odluke. **Odbijeno: F1, F6** (zakazane naredbe — ne zna se šta će se desiti dok nisi tu), **F9**.
+Poslije pojašnjenja (27. 9.): **F4 da** — obavještajna služba (Intelligence agency): agenti se obučavaju (nivoi, zlato i
+vrijeme → bolja šansa), sabotaža bilo koje zgrade, izviđanje, krađa istraživanja; jaka ako uložiš, ali ne OP
+(najviše 3 agenta, odmor poslije misije, uzbuna mete, kontraobavještajna, imunitet sabotirane zgrade). Urađeno.
+**F7 da** (rovovi — crtanje prepušteno Claudeu): Build → Trenches, dodir na granicu → rov duž granice s tom državom. Urađeno.
+F2 red proizvodnje (Army), F3 nivoi zgrada 1–3 (dodir na svoju zgradu), F11 pregledan izvještaj „While you were away“ (pločice, uspjesi/gubici, svijet, poredak): urađeno 27. 9. **Odbijeno: F5, F8** (pakt/embargo — vazal je dovoljan), **F10, F12**.
 
 ## Telefon i jedinice 27. 9. (Darko)
 

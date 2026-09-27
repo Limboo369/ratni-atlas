@@ -41,7 +41,7 @@ Object.assign(RA.CFG, {
     p.kickVote = tid;
     const voters = this.lgTeam(p.team).filter((q) => q.alive && !q.kicked && q !== t);
     const votes = voters.filter((q) => q.kickVote === tid).length, need = Math.min(4, voters.length);
-    for (const q of voters) this.tell(q, 'info', `Glasanje: izbaciti ${t.nick || t.name}? (${votes}/${need})`, t.id);
+    for (const q of voters) this.tell(q, 'info', RA.t("Vote: kick {0}? ({1}/{2})", t.nick || t.name, votes, need), t.id);
     if (votes >= need) {
       t.kicked = true;
       if (!t.ai) RA.AI.init(this, t);

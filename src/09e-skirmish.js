@@ -70,7 +70,7 @@ Object.assign(RA.UI.prototype, {
   /* report a player (plan 25): teaming, a rude name, cheating — the owner sees the reports */
   reportSheet(O) {
     const G = this.G, L = this.app.long;
-    let h = this.head(`Prijavi: ${RA.esc(O.nick || O.name)}`, RA.t("The report goes to the game's administrator"));
+    let h = this.head(RA.t("Report: {0}", RA.esc(O.nick || O.name)), RA.t("The report goes to the game's administrator"));
     h += '<div class="btns">' + [['team', RA.t("Teaming in a free-for-all game")], ['name', RA.t("Offensive name")], ['cheat', RA.t("Cheating")], ['grief', RA.t("Deliberately ruining the game")]].map(([k, t]) => this.btn({ attrs: `data-rep="${k}"`, t })).join('') + '</div>';
     this.openSheet(h, (s) => s.querySelectorAll('[data-rep]').forEach((b) => (b.onclick = () => {
       const A = this.account;

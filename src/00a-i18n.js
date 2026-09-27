@@ -17,6 +17,7 @@ RA.LANG = (() => {
   }
 })();
 RA.LOCALE = RA.LANG === 'sr' ? 'sr-Latn' : 'en-GB'; // dates, sorting
+RA.DEC = RA.LANG === 'sr' ? ',' : '.'; // decimal mark (49.4M / 49,4M)
 RA.SR = RA.SR || {};
 RA.EN_NAMES = RA.EN_NAMES || {};
 RA.t = function (s) {

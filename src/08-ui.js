@@ -644,7 +644,7 @@ RA.UI = class {
     this.$('startBtn').disabled = false;
     const near = this.nearestCityName(me.capital);
     this.$('natSel').value = res.took ? String(res.took.id) : '';
-    const pct = ((me.area / this.G.landTotal()) * 100).toFixed(1).replace('.', ',');
+    const pct = ((me.area / this.G.landTotal()) * 100).toFixed(1).replace('.', RA.DEC);
     this.$('spawnText').innerHTML = this.G.borders && res.took
       ? RA.t("You play as <span class=\"pick\">{0}</span> ({1}) — {2}% of the land, {3} troops. You can pick another state or start.", RA.esc(res.took.name), RA.esc(res.took.nation.capital), pct, RA.fmt(me.troops))
       : res.took
@@ -749,7 +749,7 @@ RA.UI = class {
     if (!me) return;
     $('hNation').textContent = me.name;
     $('hNation').title = me.name;
-    $('hEra').textContent = RA.ERA.short + (G.online ? ' · ONLINE' : G.dynasty ? ' · DINASTIJA ' + G.dynasty.toUpperCase() : ' · OPERACIJA');
+    $('hEra').textContent = RA.ERA.short + (G.online ? ' · ONLINE' : G.dynasty ? RA.t(' · DYNASTY {0}', G.dynasty.toUpperCase()) : RA.t(' · OPERATION'));
     $('hObjective').style.width = RA.clamp(me.area / G.landTotal() / G.winShare() * 100, 0, 100) + '%';
     $('hTroops').textContent = RA.fmt(me.troops);
     const r = me.troops / Math.max(1, me.maxT);
@@ -760,7 +760,7 @@ RA.UI = class {
     $('hGold').textContent = RA.fmt(me.gold);
     $('hGoldSub').textContent = `+${RA.fmt(me.goldRate || 0)}/s`;
     const land = (me.area / G.landTotal()) * 100;
-    $('hLand').textContent = (land < 10 ? land.toFixed(1) : land.toFixed(0)).replace('.', ',') + '%';
+    $('hLand').textContent = (land < 10 ? land.toFixed(1) : land.toFixed(0)).replace('.', RA.DEC) + '%';
     $('clock').textContent = RA.TICK_REAL > 100 ? RA.dur(G.tick) : RA.fmtTime(G.tick / 10);
     this.updateRatio();
     $('aStrike').classList.toggle('dim', !me.n.silo);
@@ -791,7 +791,7 @@ RA.UI = class {
         const pc = (p.area / tot) * 100;
         const mk = me && p !== me ? (me.allies.has(p.id) ? ' ⛨' : '') + (me.trade.has(p.id) ? ' ⇄' : '') : '';
         const nm = G.online && p.human ? `${p.nick} · ${p.name}` : p.name;
-        return `<li data-id="${p.id}" class="${p === me ? 'me' : ''}"><span class="rk">${i}</span><span class="sw" style="background:${p.hex}"></span><span class="nm">${RA.esc(nm)}${mk}</span><span class="pc">${pc.toFixed(1).replace('.', ',')}%</span></li>`;
+        return `<li data-id="${p.id}" class="${p === me ? 'me' : ''}"><span class="rk">${i}</span><span class="sw" style="background:${p.hex}"></span><span class="nm">${RA.esc(nm)}${mk}</span><span class="pc">${pc.toFixed(1).replace('.', RA.DEC)}%</span></li>`;
       })
       .join('');
   }
@@ -1044,6 +1044,20 @@ RA.UI = class {
       else if (r && r.st === 'deal') say('good', RA.t("Deal!"));
       else if (err(r)) say('info', RA.esc(r));
       if (!this.$('sheetWrap').hidden && this.$('sheet').querySelector('#dealSheet')) this.closeSheet();
+    } else if (kind === 'dig') {
+      if (r && r.dig) {
+        say('good', RA.t("Digging trenches along the border with {0}: {1} cells ({2}). Tap another stretch or Cancel.", this.G.P[r.foe].name, r.dig, RA.fmt(r.cost)));
+      } else if (err(r)) say('info', RA.esc(r));
+    } else if (kind === 'up') {
+      if (r && r.up >= 0) say('good', RA.t("Upgrade to level {0} started.", r.lv));
+      else if (err(r)) say('info', RA.esc(r));
+    } else if (kind === 'queue') {
+      if (err(r)) say('info', RA.esc(r));
+    } else if (kind === 'intel') {
+      if (r && r.rec) say('good', RA.t("Agent recruited — ready in {0} s.", RA.CFG.INTEL_REC_SECS));
+      else if (r && r.train) say('good', RA.t("Training to level {0} started.", r.lv));
+      else if (r && r.spy) say('good', RA.t("Agent sent: {0} — {1}.", RA.INTEL_OPS[r.kind].name, this.G.P[r.t].name));
+      else if (err(r)) say('info', RA.esc(r));
     } else if (kind === 'rsch') {
       if (r && r.k) say('good', RA.t("Research started: {0} {1}.", RA.RSCH[r.k].name, r.lv));
       else if (err(r)) say('info', RA.esc(r));
@@ -1057,7 +1071,7 @@ RA.UI = class {
     } else if (kind === 'vas') {
       if (err(r)) say('info', RA.esc(r));
     } else if (kind === 'tax') {
-      if (r && typeof r === 'object') say('info', `Porez: ${RA.TAX[r.tax].name}.`);
+      if (r && typeof r === 'object') say('info', RA.t("Tax: {0}.", RA.TAX[r.tax].name));
     } else if (kind === 'rcl') {
       if (r && typeof r === 'object') say('good', RA.t("Retaking: {0} troops go for {1} lost cells ({2}).", RA.fmt(r.att.troops), r.n, RA.esc(G.P[a[0]].name)));
       else if (err(r)) say('info', RA.esc(r));
@@ -1110,7 +1124,7 @@ RA.UI = class {
       const A = RA.MISSILE.atom;
       if (!A.na && A.from && tk < A.from && tk > A.from - 1800) pills.push(['calm', RA.t("☢ Atomic bomb in {0}", T(A.from - tk))]);
       if (me.crisisUntil > tk) pills.push(['bad', RA.t("Capital crisis · {0}", T(me.crisisUntil - tk))]);
-      if (me.traitorUntil > tk) pills.push(['bad', `Izdajnik: pola odbrane · ${T(me.traitorUntil - tk)}`]);
+      if (me.traitorUntil > tk) pills.push(['bad', RA.t("Traitor: half defence · {0}", T(me.traitorUntil - tk))]);
       if (me.growPause > tk) pills.push(['mob', RA.t("Mobilisation: no growth · {0}", T(me.growPause - tk))]);
     }
     const net = this.app.net;
@@ -1246,6 +1260,9 @@ RA.UI = class {
     } else if (m.kind === 'recruit') {
       txt = RA.t("Tap your land near the border: {0}", RA.UNIT[m.type].name);
       btn = 'aArmy';
+    } else if (m.kind === 'trench') {
+      txt = RA.t("Tap your land right at a border: trenches along it ({0} per cell)", RA.fmt(RA.CFG.TRENCH_GOLD));
+      btn = 'aBuild';
     } else if (m.kind === 'group') {
       const us = this.groupUnits();
       if (!us.length) {
@@ -1444,6 +1461,9 @@ RA.UI = class {
       this.ping(cp, false);
       this.act('rec', [m.type, cc]);
       this.setMode(null);
+    } else if (m.kind === 'trench') {
+      this.ping(cp, false);
+      this.act('dig', [c]);
     } else if (m.kind === 'group') {
       const us = this.groupUnits();
       if (!us.length) return this.setMode(null);

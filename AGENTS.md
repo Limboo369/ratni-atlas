@@ -88,6 +88,16 @@ Opinions remember their reasons: change `o.rel[id]` only through `G.relTo(o, id,
 Focus orders while away: command `'stance'` (`p.stance`: def / eco / atk + target; the AI follows it when it plays a
 human's state). Signed in, a Focus seat belongs to the account (`acct<id>`, resolved by the relay from the `ot` cookie) and
 the list of my Focus games is on the account (`/api/focus`).
+Intelligence agency (`src/03d-intel.js`, sheet `src/08l-intel.js`; with the tech tree): building `intel` (one per
+state), up to `INTEL_MAX` agents, command `'intel'` [`rec` | `train` id | `spy` id, target, `scout`|`sab`|`steal`,
+building type]. Odds 40% + 17%/level, −8% per mission against that state in the last 10 min (max −24%), −20% if it has
+its own agency; a caught agent is lost (`relTo` reason `spy`); sabotage = `s.empUntil`, then `s.sabImmune`.
+Production queue (`src/03e-queue.js`): command `'queue'` [type, +1|−1|0], `p.queue`; a unit comes out when gold,
+troops and a slot allow, at the border facing the state with most attacks between us (`G._queueCell`).
+Building levels (`src/03f-upgrade.js`): command `'up'` [building id], `s.lv` 1–3, `p.lvx[type]` (extra levels of ready
+buildings; kept in `_structCaptured` / `_destroyStruct`), `RA.lvf(s, k)` per-building factor, effects in `RA.UP_DESC`.
+Trenches (`src/03g-trench.js`): command `'dig'` [border cell] digs along my border cells touching that neighbour;
+`G.trench[c]` 1 digging / 2 ready (attack cost ×`TRENCH_MAG`, slowness ×`TRENCH_SPD`), cleared in `setOwner`.
 Offers and demands (`src/02l-offers.js`): commands `'offer'` [to, give, want] and `'offerRes'` [id, yes|no|counter, give,
 want]; a bundle is {g gold, t troops (allies only), c city index (with its land), r resource slot (supply for a while,
 `p.giftRes`), s strait index (open it)}; a computer state answers at once (accept, counter for more gold, refuse).

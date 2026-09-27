@@ -101,7 +101,7 @@ Object.assign(RA.UI.prototype, {
     if (!c || !c.home) return this.campNew();
     const home = RA.CAMP_HOMES.find((h) => h.id === c.home) || RA.CAMP_HOMES[0];
     const free = this.campXpFree(c), done = c.done || {};
-    let h = this.head(`Kampanja: dinastija ${c.name}`, `Dom: ${RA.esc(home.name)} · iskustvo ${c.xp} (slobodno ${free}) · misija ${Object.keys(done).length}/70`);
+    let h = this.head(RA.t("Campaign: the {0} dynasty", c.name), RA.t("Home: {0} · experience {1} ({2} free) · missions {3}/70", RA.esc(home.name), c.xp, free, Object.keys(done).length));
     h += RA.t("<span class=\"campaign-marker\" hidden></span><div class=\"dynasty-banner\"><div class=\"dynasty-seal\" aria-hidden=\"true\">{0}</div><div><span>A LEGACY THROUGH SEVEN AGES</span><h3>{1}</h3><p>{2} · {3} of 70 missions completed</p></div><div class=\"dynasty-xp\"><b>{4}</b><span>free XP</span></div></div>", RA.icon('flag'), RA.esc(c.name), RA.esc(home.name), Object.keys(done).length, free);
     if (home.map !== 'evropa'  && !(this.app.mapOK && this.app.mapOK[home.map])) h += RA.t("<p class=\"note\">The <b>world map</b> is loaded from the server (war.deovilab.com).</p>");
     h += RA.t("<div class=\"sec-t\">Dynasty tech tree</div><p class=\"explain\">Invest the experience from missions here; upgrades apply in every age.</p><div class=\"research-grid\">");

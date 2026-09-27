@@ -77,7 +77,7 @@ RA.App = class {
   }
   loadProgress(id, n, tot) {
     const base = RA.mapInfo(id).load;
-    const txt = n < 0 ? base.replace(RA.t("Loading"), RA.t("Preparing")) : n > 0 ? `${base} ${tot ? Math.round((n / tot) * 100) + '%' : (n / 1048576).toFixed(1).replace('.', ',') + ' MB'}` : base;
+    const txt = n < 0 ? base.replace(RA.t("Loading"), RA.t("Preparing")) : n > 0 ? `${base} ${tot ? Math.round((n / tot) * 100) + '%' : (n / 1048576).toFixed(1).replace('.', RA.DEC) + ' MB'}` : base;
     document.getElementById('loadMsg').textContent = txt;
   }
   /* run fn once the map and era are there (at once for Europe); loading shows the full-screen loading overlay */

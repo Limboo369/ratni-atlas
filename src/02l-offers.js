@@ -124,7 +124,7 @@ Object.assign(RA.CFG, {
     this.relTo(p, q.id, Math.min(100, p.rel[q.id] + 5), 'deal');
     this.relTo(q, p.id, Math.min(100, q.rel[p.id] + 5), 'deal');
     this.news('deal', p.id, q.id);
-    for (const x of [p, q]) if (x.human) this.tell(x, 'good', `Dogovor: ${p.name} i ${q.name}.`, x === p ? q.id : p.id);
+    for (const x of [p, q]) if (x.human) this.tell(x, 'good', RA.t("Deal: {0} and {1}.", p.name, q.name), x === p ? q.id : p.id);
     return { st: 'deal', id: o.id };
   };
   /* the answer to an offer made to pid: yes / no / counter (give, want of the counter-offer from pid) */

@@ -71,7 +71,7 @@ Object.assign(RA.UI.prototype, {
       break: RA.t("{0} betrayed its ally {1}", A, B),
       allyEnd: RA.t("Alliance expired: {0} and {1}", A, B),
       trade: RA.t("{0} and {1} trade", A, B),
-      deal: `Dogovor: ${A} i ${B}`,
+      deal: RA.t("Deal: {0} and {1}", A, B),
       vassal: RA.t("{0} becomes a vassal: {1}", B, A),
       dome: RA.t("{0} strikes back at {1} with nukes automatically", A, B),
       strait: RA.t("{0} closes the {1} to foreign ships", A, RA.esc(n.x || 'moreuz')),

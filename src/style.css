@@ -1442,3 +1442,16 @@ html[lang=sr] .replay-bar::before{content:"SNIMAK PARTIJE"}
 .research-active small,.research-reason{display:block;font-size:11px;line-height:1.5;color:#b8b9ad}
 .research-reason{margin-top:8px;color:#c2ad91}
 @media(max-width:600px){#sheet .research-card .mini{min-height:44px;white-space:normal;line-height:1.4}#sheet .sh-head{gap:10px}}
+/* production queue in the Army sheet */
+.queue-row { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+.chip-q { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 999px; background: #ffffff10; border: 1px solid #ffffff1c; font-size: 12px; }
+.chip-q svg { width: 14px; height: 14px; }
+/* "While you were away" (Focus report) */
+.report-tiles small.pos { color: #6fdc8c; } .report-tiles small.neg { color: #ff8a7a; }
+.report-list { list-style: none; margin: 4px 0 8px; padding: 0; display: grid; gap: 4px; }
+.report-list li { padding: 7px 10px; border-radius: 8px; background: #ffffff08; border-left: 3px solid #ffffff30; font-size: 13px; line-height: 1.4; }
+.report-list li.pos { border-left-color: #6fdc8c; } .report-list li.neg { border-left-color: #ff6b6b; }
+.report-more summary { cursor: pointer; font-size: 12px; color: #c2ad91; margin: 2px 0 6px; }
+.report-rank { margin: 4px 0 10px; padding: 0; list-style: none; display: grid; gap: 3px; }
+.report-rank li { display: flex; gap: 8px; align-items: center; font-size: 13px; padding: 4px 8px; border-radius: 6px; }
+.report-rank li.me { background: #d2b38318; } .report-rank li span { margin-left: auto; opacity: .8; }

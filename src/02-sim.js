@@ -151,8 +151,8 @@ RA.Game = class Game {
       id, name: o.name, type: o.type, human: o.type === 'human', team: 0, nick: '', hex: o.color, rgb: RA.hexToRgb(o.color), iso: o.iso || null,
       alive: true, spawned: false, troops: 0, gold: 0, tiles: 0, area: 0, cells: new Int32Array(256), maxT: 1,
       cityT: 0, cityG: 0, nCity: [0, 0, 0, 0],
-      n: { barracks: 0, fort: 0, port: 0, silo: 0, sam: 0, airport: 0, city: 0, factory: 0, dome: 0 },
-      built: { barracks: 0, fort: 0, port: 0, silo: 0, sam: 0, airport: 0, city: 0, factory: 0, dome: 0 },
+      n: { barracks: 0, fort: 0, port: 0, silo: 0, sam: 0, airport: 0, city: 0, factory: 0, dome: 0, intel: 0 },
+      built: { barracks: 0, fort: 0, port: 0, silo: 0, sam: 0, airport: 0, city: 0, factory: 0, dome: 0, intel: 0 },
       forts: [], bcities: [], units: [], portsOff: 0, mobReady: 0, growPause: 0, crisisUntil: 0, tax: 2, interest: 0, ae: 0, aeWarn: false, lord: 0, tribute: 0, capCity: -1,
       goldRate: 0, growRate: 0, trade: new Set(), nbCache: null, tradeRate: 0, tradeLand: 0, allies: new Map(), traitorUntil: -1, rel: new Float32Array(256), boats: 0,
       lastAttackedBy: 0, attackedAt: -9999, changed: true, peak: 0, capital: -1,
@@ -206,6 +206,7 @@ RA.Game = class Game {
     const old = this.owner[c];
     if (old === pid) return;
     const P = this.P;
+    if (this.trench && this.trench[c]) this._trenchLost(c, old); // a trench belongs to its land (03g-trench.js)
     if (old) {
       this._removeCell(P[old], c);
       P[old].changed = true;
@@ -301,7 +302,7 @@ RA.Game = class Game {
   computeMax(p) {
     const land = 2 * (RA.dpow(this.landCells(p) * 3, 0.56) * 1100 + 50000);
     // cities add at most half of the land-based army, so a city-rich empire cannot snowball
-    const base = land + Math.min(p.cityT, land * 0.5) + p.n.barracks * RA.CFG.BARRACKS_T + p.n.city * RA.CFG.CITY_BUILT_T;
+    const base = land + Math.min(p.cityT, land * 0.5) + (p.n.barracks + 0.5 * this.lvx(p, 'barracks')) * RA.CFG.BARRACKS_T + (p.n.city + 0.5 * this.lvx(p, 'city')) * RA.CFG.CITY_BUILT_T;
     if (p.type === 'bot') return base / 3;
     if (p.type === 'nation') return base * this.diff.maxT;
     return base;
@@ -327,7 +328,7 @@ RA.Game = class Game {
         this.tell(p, 'good', RA.t("The world has calmed down: the coalition against you breaks up."), p.id);
       }
     } else p.ae = 0;
-    let g = 70 + Math.sqrt(p.tiles) * 1.2 + p.cityG + (p.n.port - p.portsOff) * RA.CFG.PORT_G + p.n.city * RA.CFG.CITY_BUILT_G;
+    let g = 70 + Math.sqrt(p.tiles) * 1.2 + p.cityG + (p.n.port - p.portsOff + 0.5 * this.lvx(p, 'port')) * RA.CFG.PORT_G + (p.n.city + 0.5 * this.lvx(p, 'city')) * RA.CFG.CITY_BUILT_G;
     if (p.type === 'bot') g *= 0.4;
     if (p.crisisUntil > tk) g *= 0.5;
     g *= tax.g * (p.bGold || 1);
@@ -588,11 +589,10 @@ RA.Game = class Game {
     if (!T.forts.length) return false;
     const W = this.map.W;
     const x = c % W, y = (c / W) | 0;
-    const R2 = RA.CFG.FORT_R * RA.CFG.FORT_R;
     for (const f of T.forts) {
       if (f.empUntil > this.tick) continue;
-      const dx = f.x - x, dy = f.y - y;
-      if (dx * dx + dy * dy <= R2) return true;
+      const dx = f.x - x, dy = f.y - y, R = RA.CFG.FORT_R * RA.lvf(f, 0.25); // a higher level guards a wider ring
+      if (dx * dx + dy * dy <= R * R) return true;
     }
     return false;
   }
@@ -663,6 +663,9 @@ RA.Game = class Game {
         if (this.fortified(T, c)) {
           mag *= 3.2;
           spd *= 2.4;
+        } else if (this.trench && this.trench[c] === 2) {
+          mag *= RA.CFG.TRENCH_MAG;
+          spd *= RA.CFG.TRENCH_SPD;
         }
         const ui = this.map.urban[c];
         if (ui >= 0) {
@@ -889,6 +892,8 @@ RA.Game = class Game {
   canBuild(p, type, c) {
     const map = this.map;
     if (RA.STRUCT[type].na) return RA.t("That is not built in this era.");
+    if (RA.STRUCT[type].tree && !this.opts.tree) return RA.t("{0} comes with the tech tree — it is off in this game.", RA.STRUCT[type].name);
+    if (type === 'intel' && p.built.intel) return RA.t("Only one intelligence agency per state.");
     if (c < 0 || this.owner[c] !== p.id) return RA.t("You must build on your own land.");
     if (!map.land[c]) return RA.t("Not on water.");
     if (this.fallout[c] > 20) return RA.t("The ground is radioactive.");
@@ -943,6 +948,7 @@ RA.Game = class Game {
     const old = this.P[s.owner];
     if (s.ready) {
       old.n[s.type]--;
+      this._lvAdd(old, s.type, 1 - (s.lv || 1));
       if (s.type === 'fort') old.forts = old.forts.filter((f) => f !== s);
       if (s.type === 'city') old.bcities = old.bcities.filter((f) => f !== s);
     }
@@ -955,6 +961,7 @@ RA.Game = class Game {
     s.owner = pid;
     const np = this.P[pid];
     np.n[s.type]++;
+    this._lvAdd(np, s.type, (s.lv || 1) - 1);
     np.built[s.type]++;
     if (s.type === 'city') np.bcities.push(s);
     s.linksAt = 0;
@@ -966,6 +973,7 @@ RA.Game = class Game {
     const p = this.P[s.owner];
     if (s.ready) {
       p.n[s.type]--;
+      this._lvAdd(p, s.type, 1 - (s.lv || 1));
       if (s.type === 'fort') p.forts = p.forts.filter((f) => f !== s);
       if (s.type === 'city') p.bcities = p.bcities.filter((f) => f !== s);
     }
@@ -1168,7 +1176,11 @@ RA.Game = class Game {
       if (p.tSub && p.lord && this.P[p.lord]) this.P[p.lord].gold += p.tSub;
     }
     this._stepBuild();
+    this._stepUpgrade();
+    this._stepTrench();
     this._stepResearch();
+    this._stepIntel();
+    this._stepQueue();
   }
   _stepBuild() {
     const P = this.P;
@@ -1215,7 +1227,11 @@ RA.Game = class Game {
     if (this.tick % 20 === 0) this.missiles = this.missiles.filter((m) => !m.done);
     // construction and weapons research (03c-research.js)
     this._stepBuild();
+    this._stepUpgrade();
+    this._stepTrench();
     this._stepResearch();
+    this._stepIntel();
+    this._stepQueue();
     if (this.tick % 10 === 0) {
       this._expireAlliances();
       this._vassals();
@@ -1341,7 +1357,7 @@ RA.Game = class Game {
         this.winner = act.sort((a, b) => b.area - a.area)[0];
         this.state = 'over';
         this._history();
-        this.tellAll('over', `Pobjednik: ${this.winner.name}`, this.winner.id);
+        this.tellAll('over', RA.t("Winner: {0}", this.winner.name), this.winner.id);
         return;
       }
     }
@@ -1349,7 +1365,7 @@ RA.Game = class Game {
       this.winner = best.best;
       this.state = 'over';
       this._history();
-      this.tellAll('over', `Pobjednik: ${best.best.name}`, best.best.id);
+      this.tellAll('over', RA.t("Winner: {0}", best.best.name), best.best.id);
     }
   }
   /* the players still in an online game (not surrendered, not gone) */
@@ -1383,7 +1399,7 @@ RA.Game = class Game {
     this.winner = best.best;
     this.state = 'over';
     this._history();
-    this.tellAll('over', `Pobjednik: ${best.best.name}`, best.best.id);
+    this.tellAll('over', RA.t("Winner: {0}", best.best.name), best.best.id);
   }
   /* a late player in a Focus game (plan 21) is safe from other players until it attacks one (or the time is up) */
   shieldErr(p, T) {

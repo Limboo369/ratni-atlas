@@ -79,7 +79,7 @@ RA.Account = class {
     b.hidden = pb.hidden = !this.ok;
     ui.$('leaderboardBtn').hidden = !this.ok;
     b.classList.toggle('on', !!u);
-    const label = u ? `Profil: ${u.name}` : RA.t("Sign in");
+    const label = u ? RA.t("Profile: {0}", u.name) : RA.t("Sign in");
     b.setAttribute('aria-label', label);
     b.title = label;
     b.innerHTML = u ? RA.emblem(u) : RA.icon('user');
@@ -222,10 +222,10 @@ RA.Account = class {
     const how = [RA.eraById(r.era).short, r.online ? (r.mode === 'coop' ? RA.t("online team") : RA.t("online 1 on 1")) : '', r.gm === 'br' ? RA.t("battle royale") : r.gm === 'defcon' ? 'DEFCON' : '', r.difficulty === 'tesko' ? RA.t("hard") : r.difficulty === 'lako' ? RA.t("easy") : ''].filter(Boolean).join(' · ');
     const d = new Date(r.at), pad = (n) => String(n).padStart(2, '0');
     const when = `${d.getDate()}. ${d.getMonth() + 1}. ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-    return `<li class="${r.won ? 'w' : 'l'}"><span class="res">${r.won ? RA.t("Victory") : RA.t("Defeat")}</span><span class="what"><b>${RA.esc(where)}</b><small>${RA.esc(how)}</small></span><span class="num">${RA.fmtTime(r.secs)}<small>${String(Math.round(r.peak * 10) / 10).replace('.', ',')}% · ${when}</small></span>${/^l[a-z0-9]{6}$/.test(r.gid || '') ? `<button class="mini ok" data-rp="${r.gid.slice(1)}">Replay</button>` : ''}</li>`;
+    return `<li class="${r.won ? 'w' : 'l'}"><span class="res">${r.won ? RA.t("Victory") : RA.t("Defeat")}</span><span class="what"><b>${RA.esc(where)}</b><small>${RA.esc(how)}</small></span><span class="num">${RA.fmtTime(r.secs)}<small>${String(Math.round(r.peak * 10) / 10).replace('.', RA.DEC)}% · ${when}</small></span>${/^l[a-z0-9]{6}$/.test(r.gid || '') ? `<button class="mini ok" data-rp="${r.gid.slice(1)}">Replay</button>` : ''}</li>`;
   }
   fillStats(s, j) {
-    const st = j.stats, rk = st.rank, pct = (v) => (RA.LANG === 'en' ? String(v) : String(v).replace('.', ',')) + '%';
+    const st = j.stats, rk = st.rank, pct = (v) => (RA.LANG === 'en' ? String(v) : String(v).replace('.', RA.DEC)) + '%';
     const cell = (k, v) => `<div><div class="k">${k}</div><div class="v">${v}</div></div>`;
     const put = (id, h) => {
       const el = s.querySelector(id);
@@ -299,7 +299,7 @@ RA.Account = class {
     if (!keep) this.after = null;
     const ui = this.ui, u = this.user;
     if (!u) {
-      const h = RA.t("<div id=\"accSheet\" class=\"dossier-marker signin-marker\"></div>{0}\n        <div class=\"signin-hero\">{1}<p>Every victory leaves a mark.</p><span>Keep your progress and continue on any device.</span></div>\n        <div class=\"signin-features\"><div>{2}<b>Build your reputation</b><span>Ranks and a personal emblem</span></div><div>{3}<b>Record your wins</b><span>Statistics and achievements</span></div><div>{4}<b>Take your place</b><span>World leaderboard</span></div></div>\n        <div class=\"signin-action\"><div class=\"gsi-slot\" id=\"gsiSlot\"></div><p class=\"note\" id=\"accNote\" aria-live=\"polite\"></p><p>You can play without signing in. Your choice.</p></div>\n        <button class=\"btn\" id=\"accTop\"><span class=\"t\">See the leaderboard</span><span class=\"r\" aria-hidden=\"true\">↗</span></button>\n        <p class=\"account-privacy\">Google shares your name, e-mail and profile picture. You can delete the account in the profile settings.</p>", ui.head(RA.t("Your history starts here."), 'PROFIL KOMANDANTA'), RA.emblem({icon:'orao'}, 'lg'), RA.icon('army'), RA.icon('star'), RA.icon('globe'));
+      const h = RA.t("<div id=\"accSheet\" class=\"dossier-marker signin-marker\"></div>{0}\n        <div class=\"signin-hero\">{1}<p>Every victory leaves a mark.</p><span>Keep your progress and continue on any device.</span></div>\n        <div class=\"signin-features\"><div>{2}<b>Build your reputation</b><span>Ranks and a personal emblem</span></div><div>{3}<b>Record your wins</b><span>Statistics and achievements</span></div><div>{4}<b>Take your place</b><span>World leaderboard</span></div></div>\n        <div class=\"signin-action\"><div class=\"gsi-slot\" id=\"gsiSlot\"></div><p class=\"note\" id=\"accNote\" aria-live=\"polite\"></p><p>You can play without signing in. Your choice.</p></div>\n        <button class=\"btn\" id=\"accTop\"><span class=\"t\">See the leaderboard</span><span class=\"r\" aria-hidden=\"true\">↗</span></button>\n        <p class=\"account-privacy\">Google shares your name, e-mail and profile picture. You can delete the account in the profile settings.</p>", ui.head(RA.t("Your history starts here."), RA.t('COMMANDER PROFILE')), RA.emblem({icon:'orao'}, 'lg'), RA.icon('army'), RA.icon('star'), RA.icon('globe'));
       ui.openSheet(h, (s) => {
         s.querySelector('#accTop').onclick = () => this.topSheet('wins');
         this.googleButton(s.querySelector('#gsiSlot'), s.querySelector('#accNote'));

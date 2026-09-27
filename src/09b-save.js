@@ -163,6 +163,6 @@ Object.assign(RA.UI.prototype, {
     b.hidden = !sv;
     if (!sv) return;
     const m = sv.meta || {};
-    b.innerHTML = RA.t("<span class=\"t\">Continue game</span><span class=\"d\">{0} · {1} · {2} · {3} · {4}%</span>", RA.esc(m.who || ''), RA.esc(m.where || ''), RA.esc(m.era || ''), RA.fmtTime(m.secs || 0), String(m.land || 0).replace('.', ','));
+    b.innerHTML = RA.t("<span class=\"t\">Continue game</span><span class=\"d\">{0} · {1} · {2} · {3} · {4}%</span>", RA.esc(m.who || ''), RA.esc(m.where || ''), RA.esc(m.era || ''), RA.fmtTime(m.secs || 0), String(m.land || 0).replace('.', RA.DEC));
   },
 });

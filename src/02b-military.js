@@ -138,7 +138,7 @@ RA.NUKE = RA.MISSILE;
 
   /* ---------------- units ---------------- */
   P.unitCap = function (p) {
-    return RA.CFG.UNIT_BASE_CAP + RA.CFG.UNIT_PER_BARRACKS * p.n.barracks;
+    return RA.CFG.UNIT_BASE_CAP + RA.CFG.UNIT_PER_BARRACKS * p.n.barracks + this.lvx(p, 'barracks');
   };
   P.recruitUnit = function (pid, type, c) {
     const p = this.P[pid], U = RA.UNIT[type];
@@ -665,7 +665,7 @@ RA.NUKE = RA.MISSILE;
       return RA.t("The {0} is reloading (or under EMP) — wait.", SN);
     }
     p.gold -= cost;
-    best.cd = tk + M.cd;
+    best.cd = tk + Math.round(M.cd / RA.lvf(best, 0.3));
     if (type === 'mirv') this.mirvCount = (this.mirvCount || 0) + 1;
     const dur = Math.max(18, Math.round(bd / M.speed));
     const victimId = this.owner[c];
@@ -722,7 +722,7 @@ RA.NUKE = RA.MISSILE;
       const m = { id: this.nextId++, owner: V.id, type: 'atom', kind: 'nuke', sx: d.x + 0.5, sy: d.y + 0.5, tx: tx + 0.5, ty: ty + 0.5, c, t: 0, dur: Math.max(18, Math.round(dist / M.speed)), sam: null, samAt: 2, done: false, victim: A.id, auto: true };
       this._assignSam(m, V);
       this.missiles.push(m);
-      d.cd = tk + RA.CFG.DOME_CD;
+      d.cd = tk + Math.round(RA.CFG.DOME_CD / RA.lvf(d, 0.3));
       V.stats.nukes++;
     });
     this.tell(V, 'good', RA.t("Iron Dome strikes back: {0} {1} at {2}!", domes.length, domes.length === 1 ? RA.t("atomic bomb flies") : RA.t("atomic bombs fly"), A.name), A.id, A.capital);
@@ -739,7 +739,7 @@ RA.NUKE = RA.MISSILE;
         m.sam = s;
         m.samAt = m.kind === 'warhead' ? 0.55 : 0.62 + this.rng() * 0.2;
         // a nuclear salvo (several launches in a row): air defence reloads twice as fast
-        s.cd = tk + this.samCd(this.P[s.owner], (m.kind === 'nuke' || m.kind === 'mirv') && p.nukeN > 1 && p.nukeUntil > tk ? RA.CFG.SAM_CD >> 1 : RA.CFG.SAM_CD);
+        s.cd = tk + Math.round(this.samCd(this.P[s.owner], (m.kind === 'nuke' || m.kind === 'mirv') && p.nukeN > 1 && p.nukeUntil > tk ? RA.CFG.SAM_CD >> 1 : RA.CFG.SAM_CD) / RA.lvf(s, 0.3));
         return true;
       }
     }
@@ -1006,7 +1006,7 @@ RA.NUKE = RA.MISSILE;
     for (const s of this.structs) {
       if (s.dead || !s.ready || s.type !== 'factory' || s.empUntil > tk || tk < (s.nextTrain || 0)) continue;
       const dests = this.factoryLinks(s);
-      s.nextTrain = tk + Math.round(RA.CFG.TRAIN_EVERY / (1 + 0.12 * Math.min(10, dests.length))) + Math.floor(this.rng() * 30);
+      s.nextTrain = tk + Math.round(RA.CFG.TRAIN_EVERY / (1 + 0.12 * Math.min(10, dests.length)) / RA.lvf(s, 0.35)) + Math.floor(this.rng() * 30);
       if (!dests.length) continue;
       s.rr = ((s.rr || 0) + 1) % dests.length;
       const d = dests[s.rr];
@@ -1072,7 +1072,7 @@ RA.NUKE = RA.MISSILE;
     if (troops < 500) return RA.t("Too few troops for a landing.");
     p.troops -= troops;
     p.gold -= RA.CFG.PARA_GOLD;
-    ap.cd = this.tick + RA.CFG.PARA_CD;
+    ap.cd = this.tick + Math.round(RA.CFG.PARA_CD / RA.lvf(ap, 0.3));
     const W = this.map.W;
     const tx = (c % W) + 0.5, ty = ((c / W) | 0) + 0.5;
     const pl = { id: this.nextId++, owner: pid, sx: ap.x + 0.5, sy: ap.y + 0.5, tx, ty, c, t: 0, dur: Math.max(15, Math.round(RA.dist(tx - ap.x, ty - ap.y) / RA.CFG.PARA_SPEED)), troops, sam: null, samAt: 2, done: false };

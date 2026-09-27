@@ -90,7 +90,7 @@ Object.assign(RA.UI.prototype, {
     let h = '<div id="lgSheet"></div>' + this.head(RA.t("Conquest League"), RA.t("Ranked matches · players only · win by destroying the enemy"));
     h += RA.t("<div class=\"field\"><span class=\"lab\">Mode</span><div class=\"seg\" id=\"lgMode\"><button data-v=\"b\" aria-pressed=\"{0}\">Blitz</button><button data-v=\"f\" aria-pressed=\"{1}\">Focus</button></div></div>", L.m === 'b', L.m === 'f');
     h += RA.t("<div class=\"field\"><span class=\"lab\">Size</span><div class=\"seg\" id=\"lgSize\">{0}</div></div>", [1, 2, 5].map((n) => `<button data-v="${n}" aria-pressed="${L.n === n}">${n}v${n}</button>`).join(''));
-    h += `<div class="list"><div class="prow wide"><span class="lg-tier lg-${tier.toLowerCase()}">${tier}</span><div class="pn"><div class="nm">${RA.lgName(l)} · ELO ${e ? e.elo : 500}</div><div class="d">${e && e.games >= 5 ? RA.t("{0} matches", e.games) : `Kvalifikacije: ${e ? e.games : 0}/5 partija`}</div></div></div></div>`;
+    h += `<div class="list"><div class="prow wide"><span class="lg-tier lg-${tier.toLowerCase()}">${tier}</span><div class="pn"><div class="nm">${RA.lgName(l)} · ELO ${e ? e.elo : 500}</div><div class="d">${e && e.games >= 5 ? RA.t("{0} matches", e.games) : RA.t("Qualifiers: {0}/5 matches", e ? e.games : 0)}</div></div></div></div>`;
     // party
     const P = L.party;
     h += RA.t("<div class=\"sec-t\">Party</div><div id=\"lgParty\">");

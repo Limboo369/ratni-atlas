@@ -135,7 +135,7 @@ RA.CommandScreen = class {
     canvas.height = Math.round(canvas.width * map.H / map.W);
     const w = canvas.width, h = canvas.height;
     this.$('atlasSignals').setAttribute('viewBox', `0 0 ${w} ${h}`);
-    this.$('atlasCoordinate').innerHTML = world ? 'N 00° 00′ &nbsp; E 00° 00′<span>02 / SVIJET</span>' : 'N 48° 51′ &nbsp; E 02° 21′<span>01 / EVROPA</span>';
+    this.$('atlasCoordinate').innerHTML = world ? RA.t('N 00° 00′ &nbsp; E 00° 00′<span>02 / WORLD</span>') : RA.t('N 48° 51′ &nbsp; E 02° 21′<span>01 / EUROPE</span>');
     const px = (x) => (x - map.X0) / (map.X1 - map.X0) * w;
     const py = (y) => (y - map.Y0) / (map.Y1 - map.Y0) * h;
     const pathFor = (layer, close) => {

@@ -253,6 +253,7 @@ Object.assign(RA.App.prototype, {
     const done = () => {
       LG.replaying = false;
       LG.applyDue(G);
+      this.long.missed = G.events.slice(-600); // what happened while the page caught up: for "While you were away"
       G.events.length = 0;
       G.fx.length = 0;
       ui.feedReset();
@@ -305,14 +306,39 @@ Object.assign(RA.UI.prototype, {
   focusReport(was, r) {
     const G = this.G, me = G.me, a = was.snap, b = RA.focusSnap(G, me);
     const secs = ((G.tick - was.tick) * r.tickMs * (r.sub || 1)) / 1000;
-    const pc = (v) => (v * 100).toFixed(1).replace('.', ',') + '%';
-    const d = (x, y, f) => `${f(x)} → <b>${f(y)}</b>${y > x ? ' <span class="pos">▲</span>' : y < x ? ' <span class="neg">▼</span>' : ''}`;
-    const ev = G.feed.filter((f) => f.tick > was.tick && (f.a === me.id || f.b === me.id)).slice(-10);
-    const what = { war: RA.t("⚔ war"), fall: RA.t("☠ state fell"), ally: RA.t("🤝 alliance"), break: RA.t("✂ alliance broken"), allyEnd: RA.t("alliance expired"), trade: RA.t("⚖ trade"), vassal: RA.t("vassal"), pledge: RA.t("oath"), rebel: RA.t("revolt"), dome: RA.t("☢ dome"), strait: RA.t("strait"), straitO: RA.t("strait opened") };
+    const pc = (v) => (v * 100).toFixed(1).replace('.', RA.DEC) + '%';
+    // four tiles: where I stand now and how it changed
+    const tile = (label, x, y, f) => `<div><span>${label}</span><strong>${f(y)}</strong><small class="${y > x ? 'pos' : y < x ? 'neg' : ''}">${y > x ? '▲ ' : y < x ? '▼ ' : ''}${f(x)} →</small></div>`;
     let h = this.head(RA.t("While you were away"), RA.t("{0} of real time · {1} moves · the computer led {2}", RA.fmtTime(secs), G.tick - was.tick, RA.esc(me.name)));
-    h += RA.t("<div class=\"list\"><div class=\"prow wide\"><div class=\"pn\"><div class=\"nm\">Territory</div><div class=\"d\">{0}</div></div></div>\n      <div class=\"prow wide\"><div class=\"pn\"><div class=\"nm\">Cities</div><div class=\"d\">{1}</div></div></div>\n      <div class=\"prow wide\"><div class=\"pn\"><div class=\"nm\">Army</div><div class=\"d\">{2}</div></div></div>\n      <div class=\"prow wide\"><div class=\"pn\"><div class=\"nm\">Gold</div><div class=\"d\">{3}</div></div></div>\n      <div class=\"prow wide\"><div class=\"pn\"><div class=\"nm\">Allies</div><div class=\"d\">{4}</div></div></div></div>", d(a.share, b.share, pc), d(a.cities, b.cities, String), d(a.troops, b.troops, RA.fmt), d(a.gold, b.gold, RA.fmt), d(a.allies, b.allies, String));
-    h = h.replace('class="list"', 'class="list focus-report-metrics"');
-    h += ev.length ? RA.t("<div class=\"sec-t\">Events</div><div class=\"list\">{0}</div>", ev.map((f) => `<div class="prow wide"><div class="pn"><div class="d">${what[f.t] || f.t}: ${this.feedName(f.a)}${f.b ? ' · ' + this.feedName(f.b) : ''}</div></div></div>`).join('')) : RA.t("<p class=\"note\">No wars or alliances with your state in the meantime.</p>");
+    h += `<div class="economy-overview report-tiles">${tile(RA.t("Territory"), a.share, b.share, pc)}${tile(RA.t("Cities"), a.cities, b.cities, String)}${tile(RA.t("Army"), a.troops, b.troops, RA.fmt)}${tile(RA.t("Gold"), a.gold, b.gold, RA.fmt)}</div>`;
+    // my news, in two groups; the first few shown, the rest folded away
+    const mine = ((this.app.long && this.app.long.missed) || []).filter((e) => e.to === me.id && e.tick > was.tick && e.text);
+    const group = (title, list, cls) => {
+      if (!list.length) return '';
+      const row = (e) => `<li class="${cls}">${RA.esc(e.text)}</li>`;
+      const top = list.slice(-5).reverse(), rest = list.slice(0, -5).reverse();
+      return `<div class="sec-t">${title} · ${list.length}</div><ul class="report-list">${top.map(row).join('')}</ul>` + (rest.length ? `<details class="report-more"><summary>${RA.t("{0} more", rest.length)}</summary><ul class="report-list">${rest.map(row).join('')}</ul></details>` : '');
+    };
+    h += group(RA.t("Setbacks"), mine.filter((e) => e.kind === 'bad'), 'neg') + group(RA.t("Successes"), mine.filter((e) => e.kind === 'good'), 'pos');
+    // the world: wars on me, states that fell, alliances
+    const F = G.feed.filter((f) => f.tick > was.tick);
+    const nm = (id) => this.feedName(id);
+    const wars = F.filter((f) => f.t === 'war' && (f.a === me.id || f.b === me.id));
+    const fell = F.filter((f) => f.t === 'fall');
+    const allies = F.filter((f) => (f.t === 'ally' || f.t === 'break') && (f.a === me.id || f.b === me.id));
+    const world = [];
+    if (wars.length) world.push(RA.t("Wars with you: {0}", wars.map((f) => nm(f.a === me.id ? f.b : f.a)).join(', ')));
+    if (allies.length) world.push(RA.t("Alliances: {0}", allies.map((f) => (f.t === 'ally' ? '🤝 ' : '✂ ') + nm(f.a === me.id ? f.b : f.a)).join(', ')));
+    if (fell.length) world.push(RA.t("States that fell: {0}", fell.slice(-8).map((f) => nm(f.b || f.a)).join(', ')));
+    const otherWars = F.filter((f) => f.t === 'war' && f.a !== me.id && f.b !== me.id).length;
+    if (otherWars) world.push(RA.t("{0} other wars started", otherWars));
+    h += `<div class="sec-t">${RA.t("The world")}</div>` + (world.length ? `<ul class="report-list">${world.map((t) => `<li>${t}</li>`).join('')}</ul>` : RA.t("<p class=\"note\">No wars or alliances with your state in the meantime.</p>"));
+    // the ranking now: the top five and me
+    const L = G.P.filter((p) => p && p.alive && p.type !== 'bot').sort((x, y) => y.area - x.area);
+    const myRank = L.indexOf(me) + 1, land = G.landTotal();
+    const rows = L.slice(0, 5).map((p, i) => `<li class="${p === me ? 'me' : ''}"><b>${i + 1}.</b> ${nm(p.id)} <span>${pc(p.area / land)}</span></li>`);
+    if (myRank > 5) rows.push(`<li class="me"><b>${myRank}.</b> ${nm(me.id)} <span>${pc(me.area / land)}</span></li>`);
+    h += `<div class="sec-t">${RA.t("Ranking now")}</div><ol class="report-rank">${rows.join('')}</ol>`;
     h += RA.t("<div class=\"btns\"><button class=\"btn primary\" data-ok><span class=\"t\">Continue</span></button></div>");
     this.openSheet(h, (s) => (s.querySelector('[data-ok]').onclick = () => this.closeSheet()));
   },
@@ -380,7 +406,7 @@ Object.assign(RA.UI.prototype, {
       h += RA.t("<div class=\"field\"><span class=\"lab\">Your team</span><div class=\"seg\" id=\"teamSeg\">{0}</div></div>", Array.from({ length: n }, (_, i) => RA.t("<button data-v=\"{0}\" aria-pressed=\"{1}\">Team {2} · {3}</button>", i + 1, i + 1 === team, i + 1, cnt(i + 1))).join(''));
     } else if (T === 'hvs') h += RA.t("<p class=\"note\">Humans against states: all players are one team.</p>");
     h += RA.t("<div class=\"btns\"><button class=\"btn\" data-copy><span class=\"t\">Copy game link</span><br><span class=\"d\">{0}</span></button></div><div class=\"list\">", RA.esc(location.origin + '/long-' + L.code));
-    for (const p of nats.slice(0, 40)) h += RA.t("<div class=\"prow wide\"><span class=\"sw\" style=\"background:{0}\"></span><div class=\"pn\"><div class=\"nm\">{1}</div><div class=\"d\">{2}% of the land · army {3}</div></div><div class=\"bb\">{4}</div></div>", p.hex, RA.esc(p.name), ((p.area / G.landTotal()) * 100).toFixed(1).replace('.', ','), RA.fmt(p.troops), this.mini(RA.t("Take over"), `data-take="${p.id}"`, 'ok'));
+    for (const p of nats.slice(0, 40)) h += RA.t("<div class=\"prow wide\"><span class=\"sw\" style=\"background:{0}\"></span><div class=\"pn\"><div class=\"nm\">{1}</div><div class=\"d\">{2}% of the land · army {3}</div></div><div class=\"bb\">{4}</div></div>", p.hex, RA.esc(p.name), ((p.area / G.landTotal()) * 100).toFixed(1).replace('.', RA.DEC), RA.fmt(p.troops), this.mini(RA.t("Take over"), `data-take="${p.id}"`, 'ok'));
     h += '</div>';
     if (humans.length) h += RA.t("<p class=\"note\">Players: {0}</p>", humans.map((p) => RA.esc(p.nick || p.name) + ' (' + RA.esc(p.name) + ')').join(', '));
     this.openSheet(h, (s) => {

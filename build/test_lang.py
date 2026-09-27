@@ -14,7 +14,8 @@ BS = set('je nije nisi ima nema igra igre igru igrač igrača država države dr
          'zabranjeno odustani nastavi pauza meni nazad zatvori otvori brzina karta karte mapa doba godina sekundi minuta '
          'dana dan sati jedinice jedinica rakete raketa gradnja gradi luka brod brodovi desant savezi diplomatija ekonomija '
          'istraživanje stablo tehnologija resursi trgovina porez kamata zajam vazal danak odbrana napadni zauzmi preuzmi '
-         'kompjuter računar lako srednje teško bez za od na se da ne ti mi vi oni nas vas'.split())
+         'kompjuter računar lako srednje teško bez za od na se da ne ti mi vi oni nas vas operacija dinastija komandant '
+         'komandanta profil svijet svijeta evropa evrope historija istorija'.split())
 
 
 NAMES = set()  # proper names (rulers, places, the default dynasty) may keep their letters
@@ -99,7 +100,7 @@ async def main():
             await ev('() => { const G = window.__ra.G; for (let i = 0; i < 900; i++) G.step(); G.me.gold += 5e6; }')
             await page.wait_for_timeout(600)
             await scan('game ' + era)
-            for sh in ['econSheet', 'armySheet', 'buildSheet', 'diploSheet', 'landSheet', 'strikeSheet', 'stanceSheet', 'quickSheet', 'menu', 'howTo']:
+            for sh in ['econSheet', 'armySheet', 'buildSheet', 'diploSheet', 'landSheet', 'strikeSheet', 'stanceSheet', 'quickSheet', 'intelSheet', 'menu', 'howTo']:
                 ok = await ev(f'() => {{ try {{ window.__ra.ui.{sh}(); return true; }} catch (e) {{ return String(e); }} }}')
                 await page.wait_for_timeout(250)
                 await scan(f'{sh} {era}')

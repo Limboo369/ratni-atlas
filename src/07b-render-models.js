@@ -5,7 +5,7 @@
 RA.unitSize = (cell) => RA.clamp(cell * 4.4, 25, 48);
 RA.Models = (() => {
   const cache = new Map(), previews = new Map();
-  const structures = new Set(['city','factory','barracks','market','fort','port','airport','silo','sam','dome','siege','hangar']);
+  const structures = new Set(['city','factory','barracks','market','fort','port','airport','silo','sam','dome','siege','hangar','eye']);
   const ink = '#172127', steel = '#889a99', light = '#c4cec4', dark = '#414e4c';
   function paint(c, type, color, era) {
     const old = ['rim', 'srednji'].includes(era), horseAge = old || era === 'napoleon';
@@ -229,6 +229,10 @@ RA.Models = (() => {
         c.beginPath();c.arc(0,3,20,Math.PI,0);c.closePath();c.fillStyle=wall;c.fill();c.strokeStyle=ink;c.lineWidth=1.2;c.stroke();
         c.beginPath();c.ellipse(0,3,9,20,0,Math.PI,0);c.strokeStyle=roof;c.stroke();
         line([[-17,-7],[17,-7]],roof,1);rect(-22,3,44,10,roof);stripe(-22,3,44);door(-4,6,8,7);base();
+      } else if(type==='eye') {
+        // the intelligence agency: a plain block with a mast and a dish
+        rect(-18,-8,36,21,wall);stripe(-18,-8,36);for(const x of [-12,-4,4,12]) rect(x-2,-3,4,4,pane);door(-3,6,6,7);
+        line([[10,-8],[10,-22]],roof,2);c.beginPath();c.arc(10,-22,6,Math.PI*.15,Math.PI*1.15);c.strokeStyle=trim;c.lineWidth=2;c.stroke();base();
       } else if(type==='siege') {
         for(const x of [-15,15]) wheel(x,10,4);
         line([[-20,6],[20,6]],roof,4);line([[-11,6],[0,-13],[11,6]],wall,3);

@@ -102,8 +102,8 @@ RA.lerp = (a, b, t) => a + (b - a) * t;
 RA.fmt = function (n) {
   n = Math.max(0, n);
   if (n < 1000) return String(Math.floor(n));
-  if (n < 1e6) return (n / 1e3).toFixed(n < 1e4 ? 1 : 0).replace('.', ',') + 'k';
-  return (n / 1e6).toFixed(n < 1e7 ? 2 : 1).replace('.', ',') + 'M';
+  if (n < 1e6) return (n / 1e3).toFixed(n < 1e4 ? 1 : 0).replace('.', RA.DEC) + 'k';
+  return (n / 1e6).toFixed(n < 1e7 ? 2 : 1).replace('.', RA.DEC) + 'M';
 };
 RA.fmtTime = function (sec) {
   sec = Math.floor(sec);

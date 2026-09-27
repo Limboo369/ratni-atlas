@@ -272,6 +272,28 @@ RA.FxLayer = L.Layer.extend({
       }
     }
 
+    // trenches (03g-trench.js): a dark zigzag on each cell, dashed while being dug ------------------
+    if (G.trenchCells && G.trenchCells.length && cell >= 1.6) {
+      const W = G.map.W;
+      ctx.lineWidth = Math.max(1.2, cell * 0.22);
+      for (const c of G.trenchCells) {
+        const v = G.trench[c];
+        if (!v) continue;
+        const x = gx((c % W) + 0.5), y = gy(((c / W) | 0) + 0.5);
+        if (!inView(x, y, 10)) continue;
+        const h = cell * 0.42;
+        ctx.strokeStyle = v === 2 ? 'rgba(58,40,22,0.9)' : 'rgba(58,40,22,0.45)';
+        ctx.beginPath();
+        ctx.moveTo(x - h, y + h * 0.4);
+        ctx.lineTo(x - h / 2, y - h * 0.4);
+        ctx.lineTo(x, y + h * 0.4);
+        ctx.lineTo(x + h / 2, y - h * 0.4);
+        ctx.lineTo(x + h, y + h * 0.4);
+        ctx.stroke();
+      }
+      if (G.trenchCells.length > 4000) G.trenchCells = G.trenchCells.filter((c) => G.trench[c]); // drop old ones
+    }
+
     // structures ----------------------------------------------------------------
     const ss = RA.clamp(cell * 1.8, 12, 25);
     for (const s of G.structs) {

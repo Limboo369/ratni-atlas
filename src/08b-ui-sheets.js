@@ -12,7 +12,7 @@ RA.WHY = {
   betray: RA.t("you betrayed them"), traitor: RA.t("you betrayed an ally"), nuke: RA.t("nukes"), strike: RA.t("missile strikes"), para: RA.t("paratroopers on their land"),
   tdecl: RA.t("you declined trade"), trade: RA.t("trade pact"), tcancel: RA.t("you stopped trading"), gift: RA.t("you sent them troops"), vdecl: RA.t("you asked them to be a vassal"),
   vassal: RA.t("vassal"), rebel: RA.t("a revolt against you"), loan: RA.t("you repaid a loan"), pledge: RA.t("you didn't repay a loan"), strait: RA.t("a closed strait"), bomb: RA.t("bombing"),
-  hegemon: RA.t("you are too strong"), deal: RA.t("deals"), ae: RA.t("aggressive expansion"), tech: RA.t("diplomacy (research)"), camp: RA.t("campaign mission"),
+  hegemon: RA.t("you are too strong"), spy: RA.t("your agent was caught"), deal: RA.t("deals"), ae: RA.t("aggressive expansion"), tech: RA.t("diplomacy (research)"), camp: RA.t("campaign mission"),
 };
 
 Object.assign(RA.UI.prototype, {
@@ -64,7 +64,12 @@ Object.assign(RA.UI.prototype, {
         r: RA.t("{0}<small>−{1} troops</small>", RA.fmt(G.unitCost(me, type)), RA.fmt(U.troops)),
       });
     }
-    h += RA.t("</div><div class=\"sec-t\">Your units</div>");
+    // the production queue: units come out by themselves when there is gold, troops and a free slot
+    const Q = me.queue || [], qt = ['inf', 'tank', 'art', 'ship', 'sub'].filter((t) => !RA.UNIT[t].na);
+    h += RA.t("</div><div class=\"sec-t\">Production queue ({0}/{1})</div><p class=\"explain\">Order ahead: each unit comes out as soon as there is gold, troops and a free slot (also while you're away) and goes to the border facing your enemy.</p>", Q.length, RA.CFG.QUEUE_MAX);
+    h += `<div class="queue-row">${Q.length ? Q.map((t) => `<span class="chip-q">${RA.icon(RA.UNIT[t].sym || t)}${RA.esc(RA.UNIT[t].name)}</span>`).join('') : RA.t("<span class=\"note\">Empty.</span>")}</div>`;
+    h += `<div class="queue-row">${qt.map((t) => this.mini('+ ' + RA.esc(RA.UNIT[t].name), `data-q="${t}"`, 'ok', Q.length >= RA.CFG.QUEUE_MAX)).join('')}${Q.length ? this.mini(RA.t("Clear"), 'data-qclear', 'warn') : ''}</div>`;
+    h += RA.t("<div class=\"sec-t\">Your units</div>");
     if (!me.units.length) h += RA.t("<p class=\"note\" style=\"margin-top:0\">You have no units yet.</p>");
     else {
       h += '<div class="list">';
@@ -95,6 +100,15 @@ Object.assign(RA.UI.prototype, {
         this.app.lmap.flyTo(G.map.latLngOfXY(u.x, u.y), Math.max(this.app.lmap.getZoom(), this.app.zoomAt(5.6)), { duration: 0.7 });
         this.setMode({ kind: 'unit', id: u.id });
       }));
+      s.querySelectorAll('[data-q]').forEach((b) => (b.onclick = () => {
+        this.act('queue', [b.dataset.q, 1]);
+        setTimeout(() => this.armySheet(true), G.online || G.long ? 1200 : 30);
+      }));
+      const qc = s.querySelector('[data-qclear]');
+      if (qc) qc.onclick = () => {
+        this.act('queue', ['', 0]);
+        setTimeout(() => this.armySheet(true), G.online || G.long ? 1200 : 30);
+      };
       s.querySelectorAll('[data-dis]').forEach((b) => (b.onclick = () => {
         const u = me.units.find((x) => x.id === +b.dataset.dis);
         if (!u) return;
@@ -112,18 +126,22 @@ Object.assign(RA.UI.prototype, {
     h += '<div class="btns">';
     for (const t of RA.STRUCT_ORDER) {
       const S = RA.STRUCT[t];
+      if (S.tree && !G.opts.tree) continue; // the intelligence agency comes with the tech tree
       const cost = G.structCost(me, t);
       h += this.btn({
         model: S.icon || t, cls: 'model-btn', icon: S.icon || t, attrs: `data-t="${t}"`, dis: me.gold < cost,
         t: `${S.name} <span class="d">(${me.n[t]})</span>`, d: RA.esc(S.desc), r: RA.fmt(cost),
       });
     }
+    h += this.btn({ icon: 'fort', attrs: 'data-trench', t: RA.t("Trenches"), d: RA.t("Along a border with one state: attackers there lose more and are slower. Gone where the land is lost."), r: RA.t("{0}/cell", RA.fmt(RA.CFG.TRENCH_GOLD)) });
     h += RA.t("</div><p class=\"note\">After choosing, tap a spot on your land. Buildings must be at least 4 cells apart, and a new city at least 5 cells from existing cities.</p>");
     this.openSheet(h, (s) => {
       s.querySelectorAll('[data-t]').forEach((b) => (b.onclick = () => {
         this.closeSheet();
         this.setMode({ kind: 'build', type: b.dataset.t });
       }));
+      const tb = s.querySelector('[data-trench]');
+      if (tb) tb.onclick = () => (this.closeSheet(), this.setMode({ kind: 'trench' }));
     });
   },
 
@@ -197,7 +215,7 @@ Object.assign(RA.UI.prototype, {
     h += '<div class="btns">';
     if (!me.n.silo) {
       const cost = G.structCost(me, 'silo');
-      h += this.btn({ icon: SN.icon || 'silo', cls: 'primary', attrs: 'data-silo', dis: me.gold < cost, t: `Izgradi: ${SN.name}`, d: me.gold >= cost ? RA.t("Then tap a spot on your land") : RA.t("Not enough gold"), r: RA.fmt(cost) });
+      h += this.btn({ icon: SN.icon || 'silo', cls: 'primary', attrs: 'data-silo', dis: me.gold < cost, t: RA.t("Build: {0}", SN.name), d: me.gold >= cost ? RA.t("Then tap a spot on your land") : RA.t("Not enough gold"), r: RA.fmt(cost) });
     }
     const peace = G.inPeace();
     for (const t of RA.missileTypes()) {
@@ -282,6 +300,7 @@ Object.assign(RA.UI.prototype, {
       if (!(O.human && !O.ai) && !G.vassalErr(me, O)) b.push(this.mini(RA.t("Vassal"), `data-do="vas:${O.id}"`, 'ok', false, 'flag'));
     }
     if (O.type !== 'bot') b.push(this.mini(RA.t("Negotiate"), `data-do="deal:${O.id}"`, '', false, 'trade'));
+    if (G.opts.tree && me.n.intel && O.type !== 'bot' && !G.isFriendly(me, O)) b.push(this.mini(RA.t("Intelligence"), `data-do="spy:${O.id}"`, '', false, 'eye'));
     if (G.online && O.human && O !== me) b.push(this.mini(RA.t("Report"), `data-do="rep:${O.id}"`, 'warn'));
     // Conquest League 5v5: vote to kick a teammate (4 of the other 4; the computer takes the state)
     if (G.opts.league === 5 && me && O.human && O !== me && O.team === me.team && !O.kicked) b.push(this.mini(me.kickVote === O.id ? RA.t("Voted") : RA.t("Kick"), `data-do="kick:${O.id}"`, 'warn', me.kickVote === O.id));
@@ -298,6 +317,7 @@ Object.assign(RA.UI.prototype, {
       return o && this.dealSheet(o.from, { give: o.want, want: o.give, reply: o.id });
     }
     if (act === 'deal') return this.dealSheet(id);
+    if (act === 'spy') return this.intelSheet(id);
     if (act === 'rep') return this.reportSheet(this.G.P[id]);
     if (act === 'kick') return this.confirm(RA.t("Kick {0}?", RA.esc(this.G.P[id].nick || this.G.P[id].name)), RA.t("You vote to kick them from the team. When 4 teammates vote, the computer takes over the state."), RA.t("Vote"), () => this.act('kick', [id]));
     const G = this.G, me = G.me, O = G.P[id];
@@ -378,7 +398,7 @@ Object.assign(RA.UI.prototype, {
         const land = me.nbCache && me.nbCache.has(oid);
         const via = [land ? RA.t("by land") : '', me.n.port && o.n.port ? RA.t("by sea") : ''].filter(Boolean).join(RA.t(" and ")) || RA.t("no route — ports or a border needed");
         const rs = G.deps && o.res ? RA.t(" · has: ") + ([0, 1, 2].filter((s) => o.res[s]).map((s) => `${RA.resKind(s, G.era).name} ${Math.round(G.resRate(o, s) * 100)}%`).join(', ') || RA.t("nothing")) : '';
-        h += row(o, `trgovina: ${via}${rs}`, this.mini(RA.t("Stop"), `data-do="endT:${oid}"`, 'warn'));
+        h += row(o, RA.t("trade: {0}{1}", via, rs), this.mini(RA.t("Stop"), `data-do="endT:${oid}"`, 'warn'));
       }
       h += '</div>';
     }
@@ -420,15 +440,28 @@ Object.assign(RA.UI.prototype, {
     const cityLine = city ? `${city.tier === 3 ? RA.t("Capital") : city.tier === 2 ? RA.t("Metropolis") : RA.t("City")} ${RA.esc(city.name)} · ` : '';
     const oid = G.owner[c];
     const O = oid ? G.P[oid] : null;
-    const pct = (p) => ((p.area / G.landTotal()) * 100).toFixed(1).replace('.', ',') + '%';
+    const pct = (p) => ((p.area / G.landTotal()) * 100).toFixed(1).replace('.', RA.DEC) + '%';
     const unitsNear = G.units.filter((u) => !u.dead && Math.hypot(u.x - cx - 0.5, u.y - cy - 0.5) <= 4);
     const unitLine = unitsNear.length ? RA.t("<p class=\"explain\">Units here: {0}</p>", unitsNear.map((u) => `${RA.UNIT[u.type].name} (${RA.esc(G.P[u.owner].name)}, ${Math.round((u.hp / RA.UNIT[u.type].hp) * 100)}%)`).join(', ')) : '';
     let h = '';
     if (O === me) {
       h += this.head(RA.t("Your land"), cityLine + terr, me.hex) + unitLine;
+      // my buildings here: level and upgrade (03f-upgrade.js)
+      const mine = G.structs.filter((s) => !s.dead && s.owner === me.id && Math.abs(s.x - cx) <= 3 && Math.abs(s.y - cy) <= 3 && RA.UP_DESC[s.type]);
+      if (mine.length) {
+        h += RA.t("<div class=\"sec-t\">Your buildings here</div><div class=\"list\">");
+        for (const s of mine) {
+          const lv = s.lv || 1, cost = G.upCost(me, s);
+          const st = !s.ready ? RA.t("under construction") : s.upTo ? RA.t("upgrading to level {0}", s.upTo) : lv >= RA.UP_MAX ? RA.t("top level") : RA.UP_DESC[s.type];
+          const b = s.ready && !s.upTo && lv < RA.UP_MAX ? this.mini(RA.t("Level {0} · {1}", lv + 1, RA.fmt(cost)), `data-up="${s.id}"`, 'ok', me.gold < cost) : '';
+          h += `<div class="prow wide"><div class="pn"><div class="nm">${RA.esc(s.type === 'city' ? s.name : RA.STRUCT[s.type].name)} · ${RA.t("level {0}", lv)}</div><div class="d">${RA.esc(st)}</div></div><div class="bb">${b}</div></div>`;
+        }
+        h += '</div>';
+      }
       h += RA.t("<div class=\"sec-t\">Build here</div><div class=\"grid2\">");
       for (const t of RA.STRUCT_ORDER) {
         const S = RA.STRUCT[t];
+        if (S.tree && !G.opts.tree) continue;
         const why = G.canBuild(me, t, c);
         const ok = typeof why === 'number';
         h += this.btn({ icon: S.icon || t, attrs: `data-build="${t}"`, dis: !ok, t: S.short || S.name, d: ok ? RA.fmt(G.structCost(me, t)) : RA.esc(why.replace(/\.$/, '')) });
@@ -449,6 +482,10 @@ Object.assign(RA.UI.prototype, {
         s.querySelectorAll('[data-unit]').forEach((b) => (b.onclick = () => {
           this.closeSheet();
           this.act('rec', [b.dataset.unit, c]);
+        }));
+        s.querySelectorAll('[data-up]').forEach((b) => (b.onclick = () => {
+          this.act('up', [+b.dataset.up]);
+          setTimeout(() => this.cellSheet(c, true), G.online || G.long ? 1200 : 30);
         }));
       }, keep);
       return;
@@ -581,7 +618,7 @@ Object.assign(RA.UI.prototype, {
     const G = this.G, me = G.me;
     if ((M.kind !== 'nuke' && M.kind !== 'mirv') || !(me.nukeUntil > G.tick)) return '';
     const left = me.nukeUntil - G.tick, pct = Math.round((left / RA.CFG.NUKE_COOL) * 100);
-    return RA.t("<span class=\"nuke-bar\" title=\"The price returns to normal\"><i style=\"width:{0}%\"></i></span><span class=\"nuke-up\">Dearer ×{1} · normal price in {2}</span>", pct, G.nukeMul(me).toFixed(1).replace('.', ','), RA.dur(left));
+    return RA.t("<span class=\"nuke-bar\" title=\"The price returns to normal\"><i style=\"width:{0}%\"></i></span><span class=\"nuke-up\">Dearer ×{1} · normal price in {2}</span>", pct, G.nukeMul(me).toFixed(1).replace('.', RA.DEC), RA.dur(left));
   },
   /* offers and demands (plan 15): "Zahtijevam" from them, "Nudim" from me; pre = a counter-offer to fill in */
   dealSheet(oid, pre) {
@@ -639,12 +676,14 @@ Object.assign(RA.UI.prototype, {
     const h = this.head(RA.t("Economy"), RA.t("Treasury · development · trade")) +
       RA.t("<div class=\"economy-overview\"><div><span>Treasury</span><strong>{0}</strong><small>gold available</small></div><div><span>Income</span><strong>+{1}</strong><small>gold / second</small></div><div><span>Army</span><strong>{2}{3}</strong><small>troops / second</small></div></div>", RA.fmt(me.gold), RA.fmt(me.goldRate || 0), me.growRate >= 0 ? '+' : '−', RA.fmt(Math.abs(me.growRate || 0))) +
       RA.t("<div class=\"field\"><span class=\"lab\">Tax: {0}</span><div class=\"seg wrap\" id=\"taxSeg\" role=\"group\" aria-label=\"Tax\">{1}</div>\n      <p class=\"note\">Higher tax: more gold, but the army grows more slowly. Lower: the army grows faster, less gold.<br>Now: gold {2}, army growth {3}.</p></div>\n      <div class=\"field\"><span class=\"lab\">Interest</span><p class=\"note\">Saved gold earns 1% a minute, at most a quarter of your income. Now: <b>+{4}/s</b>.</p></div>", RA.esc(cur.name), T.map((t, i) => `<button data-v="${i}" aria-pressed="${i === me.tax}">${RA.esc(t.name)}</button>`).join(''), cur.g === 1 ? RA.t("normal") : pct(cur.g), cur.grow === 1 ? RA.t("normal{=2}") : pct(cur.grow), RA.fmt(me.interest || 0)) +
-      this.resHtml() + this.loanHtml() + this.straitHtml();
+      this.resHtml() + this.loanHtml() + this.straitHtml() +
+      (G.opts.tree ? RA.t("<div class=\"btns\"><button class=\"btn\" data-intel>{0}<span><span class=\"t\">Intelligence agency</span><br><span class=\"d\">{1}</span></span></button></div>", RA.icon('eye'), me.n.intel ? RA.t("Agents: {0}/{1}", G.intelOf(me).agents.length, RA.CFG.INTEL_MAX) : RA.t("Not built yet (Build)")) : '');
     this.openSheet(this.techHtml(h), (s) => {
       s.querySelectorAll('[data-tech]').forEach((b) => (b.onclick = () => {
         this.act('tech', [b.dataset.tech]);
         if (G.online || G.long) setTimeout(() => this.econSheet(true), 400);
       }));
+      s.querySelectorAll('[data-intel]').forEach((b) => (b.onclick = () => this.intelSheet()));
       s.querySelectorAll('[data-rsch]').forEach((b) => (b.onclick = () => {
         this.act('rsch', [b.dataset.rsch]);
         setTimeout(() => this.econSheet(true), G.online || G.long ? 1200 : 50);
@@ -871,7 +910,7 @@ Object.assign(RA.UI.prototype, {
       : kind === 'lost'
       ? RA.t("Your state fell after {0}.", RA.dur(G.tick))
       : RA.t("The winner is {0} ({1}).", G.winner ? G.winner.name : RA.t("someone else"), where);
-    const peak = me ? ((me.peak / G.map.landArea) * 100).toFixed(1).replace('.', ',') : '0';
+    const peak = me ? ((me.peak / G.map.landArea) * 100).toFixed(1).replace('.', RA.DEC) : '0';
     $('endStats').innerHTML = RA.t("<div><div class=\"k\">Peak</div><div class=\"v\">{0}%</div></div><div><div class=\"k\">Cities conquered</div><div class=\"v\">{1}</div></div><div><div class=\"k\">States destroyed</div><div class=\"v\">{2}</div></div>", peak, me ? me.stats.citiesTaken : 0, me ? me.stats.kills : 0);
     $('endTime').textContent = RA.dur(G.tick);
     $('watchBtn').hidden = !!(G.state === 'over');

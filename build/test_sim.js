@@ -527,6 +527,145 @@ const check = (ok, msg) => {
     const nt = RA.newGame(RA.eraMap(m, 'danas', 'granice'), { seed: 1, difficulty: 'srednje', cityStates: 0, era: 'danas', start: 'granice', gm: 'klasik' });
     check(/tech tree/.test(nt.startResearch(nt.P[1].id, 'drone')), 'research: only with the tech tree');
   }
+  // the intelligence agency (Darko, 27. 9.): agents, training, missions, and the limits that keep it from being too strong
+  {
+    RA.applyEra('danas');
+    const rr = { code: 'intel1', seed: 6, sub: 5, tickMs: 1000, set: { map: 'evropa', reg: 'balkan', era: 'danas', gm: 'klasik', dif: 'srednje', cs: 0, peace: 0, res: 0, tree: 1, nn: 0, days: 1 } };
+    const G = RA.longGame(m, rr);
+    const me = G.P.find((p) => p && p.iso === 'SRB'), T = G.P.find((p) => p && p.iso === 'HRV');
+    RA.longApply(G, [0, 0, 'join', [me.id, 'Ana']]);
+    me.gold = 5e7;
+    const cmd = (a) => RA.longApply(G, [0, 0, 'intel', a]).r;
+    check(/First build/.test(cmd(['rec'])), 'intel: no agents without an agency');
+    const c = G._bfs(me.capital, (n) => G.owner[n] === me.id, (n) => typeof G.canBuild(me, 'intel', n) === 'number', 500);
+    RA.longApply(G, [0, 0, 'build', ['intel', c]]);
+    const c2 = G._bfs(me.capital, (n) => G.owner[n] === me.id, (n) => typeof G.canBuild(me, 'intel', n) === 'number', 900);
+    check(/Only one/.test(G.canBuild(me, 'intel', c2 >= 0 ? c2 : c)), 'intel: one agency per state');
+    for (let i = 0; i < 60 && !me.n.intel; i++) G.step();
+    check(me.n.intel === 1, 'intel: the agency is built');
+    const ids = [cmd(['rec']), cmd(['rec']), cmd(['rec'])].map((r) => r && r.rec);
+    check(ids.every((x) => x > 0) && /most agents/.test(cmd(['rec'])), `intel: at most ${RA.CFG.INTEL_MAX} agents`);
+    check(/busy/.test(cmd(['spy', ids[0], T.id, 'scout'])), 'intel: a new agent is not ready at once');
+    for (let i = 0; i < RA.CFG.INTEL_REC_SECS; i++) G.step();
+    const tr = cmd(['train', ids[0]]);
+    check(tr && tr.lv === 1, 'intel: training started');
+    for (let i = 0; i < RA.CFG.INTEL_TRAIN_SECS; i++) G.step();
+    check(G.intelOf(me).agents[0].lv === 1, 'intel: trained to level 1');
+    // the odds: level raises them, the target's alert and its own agency lower them
+    const o0 = G.intelOdds(me, T, 0, 'sab'), o3 = G.intelOdds(me, T, 3, 'sab');
+    T.n.intel = 1;
+    const oCI = G.intelOdds(me, T, 3, 'sab');
+    T.n.intel = 0;
+    check(o0 < o3 && oCI < o3 && o3 <= 0.95, `intel: odds ${o0.toFixed(2)} (level 0) < ${o3.toFixed(2)} (level 3); their agency: ${oCI.toFixed(2)}`);
+    // sabotage: their silo stops; the same silo cannot be sabotaged again right away
+    T.gold = 1e7;
+    const sc = G._bfs(T.capital, (n) => G.owner[n] === T.id, (n) => typeof G.canBuild(T, 'silo', n) === 'number', 500);
+    G.build(T.id, 'silo', sc);
+    for (let i = 0; i < 60 && !T.n.silo; i++) G.step();
+    let sabOk = false, tries = 0, caught = 0;
+    for (; tries < 12 && !sabOk; tries++) {
+      const ag = G.intelOf(me).agents.find((x) => x.busy <= G.clock());
+      if (!ag) {
+        if (G.intelOf(me).agents.length < RA.CFG.INTEL_MAX) cmd(['rec']);
+        for (let i = 0; i < 60; i++) G.step();
+        continue;
+      }
+      const n0 = G.intelOf(me).agents.length;
+      ag.lv = 3; // a well trained agent (the odds are checked above)
+      G.intelOf(T).alert.length = 0;
+      cmd(['spy', ag.id, T.id, 'sab', 'silo']);
+      for (let i = 0; i < RA.CFG.INTEL_MISSION_SECS; i++) G.step();
+      if (G.intelOf(me).agents.length < n0) caught++;
+      sabOk = G.structs.some((s) => s.owner === T.id && s.type === 'silo' && s.empUntil > G.tick);
+    }
+    check(sabOk, `intel: sabotage stops their silo (after ${tries} missions, ${caught} agents caught)`);
+    const silo = G.structs.find((s) => s.owner === T.id && s.type === 'silo');
+    check(silo && silo.sabImmune > silo.empUntil, 'intel: a sabotaged building is immune for a while after');
+    check(G.intelOf(T).alert.length > 0 && G.intelOdds(me, T, 3, 'sab') < o3, 'intel: missions raise the target\'s alert');
+    check(/Unknown mission|busy/.test(cmd(['spy', 1, T.id, '__proto__'])), 'intel: bad mission names refused');
+    const nt = RA.newGame(RA.eraMap(m, 'danas', 'granice'), { seed: 1, difficulty: 'srednje', cityStates: 0, era: 'danas', start: 'granice', gm: 'klasik' });
+    check(/tech tree/.test(nt.canBuild(nt.P[1], 'intel', nt.P[1].capital)), 'intel: only with the tech tree');
+    // determinism: the same commands give the same game
+    const G2 = RA.longGame(m, rr);
+    check(typeof G2.hash() === 'number', 'intel: game rebuilds');
+  }
+  // the production queue (Darko, 27. 9.): units come out by themselves when gold, troops and a slot allow
+  {
+    RA.applyEra('danas');
+    const G = RA.newGame(RA.eraMap(m, 'danas', 'granice'), { seed: 3, difficulty: 'srednje', cityStates: 0, era: 'danas', start: 'granice', gm: 'klasik', peace: 0 });
+    RA.placeHuman(G, G.P.find((p) => p && p.iso === 'SRB').nation.c, 'Q');
+    RA.startGame(G);
+    const me = G.me;
+    me.gold = 0;
+    me.troops = Math.max(me.troops, 3e5);
+    const q = (t, d) => G.exec(me.id, 'queue', [t, d]);
+    q('inf', 1), q('inf', 1), q('inf', 1);
+    check(me.queue.length === 3 && /Unknown unit/.test(q('toString', 1)), 'queue: three infantry queued, bad names refused');
+    for (let i = 0; i < 30; i++) G.step();
+    check(me.units.length === 0 && me.queue.length === 3, 'queue: nothing without gold');
+    me.gold = 5e6;
+    for (let i = 0; i < 40; i++) G.step();
+    check(me.units.length === 3 && me.queue.length === 0, `queue: out as soon as there is gold (${me.units.length} units)`);
+    const cap = G.unitCap(me);
+    for (let i = 0; i < cap + 2; i++) q('inf', 1);
+    me.gold = 5e7;
+    for (let i = 0; i < 200; i++) G.step();
+    check(me.units.length === cap && me.queue.length > 0, `queue: waits for a free slot (${me.units.length}/${cap}, ${me.queue.length} waiting)`);
+    q('', 0);
+    check(me.queue.length === 0, 'queue: cleared');
+  }
+  // building levels (Darko, 27. 9.): upgrade a ready building to level 2 and 3
+  {
+    RA.applyEra('danas');
+    const G = RA.newGame(RA.eraMap(m, 'danas', 'granice'), { seed: 5, difficulty: 'srednje', cityStates: 0, era: 'danas', start: 'granice', gm: 'klasik', peace: 0 });
+    RA.placeHuman(G, G.P.find((p) => p && p.iso === 'SRB').nation.c, 'U');
+    RA.startGame(G);
+    const me = G.me;
+    me.gold = 5e7;
+    const c = G._bfs(me.capital, (n) => G.owner[n] === me.id, (n) => typeof G.canBuild(me, 'barracks', n) === 'number', 500);
+    const b = G.build(me.id, 'barracks', c);
+    check(/finish/.test(G.exec(me.id, 'up', [b.id])), 'upgrade: not before it is built');
+    for (let i = 0; i <= RA.STRUCT.barracks.time; i++) G.step();
+    const cap1 = G.unitCap(me), max1 = G.computeMax(me);
+    const g0 = me.gold, r = G.exec(me.id, 'up', [b.id]);
+    check(r && r.lv === 2 && g0 - me.gold === G.upCost(me, { type: 'barracks', lv: 1 }), `upgrade: started, paid ${RA.fmt(g0 - me.gold)}`);
+    check(/already/.test(G.exec(me.id, 'up', [b.id])), 'upgrade: one at a time per building');
+    for (let i = 0; i <= RA.STRUCT.barracks.time; i++) G.step();
+    check(b.lv === 2 && G.unitCap(me) === cap1 + 1 && G.computeMax(me) > max1, `upgrade: level 2 — unit slots ${cap1} → ${G.unitCap(me)}, army capacity up`);
+    G.exec(me.id, 'up', [b.id]);
+    for (let i = 0; i <= RA.STRUCT.barracks.time * 2; i++) G.step();
+    check(b.lv === 3 && /top level/.test(G.exec(me.id, 'up', [b.id])), 'upgrade: level 3 is the top');
+    const other = G.P.find((p) => p && p.alive && p !== me && p.type === 'nation');
+    check(/not your/.test(G.exec(other.id, 'up', [b.id])), "upgrade: only your own buildings");
+    G._destroyStruct(b);
+    check(G.lvx(me, 'barracks') === 0 && G.unitCap(me) === cap1 - RA.CFG.UNIT_PER_BARRACKS, 'upgrade: a destroyed building takes its levels with it');
+  }
+  // trenches (Darko, 27. 9.): along a border with one state; attackers there pay more; gone with the land
+  {
+    RA.applyEra('danas');
+    const G = RA.newGame(RA.eraMap(m, 'danas', 'granice'), { seed: 8, difficulty: 'srednje', cityStates: 0, era: 'danas', start: 'granice', gm: 'klasik', peace: 0 });
+    RA.placeHuman(G, G.P.find((p) => p && p.iso === 'SRB').nation.c, 'T');
+    RA.startGame(G);
+    const me = G.me, W = G.map.W;
+    me.gold = 5e6;
+    check(/border/.test(G.exec(me.id, 'dig', [me.capital])), 'trench: not inside the country');
+    const HRV = G.P.find((p) => p && p.iso === 'HRV' && p.alive) || G.P.find((p) => p && p.alive && p !== me && p.type === 'nation' && G.hasBorderWith(me, p.id));
+    let bc = -1;
+    for (let i = 0; i < me.tiles && bc < 0; i++) {
+      const c = me.cells[i];
+      if ([c - 1, c + 1, c - W, c + W].some((n) => G.owner[n] === HRV.id)) bc = c;
+    }
+    const g0 = me.gold, r = G.exec(me.id, 'dig', [bc]);
+    check(r && r.dig > 3 && r.foe === HRV.id && g0 - me.gold === r.cost, `trench: dug along the border with ${HRV.name} (${r && r.dig} cells, ${RA.fmt(r && r.cost)})`);
+    const cells = [];
+    for (let c = 0; c < G.map.N; c++) if (G.trench[c]) cells.push(c);
+    check(cells.every((c) => G.owner[c] === me.id && [c - 1, c + 1, c - W, c + W].some((n) => G.owner[n] === HRV.id)), 'trench: only on my cells touching that state');
+    check(/already/.test(G.exec(me.id, 'dig', [bc])), 'trench: the same stretch only once');
+    for (let i = 0; i <= RA.CFG.TRENCH_SECS * 10; i++) G.step();
+    check(cells.every((c) => G.trench[c] === 2 || G.owner[c] !== me.id), 'trench: ready after its time');
+    G.setOwner(cells[0], HRV.id);
+    check(G.trench[cells[0]] === 0 && me.trenchN === cells.length - 1, 'trench: a lost cell loses its trench');
+  }
   // the server steps many Focus games in one process (deploy/game/simhost.js), switching the era tables between them:
   // a game stepped between steps of another era's game must stay the same as the game alone
   const rec = (code, era, seed) => ({ code, seed, set: { map: 'evropa', reg: 'balkan', era, gm: 'klasik', dif: 'srednje', cs: 0, peace: 0, res: 1, tree: 1, nn: 0 } });

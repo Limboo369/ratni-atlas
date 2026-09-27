@@ -3,7 +3,7 @@
    can replay exactly the same inputs on every device (lockstep). Args come from other players' devices:
    they are validated here and never trusted. */
 
-RA.CMD_KINDS = ['atk', 'boat', 'para', 'build', 'rec', 'mv', 'dis', 'mis', 'mob', 'ret', 'aReq', 'aRes', 'tReq', 'tRes', 'ext', 'brk', 'tEnd', 'give', 'help', 'ai', 'back', 'rcl', 'png', 'qm', 'tax', 'vas', 'loan', 'pay', 'str', 'buy', 'air', 'bomb', 'tech', 'stance', 'offer', 'offerRes', 'surr', 'endv', 'kick', 'rsch'];
+RA.CMD_KINDS = ['atk', 'boat', 'para', 'build', 'rec', 'mv', 'dis', 'mis', 'mob', 'ret', 'aReq', 'aRes', 'tReq', 'tRes', 'ext', 'brk', 'tEnd', 'give', 'help', 'ai', 'back', 'rcl', 'png', 'qm', 'tax', 'vas', 'loan', 'pay', 'str', 'buy', 'air', 'bomb', 'tech', 'stance', 'offer', 'offerRes', 'surr', 'endv', 'kick', 'rsch', 'intel', 'queue', 'up', 'dig'];
 /* pings on the map and quick messages, seen by the sender's allies and team (plan item 57) */
 RA.PINGS = [
   { name: RA.t("Attack here"), icon: 'attack', color: '#ff5d5d' },
@@ -133,6 +133,18 @@ RA.QUICK_MSGS = [RA.t("Attacking!"), RA.t("I need help!"), RA.t("Watch out, we'r
       case 'rsch':
         // weapons research (03c-research.js): [key]
         return typeof a[0] === 'string' && Object.prototype.hasOwnProperty.call(RA.RSCH, a[0]) ? this.startResearch(pid, a[0]) : RA.t("Unknown research.");
+      case 'dig':
+        // trenches along a border (03g-trench.js): [cell]
+        return this.dig(pid, cell(a[0]));
+      case 'up':
+        // upgrade a building (03f-upgrade.js): [building id]
+        return this.upgrade(pid, id(a[0]));
+      case 'queue':
+        // the production queue (03e-queue.js): [unit type, +1 | -1 | 0]
+        return this.queueCmd(pid, a[0], a[1] === 0 ? 0 : a[1] < 0 ? -1 : 1);
+      case 'intel':
+        // the intelligence agency (03d-intel.js): [op, …]
+        return Array.isArray(a) && typeof a[0] === 'string' ? this.intelCmd(pid, a) : RA.t("Unknown order.");
       case 'kick':
         // vote kick (Conquest League 5v5): [player of my team]
         return this.opts.league ? this.lgKick(p, player(a[0])) : RA.t("Only in the league.");
