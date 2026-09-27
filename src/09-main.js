@@ -153,7 +153,7 @@ RA.App = class {
     const M = this.map;
     const lmap = (this.lmap = L.map('map', {
       zoomControl: false,
-      attributionControl: true,
+      attributionControl: false, // Darko 27. 9.: no credits on the map (they are in "About the game and map sources")
       zoomAnimation: false,
       fadeAnimation: false,
       markerZoomAnimation: false,
@@ -168,7 +168,6 @@ RA.App = class {
       inertiaDeceleration: 2600,
       tapTolerance: 14,
     }));
-    lmap.attributionControl.setPrefix(false);
     const pane = (name, z) => {
       const p = lmap.createPane(name);
       p.style.zIndex = z;

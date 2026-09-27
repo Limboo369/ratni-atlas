@@ -1505,6 +1505,8 @@ html[lang=sr] .replay-bar::before{content:"SNIMAK PARTIJE"}
 .report-list li{padding:12px 14px;border-radius:4px;background:#b0c2c708}
 .report-rank li{padding:10px 12px;border-radius:4px;flex-wrap:wrap}
 .report-more summary{min-height:44px;padding:12px 0}
+/* Darko 27. 9.: no scale bar and no credits over the map (credits: "About the game and map sources") */
+.leaflet-control-scale, .leaflet-control-attribution { display: none !important; }
 
 #app{touch-action:none}#sheet,.screen{touch-action:pan-y}</style>
 <div id="app">
@@ -18857,7 +18859,7 @@ RA.App = class {
     const M = this.map;
     const lmap = (this.lmap = L.map('map', {
       zoomControl: false,
-      attributionControl: true,
+      attributionControl: false, // Darko 27. 9.: no credits on the map (they are in "About the game and map sources")
       zoomAnimation: false,
       fadeAnimation: false,
       markerZoomAnimation: false,
@@ -18872,7 +18874,6 @@ RA.App = class {
       inertiaDeceleration: 2600,
       tapTolerance: 14,
     }));
-    lmap.attributionControl.setPrefix(false);
     const pane = (name, z) => {
       const p = lmap.createPane(name);
       p.style.zIndex = z;
@@ -21742,7 +21743,7 @@ Object.assign(RA.UI.prototype, {
   },
 });
 
-RA.BUILD = 'c89b4ed0';
+RA.BUILD = 'c63462b8';
 new RA.App().boot();
 }
 function __raFallback(){

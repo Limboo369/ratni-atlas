@@ -1500,3 +1500,5 @@ html[lang=sr] .replay-bar::before{content:"SNIMAK PARTIJE"}
 .report-list li{padding:12px 14px;border-radius:4px;background:#b0c2c708}
 .report-rank li{padding:10px 12px;border-radius:4px;flex-wrap:wrap}
 .report-more summary{min-height:44px;padding:12px 0}
+/* Darko 27. 9.: no scale bar and no credits over the map (credits: "About the game and map sources") */
+.leaflet-control-scale, .leaflet-control-attribution { display: none !important; }
