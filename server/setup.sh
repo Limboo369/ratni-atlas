@@ -77,4 +77,21 @@ sed -i '/^installer = nginx$/d' /etc/letsencrypt/renewal/*.conf 2>/dev/null || t
 
 install -m 0755 /tmp/deovilab-deploy /usr/local/bin/deovilab-deploy
 
+# Opterećenje kroz vrijeme (Darko 28. 9.): sysstat bilježi CPU, RAM, disk, load i mrežu svakih 10 min i čuva 28 dana;
+# deovilab-dstats (cron) isto za svaki Docker kontejner. Grafikone crta .github/workflows/stats.yml (server/stats.sh).
+"${APT[@]}" install sysstat
+sed -i 's/^ENABLED=.*/ENABLED="true"/' /etc/default/sysstat
+sed -i -E 's/^HISTORY=.*/HISTORY=28/; s/^SADC_OPTIONS=.*/SADC_OPTIONS="-S DISK,XDISK"/' /etc/sysstat/sysstat
+systemctl enable --now sysstat.service sysstat-collect.timer sysstat-summary.timer || systemctl enable --now sysstat.service
+cat > /usr/local/bin/deovilab-dstats <<'EOF'
+#!/bin/bash
+# CPU i RAM svakog kontejnera (cron, svakih 10 min) u /var/log/deovilab/dstats.csv, zadnjih 28 dana
+mkdir -p /var/log/deovilab
+f=/var/log/deovilab/dstats.csv now=$(date +%s)
+docker stats --no-stream --format '{{.Name}};{{.CPUPerc}};{{.MemUsage}}' 2>/dev/null | sed "s/^/$now;/" >> "$f"
+awk -F';' -v s=$((now - 28 * 86400)) '$1 >= s' "$f" > "$f.tmp" && mv "$f.tmp" "$f"
+EOF
+chmod 0755 /usr/local/bin/deovilab-dstats
+echo '*/10 * * * * root /usr/local/bin/deovilab-dstats >/dev/null 2>&1' > /etc/cron.d/deovilab-dstats
+
 echo "OK: $(docker --version), $(docker compose version), $(nginx -v 2>&1)"

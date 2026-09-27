@@ -45,6 +45,9 @@ say so first: asset delivery (build + deploy + tests) is not wired up yet.
   `.github/workflows/setup.yml` on every push to `server/**`; it is idempotent.
 - `server/deploy.sh` is installed as `deovilab-deploy <app> <domain> <port>`: `docker compose up`, certificate, nginx site.
 - `.github/workflows/audit.yml` prints the server state (read only).
+- Load over time: `setup.sh` installs sysstat (CPU, RAM, disk, load, network every 10 min, 28 days) and `deovilab-dstats`
+  (cron: every container's CPU/RAM); `.github/workflows/stats.yml` (`server/stats.sh` on the server, `server/stats_chart.py`
+  on the runner) shows a summary on the run's page and the charts in its `grafikoni` artifact (read only).
 - Secrets: `SERVER_IP`, `SERVER_SSH_KEY` (root, key only — password login is off), `SERVER_HOST_KEY` (pinned; workflows
   use `StrictHostKeyChecking yes`). Server-side steps are serialized with `flock /run/deovilab.lock`.
 

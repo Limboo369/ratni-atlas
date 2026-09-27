@@ -1,0 +1,37 @@
+name: Grafikoni servera
+# Opterećenje servera kroz vrijeme (CPU, RAM, disk, load, mreža, svaki kontejner) — samo čitanje.
+# Sažetak je na stranici pokretanja, grafikoni u fajlu "grafikoni" na dnu te stranice.
+on:
+  workflow_dispatch:
+    inputs:
+      days:
+        description: 'Koliko dana unazad (1–28)'
+        default: '7'
+
+jobs:
+  stats:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Podaci sa servera (samo čitanje)
+        env:
+          IP: ${{ secrets.SERVER_IP }}
+          KEY: ${{ secrets.SERVER_SSH_KEY }}
+          HOST_KEY: ${{ secrets.SERVER_HOST_KEY }}
+          DAYS: ${{ inputs.days }}
+        run: |
+          mkdir -p ~/.ssh && printf '%s\n' "$KEY" > ~/.ssh/id_ed25519 && chmod 600 ~/.ssh/id_ed25519
+          printf '%s %s\n' "$IP" "$HOST_KEY" > ~/.ssh/known_hosts
+          printf 'Host *\n  StrictHostKeyChecking yes\n  BatchMode yes\n  ServerAliveInterval 20\n' > ~/.ssh/config
+          D=$(printf '%s' "$DAYS" | tr -cd '0-9'); D=${D:-7}
+          ssh root@"$IP" "DAYS=$D bash -s" < server/stats.sh > stats.txt
+          wc -l stats.txt
+      - name: Grafikoni
+        run: |
+          pip install -q matplotlib
+          python3 server/stats_chart.py stats.txt "$GITHUB_STEP_SUMMARY" grafikoni
+      - uses: actions/upload-artifact@v4
+        with:
+          name: grafikoni
+          path: grafikoni/
+          retention-days: 30
