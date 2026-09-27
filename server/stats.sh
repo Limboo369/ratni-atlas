@@ -35,7 +35,8 @@ docker ps -a --format '{{.Names}};{{.Status}};{{.Image}}' 2>/dev/null
 echo "@@ sizes"
 du -sb /srv/apps/* /srv/backups/* /var/lib/docker/volumes/* /var/log /var/lib/docker 2>/dev/null | awk -F'\t' '{print $2 ";" $1}'
 echo "@@ top"
-ps -eo pcpu,rss,etimes,comm --sort=-pcpu | head -12 | tail -11 | awk '{print $4 ";" $1 ";" $2 * 1024 ";" $3}'
+# the biggest in memory, with the CPU time they used since they started (not this script's own tools)
+ps -eo rss,times,etimes,comm --sort=-rss --no-headers | awk '$4 !~ /^(ps|awk|bash|sshd|sadf|du|head)$/' | head -10 | awk '{print $4 ";" $2 ";" $1 * 1024 ";" $3}'
 
 if command -v sadf >/dev/null; then
   files=$(find /var/log/sysstat -maxdepth 1 -name 'sa[0-9]*' -newermt "@$since" 2>/dev/null | sort)

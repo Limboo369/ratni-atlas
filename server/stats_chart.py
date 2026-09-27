@@ -172,11 +172,12 @@ md.append('\n## Sizes\n| Path | Size |\n|---|---|')
 for l in sorted(sec['sizes'], key=lambda l: -num(l.split(';')[-1])):
     p, b = l.rsplit(';', 1)
     md.append('| %s | %.2f GB |' % (p, num(b) / GB) if num(b) >= GB / 10 else '| %s | %.0f MB |' % (p, num(b) / 2 ** 20))
-md.append('\n## Busiest processes now\n| Process | CPU % | RAM | Running |\n|---|---|---|---|')
+md.append('\n## Biggest processes now\n| Process | RAM | CPU time used | Running for | CPU average |\n|---|---|---|---|---|')
 for l in sec['top']:
     v = l.split(';')
     if len(v) == 4:
-        md.append('| %s | %s | %.0f MB | %.1f h |' % (v[0], v[1], num(v[2]) / 2 ** 20, num(v[3]) / 3600))
+        up = max(1.0, num(v[3]))
+        md.append('| %s | %.0f MB | %.1f min | %.1f h | %.1f%% of a core |' % (v[0], num(v[2]) / 2 ** 20, num(v[1]) / 60, up / 3600, 100 * num(v[1]) / up))
 if cpu:
     days = defaultdict(lambda: defaultdict(list))
     for s, k, name in [(cpu, 1, 'cpu'), (mem, 1, 'mem'), (fs, 1, 'disk'), (load, 1, 'load')]:
@@ -188,6 +189,30 @@ if cpu:
         f = lambda k, g: ('%.0f%%' % g(v[k])) if v[k] else '–'
         md.append('| %s | %s | %s | %s | %s | %s | %s |' % (d, f('cpu', lambda a: sum(a) / len(a)), f('cpu', max), f('mem', lambda a: sum(a) / len(a)),
                                                                    f('mem', max), f('disk', lambda a: a[-1]), ('%.2f' % max(v['load'])) if v['load'] else '–'))
+    # charts right on the page (Mermaid): hourly, or every few hours for longer spans
+    span = (hours[-1] - hours[0]) / 86400 if hours else 0
+    step = 1 if span <= 2 else 3 if span <= 7 else 6
+    B = defaultdict(lambda: defaultdict(list))
+    for h in data['hours']:
+        k = h['t'] // (step * H) * (step * H)
+        for c in ('cpu', 'cpu_max', 'mem', 'disk'):
+            if c in h:
+                B[k][c].append(h[c])
+    def series(ks, c, g):
+        return '[' + ', '.join('%.1f' % g(B[k][c]) for k in ks) + ']'
+
+    avg = lambda a: sum(a) / len(a)
+    for title, lines in [('CPU %% (line 1: average, line 2: peak; every %d h)' % step, [('cpu', avg), ('cpu_max', max)]),
+                         ('RAM %% used (every %d h)' % step, [('mem', avg), ('mem', max)]),
+                         ('Disk %% used (every %d h)' % step, [('disk', avg)])]:
+        ks = [k for k in sorted(B) if all(B[k][c] for c, _ in lines)]  # only where there is data (disk: since 28. 9.)
+        if len(ks) < 2:
+            continue
+        lab = '[' + ', '.join('"%s"' % datetime.fromtimestamp(k, TZ).strftime('%d.%m. %Hh') for k in ks) + ']'
+        md.append('\n```mermaid\nxychart-beta\n    title "%s"\n    x-axis %s\n    y-axis "%%" 0 --> 100' % (title, lab))
+        for c, g in lines:
+            md.append('    line %s' % series(ks, c, g))
+        md.append('```')
     md.append('\nCharts: the **grafikoni** file at the bottom of this page (CPU, RAM, disk, load, network, containers).')
 open(summary, 'a').write('\n'.join(md) + '\n')
 print('\n'.join(md))
