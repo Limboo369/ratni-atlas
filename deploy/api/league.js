@@ -23,11 +23,12 @@ function rate(teams, winner) {
   const avg = (t) => t.reduce((s, p) => s + p.elo, 0) / Math.max(1, t.length);
   const out = {};
   teams.forEach((team, i) => {
-    const opp = avg(teams[1 - i]);
+    const opp = avg(teams[1 - i]), half = teams.flat().some((q) => q.bot) ? 0.5 : 1; // against the computer: half
     for (const p of team) {
+      if (p.bot) continue;
       const E = 1 / (1 + Math.pow(10, (opp - p.elo) / 400));
       const S = winner === i + 1 && !p.left ? 1 : 0;
-      const K = p.games < PLACEMENT ? 40 : 24;
+      const K = (p.games < PLACEMENT ? 40 : 24) * half;
       const elo = Math.max(FLOOR, Math.round(p.elo + K * (S - E)));
       out[p.id] = { elo, delta: elo - p.elo, won: S === 1, left: !!p.left };
     }
@@ -81,14 +82,16 @@ module.exports = function leagueRoutes(db, sessionUser) {
         if (![1, 2].includes(b.winner) || !Array.isArray(b.teams) || b.teams.length !== 2) return [400, { e: 'bad' }];
         const dup = await db.query('select data from league_games where code = $1', [b.code]);
         if (dup.rows.length) return { res: JSON.parse(dup.rows[0].data).res, dup: true };
-        const all = b.teams.flat().map((p) => p && String(p.id));
+        const all = b.teams.flat().filter((p) => p && !p.bot).map((p) => String(p.id));
         const cur = await elos(ids(all), b.l);
-        const teams = b.teams.map((t) => (Array.isArray(t) ? t : []).filter((p) => p && cur[p.id]).map((p) => ({ id: String(p.id), left: !!p.left, ...cur[p.id] })));
-        if (!teams[0].length || !teams[1].length) return [400, { e: 'players' }];
+        // the computer's seats (a league match filled with bots): they count with the ELO they were given, nothing is saved
+        const bot = (p) => ({ id: String(p.id).slice(0, 16), bot: true, name: String(p.name || 'AI').slice(0, 24), elo: Math.max(100, Math.min(3000, p.elo | 0)), games: 99, left: false });
+        const teams = b.teams.map((t) => (Array.isArray(t) ? t : []).filter((p) => p && (p.bot ? /^bot:[a-z0-9]{1,8}$/.test(String(p.id)) : cur[p.id])).map((p) => (p.bot ? bot(p) : { id: String(p.id), left: !!p.left, ...cur[p.id] })));
+        if (!teams[0].length || !teams[1].length || !teams.flat().some((p) => !p.bot)) return [400, { e: 'players' }];
         const res = rate(teams, b.winner);
         const data = {
           l: b.l, winner: b.winner, why: String(b.why || '').slice(0, 8), secs: Math.max(0, b.secs | 0), map: String(b.map || '').slice(0, 24), era: String(b.era || '').slice(0, 12),
-          teams: teams.map((t) => t.map((p) => ({ id: p.id, name: p.name, elo: p.elo, delta: res[p.id].delta, left: p.left }))), res,
+          teams: teams.map((t) => t.map((p) => ({ id: p.id, name: p.name, elo: p.elo, delta: p.bot ? 0 : res[p.id].delta, left: p.left, bot: p.bot || undefined }))), res,
         };
         const c = await db.connect();
         try {

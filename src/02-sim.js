@@ -71,6 +71,8 @@ RA.DIFF = {
   lako: { label: RA.t("Easy"), grace: 1500, maxT: 0.6, grow: 0.86, start: 0.6, rate: [80, 120], trig: [0.64, 0.74], nukeAfter: 9000, build: 0.6 },
   srednje: { label: RA.t("Medium"), grace: 900, maxT: 0.82, grow: 0.95, start: 0.8, rate: [55, 85], trig: [0.56, 0.66], nukeAfter: 6000, build: 0.85 },
   tesko: { label: RA.t("Hard"), grace: 300, maxT: 1.0, grow: 1.0, start: 1.0, rate: [36, 60], trig: [0.5, 0.6], nukeAfter: 4200, build: 1.0 },
+  // the league's computer players against the best ranks (Emperor, Overlord; deploy/game/league.js)
+  ekspert: { label: RA.t("Expert"), grace: 200, maxT: 1.0, grow: 1.0, start: 1.0, rate: [26, 44], trig: [0.46, 0.55], nukeAfter: 3000, build: 1.15 },
 };
 
 RA.Game = class Game {

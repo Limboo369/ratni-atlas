@@ -376,3 +376,9 @@ engleskom. `build/test_lang.py` (i u CI-ju) pada ako na engleskoj stranici ostan
 - Focus: vozovi i trgovački brodovi normalnom brzinom (kao u Blitzu, u stvarnom vremenu); osnovni prihod +20%.
 
 - Početne kartice (27. 9., večernja dorada): isti raspored, fontovi i položaj imena za Online i Conqueror; Blitz dijeli istaknuti stil lige. Campaign i Community market su kartice odmah ispod Make your choice.
+
+## Liga s računarom 27. 9. (Darko)
+
+Nema protivnika za 30 s → prazna mjesta (protivnici i saigrači) popunjava računar; jačina po rangu (Raider lako,
+Vanguard/bez ranga srednje, Warlord teško, Emperor/Overlord ekspert); takav meč pomjera ELO upola; računar bira/banuje
+nasumično. Urađeno.

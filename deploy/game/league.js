@@ -22,6 +22,13 @@ const AWAY_LEFT = 5 * 60e3; // away this long when the game ends = left
 const MAPS = [['svijet', 'svijet', 'svijet'], ['evropa', 'evropa', 'evropa'], ['afrika', 'svijet', 'afrika'], ['azija', 'svijet', 'azija'], ['sam', 'svijet', 'sam'], ['jam', 'svijet', 'jam'], ['okeanija', 'svijet', 'okeanija']];
 const ERAS = ['rim', 'srednji', 'napoleon', 'ww1', 'ww2', 'hladni', 'danas'];
 const SIZES = [1, 2, 5];
+// Darko 27. 9.: nobody to play against → after BOT_WAIT seconds the computer takes the empty seats (opponents and
+// teammates); how well it plays follows the rank of the players waiting; such a match moves ELO half as much
+const BOT_WAIT = +process.env.LEAGUE_BOT_WAIT || 30;
+const BOT_NAMES = ['Aldric', 'Brenna', 'Casimir', 'Dragana', 'Edvin', 'Freya', 'Goran', 'Helga', 'Ivor', 'Jelena', 'Konrad', 'Lucija', 'Marek', 'Nadia', 'Oskar', 'Petra', 'Radek', 'Selma', 'Tomas', 'Vesna'];
+/* the computer's difficulty for a match of players with this average ELO (ranks as in deploy/api/league.js) */
+const botDiff = (elo, placed) => (!placed ? 'srednje' : elo >= 600 ? 'ekspert' : elo >= 450 ? 'tesko' : elo >= 300 ? 'srednje' : 'lako');
+const isBot = (id) => /^bot:/.test(id);
 
 /* ---------------- ratings: the accounts API, or memory ---------------- */
 const mem = new Map(); // 'id|l' → {elo, games}
@@ -29,11 +36,12 @@ function rate(teams, winner) {
   const avg = (t) => t.reduce((s, p) => s + p.elo, 0) / Math.max(1, t.length);
   const out = {};
   teams.forEach((team, i) => {
-    const opp = avg(teams[1 - i]);
+    const opp = avg(teams[1 - i]), half = teams.flat().some((q) => q.bot) ? 0.5 : 1;
     for (const p of team) {
+      if (p.bot) continue;
       const E = 1 / (1 + Math.pow(10, (opp - p.elo) / 400));
       const S = winner === i + 1 && !p.left ? 1 : 0;
-      const elo = Math.max(100, Math.round(p.elo + (p.games < 5 ? 40 : 24) * (S - E)));
+      const elo = Math.max(100, Math.round(p.elo + (p.games < 5 ? 40 : 24) * half * (S - E)));
       out[p.id] = { elo, delta: elo - p.elo, won: S === 1, left: !!p.left };
     }
   });
@@ -52,10 +60,10 @@ async function elos(ids, l) {
 }
 const done = new Map(); // code → result (memory mode: once per game)
 async function report(res) {
-  if (API_INT && res.teams.flat().every((p) => /^\d+$/.test(p.id))) return (await intPost('/int/league/result', res)).res;
+  if (API_INT && res.teams.flat().every((p) => p.bot || /^\d+$/.test(p.id))) return (await intPost('/int/league/result', res)).res;
   if (done.has(res.code)) return done.get(res.code);
-  const cur = await elos(res.teams.flat().map((p) => p.id), res.l);
-  const out = rate(res.teams.map((t) => t.map((p) => ({ ...p, ...cur[p.id] }))), res.winner);
+  const cur = await elos(res.teams.flat().filter((p) => !p.bot).map((p) => p.id), res.l);
+  const out = rate(res.teams.map((t) => t.map((p) => (p.bot ? { ...p, games: 99 } : { ...p, ...cur[p.id] }))), res.winner);
   for (const [id, r] of Object.entries(out)) {
     const k = id + '|' + res.l, o = mem.get(k) || { elo: 500, games: 0 };
     mem.set(k, { elo: r.elo, games: o.games + 1 });
@@ -149,12 +157,45 @@ function matchmake() {
       break;
     }
   }
+  // waited long enough: the players who are there (close ELO, parties together), the rest of the seats the computer
+  for (const [l, q] of queues) {
+    const n = +l.slice(1);
+    q.sort((a, b) => a.since - b.since);
+    const seed = q[0];
+    if (!seed || now - seed.since < BOT_WAIT * 1000) continue;
+    const T = [[seed], []], size = [seed.ids.length, 0];
+    const win = Math.min(2000, 150 + ((now - seed.since) / 1000) * 10);
+    for (const e of q.slice(1).filter((e) => Math.abs(e.avg - seed.avg) <= win).sort((a, b) => Math.abs(a.avg - seed.avg) - Math.abs(b.avg - seed.avg))) {
+      const t = [0, 1].filter((k) => size[k] + e.ids.length <= n).sort((a, b) => size[a] - size[b])[0];
+      if (t === undefined) continue;
+      T[t].push(e);
+      size[t] += e.ids.length;
+    }
+    queues.set(l, q.filter((e) => !T[0].includes(e) && !T[1].includes(e)));
+    const humans = T.map((es) => es.flatMap((e) => e.ids.map((id) => ({ id, elo: (e.elos[id] || { elo: 500 }).elo, games: (e.elos[id] || { games: 0 }).games }))));
+    const all = humans.flat(), avg = Math.round(all.reduce((s, p) => s + p.elo, 0) / all.length);
+    const dif = botDiff(avg, all.every((p) => p.games >= 5));
+    let k = crypto.randomInt(0, BOT_NAMES.length);
+    const teams = humans.map((t) => {
+      const out = t.map((p) => ({ id: p.id, elo: p.elo }));
+      while (out.length < n) out.push({ id: 'bot:' + code6(), elo: avg, bot: true, name: BOT_NAMES[k++ % BOT_NAMES.length] + ' (AI)' });
+      return out;
+    });
+    startMatch(l, n, teams, dif);
+  }
 }
-function startMatch(l, n, teams) {
+function startMatch(l, n, teams, dif) {
   const id = code6();
-  const M = { id, l, n, teams, picks: { 1: null, 2: null }, until: Date.now() + PICK_S * 1000 };
+  const M = { id, l, n, teams, dif: dif || 'srednje', picks: { 1: null, 2: null }, until: Date.now() + PICK_S * 1000 };
   matches.set(id, M);
-  const pubT = teams.map((t) => t.map((p) => ({ name: (players.get(p.id) || {}).name || '?', elo: p.elo })));
+  // a team of computers picks and bans at random (and is ready at once)
+  const pool = MAPS.map((m) => m[0]), rnd = (a, k) => a.slice().sort(() => crypto.randomInt(0, 3) - 1).slice(0, k);
+  teams.forEach((t, i) => {
+    if (!t.every((p) => p.bot)) return;
+    const mp = rnd(pool, 3), er = rnd(ERAS, 3);
+    M.picks[i + 1] = { maps: mp.slice(0, 2), eras: er.slice(0, 2), bm: mp[2], be: er[2], lock: true };
+  });
+  const pubT = teams.map((t) => t.map((p) => ({ name: p.bot ? p.name : (players.get(p.id) || {}).name || '?', elo: p.elo, bot: p.bot ? 1 : undefined })));
   teams.forEach((t, i) => t.forEach((p) => {
     const pl = players.get(p.id);
     if (pl) pl.match = id;
@@ -192,13 +233,14 @@ function resolve(M) {
   const bans = { maps: [P[0].bm, P[1].bm].filter(Boolean), eras: [P[0].be, P[1].be].filter(Boolean) };
   const map = draw([...P[0].maps, ...P[1].maps], bans.maps, MAPS.map((m) => m[0])), era = draw([...P[0].eras, ...P[1].eras], bans.eras, ERAS);
   const mm = MAPS.find((m) => m[0] === map), blitz = M.l[0] === 'b';
-  const set = { map: mm[1], reg: mm[2], era, gm: 'klasik', dif: 'srednje', cs: 0, peace: blitz ? 60 : 180, res: blitz ? 0 : 1, tree: blitz ? 0 : 1, nn: 0, days: 1, pub: 0, fast: blitz ? 1 : 0, teams: '0', aw: 0, lg: M.n };
+  const set = { map: mm[1], reg: mm[2], era, gm: 'klasik', dif: M.dif || 'srednje', cs: 0, peace: blitz ? 60 : 180, res: blitz ? 0 : 1, tree: blitz ? 0 : 1, nn: 0, days: 1, pub: 0, fast: blitz ? 1 : 0, teams: '0', aw: 0, lg: M.n };
   const slots = [];
   M.teams.forEach((t, i) => t.forEach((p) => {
     const pl = players.get(p.id);
+    if (p.bot) return slots.push({ uid: '', lid: p.id, name: p.name, team: i + 1, away: true, bot: 1, elo: p.elo }); // the computer, for good
     slots.push({ uid: /^\d+$/.test(p.id) ? 'acct' + p.id : p.id.replace(/^dev/, ''), lid: p.id, name: (pl && pl.name) || 'Player', team: i + 1, away: true });
   }));
-  const gm = long.newLeague(set, slots, { l: M.l, match: M.id }, WAIT_S * 1000);
+  const gm = long.newLeague(set, slots, { l: M.l, match: M.id, bots: slots.some((s) => s.bot) ? 1 : undefined }, WAIT_S * 1000);
   const msg = { t: 'reveal', picks: { 1: P[0], 2: P[1] }, bans, chosen: { map, era }, code: gm.rec.code, at: gm.rec.start };
   for (const t of M.teams) for (const p of t) {
     const pl = players.get(p.id);
@@ -213,6 +255,7 @@ long.hooks.over = async (gm, st) => {
   const kicked = st.kicked || [], now = Date.now();
   const teams = [[], []];
   rec.slots.forEach((s, i) => {
+    if (s.bot) return teams[s.team - 1].push({ id: s.lid, bot: true, elo: s.elo | 0, name: s.name, left: false });
     const left = !!s.left || kicked.includes(i) || (s.away && now - (s.awayAt || now) > AWAY_LEFT);
     teams[s.team - 1].push({ id: s.lid, left });
   });

@@ -1332,11 +1332,11 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
 .online-eyebrow{display:block;margin-bottom:8px;font:9px var(--font-ui);letter-spacing:.22em;color:#d2b581}
 #leagueBtn b{font-size:25px;font-weight:500;line-height:1.05;letter-spacing:-.025em;color:#eee2cb}#leagueBtn b em{font-style:normal;display:block;font-size:16px;letter-spacing:.25em;text-transform:uppercase;margin-top:5px}#leagueBtn small{font-size:10px;margin-top:12px}#leagueBtn small span{margin-left:8px;color:#d4bb91}
 .command-quick{border-color:#c6b18a35;background:#c6b18a08;border-radius:3px;min-height:48px;align-items:center;justify-content:space-between}.command-quick b{font-size:11px;color:#d8bd91;white-space:nowrap}.command-quick small{font-size:10px;line-height:1.4;text-align:right}.command-quick:hover{border-color:#dbc29188}
-#startScreen.side-online .command-player{margin-top:14px}.side-online .command-headline{font-size:23px}.side-online .command-description{display:none}
+
 .lg-tier{display:inline-flex;align-items:center;gap:8px;border:0;background:none;padding:0;font-size:10px;letter-spacing:.12em;white-space:nowrap}
 .lg-tier::before{content:'';display:block;flex:none;width:40px;height:44px;background:var(--rank-image) center/contain no-repeat}
 .lg-tier.lg-raider{color:#b2aa99}.lg-tier.lg-vanguard{color:#8bbdcc}.lg-tier.lg-warlord{color:#d39882}.lg-tier.lg-emperor{color:#b7a7da}.lg-tier.lg-overlord{color:#e2bd71}
-@media(max-width:600px){.side-seg,.online-pane{width:100%}.side-seg{margin-top:18px}.online-card{padding:14px;gap:10px}#leagueBtn{padding:18px 14px}.side-online .command-title{font-size:64px}.online-intro{font-size:15px}.online-arrow{font-size:17px}}
+@media(max-width:600px){.side-seg,.online-pane{width:100%}.side-seg{margin-top:18px}.online-card{padding:14px;gap:10px}#leagueBtn{padding:18px 14px}.online-intro{font-size:15px}.online-arrow{font-size:17px}}
 @media(prefers-reduced-motion:reduce){.online-card,.side-seg button{transition:none}.online-card:hover{transform:none}}
 
 /* C3–C6: shared command panels for Focus, negotiations and online play. */
@@ -1379,7 +1379,7 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
 @media(max-width:600px){#sheetWrap:has(#lgSheet,#lgPick,#lgReveal,#lgTopSeg,#lgHistory,#skirmSheet,#dealSheet,.focus-report-metrics,.focus-games,[data-st]){padding:10px}#app #sheetWrap #sheet:has(#lgSheet,#lgPick,#lgReveal,#lgTopSeg,#lgHistory,#skirmSheet,#dealSheet,.focus-report-metrics,.focus-games,[data-st]){padding:18px;max-height:calc(100dvh - 20px)}#sheet:has(#lgSheet,#lgPick,#lgReveal,#lgTopSeg,#lgHistory,#skirmSheet,#dealSheet,.focus-report-metrics,.focus-games,[data-st])>.sh-head{top:-18px}#sheet:has(#lgSheet,#lgPick,#lgReveal)>.sh-head h2{font-size:27px}#lgPickBody .lg-chips{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}#lgPickBody .lg-chip{font-size:12px;min-height:76px}#sheet:has(#lgSheet)>.field{display:block;width:100%;margin-right:0}#sheet:has(#lgSheet)>.list{padding:6px 10px}#sheet:has(#lgSheet)>.list .prow{gap:14px}#sheet:has(#lgSheet)>.list .nm{font-size:20px}#sheet:has(#lgSheet)>.list .lg-tier{min-width:76px}#sheet:has(#lgSheet)>.list .lg-tier::before{width:56px;height:60px}#lgParty{padding:12px}#lgTopSeg{grid-template-columns:repeat(3,minmax(0,1fr))}#sheet:has([data-st])>.btns{grid-template-columns:1fr}#sheet .btn[data-st]{min-height:0}.focus-report-metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.focus-report-metrics .prow{padding:13px}.deal-grid{grid-template-columns:1fr;gap:12px}.deal-side{padding:16px}.profile-rank-card .lg-tier::before{width:44px;height:50px}.profile-rank-card .lg-tier{font-size:7px}.rank-progress{font-size:8px}.profile-rank-card strong{font-size:19px}}
 @media(prefers-reduced-motion:reduce){#lgFind::before,.lg-chip,#lgReveal~.lg-chips .won{animation:none!important;transition:none}.lg-chip:hover,#lgReveal~.lg-chips .draw{transform:none}.nuke-bar i,#aStrike.nuke-hot::after{transition:none}}
 
-@media(min-width:901px){.side-online .command-title{font-size:100px}.side-online .command-main{padding-block:30px}.side-online .command-headline{margin-block:16px}}
+
 
 #sheet:has(#lgPick)>.btns{position:sticky;bottom:-28px;padding:14px 0;background:#101b25;z-index:3;margin-bottom:-14px;border-top:1px solid #c8b38333}
 @media(max-width:600px){#sheet:has(#lgPick)>.btns{bottom:-18px}}
@@ -1473,15 +1473,25 @@ html[lang=sr] .replay-bar::before{content:"SNIMAK PARTIJE"}
 .mode-heading h2{margin:4px 0 0;font-size:30px;line-height:1.15;color:var(--launch-text,#eef0eb)}
 .mode-heading .lab{letter-spacing:.15em;font-size:10px;color:#9cacb4}
 #modeContinue{width:100%;margin:18px 0}
-#paceSeg{width:100%;grid-template-columns:1fr;gap:10px;margin:20px 0}
-#paceSeg button{display:grid;grid-template-columns:42px minmax(0,1fr) 18px;column-gap:16px;row-gap:4px;align-items:center;min-height:88px;padding:18px 20px;border-radius:4px;border:1px solid #b9c8cb26;background:linear-gradient(120deg,#7b9daa16,#0b171eaa);color:#e8eeeb;box-shadow:none}
-#paceSeg button b{grid-column:2;font-size:20px;line-height:1.3;letter-spacing:.025em;text-transform:none}
-#paceSeg button small{grid-column:2;font-size:14px;line-height:1.4;color:#9eafb5;opacity:1}
-#paceSeg button:before{content:'↗';grid-column:3;grid-row:1/3;color:#c6ae86;font-size:20px}
-#paceSeg .mode-symbol{grid-column:1;grid-row:1/3;color:#b1c6ca;display:grid;place-items:center}
-#paceSeg .mode-symbol svg{width:28px;height:28px}
-#paceSeg button:hover,#paceSeg button:focus-visible{border-color:#bfa67c;background:#28343a}
-#startScreen.side-online.mode-setup #paceSeg button{min-height:68px;padding:12px 16px}
+/* Both launcher tabs share typography, spacing and card geometry. */
+#paceSeg,.online-pane,.solo-extras{display:grid;width:100%;grid-template-columns:1fr;gap:10px;margin:0}
+.solo-extras{margin-top:10px}
+.launcher-intro{margin:20px 0 16px}
+#startScreen.mode-setup :is(.launcher-intro,.solo-extras){display:none}
+#startScreen .launcher-card{display:grid;grid-template-columns:38px minmax(0,1fr) 16px;align-items:center;gap:14px;width:100%;min-height:78px;padding:16px;margin:0;border:1px solid #bbcbd127;border-radius:4px;background:linear-gradient(110deg,#23374270,#0b171ed9);color:var(--launch-text,#e8eef0);font-family:inherit;text-align:left;box-shadow:none;cursor:pointer}
+#startScreen .launcher-card b{display:block;font-size:16px;font-weight:700;line-height:1.3;letter-spacing:.035em;text-transform:none}
+#startScreen .launcher-card small{display:block;margin-top:5px;font-size:11px;line-height:1.5;color:#a7b6be;opacity:1;text-align:left}
+#startScreen .launcher-card:hover,#startScreen .launcher-card:focus-visible{border-color:#dbc29188;background:#293b4380}
+#startScreen .launcher-card.featured-card{grid-template-columns:66px minmax(0,1fr) 16px;min-height:144px;padding:22px 16px;border-color:#d5b47c80;background:radial-gradient(ellipse at 0 30%,#d0ae7130,transparent 80%),#111e26}
+#startScreen .featured-card b{font-size:25px;font-weight:500;line-height:1.05;letter-spacing:-.025em;color:#eee2cb}
+#startScreen .featured-card small{font-size:10px;margin-top:12px}
+.featured-mark{display:block;width:66px;height:72px;color:#d2b581}
+.featured-mark svg{width:100%;height:100%}
+#startScreen.side-online.mode-setup #paceSeg .launcher-card{grid-template-columns:38px minmax(0,1fr) 16px;min-height:78px;padding:16px;border-color:#bbcbd127;background:linear-gradient(110deg,#23374270,#0b171ed9)}
+#startScreen.side-online.mode-setup #paceSeg .featured-mark{width:38px;height:42px}
+#startScreen.side-online.mode-setup #paceSeg .online-eyebrow{display:none}
+#startScreen.side-online.mode-setup #paceSeg b{font-size:16px;line-height:1.3;font-weight:700;letter-spacing:.035em}
+#startScreen.side-online.mode-setup #paceSeg small{font-size:11px;margin-top:5px}
 #startScreen.side-online.mode-setup #paceSeg button[aria-pressed=true]{border-color:#d3b582;background:#c8ae821a}
 .command-tools{position:relative}
 .language-menu{position:absolute;top:calc(100% + 10px);right:0;z-index:20;width:200px;padding:6px;border:1px solid #819ba34d;border-radius:5px;background:#12212a;box-shadow:0 12px 35px #0008}
@@ -1497,7 +1507,7 @@ html[lang=sr] .replay-bar::before{content:"SNIMAK PARTIJE"}
 #sheet #mkNew .d{color:#a9bbc3}
 #sheet{overscroll-behavior:contain}
 .leaflet-control-attribution:empty{display:none}
-@media(max-width:400px){#skirmList .prow{grid-template-columns:minmax(0,1fr)}#skirmList .bb{justify-content:flex-end}#paceSeg button{padding:16px;column-gap:12px}.mode-heading h2{font-size:26px}}
+@media(max-width:400px){#skirmList .prow{grid-template-columns:minmax(0,1fr)}#skirmList .bb{justify-content:flex-end}.mode-heading h2{font-size:26px}}
 /* Touch targets for the new production and building controls; shared report palette. */
 #sheet .queue-row .mini,#sheet [data-up]{min-height:44px;padding:9px 13px;white-space:normal;line-height:1.35}
 .queue-row{gap:8px;margin:12px 0}
@@ -1621,28 +1631,28 @@ html[lang=sr] .replay-bar::before{content:"SNIMAK PARTIJE"}
           <p class="command-description">Build an empire. Forge alliances. Take control.<br> <span class="tagline">Europe awaits your first move.</span></p>
           <div id="joinBanner" class="btns" hidden></div>
           <div class="side-seg" id="sideSeg" role="group" aria-label="How you play"><button data-v="solo" aria-pressed="true"><b>Conqueror</b><small>solo, against the computer</small></button><button data-v="online" aria-pressed="false"><b>Online</b><small>against people</small></button></div>
-          <div class="mode-heading" id="modeHeading" hidden><button id="modeBack" class="command-tool" aria-label="Back to modes">←</button><div><span class="lab">SELECTED MODE</span><h2 id="selectedMode" tabindex="-1"></h2></div></div>
-          <div class="pace-seg solo-only" id="paceSeg" role="group" aria-label="Game mode"><button data-v="blitz" aria-pressed="true"><b>Blitz</b><small>a quick match, 20–40 min</small></button><button data-v="focus" aria-pressed="false"><b>Focus</b><small>lasts days, runs without you</small></button><button data-v="custom" aria-pressed="false"><b>Make your choice</b><small>you set the rules</small></button></div>
-          <p class="pace-note solo-only" id="paceNote"></p>
-          <div class="pace-days solo-only" id="paceDays" hidden><span>Duration</span><div class="seg" id="daysSeg" role="group" aria-label="Focus game duration"><button data-v="1" aria-pressed="true">~1 day</button><button data-v="3" aria-pressed="false">~3 days</button><button data-v="7" aria-pressed="false">~7 days</button></div></div>
-
           <div class="command-player field">
             <div class="command-identity"><label for="nameIn">YOUR NAME</label><button id="profileBtn" class="profile-btn" hidden aria-haspopup="dialog"></button></div>
             <div class="command-input"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 21v-2a7 7 0 0 1 14 0v2"/></svg><input type="text" id="nameIn" maxlength="18" placeholder="Commander" autocomplete="nickname" spellcheck="false"></div>
           </div>
+          <div class="mode-heading" id="modeHeading" hidden><button id="modeBack" class="command-tool" aria-label="Back to modes">←</button><div><span class="lab">SELECTED MODE</span><h2 id="selectedMode" tabindex="-1"></h2></div></div>
+          <p class="online-intro launcher-intro">Choose your battlefield.<span class="solo-only">solo, against the computer</span><span class="online-only">Sign in to play online.</span></p>
+          <div class="pace-seg solo-only" id="paceSeg" role="group" aria-label="Game mode"><button class="online-card launcher-card featured-card" data-v="blitz" aria-pressed="true"><span class="featured-mark" aria-hidden="true"><svg viewBox="0 0 66 72" fill="none"><path d="M33 3 59 14v22c0 15-26 32-26 32S7 51 7 36V14Z" stroke="currentColor" stroke-width="2"/><path d="M33 10 53 18v18c0 10-20 25-20 25S13 46 13 36V18Z" stroke="currentColor" opacity=".45"/><path d="m36 19-17 23h12l-2 14 18-24H35l1-13Z" fill="currentColor"/></svg></span><span class="online-copy"><span class="online-eyebrow">CONQUEROR</span><b>Blitz</b><small>a quick match, 20–40 min</small></span><span class="online-arrow" aria-hidden="true">↗</span></button><button class="online-card launcher-card" data-v="focus" aria-pressed="false"><span class="online-symbol" aria-hidden="true"><i data-ic="clock"></i></span><span class="online-copy"><b>Focus</b><small>lasts days, runs without you</small></span><span class="online-arrow" aria-hidden="true">↗</span></button><button class="online-card launcher-card" data-v="custom" aria-pressed="false"><span class="online-symbol" aria-hidden="true"><i data-ic="menu"></i></span><span class="online-copy"><b>Make your choice</b><small>you set the rules</small></span><span class="online-arrow" aria-hidden="true">↗</span></button></div>
+          <div class="solo-extras solo-only"><button class="online-card launcher-card" id="campBigBtn"><span class="online-symbol" aria-hidden="true"><i data-ic="flag"></i></span><span class="online-copy"><b>Campaign</b><small>Your dynasty through missions · from Bosnia to the whole world</small></span><span class="online-arrow" aria-hidden="true">↗</span></button><button class="online-card launcher-card" id="marketBtn"><span class="online-symbol" aria-hidden="true"><i data-ic="globe"></i></span><span class="online-copy"><b>Community market</b><small>Players' scenarios · make your own in the editor</small></span><span class="online-arrow" aria-hidden="true">↗</span></button></div>
+          <div class="online-pane online-only" id="onlinePane">
+            <button class="online-card launcher-card featured-card league-entry" id="leagueBtn"><span class="league-mark" aria-hidden="true"></span><span class="online-copy"><span class="online-eyebrow">RANKED</span><b>Conquest <em>League</em></b><small>1v1 · 2v2 · 5v5 <span>Blitz / Focus</span></small></span><span class="online-arrow" aria-hidden="true">↗</span></button>
+            <button class="online-card launcher-card" id="skirmishBtn"><span class="online-symbol" aria-hidden="true"><i data-ic="globe"></i></span><span class="online-copy"><b>Skirmish</b><small>Public games · teams · your rules</small></span><span class="online-arrow" aria-hidden="true">↗</span></button>
+            <button class="online-card launcher-card" id="onlineToggle" aria-expanded="false" aria-controls="onlineBox"><span class="online-symbol" aria-hidden="true"><i data-ic="lock"></i></span><span class="online-copy"><b>Private room</b><small>Invite friends and play through a link</small></span><span class="online-arrow" aria-hidden="true">+</span></button>
+          </div>
+          <p class="pace-note solo-only" id="paceNote"></p>
+          <div class="pace-days solo-only" id="paceDays" hidden><span>Duration</span><div class="seg" id="daysSeg" role="group" aria-label="Focus game duration"><button data-v="1" aria-pressed="true">~1 day</button><button data-v="3" aria-pressed="false">~3 days</button><button data-v="7" aria-pressed="false">~7 days</button></div></div>
+
           <button class="go command-play solo-only" id="goBtn"><span>Start the conquest</span><span aria-hidden="true">↗</span></button>
           <button class="command-quick solo-only" id="quickBtn"><b>Play now</b><small>Blitz · random state · no choices</small></button>
           <button class="command-resume solo-only" id="resumeBtn" hidden></button>
           <button class="command-resume focus-resume solo-only" id="focusBtn" hidden></button>
-          <button class="command-quick command-campaign solo-only" id="campBigBtn"><b>Campaign</b><small>Your dynasty through missions · from Bosnia to the whole world</small></button>
-          <button class="command-quick command-market solo-only" id="marketBtn"><b>Community market</b><small>Players' scenarios · make your own in the editor</small></button>
           <button class="command-quick command-install" id="installBtn" hidden><b>Install the app</b><small>Overtake as a real app on your computer or phone</small></button>
           <button class="command-config solo-only" id="configBtn" aria-haspopup="dialog" aria-controls="operationDialog"><span><span class="command-config-label">OPERATION SETTINGS</span><span id="operationSummary">Europe · Classic · Medium</span></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16M9 3v6M15 9v6M8 15v6"/></svg></button>
-          <div class="online-pane online-only" id="onlinePane"><p class="online-intro">Choose your battlefield.<span>Sign in to play online.</span></p>
-            <button class="online-card league-entry" id="leagueBtn"><span class="league-mark" aria-hidden="true"></span><span class="online-copy"><span class="online-eyebrow">RANKED</span><b>Conquest <em>League</em></b><small>1v1 · 2v2 · 5v5 <span>Blitz / Focus</span></small></span><span class="online-arrow" aria-hidden="true">↗</span></button>
-            <button class="online-card" id="skirmishBtn"><span class="online-symbol" aria-hidden="true"><i data-ic="globe"></i></span><span class="online-copy"><b>Skirmish</b><small>Public games · teams · your rules</small></span><span class="online-arrow" aria-hidden="true">↗</span></button>
-            <button class="online-card" id="onlineToggle" aria-expanded="false" aria-controls="onlineBox"><span class="online-symbol" aria-hidden="true"><i data-ic="lock"></i></span><span class="online-copy"><b>Private room</b><small>Invite friends and play through a link</small></span><span class="online-arrow" aria-hidden="true">+</span></button>
-          </div>
           <div id="rankedSetup" hidden>
             <div class="field"><span class="lab">Mode</span><div class="seg" id="rankedPace" role="group" aria-label="Ranked mode"><button data-v="b" aria-pressed="true">Blitz</button><button data-v="f" aria-pressed="false">Focus</button></div></div>
             <div class="field"><span class="lab">Size</span><div class="seg" id="rankedSize" role="group" aria-label="Team size"><button data-v="1" aria-pressed="true">1v1</button><button data-v="2" aria-pressed="false">2v2</button><button data-v="5" aria-pressed="false">5v5</button></div></div>
@@ -2254,6 +2264,7 @@ RA.SR = {
   "<p class=\"note\">No agent is ready now.</p>": "<p class=\"note\">Nijedan agent sada nije spreman.</p>",
   "<p class=\"note\">No finished games yet. Play one to the end — wins and losses are recorded here.</p>": "<p class=\"note\">Još nema završenih partija. Odigraj jednu do kraja — pobjeda ili poraz se ovdje upisuju.</p>",
   "<p class=\"note\">No open games — create one.</p>": "<p class=\"note\">Nema otvorenih igara — napravi jednu.</p>",
+  "<p class=\"note\">No players found in {0} s? The computer takes the empty seats — it plays as well as your rank (Raider easy … Emperor and Overlord expert), and such a match moves ELO half as much.</p>": "<p class=\"note\">Nema igrača za {0} s? Prazna mjesta preuzima računar — igra onoliko dobro koliko je tvoj rang (Raider lako … Emperor i Overlord ekspert), a takav meč pomjera ELO upola manje.</p>",
   "<p class=\"note\">No wars or alliances with your state in the meantime.</p>": "<p class=\"note\">Nijedan rat ni savez s tvojom državom u međuvremenu.</p>",
   "<p class=\"note\">Nobody has a win yet. Be the first!</p>": "<p class=\"note\">Još niko nema pobjedu. Budi prvi!</p>",
   "<p class=\"note\">Nobody has finished the qualifiers on this ladder yet.</p>": "<p class=\"note\">Još niko nije završio kvalifikacije na ovoj ljestvici.</p>",
@@ -2698,6 +2709,7 @@ RA.SR = {
   "Evgeny": "Evgenij",
   "Exit full screen": "Izađi iz cijelog ekrana",
   "Expand here": "Širi se ovamo",
+  "Expert": "Ekspert",
   "Extend": "Produži",
   "FROM LEGIONS TO MODERN WARFARE": "OD LEGIJA DO MODERNOG RATOVANJA",
   "FROM THE BALKANS TO THE WHOLE WORLD": "OD BALKANA DO CIJELOG SVIJETA",
@@ -4489,6 +4501,8 @@ Object.assign(RA.SR, {
   'Try again': 'Pokušaj ponovo'
 });
 
+Object.assign(RA.SR, {"CONQUEROR": "OSVAJAČ"});
+
 
 /* English names of places (states, cities, seas) that the map data has in Bosnian/Serbian: RA.tn(name), src/00a-i18n.js.
    A name missing here stays as it is (most are the same in English). */
@@ -5046,6 +5060,8 @@ RA.DIFF = {
   lako: { label: RA.t("Easy"), grace: 1500, maxT: 0.6, grow: 0.86, start: 0.6, rate: [80, 120], trig: [0.64, 0.74], nukeAfter: 9000, build: 0.6 },
   srednje: { label: RA.t("Medium"), grace: 900, maxT: 0.82, grow: 0.95, start: 0.8, rate: [55, 85], trig: [0.56, 0.66], nukeAfter: 6000, build: 0.85 },
   tesko: { label: RA.t("Hard"), grace: 300, maxT: 1.0, grow: 1.0, start: 1.0, rate: [36, 60], trig: [0.5, 0.6], nukeAfter: 4200, build: 1.0 },
+  // the league's computer players against the best ranks (Emperor, Overlord; deploy/game/league.js)
+  ekspert: { label: RA.t("Expert"), grace: 200, maxT: 1.0, grow: 1.0, start: 1.0, rate: [26, 44], trig: [0.46, 0.55], nukeAfter: 3000, build: 1.15 },
 };
 
 RA.Game = class Game {
@@ -16797,7 +16813,6 @@ RA.CommandScreen = class {
     this.motion = !this.reduced.matches;
     try { if (localStorage.getItem('ra_menu_motion') === 'off') this.motion = false; } catch (_) {}
     this.decorateEras();
-    for (const b of this.$('paceSeg').querySelectorAll('button')) b.insertAdjacentHTML('afterbegin', `<span class="mode-symbol" aria-hidden="true">${RA.icon({blitz:'rocket',focus:'clock',custom:'menu'}[b.dataset.v])}</span>`);
     this.$('configBtn').onclick = () => this.dialog.showModal();
     for (const id of ['configClose', 'configDone']) this.$(id).onclick = () => this.dialog.close();
     this.dialog.addEventListener('click', (e) => {
@@ -20919,6 +20934,7 @@ Object.assign(RA.UI.prototype, {
     h += `<div class="btns"><button class="btn primary" id="lgFind"><span class="t">${Q ? RA.t("Cancel search") : 'Find match'}</span><br><span class="d">${Q ? RA.t("Searching {0}… <span id=\"lgWait\">0:00</span>", RA.lgName(Q.l)) : `${RA.lgName(l)}${P ? RA.t(" · party ") + P.members.length : RA.t(" · solo")}`}</span></button></div>`;
     const acct = this.account && this.account.ok;
     if (acct) h += RA.t("<div class=\"btns\"><button class=\"btn\" id=\"lgTop\"><span class=\"t\">World ladder</span><br><span class=\"d\">Top 100 on the ladder</span></button><button class=\"btn\" id=\"lgHist\"><span class=\"t\">Match history</span><br><span class=\"d\">My league matches</span></button></div>");
+    h += RA.t("<p class=\"note\">No players found in {0} s? The computer takes the empty seats — it plays as well as your rank (Raider easy … Emperor and Overlord expert), and such a match moves ELO half as much.</p>", 30);
     h += RA.t("<p class=\"note\">Pick/ban: each team secretly picks 2 maps and 2 ages and bans one of each; the computer draws from the picks. Blitz: a team under 10% of the players' land for 60 s capitulates; after 45 min the team with more land wins. Surrender: 4 of 5 votes; in 5v5 also kick (4 votes). Leaving loses ELO. Ranks: Raider · Vanguard · Warlord · Emperor · Overlord.</p>");
     this.openSheet(h, (s) => {
       const retry = s.querySelector('#lgRetry');
@@ -21743,7 +21759,7 @@ Object.assign(RA.UI.prototype, {
   },
 });
 
-RA.BUILD = '60bc92d3';
+RA.BUILD = 'b4a295cb';
 new RA.App().boot();
 }
 function __raFallback(){

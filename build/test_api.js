@@ -234,6 +234,11 @@ async function main() {
       check(r.j.rows.length === 0, 'league: every ladder separate');
       r = await call('GET', '/api/league', null, { cookie: cookieAna });
       check(r.j.me.b1.games === 7 && r.j.me.b1.rank !== 'Unranked' && r.j.me.b5.rank === 'Unranked', `league: my ladders ${JSON.stringify(r.j.me.b1)}`);
+      // a match filled by the computer (Darko 27. 9.): only the player counts, half as much
+      r = await int('/int/league/result', { code: 'lgbot1', l: 'b2', winner: 1, why: 'elim', secs: 600, map: 'evropa', era: 'ww2', teams: [[{ id }], [{ id: 'bot:abc123', bot: true, elo: 500, name: 'Brenna (AI)' }]] });
+      check(r.status === 200 && r.j.res[id] && r.j.res[id].delta === 10 && Object.keys(r.j.res).length === 1, `league: against the computer ±half, the computer is not saved (${JSON.stringify(r.j.res)})`);
+      r = await int('/int/league/result', { code: 'lgbot2', l: 'b2', winner: 1, teams: [[{ id: 'bot:aaa', bot: true, elo: 500 }], [{ id: 'bot:bbb', bot: true, elo: 500 }]] });
+      check(r.status === 400, 'league: a game of computers only is refused');
       r = await call('GET', '/api/league/history', null, { cookie: cookieAna });
       check(r.j.games.length === 7 && r.j.games[0].code === 'lgaab7' && !r.j.games[0].won && r.j.games[1].won && r.j.games[0].teams[1][0].me, 'league: match history (newest first)');
       const floor = await int('/int/league/elo', { ids: [anaId], l: 'b1' });

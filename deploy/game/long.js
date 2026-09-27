@@ -153,7 +153,7 @@ function simAsk(code) {
 }
 
 const tickOf = (rec) => Math.max(0, Math.floor((Date.now() - rec.start) / rec.tickMs));
-const pub = (rec) => ({ code: rec.code, set: rec.set, seed: rec.seed, tickMs: rec.tickMs, sub: rec.sub, start: rec.start, slots: rec.slots.map((s) => (s.team ? { name: s.name, team: s.team } : { name: s.name })), cmds: rec.cmds, league: rec.league ? { l: rec.league.l, res: rec.league.res } : undefined });
+const pub = (rec) => ({ code: rec.code, set: rec.set, seed: rec.seed, tickMs: rec.tickMs, sub: rec.sub, start: rec.start, slots: rec.slots.map((s) => (s.team ? { name: s.name, team: s.team, bot: s.bot || undefined } : { name: s.name })), cmds: rec.cmds, league: rec.league ? { l: rec.league.l, res: rec.league.res } : undefined });
 const str = (v, n) => (typeof v === 'string' ? v.replace(/[\u0000-\u001f]/g, '').slice(0, n) : '');
 function save(gm) {
   gm.dirty = true;

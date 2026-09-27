@@ -57,7 +57,7 @@ function client(url) {
 (async () => {
   const port = await freePort();
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'league-'));
-  const srv = spawn('node', [path.join(R, 'deploy/game/server.js')], { env: { ...process.env, PORT: String(port), LONG_DIR: dir, LEAGUE_PICK_S: '4', LEAGUE_WAIT: '2' }, stdio: ['ignore', 'pipe', 'pipe'] });
+  const srv = spawn('node', [path.join(R, 'deploy/game/server.js')], { env: { ...process.env, PORT: String(port), LONG_DIR: dir, LEAGUE_PICK_S: '4', LEAGUE_WAIT: '2', LEAGUE_BOT_WAIT: '6' }, stdio: ['ignore', 'pipe', 'pipe'] });
   let log = '';
   srv.stdout.on('data', (b) => (log += b));
   srv.stderr.on('data', (b) => (log += b));
@@ -158,6 +158,28 @@ function client(url) {
     const rv = await S1.wait((m) => m.t === 'reveal', 10000, 'reveal 2v2 at the deadline');
     check(['okeanija', 'jam'].includes(rv.chosen.map) && ['rim', 'ww1'].includes(rv.chosen.era), `no lock from one team: the reveal comes at the deadline, drawn from the picks (${JSON.stringify(rv.chosen)})`);
     for (const c of [P1, P2, S1, S2]) c.ws.close();
+
+    // nobody to play against (Darko 27. 9.): after the wait the computer takes the empty seat; half the ELO
+    const SO = await lobby('Solo');
+    SO.send({ queue: { m: 'b', n: 1 } });
+    const t0 = Date.now(), mb1 = await SO.wait((m) => m.t === 'match', 15000, 'bot match');
+    const opp = mb1.teams[2 - mb1.team];
+    check(Date.now() - t0 >= 4000 && opp.length === 1 && opp[0].bot && /\(AI\)/.test(opp[0].name), `a computer opponent after the wait (${opp.map((p) => p.name)}, ${((Date.now() - t0) / 1000).toFixed(1)} s)`);
+    SO.send({ pick: { maps: ['evropa', 'afrika'], eras: ['ww2', 'danas'], bm: 'svijet', be: 'rim', lock: 1 } });
+    const rvb = await SO.wait((m) => m.t === 'reveal', 8000, 'bot reveal');
+    check(rvb.picks[2 - mb1.team + 1] && rvb.picks[2 - mb1.team + 1].maps.length === 2, 'the computer picks and bans too (at once)');
+    const LS = client(U + '?long=' + rvb.code);
+    await LS.open;
+    LS.send({ hello: { name: 'Solo', uid: uid('Solo') } });
+    const recS = await LS.wait((m) => m.t === 'rec');
+    const bs = recS.rec.slots.find((x) => x.bot);
+    check(recS.you >= 0 && bs && !bs.uid && recS.rec.set.dif === 'srednje', `the game: my seat and the computer's (difficulty ${recS.rec.set.dif} for an unranked player)`);
+    await sleep(Math.max(0, recS.wait) + 1500);
+    LS.send({ c: ['surr', []] });
+    const lgb = await LS.wait((m) => m.t === 'lg', 30000, 'bot result');
+    const rs = lgb.res['dev' + uid('Solo')];
+    check(rs && rs.delta === -10 && Object.keys(lgb.res).length === 1, `against the computer the ELO moves half as much (${JSON.stringify(lgb.res)})`);
+    for (const c of [SO, LS]) c.ws.close();
   } catch (e) {
     check(false, 'error: ' + e.message);
   } finally {
