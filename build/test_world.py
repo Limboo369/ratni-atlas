@@ -89,8 +89,14 @@ async def main():
         check(await A.is_visible('#mapField'), 'map field visible when the server has the world')
         await A.fill('#nameIn', 'Darko')
         await A.click('#eraSeg button[data-v="danas"]')
+        # the world downloads in the background while the start screen is open (Darko 28. 9.), with every era file
+        t0 = time.time()
+        await A.wait_for_function('() => { const m = window.__ra.maps.svijet; return !!m && RA_ERAS_OK(m); }'.replace(
+            'RA_ERAS_OK(m)', 'm._eraRaw && Object.keys(m.eraOK).filter(e => m.eraOK[e]).every(e => m._eraRaw[e])'), timeout=60000)
+        print(f'world preloaded in {time.time() - t0:.1f} s')
         t0 = time.time()
         await A.click('#mapSeg button[data-v="svijet"]')
+        check(await A.evaluate('document.getElementById("loading").hidden && window.__ra.map.id === "svijet"'), 'a preloaded world opens without the loading screen')
         await A.wait_for_function('window.__ra.map.id === "svijet" && document.getElementById("loading").hidden')
         await A.wait_for_function('document.getElementById("startScreen").classList.contains("command-world")')
         check(await A.evaluate('() => { const c=document.getElementById("atlasCanvas"); return c.width > c.height && document.getElementById("atlasRegion").textContent === "WORLD"; }'), 'launcher atlas follows the world map geometry')

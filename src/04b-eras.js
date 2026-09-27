@@ -208,7 +208,7 @@ RA.loadEra = function (map, id) {
   if (RA.eraReady(map, id)) return Promise.resolve();
   if (map.eraOK && !map.eraOK[id]) return Promise.reject(new Error('no-era'));
   const L = (map._eraLoads = map._eraLoads || {});
-  return (L[id] = L[id] || RA.fetchJSON(RA.DATA_URL + map.id + '/era_' + id + '.json')
+  return (L[id] = L[id] || RA.eraFile(map, id)
     .then((e) => eraOf(e, map.N))
     .then((E) => {
       map.eras[id] = E;
@@ -216,6 +216,20 @@ RA.loadEra = function (map, id) {
       if (ks.length > 2) delete map.eras[ks[0]]; // ~1 MB per decoded world era
     })
     .finally(() => delete L[id]));
+};
+
+/* an era's file (~40 kB), downloaded once and kept (only the decoded eras are dropped, ~1 MB each) */
+RA.eraFile = function (map, id) {
+  const R = (map._eraRaw = map._eraRaw || {});
+  return (R[id] = R[id] || RA.fetchJSON(RA.DATA_URL + map.id + '/era_' + id + '.json').catch((e) => {
+    delete R[id];
+    throw e;
+  }));
+};
+/* download every era file of a lazily loaded map in the background, one at a time (errors are left for later) */
+RA.prefetchEras = function (map) {
+  const ids = RA.ERAS.map((e) => e.id).filter((e) => !map.eraOK || map.eraOK[e]);
+  return ids.reduce((p, e) => p.then(() => RA.eraFile(map, e).then(() => {}, () => {})), Promise.resolve());
 };
 
 /* The map of one era: its polities as nations, renamed cities (+ historical capitals that are not modern cities),

@@ -58,10 +58,28 @@ RA.App = class {
       const done = (ok) => {
         this.mapOK[m.id] = ok;
         this.ui.mapsChanged(m.id);
+        if (ok) this.preloadMap(m.id);
       };
       if (!RA.DATA_URL) done(false);
       else RA.hasFile(RA.DATA_URL + m.id + '/map.json').then(done);
     }
+  }
+  /* Darko 28. 9.: the other maps (the world) download in the background right after the start screen shows, so
+     picking a continent later needs no loading screen. Quietly: a failure is left for when the map is really chosen
+     (withMap shares the same download and shows its progress). Not with the browser's data saver on. */
+  preloadMap(id) {
+    const c = navigator.connection;
+    if (this.maps[id] || (c && (c.saveData || /(^|-)2g$/.test(c.effectiveType || '')))) return;
+    const go = () =>
+      this.ensureMap(id, this.ui.settings.era)
+        .catch(() => this.maps[id]) // the map is there even when this era is not (yet)
+        .then((m) => {
+          if (!m) return;
+          if (!document.getElementById('startScreen').hidden) this.ui.startNotes(); // the continents' buttons count their states
+          return RA.prefetchEras(m);
+        })
+        .catch(() => {});
+    setTimeout(() => (window.requestIdleCallback ? requestIdleCallback(go, { timeout: 3000 }) : go()), 1500);
   }
   mapReady(id, era) {
     const m = this.maps[id];

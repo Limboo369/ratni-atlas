@@ -11284,7 +11284,7 @@ RA.loadEra = function (map, id) {
   if (RA.eraReady(map, id)) return Promise.resolve();
   if (map.eraOK && !map.eraOK[id]) return Promise.reject(new Error('no-era'));
   const L = (map._eraLoads = map._eraLoads || {});
-  return (L[id] = L[id] || RA.fetchJSON(RA.DATA_URL + map.id + '/era_' + id + '.json')
+  return (L[id] = L[id] || RA.eraFile(map, id)
     .then((e) => eraOf(e, map.N))
     .then((E) => {
       map.eras[id] = E;
@@ -11292,6 +11292,20 @@ RA.loadEra = function (map, id) {
       if (ks.length > 2) delete map.eras[ks[0]]; // ~1 MB per decoded world era
     })
     .finally(() => delete L[id]));
+};
+
+/* an era's file (~40 kB), downloaded once and kept (only the decoded eras are dropped, ~1 MB each) */
+RA.eraFile = function (map, id) {
+  const R = (map._eraRaw = map._eraRaw || {});
+  return (R[id] = R[id] || RA.fetchJSON(RA.DATA_URL + map.id + '/era_' + id + '.json').catch((e) => {
+    delete R[id];
+    throw e;
+  }));
+};
+/* download every era file of a lazily loaded map in the background, one at a time (errors are left for later) */
+RA.prefetchEras = function (map) {
+  const ids = RA.ERAS.map((e) => e.id).filter((e) => !map.eraOK || map.eraOK[e]);
+  return ids.reduce((p, e) => p.then(() => RA.eraFile(map, e).then(() => {}, () => {})), Promise.resolve());
 };
 
 /* The map of one era: its polities as nations, renamed cities (+ historical capitals that are not modern cities),
@@ -18779,10 +18793,28 @@ RA.App = class {
       const done = (ok) => {
         this.mapOK[m.id] = ok;
         this.ui.mapsChanged(m.id);
+        if (ok) this.preloadMap(m.id);
       };
       if (!RA.DATA_URL) done(false);
       else RA.hasFile(RA.DATA_URL + m.id + '/map.json').then(done);
     }
+  }
+  /* Darko 28. 9.: the other maps (the world) download in the background right after the start screen shows, so
+     picking a continent later needs no loading screen. Quietly: a failure is left for when the map is really chosen
+     (withMap shares the same download and shows its progress). Not with the browser's data saver on. */
+  preloadMap(id) {
+    const c = navigator.connection;
+    if (this.maps[id] || (c && (c.saveData || /(^|-)2g$/.test(c.effectiveType || '')))) return;
+    const go = () =>
+      this.ensureMap(id, this.ui.settings.era)
+        .catch(() => this.maps[id]) // the map is there even when this era is not (yet)
+        .then((m) => {
+          if (!m) return;
+          if (!document.getElementById('startScreen').hidden) this.ui.startNotes(); // the continents' buttons count their states
+          return RA.prefetchEras(m);
+        })
+        .catch(() => {});
+    setTimeout(() => (window.requestIdleCallback ? requestIdleCallback(go, { timeout: 3000 }) : go()), 1500);
   }
   mapReady(id, era) {
     const m = this.maps[id];
@@ -21759,7 +21791,7 @@ Object.assign(RA.UI.prototype, {
   },
 });
 
-RA.BUILD = '3a22cf0f';
+RA.BUILD = 'c3567041';
 new RA.App().boot();
 }
 function __raFallback(){
