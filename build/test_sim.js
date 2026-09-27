@@ -506,6 +506,7 @@ const check = (ok, msg) => {
     RA.longApply(F2, [F2.clock(), 0, 'build', ['factory', cell]]);
     for (let i = 0; i < secs; i++) F2.step();
     check(F.hash() === F2.hash() && F.clock() === F2.clock(), 'Focus clock: deterministic');
+    check(F.rtK() === F.sub * 10 && RA.newGame(RA.eraMap(m, 'danas', 'granice'), { seed: 1, era: 'danas', start: 'granice', gm: 'klasik' }).rtK() === 1, 'Focus: trains and trade ships at the Blitz speed in real time');
   }
   // weapons research (Darko, 27. 9.): pay, wait, the weapon is better
   {

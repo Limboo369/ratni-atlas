@@ -39,7 +39,7 @@ RA.CFG = {
   INTEREST: 0.01 / 600, // on a player's saved gold, per tick (1% a minute), at most a quarter of the income
   // Focus (a game of days, opts.sub): the world moves one step every `sub` seconds, but gold comes every second and
   // orders are carried out within a second (Darko, 27. 9.: slow armies, a fast economy — build while there is peace)
-  FOCUS_GOLD: 20, // gold of one world step × days, spread over its seconds (a first factory in ~5 min)
+  FOCUS_GOLD: 24, // gold of one world step × days, spread over its seconds (Darko 27. 9.: +20%)
   FOCUS_BUILD: 0.6, // a building takes its Blitz time × this, in seconds
 };
 /* tax (plan 33): more gold ↔ slower army growth; every state starts at 'Srednji' */
@@ -1163,6 +1163,11 @@ RA.Game = class Game {
 
   /* ---------------- main tick ---------------- */
   /* the record's clock: Focus counts seconds (st), everything else counts ticks */
+  /* Blitz ticks in one world step: Focus steps the world every `sub` seconds, Blitz ten times a second; trains and
+     trade ships multiply their progress by this, so they run at the same real speed in every mode */
+  rtK() {
+    return this.sub ? this.sub * 10 : 1;
+  }
   clock() {
     return this.sub ? this.st : this.tick;
   }

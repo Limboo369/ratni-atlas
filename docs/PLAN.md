@@ -368,3 +368,9 @@ engleskom. `build/test_lang.py` (i u CI-ju) pada ako na engleskoj stranici ostan
 - Liga: odbijena sesija ostaje u prozoru sa ponovnom prijavom; prekid veze ima ponovni pokušaj, bez petlje ponovnih konekcija. Neuspjela provjera naloga više se ne pamti pet minuta na serveru.
 - Karta: uklonjena skala i osnovni natpis izvora (izvori ostaju u About); obod regije ima keširanu, zamagljenu masku bez žute isprekidane linije. OpenStreetMap zadržava svoj potpis kada je odabran.
 - Provjera: build, sintaksa i simulacija prolaze; testovi gestova i oporavka lige dodani. Browser integracioni testovi prate novi tok i ostaju obavezna provjera prije objave. Završna provjera na stvarnom telefonu i autentifikovanom online nalogu ostaje otvorena.
+
+## Magla i oblaci, vozovi 27. 9. (Darko)
+
+- Oko regije gusti, lagano animirani oblaci umjesto oštre linije.
+- Focus: magla rata — tuđa zemlja daleko od tvoje (i saveznika) je pod oblacima; vidi se agentom (izviđanje) ili dronom/raketom.
+- Focus: vozovi i trgovački brodovi normalnom brzinom (kao u Blitzu, u stvarnom vremenu); osnovni prihod +20%.

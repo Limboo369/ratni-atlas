@@ -625,7 +625,7 @@ RA.App = class {
       const ui = this.ui;
       const anim = moving || G.state === 'spawn' || G.boats.length || G.missiles.length || G.units.length || G.trains.length || G.planes.length || G.tships.length || (ui.mode && (ui.mode.aim >= 0 || ui.mode.kind === 'unit' || ui.mode.kind === 'group')) || ui.fxList.length || G.pings.some((g) => G.tick - g.tick < 60) || (ui.pingState && now - ui.pingState.t0 < 700) || (G.me && G.attacks.some((a) => !a.done && a.a === G.me.id && a.focus >= 0));
       // Cached models follow display cadence on desktop; retain the phone frame budget.
-      const fxInterval = anim ? (this.fx.w > 900 && this.simMs < 12 ? 16 : 30) : 200;
+      const fxInterval = anim ? (this.fx.w > 900 && this.simMs < 12 ? 16 : 30) : RA.Clouds.active(G) ? 90 : 200; // drifting clouds
       if (moving || now - (this.lastF || 0) >= fxInterval) {
         this.fx.draw(G, this.terr.view(), ui);
         this.lastF = now;

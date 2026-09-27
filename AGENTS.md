@@ -98,6 +98,10 @@ Building levels (`src/03f-upgrade.js`): command `'up'` [building id], `s.lv` 1�
 buildings; kept in `_structCaptured` / `_destroyStruct`), `RA.lvf(s, k)` per-building factor, effects in `RA.UP_DESC`.
 Trenches (`src/03g-trench.js`): command `'dig'` [border cell] digs along my border cells touching that neighbour;
 `G.trench[c]` 1 digging / 2 ready (attack cost ×`TRENCH_MAG`, slowness ×`TRENCH_SPD`), cleared in `setOwner`.
+Clouds and the fog of war (`src/07d-render-clouds.js`, drawing only): animated clouds outside a region's map instead
+of a hard edge; in Focus (`G.long && G.sub`) foreign land farther than `RA.FOG_NEAR` cells from me and my allies is
+clouded (clear: my units, states my agents scouted, where my drones/missiles hit); `RA.Clouds.hidden(G, x, y)` hides
+foreign units, buildings and labels there. Focus trains and trade ships run at Blitz real-time speed (`G.rtK()`).
 Offers and demands (`src/02l-offers.js`): commands `'offer'` [to, give, want] and `'offerRes'` [id, yes|no|counter, give,
 want]; a bundle is {g gold, t troops (allies only), c city index (with its land), r resource slot (supply for a while,
 `p.giftRes`), s strait index (open it)}; a computer state answers at once (accept, counter for more gold, refuse).

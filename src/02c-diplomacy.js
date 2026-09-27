@@ -153,7 +153,7 @@ Object.assign(RA.CFG, {
     // trade ships leave ports towards partners' ports
     for (const s of this.structs) {
       if (s.dead || !s.ready || s.type !== 'port' || s.empUntil > tk || s.blocked || tk < (s.nextTrade || 0)) continue;
-      s.nextTrade = tk + Math.round(RA.CFG.TRADE_EVERY / RA.lvf(s, 0.35)) + Math.floor(this.rng() * 60);
+      s.nextTrade = tk + Math.max(1, Math.round((RA.CFG.TRADE_EVERY / RA.lvf(s, 0.35) + Math.floor(this.rng() * 60)) / this.rtK()));
       const p = this.P[s.owner];
       if (!p.trade.size) continue;
       const cands = [];
@@ -171,7 +171,7 @@ Object.assign(RA.CFG, {
     }
     for (const sh of this.tships) {
       if (sh.done) continue;
-      sh.pos += RA.CFG.TRADE_SHIP_SPEED;
+      sh.pos += RA.CFG.TRADE_SHIP_SPEED * this.rtK(); // Focus: the normal speed in real time
       if (sh.pos < sh.path.length - 1) continue;
       sh.done = true;
       const a = this.P[sh.owner], b = this.P[sh.partner];

@@ -695,6 +695,7 @@ RA.SR = {
   "Focus: catching up with the server… {0}%": "Focus: sustižem server… {0}%",
   "Focus: gold and orders every second, armies move every {0} s — the game goes on while you're away. Link: <b>{1}</b>": "Focus: zlato i naredbe svake sekunde, vojske se pomjeraju svakih {0} s — igra teče i kad nisi tu. Link: <b>{1}</b>",
   "Focus: the game lasts days and goes on while you're away (the computer leads your state). Tech tree, resources and trade, a longer peace time; when you come back, a report of what happened.": "Focus: igra traje danima i teče i dok nisi tu (kompjuter vodi tvoju državu). Stablo tehnologija, resursi i trgovina, duže mirno doba; kad se vratiš, izvještaj šta se desilo.",
+  "Fog of war: land far from yours is under clouds. Scout it with an agent (Intelligence agency) or send a drone.": "Magla rata: zemlja daleko od tvoje je pod oblacima. Izvidi je agentom (obavještajna služba) ili pošalji dron.",
   "Foot soldiers": "Pješaci",
   "Forbidden": "Zabranjeno",
   "Fort": "Utvrda",

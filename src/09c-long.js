@@ -276,6 +276,7 @@ Object.assign(RA.App.prototype, {
       else ui.longPick();
       if (r.set.lg && LG.startAt > Date.now()) ui.toast('info', RA.t("Conquest League {0}v{1}: starts in {2} s — destroy the enemy team.", r.set.lg, r.set.lg, Math.ceil((LG.startAt - Date.now()) / 1000)), { ms: 6000 });
       if (G.state === 'over' && !G.continued) RA.focusDrop(r.code);
+      if (!r.set.fast && mine && mine.alive) ui.toast('info', RA.t("Fog of war: land far from yours is under clouds. Scout it with an agent (Intelligence agency) or send a drone."), { ms: 9000 });
       if (!r.set.fast) ui.toast('info', RA.t("Focus: gold and orders every second, armies move every {0} s — the game goes on while you're away. Link: <b>{1}</b>", Math.round((r.tickMs * (r.sub || 1)) / 1000), RA.esc(location.origin + '/long-' + r.code)), { ms: 9000 });
     };
     slice();

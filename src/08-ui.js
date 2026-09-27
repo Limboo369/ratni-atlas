@@ -1105,7 +1105,7 @@ RA.UI = class {
     if (me && me.alive && G.state === 'play') {
       if (G.opts.camp && G.opts.camp.type !== 'free' && this.campProg) pills.push(['goal', `🎯 ${this.campProg}`]);
       if (G.long && this.app.long.rec && this.app.long.rec.set.fast) pills.push(['calm', RA.t("Skirmish · {0} players", G.humans.filter((p) => p.alive && !p.surr).length)]);
-      else if (G.long && this.app.long.rec) pills.push(['calm', RA.t("Focus · armies move every {0} s · {1} players", Math.round(this.app.long.rec.tickMs / 1000), G.humans.filter((p) => p.alive).length)]);
+      else if (G.long && this.app.long.rec) pills.push(['calm', RA.t("Focus · armies move every {0} s · {1} players", Math.round((this.app.long.rec.tickMs * (this.app.long.rec.sub || 1)) / 1000), G.humans.filter((p) => p.alive).length)]);
       const dc = G.defcon();
       if (dc) {
         const next = (6 - dc) * C.DEFCON_STEP;

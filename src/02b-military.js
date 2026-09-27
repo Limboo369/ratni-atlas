@@ -1002,16 +1002,16 @@ RA.NUKE = RA.MISSILE;
     return out;
   };
   P._stepTrains = function () {
-    const tk = this.tick;
+    const tk = this.tick, k = this.rtK(); // Focus: trains run at the normal (Blitz) speed in real time
     for (const s of this.structs) {
       if (s.dead || !s.ready || s.type !== 'factory' || s.empUntil > tk || tk < (s.nextTrain || 0)) continue;
       const dests = this.factoryLinks(s);
-      s.nextTrain = tk + Math.round(RA.CFG.TRAIN_EVERY / (1 + 0.12 * Math.min(10, dests.length)) / RA.lvf(s, 0.35)) + Math.floor(this.rng() * 30);
+      s.nextTrain = tk + Math.max(1, Math.round((RA.CFG.TRAIN_EVERY / (1 + 0.12 * Math.min(10, dests.length)) / RA.lvf(s, 0.35) + Math.floor(this.rng() * 30)) / k));
       if (!dests.length) continue;
       s.rr = ((s.rr || 0) + 1) % dests.length;
       const d = dests[s.rr];
       const dist = RA.dist(d.x - s.x, d.y - s.y);
-      this.trains.push({ id: this.nextId++, owner: s.owner, sx: s.x + 0.5, sy: s.y + 0.5, tx: d.x + 0.5, ty: d.y + 0.5, dc: d.c, gold: d.gold, t: 0, dur: Math.max(8, Math.round(dist / RA.CFG.TRAIN_SPEED)), done: false });
+      this.trains.push({ id: this.nextId++, owner: s.owner, sx: s.x + 0.5, sy: s.y + 0.5, tx: d.x + 0.5, ty: d.y + 0.5, dc: d.c, gold: d.gold, t: 0, dur: Math.max(1, Math.round(Math.max(8, dist / RA.CFG.TRAIN_SPEED) / k)), done: false });
     }
     for (const tr of this.trains) {
       if (tr.done) continue;

@@ -175,6 +175,7 @@ RA.FxLayer = L.Layer.extend({
       if (fs < 9) continue;
       const x = gx(L0.x + 0.5), y = gy(L0.y + 0.5);
       if (!inView(x, y, 160)) continue;
+      if (RA.Clouds.hidden(G, L0.x, L0.y)) continue; // under the fog of war: no name, no army
       const name = p.name;
       ctx.font = `600 ${fs}px ${RA.FONT_UI}`;
       let tw = ctx.measureText(name).width;
@@ -207,6 +208,7 @@ RA.FxLayer = L.Layer.extend({
       for (const c of cs) {
         if (c.tier < minTier) continue;
         if (reg && blk[c.c]) continue;
+        if (RA.Clouds.hidden(G, c.x, c.y)) continue;
         const x = gx(c.x + 0.5), y = gy(c.y + 0.5);
         if (!inView(x, y, 40)) continue;
         const o = c.owner ? G.P[c.owner] : null;
@@ -305,6 +307,7 @@ RA.FxLayer = L.Layer.extend({
       if (s.dead) continue;
       const x = gx(s.x + 0.5), y = gy(s.y + 0.5);
       if (!inView(x, y, 30)) continue;
+      if (RA.Clouds.hidden(G, s.x, s.y)) continue;
       const o = G.P[s.owner];
       ctx.globalAlpha = s.ready ? 1 : 0.55;
       RA.drawStructIcon(ctx, RA.STRUCT[s.type].icon || s.type, x, y, s.type === 'city' ? ss * 1.15 : ss, o.hex);
@@ -436,6 +439,7 @@ RA.FxLayer = L.Layer.extend({
       if (u.dead) continue;
       const mine = me && u.owner === me.id;
       if (!mine && cell < 1.15) continue;
+      if (!mine && RA.Clouds.hidden(G, u.x, u.y)) continue;
       const pose = this.unitMotion.sample(u, W, now, duration, still || u.ready > G.tick || u.empUntil > G.tick);
       const x = gx(pose.x), y = gy(pose.y);
       if (!inView(x, y, 40)) continue;
@@ -699,7 +703,7 @@ RA.FxLayer = L.Layer.extend({
     // trade ships ------------------------------------------------------------------
     for (const sh of G.tships) {
       if (sh.done) continue;
-      const pos = Math.min(sh.path.length - 1, sh.pos + alpha * RA.CFG.TRADE_SHIP_SPEED);
+      const pos = Math.min(sh.path.length - 1, sh.pos + alpha * RA.CFG.TRADE_SHIP_SPEED * G.rtK());
       const i0 = Math.floor(pos), i1 = Math.min(sh.path.length - 1, i0 + 1), f = pos - i0;
       const c0 = sh.path[i0], c1 = sh.path[i1];
       const x0 = (c0 % W) + 0.5, y0 = ((c0 / W) | 0) + 0.5, x1 = (c1 % W) + 0.5, y1 = ((c1 / W) | 0) + 0.5;
@@ -963,6 +967,8 @@ RA.FxLayer = L.Layer.extend({
         ctx.stroke();
       }
     }
+    // clouds around the region and, in Focus, the fog of war (07d-render-clouds.js): over everything else
+    RA.Clouds.draw(ctx, G, v, this.w, this.h, now);
     // tap feedback
     if (ui.pingState && now - ui.pingState.t0 < 600) {
       const k = (now - ui.pingState.t0) / 600;
