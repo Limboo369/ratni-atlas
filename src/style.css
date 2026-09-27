@@ -1469,10 +1469,11 @@ html[lang=sr] .replay-bar::before{content:"SNIMAK PARTIJE"}
 .mode-heading .lab{letter-spacing:.15em;font-size:10px;color:#9cacb4}
 #modeContinue{width:100%;margin:18px 0}
 /* Both launcher tabs share typography, spacing and card geometry. */
-#paceSeg,.online-pane,.solo-extras{display:grid;width:100%;grid-template-columns:1fr;gap:10px;margin:0}
+#paceSeg,.online-pane,.solo-extras,.solo-primary{display:grid;width:100%;grid-template-columns:1fr;gap:10px;margin:0}
 .solo-extras{margin-top:10px}
+.solo-primary{margin-bottom:10px}
 .launcher-intro{margin:20px 0 16px}
-#startScreen.mode-setup :is(.launcher-intro,.solo-extras){display:none}
+#startScreen.mode-setup :is(.launcher-intro,.solo-extras,.solo-primary){display:none}
 #startScreen .launcher-card{display:grid;grid-template-columns:38px minmax(0,1fr) 16px;align-items:center;gap:14px;width:100%;min-height:78px;padding:16px;margin:0;border:1px solid #bbcbd127;border-radius:4px;background:linear-gradient(110deg,#23374270,#0b171ed9);color:var(--launch-text,#e8eef0);font-family:inherit;text-align:left;box-shadow:none;cursor:pointer}
 #startScreen .launcher-card b{display:block;font-size:16px;font-weight:700;line-height:1.3;letter-spacing:.035em;text-transform:none}
 #startScreen .launcher-card small{display:block;margin-top:5px;font-size:11px;line-height:1.5;color:#a7b6be;opacity:1;text-align:left}

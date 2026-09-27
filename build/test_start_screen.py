@@ -45,12 +45,12 @@ async def main():
                 const rect=s=>{const r=document.querySelector(s).getBoundingClientRect(); return [r.x,r.y+screen.scrollTop,r.width,r.height];};
                 const type=s=>{const c=getComputedStyle(document.querySelector(s));return [c.fontSize,c.lineHeight,c.letterSpacing];};
                 return {title:rect('.command-title'),headline:rect('.command-headline'),tabs:rect('#sideSeg'),name:rect('.command-player'),
-                    card:rect(screen.classList.contains('side-online')?'#leagueBtn':'#paceSeg button'),
+                    card:rect(screen.classList.contains('side-online')?'#leagueBtn':'#campBigBtn'),
                     heading:type(screen.classList.contains('side-online')?'#skirmishBtn b':'#paceSeg [data-v="focus"] b')};
             }"""
             solo = await page.evaluate(geometry)
-            order = await page.locator('#paceSeg button,.solo-extras button').evaluate_all('(els)=>els.map(e=>e.getBoundingClientRect().top)')
-            assert len(order)==5 and all(a<b for a,b in zip(order,order[1:])), order
+            order = await page.locator('.solo-primary button,#paceSeg button,.solo-extras button').evaluate_all('(els)=>els.map(e=>e.getBoundingClientRect().top)')
+            assert len(order)==6 and all(a<b for a,b in zip(order,order[1:])), order
             await page.click('#sideSeg [data-v="online"]')
             online = await page.evaluate(geometry)
             for key in ['title','headline','tabs','name','card']:
