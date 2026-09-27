@@ -167,12 +167,13 @@ RA.UI = class {
     this._seg('paceSeg', RA.MODES[this.settings.pace] ? this.settings.pace : 'blitz', (v) => {
       this.settings.pace = v;
       this.paceShow();
-      if (v === 'custom') this.$('operationDialog').showModal();
+      if (this.command && this.settings.side !== 'online') this.command.enterMode(v);
     });
     // Conqueror (solo) or Online (Conquest League, Skirmish, private rooms): what the start screen shows
     this._seg('sideSeg', this.settings.side === 'online' ? 'online' : 'solo', (v) => {
       this.settings.side = v;
       this.sideShow();
+      if (this.command) this.command.home();
     });
     this.sideShow();
     addEventListener('ra-login', () => {
@@ -1560,7 +1561,11 @@ RA.UI = class {
 
   /* ---------------- sheet helpers ---------------- */
   openSheet(html, onBind, keepScroll, redraw) {
-    if (keepScroll && this.sheetDrag) return;
+    if (keepScroll && this.sheetDrag) {
+      this.sheetPending = () => this.openSheet(html, onBind, keepScroll, redraw);
+      return;
+    }
+    this.sheetPending = null;
     this.sheetDrag = null;
     this.redraw = redraw || null;
     const s = this.$('sheet');
@@ -1590,6 +1595,7 @@ RA.UI = class {
     this.app.sheetPause(true);
   }
   closeSheet() {
+    this.sheetPending = null;
     this.sheetDrag = null;
     this.$('sheet').style.translate = '';
     this.$('sheet').classList.remove('sheet-dragging');
@@ -1606,34 +1612,77 @@ RA.UI = class {
   bindSheetDrag(s) {
     if (s.dataset.dragBound) return;
     s.dataset.dragBound = '1';
+    const blocked = (target) => target.closest('input,select,textarea,[contenteditable="true"]');
+    const reset = () => {
+      this.sheetDrag = null;
+      s.classList.remove('sheet-dragging');
+      s.style.translate = '';
+    };
+    const release = () => { reset(); if (this.sheetPending) this.sheetPending(); };
+    const move = (d, x, y) => {
+      d.dy = Math.max(0, y - d.y);
+      if (!d.active && (d.dy < 8 || d.dy <= Math.abs(x - d.x))) return false;
+      d.active = true;
+      s.classList.add('sheet-dragging');
+      s.style.translate = `0 ${d.dy}px`;
+      return true;
+    };
+    const finish = (cancelled) => {
+      const d = this.sheetDrag;
+      if (!d) return;
+      if (d.active) this.sheetSuppressClick = Date.now() + 400;
+      reset();
+      if (!cancelled && d.active && d.dy > 72) this.closeSheet();
+      else if (this.sheetPending) this.sheetPending();
+    };
+    s.addEventListener('click', (e) => {
+      if (Date.now() < (this.sheetSuppressClick || 0)) { e.preventDefault(); e.stopImmediatePropagation(); }
+    }, true);
+    // Touch uses direction arbitration instead of pointer capture: upward gestures
+    // and a scrolled list keep their normal scrolling; downward at the top dismisses.
+    s.addEventListener('touchstart', (e) => {
+      if (e.touches.length !== 1 || blocked(e.target)) return release();
+      const t = e.touches[0];
+      this.sheetDrag = {touch:true, x:t.clientX, y:t.clientY, dy:0, target:e.target, grip:!!e.target.closest('.grab,.sh-head')};
+    }, {passive:true});
+    s.addEventListener('touchmove', (e) => {
+      const d = this.sheetDrag;
+      if (!d || !d.touch) return;
+      if (e.touches.length !== 1) return release();
+      const t = e.touches[0], dy = t.clientY - d.y, dx = t.clientX - d.x;
+      if (!d.active) {
+        if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+        if (dy <= 0 || Math.abs(dx) >= dy) return release();
+        if (!d.grip) for (let el = d.target; el && s.contains(el); el = el.parentElement) {
+          if (el.scrollHeight > el.clientHeight + 1 && el.scrollTop > 0) return release();
+        }
+      }
+      if (!e.cancelable) return release();
+      if (move(d, t.clientX, t.clientY)) e.preventDefault();
+    }, {passive:false});
+    s.addEventListener('touchend', () => finish(false));
+    s.addEventListener('touchcancel', () => finish(true));
     s.addEventListener('pointerdown', (e) => {
-      if (!e.isPrimary || e.button !== 0) return;
-      const grip = e.target.closest('.grab');
-      if (!grip && (!e.target.closest('.sh-head') || e.target.closest('button,input,select,a,textarea'))) return;
-      this.sheetDrag = { id: e.pointerId, x: e.clientX, y: e.clientY, dy: 0, grip: !!grip };
+      if (e.pointerType === 'touch' || !e.isPrimary || e.button !== 0 || blocked(e.target)) return;
+      if (!e.target.closest('.grab') && e.target.closest('button,a')) return;
+      this.sheetDrag = {id:e.pointerId, x:e.clientX, y:e.clientY, dy:0};
       s.setPointerCapture(e.pointerId);
     });
     s.addEventListener('pointermove', (e) => {
       const d = this.sheetDrag;
-      if (!d || d.id !== e.pointerId) return;
-      d.dy = Math.max(0, e.clientY - d.y);
-      if (d.dy < 5 && !s.classList.contains('sheet-dragging')) return;
-      s.classList.add('sheet-dragging');
-      s.style.translate = `0 ${d.dy}px`;
+      if (d && d.id === e.pointerId) move(d, e.clientX, e.clientY);
     });
     const end = (e) => {
       const d = this.sheetDrag;
       if (!d || d.id !== e.pointerId) return;
-      this.sheetDrag = null;
+      finish(e.type !== 'pointerup');
       if (s.hasPointerCapture(e.pointerId)) s.releasePointerCapture(e.pointerId);
-      s.classList.remove('sheet-dragging');
-      s.style.translate = '';
-      if (e.type === 'pointerup' && ((d.dy > 72 && d.dy > Math.abs(e.clientX - d.x)) || (d.grip && d.dy < 5 && Math.abs(e.clientX - d.x) < 5))) this.closeSheet();
     };
     s.addEventListener('pointerup', end);
     s.addEventListener('pointercancel', end);
     s.addEventListener('lostpointercapture', end);
   }
+
   head(title, meta, color) {
     return `<div class="sh-head">${color ? `<span class="chip" style="background:${color}"></span>` : ''}<div><h2 id="sheetTitle">${RA.esc(title)}</h2>${meta ? `<div class="meta">${meta}</div>` : ''}</div><button class="sh-close" aria-label="${RA.t("Close")}">${RA.icon('close')}</button></div>`;
   }

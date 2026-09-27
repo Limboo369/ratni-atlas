@@ -26,6 +26,7 @@ async def main():
             await pg.goto((ROOT/'dist/test.html').as_uri())
             await pg.wait_for_function('window.__ra && document.getElementById("loading").hidden')
             await pg.evaluate('''() => { const u=__ra.ui; u.noTips=true; u.settings.region='balkan'; u.settings.start='granice'; }''')
+            await pg.click('#paceSeg [data-v="blitz"]')
             await pg.click('#goBtn')
             await pg.wait_for_selector('#spawnBar')
             await pg.evaluate('''() => { const G=__ra.G; __ra.ui.pickNation(String(G.P.find(p=>p&&p.iso==='BIH').id)); }''')

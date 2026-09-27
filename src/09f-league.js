@@ -29,6 +29,7 @@ RA.League = class {
   }
   connect() {
     if (this.ws && this.ws.readyState <= 1) return;
+    this.connection = 'connecting';
     const ws = new WebSocket(this.url + '?league=1');
     this.ws = ws;
     ws.onopen = () => ws.send(JSON.stringify({ hello: { name: this.app.long.name(), uid: this.app.long.uid() } }));
@@ -45,7 +46,7 @@ RA.League = class {
       if (this.ws !== ws) return;
       this.ws = null;
       this.queue = null;
-      if (ev.code === 4401) dispatchEvent(new Event('ra-login'));
+      this.connection = ev.code === 4401 ? 'auth' : 'offline';
       this.app.ui.leagueRefresh();
     };
   }
@@ -55,7 +56,7 @@ RA.League = class {
   onMsg(m) {
     const ui = this.app.ui;
     if (m.t === 'err') return ui.toast('bad', RA.esc(RA.t(String(m.e || "League error."))), { ms: 5000 });
-    if (m.t === 'hi') (this.elo = m.elo), (this.me = m.me);
+    if (m.t === 'hi') (this.elo = m.elo), (this.me = m.me), (this.connection = 'ready');
     else if (m.t === 'party') this.party = m;
     else if (m.t === 'queue') this.queue = m.l ? m : null;
     else if (m.t === 'match') {
@@ -81,13 +82,16 @@ RA.League = class {
 };
 
 Object.assign(RA.UI.prototype, {
-  leagueSheet() {
+  leagueSheet(refresh = false) {
     const app = this.app;
     if (!app.net || !app.net.wsUrl) return this.toast('info', RA.t("Conquest League works on war.deovilab.com."), { ms: 4000 });
     const L = (app.league = app.league || new RA.League(app));
-    L.connect();
+    if (!refresh) L.connect();
     const l = L.m + L.n, e = L.elo && L.elo[l], tier = RA.lgTier(e);
     let h = '<div id="lgSheet"></div>' + this.head(RA.t("Conquest League"), RA.t("Ranked matches · players only · win by destroying the enemy"));
+    if (L.connection === 'auth' || L.connection === 'offline') {
+      h += `<p class="note" role="status">${RA.t(L.connection === 'auth' ? 'Your session needs to be checked. Sign in again to play.' : 'The connection was interrupted. Try again.')}</p><button class="btn" id="lgRetry">${RA.t(L.connection === 'auth' ? 'Sign in' : 'Try again')}</button>`;
+    } else if (L.connection === 'connecting') h += `<p class="note" role="status">${RA.t('Connecting…')}</p>`;
     h += RA.t("<div class=\"field\"><span class=\"lab\">Mode</span><div class=\"seg\" id=\"lgMode\"><button data-v=\"b\" aria-pressed=\"{0}\">Blitz</button><button data-v=\"f\" aria-pressed=\"{1}\">Focus</button></div></div>", L.m === 'b', L.m === 'f');
     h += RA.t("<div class=\"field\"><span class=\"lab\">Size</span><div class=\"seg\" id=\"lgSize\">{0}</div></div>", [1, 2, 5].map((n) => `<button data-v="${n}" aria-pressed="${L.n === n}">${n}v${n}</button>`).join(''));
     h += `<div class="list"><div class="prow wide"><span class="lg-tier lg-${tier.toLowerCase()}">${tier}</span><div class="pn"><div class="nm">${RA.lgName(l)} · ELO ${e ? e.elo : 500}</div><div class="d">${e && e.games >= 5 ? RA.t("{0} matches", e.games) : RA.t("Qualifiers: {0}/5 matches", e ? e.games : 0)}</div></div></div></div>`;
@@ -107,9 +111,19 @@ Object.assign(RA.UI.prototype, {
     if (acct) h += RA.t("<div class=\"btns\"><button class=\"btn\" id=\"lgTop\"><span class=\"t\">World ladder</span><br><span class=\"d\">Top 100 on the ladder</span></button><button class=\"btn\" id=\"lgHist\"><span class=\"t\">Match history</span><br><span class=\"d\">My league matches</span></button></div>");
     h += RA.t("<p class=\"note\">Pick/ban: each team secretly picks 2 maps and 2 ages and bans one of each; the computer draws from the picks. Blitz: a team under 10% of the players' land for 60 s capitulates; after 45 min the team with more land wins. Surrender: 4 of 5 votes; in 5v5 also kick (4 votes). Leaving loses ELO. Ranks: Raider · Vanguard · Warlord · Emperor · Overlord.</p>");
     this.openSheet(h, (s) => {
+      const retry = s.querySelector('#lgRetry');
+      if (retry) retry.onclick = async () => {
+        if (L.connection === 'auth' && this.account) {
+          retry.disabled = true;
+          await this.account.load(1);
+          if (!this.account.user) { this.account.sheet(); this.account.after = () => this.leagueSheet(); return; }
+        }
+        this.leagueSheet();
+      };
+      s.querySelectorAll('#lgFind,[data-lgp]').forEach((b) => b.disabled = L.connection !== 'ready');
       for (const [id, k] of [['lgMode', 'm'], ['lgSize', 'n']]) s.querySelectorAll(`#${id} button`).forEach((b) => (b.onclick = () => {
         L[k] = k === 'n' ? +b.dataset.v : b.dataset.v;
-        this.leagueSheet();
+        this.leagueSheet(true);
       }));
       s.querySelectorAll('[data-lgp]').forEach((b) => (b.onclick = () => {
         const v = b.dataset.lgp;
@@ -141,11 +155,11 @@ Object.assign(RA.UI.prototype, {
         if (!w) return clearInterval(this._lgIv);
         w.textContent = RA.fmtTime((Date.now() - Q.since) / 1000);
       }, 500);
-    });
+    }, refresh);
   },
   /* the league sheet redraws itself on news from the server while it is open */
   leagueRefresh() {
-    if (document.getElementById('lgSheet')) this.leagueSheet();
+    if (document.getElementById('lgSheet')) this.leagueSheet(true);
   },
   /* pick/ban: a chip cycles none → pick (2 at most) → ban (1) → none */
   leaguePick() {

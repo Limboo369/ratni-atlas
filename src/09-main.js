@@ -169,8 +169,6 @@ RA.App = class {
       tapTolerance: 14,
     }));
     lmap.attributionControl.setPrefix(false);
-    L.control.scale({ position: 'bottomleft', metric: true, imperial: false, maxWidth: 100 }).addTo(lmap);
-    lmap.attributionControl.addAttribution(RA.t("Natural Earth · NASA · <a href=\"https://leafletjs.com\" target=\"_blank\" rel=\"noopener\">Leaflet</a>"));
     const pane = (name, z) => {
       const p = lmap.createPane(name);
       p.style.zIndex = z;

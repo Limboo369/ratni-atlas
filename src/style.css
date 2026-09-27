@@ -1455,3 +1455,48 @@ html[lang=sr] .replay-bar::before{content:"SNIMAK PARTIJE"}
 .report-rank { margin: 4px 0 10px; padding: 0; list-style: none; display: grid; gap: 3px; }
 .report-rank li { display: flex; gap: 8px; align-items: center; font-size: 13px; padding: 4px 8px; border-radius: 6px; }
 .report-rank li.me { background: #d2b38318; } .report-rank li span { margin-left: auto; opacity: .8; }
+
+/* Mode selection and setup are separate steps, on desktop and phone. */
+#startScreen:not(.mode-setup) :is(.command-eras,#configBtn,#goBtn,#paceNote,#paceDays){display:none!important}
+#startScreen.mode-setup :is(#onlinePane,.command-kicker,.command-headline,.command-description,#quickBtn,#campBigBtn,#marketBtn,#resumeBtn,#focusBtn){display:none!important}
+#startScreen.mode-setup:not(.side-online) #paceSeg{display:none}
+#startScreen.mode-league :is(.command-eras,#paceSeg,#paceNote,#paceDays,#configBtn){display:none!important}
+#startScreen.side-online.mode-setup:not(.mode-league) :is(#paceSeg,#paceNote,#paceDays:not([hidden]),#configBtn){display:grid!important}
+#startScreen.mode-setup .command-title{font-size:clamp(36px,5vw,64px);margin-bottom:16px}
+.mode-heading{display:flex;align-items:center;gap:16px;margin:24px 0}
+.mode-heading .command-tool{flex:0 0 44px;font-size:25px}
+.mode-heading h2{margin:4px 0 0;font-size:30px;line-height:1.15;color:var(--launch-text,#eef0eb)}
+.mode-heading .lab{letter-spacing:.15em;font-size:10px;color:#9cacb4}
+#modeContinue{width:100%;margin:18px 0}
+#paceSeg{width:100%;grid-template-columns:1fr;gap:10px;margin:20px 0}
+#paceSeg button{display:grid;grid-template-columns:42px minmax(0,1fr) 18px;column-gap:16px;row-gap:4px;align-items:center;min-height:88px;padding:18px 20px;border-radius:4px;border:1px solid #b9c8cb26;background:linear-gradient(120deg,#7b9daa16,#0b171eaa);color:#e8eeeb;box-shadow:none}
+#paceSeg button b{grid-column:2;font-size:20px;line-height:1.3;letter-spacing:.025em;text-transform:none}
+#paceSeg button small{grid-column:2;font-size:14px;line-height:1.4;color:#9eafb5;opacity:1}
+#paceSeg button:before{content:'↗';grid-column:3;grid-row:1/3;color:#c6ae86;font-size:20px}
+#paceSeg .mode-symbol{grid-column:1;grid-row:1/3;color:#b1c6ca;display:grid;place-items:center}
+#paceSeg .mode-symbol svg{width:28px;height:28px}
+#paceSeg button:hover,#paceSeg button:focus-visible{border-color:#bfa67c;background:#28343a}
+#startScreen.side-online.mode-setup #paceSeg button{min-height:68px;padding:12px 16px}
+#startScreen.side-online.mode-setup #paceSeg button[aria-pressed=true]{border-color:#d3b582;background:#c8ae821a}
+.command-tools{position:relative}
+.language-menu{position:absolute;top:calc(100% + 10px);right:0;z-index:20;width:200px;padding:6px;border:1px solid #819ba34d;border-radius:5px;background:#12212a;box-shadow:0 12px 35px #0008}
+.language-menu button{display:flex;justify-content:space-between;align-items:center;width:100%;padding:13px 14px;border:0;border-radius:3px;background:transparent;color:#e5eae7;font:inherit;text-align:left;cursor:pointer}
+.language-menu button[aria-pressed=true],.language-menu button:hover,.language-menu button:focus-visible{background:#bca37920;color:#e5cfaa}
+#skirmList .prow{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;min-width:0}
+#skirmList .pn{min-width:0;width:auto}
+#skirmList .nm,#skirmList .d{white-space:normal;word-break:normal;overflow-wrap:anywhere}
+#skirmList .bb{display:flex;flex-wrap:wrap;gap:6px}
+#sheet #mkNew.btn{background:linear-gradient(120deg,#20323c,#12212a);border:1px solid #91abb644;box-shadow:none;color:#e8eeeb}
+#sheet #mkNew.btn:hover{background:#243740;border-color:#b3c7ca88}
+#sheet #mkNew .t{color:#e8eeeb}
+#sheet #mkNew .d{color:#a9bbc3}
+#sheet{overscroll-behavior:contain}
+.leaflet-control-attribution:empty{display:none}
+@media(max-width:400px){#skirmList .prow{grid-template-columns:minmax(0,1fr)}#skirmList .bb{justify-content:flex-end}#paceSeg button{padding:16px;column-gap:12px}.mode-heading h2{font-size:26px}}
+/* Touch targets for the new production and building controls; shared report palette. */
+#sheet .queue-row .mini,#sheet [data-up]{min-height:44px;padding:9px 13px;white-space:normal;line-height:1.35}
+.queue-row{gap:8px;margin:12px 0}
+.chip-q{padding:7px 10px;border-radius:4px;background:#a5bfc30a;border-color:#a5bfc32b;color:#c8d7d8}
+.report-list li{padding:12px 14px;border-radius:4px;background:#b0c2c708}
+.report-rank li{padding:10px 12px;border-radius:4px;flex-wrap:wrap}
+.report-more summary{min-height:44px;padding:12px 0}

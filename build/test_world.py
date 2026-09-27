@@ -80,6 +80,7 @@ async def main():
             await pg.route('**/*', route)
             await pg.goto(URL)
             await pg.wait_for_function('document.getElementById("loading").hidden', timeout=60000)
+            await pg.click('#paceSeg [data-v="blitz"]')
             return pg
 
         # 1. start screen: the world shows up (probe), switching loads it behind the loading screen

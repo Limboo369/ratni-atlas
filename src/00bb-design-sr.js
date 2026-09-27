@@ -11,3 +11,16 @@ Object.assign(RA.SR, {
   'Level {0} of {1}': 'Nivo {0} od {1}',
   'Researching…': 'Istraživanje u toku…'
 });
+
+Object.assign(RA.SR, {
+  'Back to modes': 'Nazad na modove',
+  'SELECTED MODE': 'ODABRANI MOD',
+  'Choose language': 'Odaberi jezik',
+  'Open ranked lobby': 'Otvori rangirani lobi',
+  'Ranked mode': 'Rangirani mod',
+  'Team size': 'Veličina tima',
+  'Browse public games': 'Pregledaj javne igre',
+  'Your session needs to be checked. Sign in again to play.': 'Potrebno je provjeriti sesiju. Prijavi se ponovo za igru.',
+  'The connection was interrupted. Try again.': 'Veza je prekinuta. Pokušaj ponovo.',
+  'Try again': 'Pokušaj ponovo'
+});

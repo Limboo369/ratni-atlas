@@ -55,6 +55,7 @@ async def main():
                 await pg.route('**/*', route)
                 await pg.goto(f'http://127.0.0.1:{server.server_address[1]}/test.html')
                 await pg.wait_for_function('window.__ra && document.getElementById("loading").hidden && !document.getElementById("profileBtn").hidden')
+                await pg.click('#paceSeg [data-v="blitz"]')
                 await pg.wait_for_selector('#mapSeg [data-v="svijet"]:not([hidden])')
                 assert await pg.locator('#startScreen').evaluate('(e)=>e.scrollWidth<=e.clientWidth+1')
                 await pg.screenshot(path=str(OUT / f'refresh-menu-{width}.png'))

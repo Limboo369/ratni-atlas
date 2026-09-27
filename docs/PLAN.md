@@ -357,4 +357,14 @@ engleskom. `build/test_lang.py` (i u CI-ju) pada ako na engleskoj stranici ostan
 - Ikona instalirane aplikacije usklađena s faviconom, standardne i maskable PNG veličine sačuvane.
 - Provjera ovog dopunjavanja: build, JS sintaksa, stanja istraživanja i prevodi; ikona vizuelno provjerena. Lokalna browser provjera nije dostupna (preuzimanje Chromiuma ne uspijeva); CI ostaje obavezan prije objave.
 - Ostaje završna vizuelna provjera stvarnih online ekrana i dugih lista na telefonu nakon objave. Oznake C1–C8 znače implementiran dizajn, ne da je svaki mogući ekran bez daljih UI/UX dorada.
-- F2/F3/F11: sačekati funkcionalne ekrane i njihove UI oznake od Claudea; ne praviti nefunkcionalne kontrole unaprijed.
+- F2/F3/F11 funkcionalni ekrani su preuzeti 27. 9.; njihove postojeće kontrole ostaju povezane s novim sistemima. Dodatno su ujednačene površine izvještaja i dodirne zone proizvodnje/nadogradnji.
+
+
+### Dorade prema screenshotovima (27. 9.)
+
+- Početni ekran: odabir moda, zatim poseban korak sa nazivom moda, postavkama i povratkom. Conqueror ima tri vertikalne kartice; market je samo u Conqueroru.
+- EN/SR otvara meni jezika. Skirmish lista dobija punu širinu teksta; Create scenario koristi tamnu karticu.
+- Zajednički prozori: swipe iz tijela; skrolovane liste i polja za unos zadržavaju svoj gest. Osvježavanje ne uklanja element ispod prsta.
+- Liga: odbijena sesija ostaje u prozoru sa ponovnom prijavom; prekid veze ima ponovni pokušaj, bez petlje ponovnih konekcija. Neuspjela provjera naloga više se ne pamti pet minuta na serveru.
+- Karta: uklonjena skala i osnovni natpis izvora (izvori ostaju u About); obod regije ima keširanu, zamagljenu masku bez žute isprekidane linije. OpenStreetMap zadržava svoj potpis kada je odabran.
+- Provjera: build, sintaksa i simulacija prolaze; testovi gestova i oporavka lige dodani. Browser integracioni testovi prate novi tok i ostaju obavezna provjera prije objave. Završna provjera na stvarnom telefonu i autentifikovanom online nalogu ostaje otvorena.

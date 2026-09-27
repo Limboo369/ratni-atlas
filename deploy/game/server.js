@@ -48,7 +48,9 @@ async function accountOf(req) {
     console.warn('login check', e.message);
   }
   if (who.size > 5000) who.clear();
-  who.set(m[1], { id, t: Date.now() });
+  // A temporary API failure must not lock a valid session out for five minutes.
+  if (id) who.set(m[1], { id, t: Date.now() });
+  else who.delete(m[1]);
   return id;
 }
 const signedIn = async (req) => !!(await accountOf(req));
