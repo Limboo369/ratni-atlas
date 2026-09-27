@@ -91,6 +91,7 @@ async def main():
         check(not errs, 'boot without errors ' + ' | '.join(errs[:3]))
         await page.screenshot(path=OUT + 'eras_0_start.png', full_page=False)
         # start screen: era buttons + region counts react to the era
+        await page.click('#paceSeg [data-v="blitz"]')
         await page.click('#eraSeg button[data-v="rim"]')
         await page.wait_for_timeout(300)
         rc = await page.evaluate('() => [...document.querySelectorAll("#regSeg small")].map(e => e.textContent)')

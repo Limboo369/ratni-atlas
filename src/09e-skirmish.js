@@ -41,6 +41,7 @@ Object.assign(RA.UI.prototype, {
       }
       const box = document.getElementById('skirmList');
       if (!box || !document.getElementById('skirmSheet')) return this.skirmishClose();
+      if (this.sheetDrag) return; // do not detach the finger's target during a gesture
       if (m.t === 'list') box.innerHTML = this.skirmishRows(m.games || []);
       box.querySelectorAll('[data-skjoin]').forEach((b) => (b.onclick = () => {
         this.skirmishClose();

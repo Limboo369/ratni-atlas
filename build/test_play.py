@@ -40,6 +40,7 @@ async def main(mode):
         await page.screenshot(path=OUT + f'{mode}_1_start.png')
         # start a game
         await page.fill('#nameIn', 'Darko')
+        await page.click('#paceSeg [data-v="blitz"]')
         await page.click('#goBtn')
         await page.wait_for_timeout(800)
         await page.screenshot(path=OUT + f'{mode}_2_spawn.png')

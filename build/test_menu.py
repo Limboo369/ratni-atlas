@@ -17,6 +17,7 @@ async def main():
         await page.route('**/*', route)
         await page.goto('file://' + R + 'dist/test.html')
         await page.wait_for_function('document.getElementById("loading").hidden', timeout=60000)
+        await page.click('#paceSeg [data-v="blitz"]')
         await page.click('#goBtn')
         await page.evaluate('''() => { const a = window.__ra; const c = a.map.cities.find(c => c.name === 'Sarajevo').c; a.ui.onTap(L.latLng(...a.map.latLngOfCell(c)), {x: 100, y: 100}); }''')
         await page.click('#startBtn')

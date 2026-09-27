@@ -63,20 +63,25 @@ RA.FxLayer = L.Layer.extend({
     const blk = G.map.block;
     if (reg) {
       const pts = reg.mpoly.map((q) => [nx(q[0]), ny(q[1])]);
-      ctx.beginPath();
-      ctx.rect(-20, -20, this.w + 40, this.h + 40);
-      pts.forEach((q, i) => (i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1])));
-      ctx.closePath();
-      ctx.fillStyle = 'rgba(12,17,22,0.6)';
-      ctx.fill('evenodd');
-      ctx.beginPath();
-      pts.forEach((q, i) => (i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1])));
-      ctx.closePath();
-      ctx.setLineDash([10, 6]);
-      ctx.strokeStyle = 'rgba(242,177,52,0.9)';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-      ctx.setLineDash([]);
+      // Cache a low-resolution, feathered veil. Rebuild only when the camera changes.
+      const key = [this.w, this.h, ...pts.flat()].join(',');
+      if (!this.regionFog || this.regionFog.key !== key) {
+        const fog = document.createElement('canvas'), scale = .5, pad = 48;
+        fog.width = Math.ceil(this.w * scale) + pad * 2;
+        fog.height = Math.ceil(this.h * scale) + pad * 2;
+        const fc = fog.getContext('2d');
+        fc.translate(pad, pad);
+        fc.beginPath();
+        fc.rect(-pad, -pad, fog.width, fog.height);
+        pts.forEach((q, i) => i ? fc.lineTo(q[0] * scale, q[1] * scale) : fc.moveTo(q[0] * scale, q[1] * scale));
+        fc.closePath();
+        fc.filter = 'blur(16px)';
+        fc.fillStyle = 'rgba(24,39,47,.88)';
+        fc.fill('evenodd');
+        this.regionFog = {key, canvas:fog, pad, scale};
+      }
+      const fog = this.regionFog;
+      ctx.drawImage(fog.canvas, -fog.pad / fog.scale, -fog.pad / fog.scale, fog.canvas.width / fog.scale, fog.canvas.height / fog.scale);
     }
 
     // battle royale: everything outside the ring is dead; the dashed ring is where the zone goes next

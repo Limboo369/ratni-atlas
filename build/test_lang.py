@@ -76,6 +76,7 @@ async def main():
             await scan('settings: ' + pace)
             await ev('() => document.getElementById("configDone").click()')
             await page.wait_for_timeout(200)
+            await page.click('#modeBack')
         await page.click('#campBigBtn')
         await page.wait_for_timeout(400)
         await scan('campaign')
@@ -83,6 +84,7 @@ async def main():
         await page.wait_for_timeout(400)
         await scan('campaign dynasty')
         await ev('() => window.__ra.ui.closeSheet()')
+        await page.click('#paceSeg [data-v="blitz"]')
         for era in ERAS:
             await ev('() => window.__ra.showStart && window.__ra.showStart()')
             await page.wait_for_timeout(300)

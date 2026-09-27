@@ -69,6 +69,7 @@ async def main():
         # Online → Skirmish: the server keeps a public Blitz game open
         await A.click('#sideSeg [data-v="online"]')
         await A.click('#skirmishBtn')
+        await A.click('#modeContinue')
         await A.wait_for_selector('#skirmList [data-skjoin]', timeout=20000)
         lst = await A.evaluate('document.getElementById("skirmList").textContent')
         check('Blitz' in lst and 'Players 0/8' in lst, 'Skirmish lists an open public Blitz game: ' + lst[:80])

@@ -12,6 +12,7 @@ RA.CommandScreen = class {
     this.motion = !this.reduced.matches;
     try { if (localStorage.getItem('ra_menu_motion') === 'off') this.motion = false; } catch (_) {}
     this.decorateEras();
+    for (const b of this.$('paceSeg').querySelectorAll('button')) b.insertAdjacentHTML('afterbegin', `<span class="mode-symbol" aria-hidden="true">${RA.icon({blitz:'rocket',focus:'clock',custom:'menu'}[b.dataset.v])}</span>`);
     this.$('configBtn').onclick = () => this.dialog.showModal();
     for (const id of ['configClose', 'configDone']) this.$(id).onclick = () => this.dialog.close();
     this.dialog.addEventListener('click', (e) => {
@@ -19,18 +20,42 @@ RA.CommandScreen = class {
       if (e.target === this.dialog && (e.clientX < b.left || e.clientX > b.right || e.clientY < b.top || e.clientY > b.bottom)) this.dialog.close();
     });
     this.dialog.addEventListener('keydown', (e) => e.stopPropagation());
-    this.$('onlineToggle').onclick = () => ui.needAccount(() => {
-      const box = this.$('onlineBox');
-      box.hidden = !box.hidden;
-      this.$('onlineToggle').setAttribute('aria-expanded', String(!box.hidden));
-      if (!box.hidden) box.scrollIntoView({ block: 'nearest', behavior: this.motion ? 'smooth' : 'instant' });
+    this.$('modeBack').onclick = () => this.home();
+    for (const [id, key] of [['rankedPace', 'm'], ['rankedSize', 'n']]) this.$(id).onclick = (e) => {
+      const b = e.target.closest('button[data-v]');
+      if (!b) return;
+      const L = ui.app.league = ui.app.league || new RA.League(ui.app);
+      L[key] = key === 'n' ? +b.dataset.v : b.dataset.v;
+      ui._press(id, b.dataset.v);
+    };
+    for (const [id, mode] of [['leagueBtn', 'league'], ['skirmishBtn', 'skirmish'], ['onlineToggle', 'private']]) {
+      this.$(id).onclick = () => ui.needAccount(() => this.enterMode(mode));
+    }
+    this.$('modeContinue').onclick = () => ui.needAccount(() => {
+      if (this.mode === 'league') ui.leagueSheet();
+      else if (this.mode === 'skirmish') ui.skirmishSheet();
     });
     this.$('creditsBtn').onclick = () => ui.openSheet(ui.head(RA.t("About the game and map sources")) + RA.t("<div class=\"howto\"><p><strong>Overtake</strong> — a strategy game of conquering Europe and the world through seven historical eras.</p><p>Map: Natural Earth (public domain). Historical borders: historical-basemaps, A. Ourednik (GPL-3.0). Relief: NASA. Map engine: Leaflet.</p><p>Version 0.5 · eras and battle royale.</p></div>"));
     const lb = this.$('langBtn');
     if (lb) {
       lb.textContent = RA.LANG.toUpperCase();
-      lb.setAttribute('aria-label', RA.t('Language: English — switch to Serbian'));
-      lb.onclick = () => RA.setLang(RA.LANG === 'en' ? 'sr' : 'en');
+      lb.setAttribute('aria-label', RA.t('Choose language'));
+      lb.setAttribute('aria-expanded', 'false');
+      lb.setAttribute('aria-controls', 'languageMenu');
+      const menu = document.createElement('div');
+      menu.id = 'languageMenu'; menu.className = 'language-menu'; menu.hidden = true;
+      menu.setAttribute('role', 'group'); menu.setAttribute('aria-label', RA.t('Choose language'));
+      menu.innerHTML = ['en', 'sr'].map((lang) => `<button data-lang="${lang}" aria-pressed="${RA.LANG === lang}"><span>${lang === 'en' ? 'English' : 'Srpski'}</span><span aria-hidden="true">${RA.LANG === lang ? '✓' : ''}</span></button>`).join('');
+      lb.parentElement.append(menu);
+      const close = () => { menu.hidden = true; lb.setAttribute('aria-expanded', 'false'); };
+      lb.onclick = () => {
+        menu.hidden = !menu.hidden; lb.setAttribute('aria-expanded', String(!menu.hidden));
+        if (!menu.hidden) menu.querySelector(`[data-lang="${RA.LANG}"]`).focus();
+      };
+      menu.onclick = (e) => { const b = e.target.closest('[data-lang]'); if (b) { close(); lb.focus(); if (b.dataset.lang !== RA.LANG) RA.setLang(b.dataset.lang); } };
+      document.addEventListener('click', (e) => { if (!menu.contains(e.target) && !lb.contains(e.target)) close(); });
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !menu.hidden) { close(); lb.focus(); e.stopPropagation(); } });
+
     }
     this.$('motionBtn').onclick = () => {
       this.motion = !this.motion;
@@ -77,6 +102,41 @@ RA.CommandScreen = class {
     document.addEventListener('visibilitychange', () => this.applyMotion());
     this.applyMotion();
     this.refresh();
+  }
+
+  enterMode(mode) {
+    this.mode = mode;
+    this.screen.classList.add('mode-setup');
+    this.screen.classList.toggle('mode-league', mode === 'league');
+    this.$('modeHeading').hidden = false;
+    this.$('rankedSetup').hidden = mode !== 'league';
+    if (mode === 'league') {
+      const L = this.ui.app.league = this.ui.app.league || new RA.League(this.ui.app);
+      this.ui._press('rankedPace', L.m); this.ui._press('rankedSize', String(L.n));
+    }
+    this.$('selectedMode').textContent = RA.t({blitz:'Blitz', focus:'Focus', custom:'Make your choice', league:'Conquest League', skirmish:'Skirmish', private:'Private room'}[mode]);
+    const online = this.ui.settings.side === 'online';
+    this.$('modeContinue').hidden = !online || mode === 'private';
+    this.$('modeContinue').textContent = RA.t(mode === 'league' ? 'Open ranked lobby' : 'Browse public games');
+    this.$('onlineBox').hidden = mode !== 'private';
+    this.$('onlineToggle').setAttribute('aria-expanded', String(mode === 'private'));
+    this.screen.scrollTop = 0;
+    this.$('selectedMode').focus({preventScroll:true});
+  }
+
+  home() {
+    const previous = this.mode;
+    this.mode = null;
+    this.screen.classList.remove('mode-setup', 'mode-league');
+    this.$('modeHeading').hidden = true;
+    this.$('rankedSetup').hidden = true;
+    this.$('modeContinue').hidden = true;
+    this.$('onlineBox').hidden = true;
+    this.$('onlineToggle').setAttribute('aria-expanded', 'false');
+    this.screen.scrollTop = 0;
+    const id = {league:'leagueBtn', skirmish:'skirmishBtn', private:'onlineToggle'}[previous];
+    const target = id ? this.$(id) : this.$('paceSeg').querySelector(`[data-v="${previous || this.ui.settings.pace}"]`);
+    if (target && target.getClientRects().length) target.focus({preventScroll:true});
   }
 
   applyMotion() {

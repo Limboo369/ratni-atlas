@@ -67,6 +67,7 @@ async def main():
         for pg in (A, B):
             await pg.click('#sideSeg [data-v="online"]')
             await pg.click('#leagueBtn')
+            await pg.click('#modeContinue')
             await pg.wait_for_selector('#lgSheet', state='attached')
             await pg.wait_for_function('window.__ra.league && window.__ra.league.elo', timeout=10000)
         txt = await A.evaluate('document.getElementById("sheet").textContent')

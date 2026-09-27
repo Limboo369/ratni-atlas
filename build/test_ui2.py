@@ -75,6 +75,7 @@ async def main():
 
         # 3. region + peace, then spawn by picking a nation from the list
         await page.fill('#nameIn', 'Darko')
+        await page.click('#paceSeg [data-v="blitz"]')
         await page.click('#eraSeg button[data-v="danas"]')
         await page.click('#configBtn')
         await page.click('#startSeg button[data-v="slobodno"]')
