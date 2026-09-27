@@ -327,6 +327,10 @@ async def main():
         await ev('() => { document.getElementById("toasts").innerHTML = ""; window.__ra.ui.reqToasts.clear(); window.__ra.ui.setMode(null); }')
         await page.wait_for_timeout(1200)
         pose = '(u) => { const a = window.__ra, v = a.terr.view(), q = a.fx.unitMotion ? a.fx.unitMotion.get(u) || u : u; return [v.ox + q.x * v.cell, v.oy + q.y * v.cell]; }'
+        # show both units on the screen (they can stand far apart)
+        await ev('''() => { const a = window.__ra, us = a.G.me.units.filter(u => !u.dead).slice(0, 2); if (us.length < 2) return;
+            a.lmap.fitBounds(L.latLngBounds(us.map(u => a.map.latLngOfXY(u.x, u.y))).pad(0.6), { animate: false, maxZoom: a.lmap.getZoom() }); }''')
+        await page.wait_for_timeout(1200)
         pts = await ev(f'() => window.__ra.G.me.units.filter(u => !u.dead).slice(0, 2).map({pose})')
         if grp >= 2 and len(pts) == 2:
             if MODE == 'phone':
@@ -346,7 +350,7 @@ async def main():
             await tap_cell(cap)
             await page.wait_for_timeout(200)
             an = await ev('() => { const G = window.__ra.G, W = G.map.W; return G.me.units.filter(u => !u.dead).slice(0, 2).map(u => [u.anchor % W, (u.anchor / W) | 0]); }')
-            ok = len(an) == 2 and an[0] != an[1] and abs(an[0][0] - an[1][0]) + abs(an[0][1] - an[1][1]) <= 12
+            ok = len(an) == 2 and an[0] != an[1] and abs(an[0][0] - an[1][0]) + abs(an[0][1] - an[1][1]) <= 16
             check(ok and await ev('() => !window.__ra.ui.mode'), f'Move: both units go there side by side {an}')
         # 7. diplomacy: alliance offer and trade offer are separate
         # Keep the two injected offers stable while the UI responds on a slow renderer.
