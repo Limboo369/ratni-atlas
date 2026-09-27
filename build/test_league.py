@@ -80,10 +80,11 @@ async def main():
             await pg.wait_for_selector('#lgPick', state='attached', timeout=15000)
         # Darko: Evropa + WW2 picked, the world banned; Marko: Evropa + WW2 picked, Afrika banned
         for pg, ban in ((A, 'svijet'), (B, 'afrika')):
-            await pg.click('.lg-chip[data-k="map"][data-v="evropa"]')
-            await pg.click(f'.lg-chip[data-k="map"][data-v="{ban}"]')
-            await pg.click(f'.lg-chip[data-k="map"][data-v="{ban}"]')
-            await pg.click('.lg-chip[data-k="era"][data-v="ww2"]')
+            # (a tap on the chip: the sheet redraws after every tap, so find it again each time)
+            for sel in ('[data-k="map"][data-v="evropa"]', f'[data-k="map"][data-v="{ban}"]', f'[data-k="map"][data-v="{ban}"]', '[data-k="era"][data-v="ww2"]'):
+                await pg.wait_for_selector('.lg-chip' + sel, timeout=15000)
+                await pg.evaluate(f'document.querySelector(\'.lg-chip{sel}\').click()')
+                await pg.wait_for_timeout(150)
         st = await A.evaluate('[...document.querySelectorAll(".lg-chip")].filter(e => e.classList.contains("pick") || e.classList.contains("ban")).map(e => e.dataset.v + ":" + e.className.split(" ").pop())')
         check('evropa:pick' in st and 'svijet:ban' in st and 'ww2:pick' in st, f'pick/ban chips: once = pick, twice = ban {st}')
         await A.click('#lgLock')
