@@ -127,7 +127,7 @@ async def main():
         await page.reload()
         await page.wait_for_function('document.getElementById("loading").hidden', timeout=60000)
         t = (await ev('() => document.body.innerText')).lower()
-        check('započni osvajanje' in t and 'kampanja' in t, 'Serbian: the start screen is in Serbian')
+        check('igraj odmah' in t and 'kampanja' in t, 'Serbian: the start screen is in Serbian')
         check('historij' not in t and 'istorija' in t, 'Serbian Latin: Istorija, not Historija')
         await page.click('#howBtn')
         await page.wait_for_timeout(300)
