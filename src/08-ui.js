@@ -888,7 +888,7 @@ RA.UI = class {
       const a = G.P[r.from];
       const who = a.human && G.online ? `${a.nick} (${a.name})` : a.name;
       const txt = kind === 'A'
-        ? RA.t("<b>{0}</b> offers a <b>military alliance</b> (5 min): you don't attack each other and help each other in war.", RA.esc(who))
+        ? RA.t("<b>{0}</b> offers a <b>military alliance</b> ({1}): you don't attack each other and help each other in war.", RA.esc(who), RA.dur(RA.CFG.ALLY_DUR))
         : RA.t("<b>{0}</b> offers a <b>trade pact</b>: gold for both sides, no duties in war.", RA.esc(who));
       const el = this.toast(kind === 'A' ? 'ally' : 'good', RA.t("{0}<div class=\"acts\"><button class=\"yes\">Accept</button><button class=\"no\">Decline</button></div>", txt), { sticky: true, cell: a.capital });
       const done = (yes) => {
@@ -1093,7 +1093,7 @@ RA.UI = class {
       else if (r === true && O && O.human && !O.ai) say('info', RA.t("Offer sent — waiting for an answer ({0}).", RA.esc(O.nick || O.name)));
     } else if (kind === 'ext') {
       const O = G.P[a[0]];
-      say(r === true ? 'good' : 'info', r === true ? RA.t("Military alliance extended by 5 min ({0}).", RA.esc(O.name)) : RA.esc(r));
+      say(r === true ? 'good' : 'info', r === true ? RA.t("Military alliance extended by {1} ({0}).", RA.esc(O.name), RA.dur(RA.CFG.ALLY_DUR)) : RA.esc(r));
     } else if (kind === 'give') {
       const O = G.P[a[0]];
       if (typeof r === 'number') say('good', RA.t("{0} troops sent to an ally ({1}).", RA.fmt(r), RA.esc(O.name)));

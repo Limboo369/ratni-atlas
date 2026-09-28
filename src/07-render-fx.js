@@ -282,6 +282,24 @@ RA.FxLayer = L.Layer.extend({
     // Connected trench earthworks; construction and fog visibility share the live cell state.
     RA.Trenches.draw(ctx, G, cell, gx, gy, inView);
 
+    // air defence (mine and my allies'): the ring it guards, always, faint (Darko 28. 9.)
+    if (G.me) {
+      const R = RA.CFG.SAM_R * cell;
+      ctx.lineWidth = 1.2;
+      ctx.setLineDash([6, 6]);
+      for (const s of G.structs) {
+        if (s.dead || s.type !== 'sam' || !s.ready || !(s.owner === G.me.id || G.isFriendly(G.me, G.P[s.owner]))) continue;
+        const x = gx(s.x + 0.5), y = gy(s.y + 0.5);
+        if (!inView(x, y, R + 10)) continue;
+        ctx.beginPath();
+        ctx.arc(x, y, R, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(90,170,255,0.06)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(140,195,255,0.4)';
+        ctx.stroke();
+      }
+      ctx.setLineDash([]);
+    }
     // structures ----------------------------------------------------------------
     const ss = RA.clamp(cell * 1.8, 12, 25);
     for (const s of G.structs) {
