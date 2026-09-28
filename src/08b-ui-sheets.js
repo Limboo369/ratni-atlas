@@ -243,7 +243,7 @@ Object.assign(RA.UI.prototype, {
       const cost = G.missileCost(t, me);
       const wait = M.from && tk < M.from;
       h += this.btn({
-        model: M.icon === 'siege' ? 'siege' : M.icon === 'zeppelin' ? 'zeppelin' : 'missile', icon: RA.missileIcon(t), cls: M.kind === 'conv' ? 'model-btn' : 'model-btn danger', attrs: `data-m="${t}"`,
+        model: M.kind === 'drone' ? (M.hunt ? 'hunter-drone' : 'drone') : M.icon === 'siege' ? 'siege' : M.icon === 'zeppelin' ? 'zeppelin' : 'missile', icon: RA.missileIcon(t), cls: M.kind === 'conv' ? 'model-btn' : 'model-btn danger', attrs: `data-m="${t}"`,
         dis: (!me.n.silo && M.kind !== 'drone') || me.gold < cost || peace || wait, t: M.name,
         d: RA.esc(wait ? RA.t("In development — available in {0}.", RA.dur(M.from - tk)) : M.desc) + (M.range ? RA.t(" <b>Range {0} cells.</b>", M.range) : '') + this.nukeBar(M), r: RA.fmt(cost),
       });
@@ -473,7 +473,7 @@ Object.assign(RA.UI.prototype, {
           const lv = s.lv || 1, cost = G.upCost(me, s);
           const st = !s.ready ? RA.t("under construction") : s.upTo ? RA.t("upgrading to level {0}", s.upTo) : lv >= RA.UP_MAX ? RA.t("top level") : RA.UP_DESC[s.type];
           const b = s.ready && !s.upTo && lv < RA.UP_MAX ? this.mini(RA.t("Level {0} · {1}", lv + 1, RA.fmt(cost)), `data-up="${s.id}"`, 'ok', me.gold < cost) : '';
-          h += `<div class="prow wide"><div class="pn"><div class="nm">${RA.esc(s.type === 'city' ? s.name : RA.STRUCT[s.type].name)} · ${RA.t("level {0}", lv)}</div><div class="d">${RA.esc(st)}</div></div><div class="bb">${b}</div></div>`;
+          h += `<div class="prow wide building-upgrade"><div class="pn"><div class="nm">${RA.esc(s.type === 'city' ? s.name : RA.STRUCT[s.type].name)} · ${RA.t("level {0}", lv)}</div><div class="d">${RA.esc(st)}</div></div><div class="bb">${b}</div></div>`;
         }
         h += '</div>';
       }

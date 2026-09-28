@@ -6,7 +6,7 @@ RA.ICONS = {
   fuel: '<path d="M3 21V4h11v17M2 21h13M6 7h5v5H6zM14 13h3v5a2 2 0 0 0 4 0V8l-4-4M19 6v5h2"/>',
   ore: '<path d="m3 15 5-9 7-3 6 9-4 9H7zM8 6l4 7 9-1M3 15l9-2 5 8M12 13l3-10"/>',
   wheat: '<path d="M12 22V3M12 9C7 9 5 6 5 3c5 0 7 3 7 6ZM12 15c-5 0-7-3-7-6 5 0 7 3 7 6ZM12 12c5 0 7-3 7-6-5 0-7 3-7 6ZM12 18c5 0 7-3 7-6-5 0-7 3-7 6Z"/>',
-  drone: '<path d="M8 9h8v6H8zM8 9L4 5M16 9l4-4M8 15l-4 4M16 15l4 4M2 5h4M18 5h4M2 19h4M18 19h4"/>',
+  drone: '<rect x="9" y="8" width="6" height="8" rx="2"/><path d="m9 9-3-3m9 3 3-3m-9 9-3 3m9-3 3 3M11 11h2"/><circle cx="5" cy="5" r="3"/><circle cx="19" cy="5" r="3"/><circle cx="5" cy="19" r="3"/><circle cx="19" cy="19" r="3"/>',
   sub: '<rect x="2" y="11" width="20" height="9" rx="4.5"/><path d="M9 11V7h6v4M12 7V3h4M6 15.5h.1M11 15.5h.1M16 15.5h.1"/>',
   ship: '<path d="M2 14h20l-4 6H6zM6 14V9h10v5M10 9V5h4v4M12 5V2M16 11h5"/>',
   dome: '<path d="M2 15a10 10 0 0 1 20 0M7 15c0-13 10-13 10 0M4 9h16M2 15h20v6H2zM10 21v-3h4v3"/>',
