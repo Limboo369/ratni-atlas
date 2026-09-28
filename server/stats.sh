@@ -34,6 +34,9 @@ echo "@@ docker_ps"
 docker ps -a --format '{{.Names}};{{.Status}};{{.Image}}' 2>/dev/null
 echo "@@ sizes"
 du -sb /srv/apps/* /srv/backups/* /var/lib/docker/volumes/* /var/log /var/lib/docker 2>/dev/null | awk -F'\t' '{print $2 ";" $1}'
+echo "@@ backups"
+# the database's daily copies (deploy/compose.yml, service backup): name;bytes, newest first
+ls -t /srv/backups/*/*.sql.gz 2>/dev/null | head -20 | xargs -r stat -c '%n;%s'
 echo "@@ top"
 # the biggest in memory, with the CPU time they used since they started (not this script's own tools)
 ps -eo rss,times,etimes,comm --sort=-rss --no-headers | awk '$4 !~ /^(ps|awk|bash|sshd|sadf|du|head)$/' | head -10 | awk '{print $4 ";" $2 ";" $1 * 1024 ";" $3}'

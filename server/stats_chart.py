@@ -172,6 +172,8 @@ md.append('\n## Sizes\n| Path | Size |\n|---|---|')
 for l in sorted(sec['sizes'], key=lambda l: -num(l.split(';')[-1])):
     p, b = l.rsplit(';', 1)
     md.append('| %s | %.2f GB |' % (p, num(b) / GB) if num(b) >= GB / 10 else '| %s | %.0f MB |' % (p, num(b) / 2 ** 20))
+bk = [l.rsplit(';', 1) for l in sec['backups'] if ';' in l]
+md.append('\n## Database backups\n' + ('%d copies, newest %s (%.0f kB)' % (len(bk), os.path.basename(bk[0][0]), num(bk[0][1]) / 1024) if bk else '**No backup files found!**'))
 if sec['jobs']:
     md.append('\n## Maintenance running now\n```\n' + '\n'.join(sec['jobs']) + '\n```')
 md.append('\n## Biggest processes now\n| Process | RAM | CPU time used | Running for | CPU average |\n|---|---|---|---|---|')
