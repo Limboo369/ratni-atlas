@@ -2102,6 +2102,7 @@ RA.SR = {
   " · leader": " · vođa",
   " · river": " · rijeka",
   " · running for {0}": " · traje {0}",
+  " · scouted": " · izviđeno",
   " · solo": " · sam",
   " · starts in <span id=\"longWait\">{0}</span> s": " · počinje za <span id=\"longWait\">{0}</span> s",
   " · {0} can shoot it down": " · {0} je može oboriti",
@@ -2234,9 +2235,11 @@ RA.SR = {
   "<div class=\"sec-t\">Open games</div><div class=\"list\" id=\"skirmList\"><p class=\"note\">Looking for games…</p></div>": "<div class=\"sec-t\">Otvorene igre</div><div class=\"list\" id=\"skirmList\"><p class=\"note\">Tražim igre…</p></div>",
   "<div class=\"sec-t\">Or pick one or more</div>": "<div class=\"sec-t\">Ili izaberi jedno ili više</div>",
   "<div class=\"sec-t\">Recruit a unit</div><p class=\"explain\">Place it along the border — it follows the front by itself. It makes enemy breakthroughs harder and your attacks nearby cheaper.</p><div class=\"btns\">": "<div class=\"sec-t\">Regrutuj jedinicu</div><p class=\"explain\">Postavi je uz granicu — sama prati front. Neprijatelju otežava proboj, a tvoje napade u blizini čini jeftinijim.</p><div class=\"btns\">",
+  "<div class=\"sec-t\">Recruit a unit</div><p class=\"explain\">Place it anywhere on your land — it goes to the nearest border and follows the front by itself. It makes enemy breakthroughs harder and your attacks nearby cheaper.</p><div class=\"btns\">": "<div class=\"sec-t\">Regrutuj jedinicu</div><p class=\"explain\">Stavi je bilo gdje na svojoj zemlji — sama ide do najbliže granice i prati front. Otežava neprijateljske proboje i pojeftinjuje tvoje napade u blizini.</p><div class=\"btns\">",
   "<div class=\"sec-t\">Relations</div><div class=\"bb\" style=\"display:flex;flex-wrap:wrap;gap:6px\">{0}</div>": "<div class=\"sec-t\">Odnosi</div><div class=\"bb\" style=\"display:flex;flex-wrap:wrap;gap:6px\">{0}</div>",
   "<div class=\"sec-t\">Resources</div><p class=\"explain\">Without resources nothing is forbidden, just dearer or slower. What you lack you buy from a trade partner for part of your income while you buy (whoever has more deposits sells cheaper).</p><div class=\"list\">": "<div class=\"sec-t\">Resursi</div><p class=\"explain\">Bez resursa ništa nije zabranjeno, samo skuplje ili sporije. Što nemaš, kupuješ od trgovinskog partnera za dio svog prihoda dok kupuješ (ko ima više nalazišta, prodaje jeftinije).</p><div class=\"list\">",
   "<div class=\"sec-t\">Sabotage · {0}</div><p class=\"note\">{1}</p><div class=\"btns\">": "<div class=\"sec-t\">Sabotaža · {0}</div><p class=\"note\">{1}</p><div class=\"btns\">",
+  "<div class=\"sec-t\">Send an agent</div><p class=\"explain\">Pick a state, then the mission: scout (see its army, gold, buildings and research, and lift the fog over it), sabotage a building or steal research. <b>Train</b> an agent above to raise its level: every level +17% odds.</p>": "<div class=\"sec-t\">Pošalji agenta</div><p class=\"explain\">Izaberi državu, pa misiju: izviđanje (vidiš njenu vojsku, zlato, zgrade i istraživanja i skidaš maglu s nje), sabotaža zgrade ili krađa istraživanja. <b>Treniraj</b> agenta iznad da mu podigneš nivo: svaki nivo +17% šanse.</p>",
   "<div class=\"sec-t\">States</div><div class=\"list\">": "<div class=\"sec-t\">Države</div><div class=\"list\">",
   "<div class=\"sec-t\">Straits</div><p class=\"explain\">Whoever holds both shores of a strait can close it to foreign ships (landings and trade). Only their ships and their allies' pass.</p><div class=\"list\">": "<div class=\"sec-t\">Moreuzi</div><p class=\"explain\">Ko drži obje obale moreuza može ga zatvoriti za tuđe brodove (desanti i trgovina). Prolaze samo njegovi i savezniči brodovi.</p><div class=\"list\">",
   "<div class=\"sec-t\">Targets</div>": "<div class=\"sec-t\">Mete</div>",
@@ -2280,6 +2283,7 @@ RA.SR = {
   "<p class=\"note\" style=\"margin:2px\">Waiting for a friend…</p>": "<p class=\"note\" style=\"margin:2px\">Čeka se prijatelj…</p>",
   "<p class=\"note\"><button class=\"mini warn\" data-reset>New campaign</button></p>": "<p class=\"note\"><button class=\"mini warn\" data-reset>Nova kampanja</button></p>",
   "<p class=\"note\">Allies: {0} · key L: alliances on the map</p>": "<p class=\"note\">Saveznici: {0} · tipka L: savezi na karti</p>",
+  "<p class=\"note\">At most {0} agents (+1 per agency level); after a mission an agent rests 1 min; a caught agent is lost and the state trusts you less.</p>": "<p class=\"note\">Najviše {0} agenta (+1 po nivou agencije); poslije misije agent se odmara 1 min; uhvaćen agent je izgubljen, a država ti manje vjeruje.</p>",
   "<p class=\"note\">At most {0} military alliances and {1} trade pacts. Betraying an ally = 30 s of halved defence and a bad name with everyone.</p>": "<p class=\"note\">Najviše {0} vojna i {1} trgovinskih saveza. Izdaja saveznika = 30 s prepolovljene odbrane i loš ugled kod svih.</p>",
   "<p class=\"note\">Betraying an ally = 30 s of halved defence and a bad name with everyone.</p>": "<p class=\"note\">Izdaja saveznika = 30 s prepolovljene odbrane i loš ugled kod svih.</p>",
   "<p class=\"note\">Confirmed — waiting for the opponents.</p>": "<p class=\"note\">Potvrđeno — čekam protivnike.</p>",
@@ -2303,6 +2307,7 @@ RA.SR = {
   "<p class=\"note\">The intelligence agency comes with the tech tree — it is off in this game.</p>": "<p class=\"note\">Obavještajna služba ide uz stablo tehnologija — nije uključeno u ovoj igri.</p>",
   "<p class=\"note\">The market works on war.deovilab.com (published scenarios are on the server).</p>": "<p class=\"note\">Market radi na war.deovilab.com (objavljeni scenariji su na serveru).</p>",
   "<p class=\"note\">Vassal: a weak state (at most {0}% of your troops and {1}% of your land), a neighbour or an enemy at war, may agree to be your vassal instead of being conquered — it pays {2}% of its income and fights at your side; at most {3}. If you weaken, it breaks free.</p>": "<p class=\"note\">Vazal: slaba država (najviše {0}% tvoje vojske i {1}% zemlje), susjed ili protivnik u ratu, može pristati da ti bude vazal umjesto da je osvojiš — plaća {2}% prihoda i bori se uz tebe; najviše {3}. Ako oslabiš, oslobodi se.</p>",
+  "<p class=\"note\">Weapons research comes with the tech tree — it is off in this game.</p>": "<p class=\"note\">Istraživanje oružja dolazi sa stablom tehnologija — u ovoj igri je isključeno.</p>",
   "<p class=\"note\">You can exchange troops only as military allies. A city goes with its surroundings (3 cells); a capital can't be given.</p>": "<p class=\"note\">Vojsku možete razmjenjivati samo kad ste vojni saveznici. Grad se daje s okolinom (3 polja); prijestolnica se ne daje.</p>",
   "<p class=\"note\">You have no league matches yet.</p>": "<p class=\"note\">Još nemaš ligaških partija.</p>",
   "<p class=\"note\">You have no neighbour you are not allied with.</p>": "<p class=\"note\">Nemaš susjeda s kojim nisi u savezu.</p>",
@@ -2398,6 +2403,7 @@ RA.SR = {
   "Agent sent: {0} — {1}.": "Agent poslan: {0} — {1}.",
   "Agent training done: level {0}.": "Obuka agenta završena: nivo {0}.",
   "Agent {0} · level {1}": "Agent {0} · nivo {1}",
+  "Agents {0}/{1} · {2} ready — recruit, train, send on missions": "Agenti {0}/{1} · spremnih {2} — regrutuj, treniraj, šalji na misije",
   "Agents, training and missions": "Agenti, obuka i misije",
   "Agents: {0}/{1}": "Agenti: {0}/{1}",
   "Agrippina": "Agripina",
@@ -3247,6 +3253,7 @@ RA.SR = {
   "North and Baltic": "Sjever i Baltik",
   "Not against your allies.": "Ne protiv saveznika.",
   "Not built yet (Build)": "Još nije izgrađena (Gradi)",
+  "Not built yet: Build → {0}": "Još nije izgrađena: Gradnja → {0}",
   "Not enough gold": "Nedovoljno zlata",
   "Not enough gold for one section": "Nema dovoljno zlata ni za jedan dio",
   "Not enough gold.": "Nemaš dovoljno zlata.",
@@ -3261,6 +3268,7 @@ RA.SR = {
   "Notifications are on.": "Obavještenja su uključena.",
   "Notifications: ": "Obavještenja: ",
   "Now the real game begins.": "Sad počinje prava igra.",
+  "Now: {0} {1}": "Sada: {0} {1}",
   "Nowhere to launch a drone from.": "Nemaš odakle lansirati dron.",
   "Nuclear submarine": "Nuklearna podmornica",
   "Nuclear weapons": "Nuklearno oružje",
@@ -3558,6 +3566,8 @@ RA.SR = {
   "Strategic bombers": "Strateški bombarderi",
   "Strength": "Snaga",
   "Strikes": "Udari",
+  "Stronger drones, missiles and more · gold {0}": "Jači dronovi, rakete i drugo · zlato {0}",
+  "Stronger drones, missiles and more — pay once, better for the rest of the game": "Jači dronovi, rakete i drugo — platiš jednom, bolje do kraja igre",
   "Submarine": "Podmornica",
   "Successes": "Uspjesi",
   "Suez Canal": "Suecki kanal",
@@ -3938,6 +3948,7 @@ RA.SR = {
   "We're free! Keep your tribute, {ti}!": "Slobodni smo! Nosi svoj danak, {ti}!",
   "We're losing, but we're losing in style.": "Gubimo, ali gubimo sa stilom.",
   "We're not finished! We're just a bit... smaller.": "Nismo gotovi! Samo smo malo... manji.",
+  "Weapons research": "Istraživanje oružja",
   "Welcome to the alliance, friends! You guard the left flank, we'll take the right.": "Dobro došli u savez, prijatelji! Vi čuvate lijevi bok, mi desni.",
   "Welcome to the neighbourhood, {ti}. Stay on your side of the border.": "Dobrodošao u komšiluk, {ti}. Drži se svoje strane granice.",
   "Welcome! The rules are simple: what's mine is mine.": "Dobrodošao! Pravila su jednostavna: moje je moje.",
@@ -4154,6 +4165,7 @@ RA.SR = {
   "all continents": "svi kontinenti",
   "alliance": "savez",
   "alliance expired": "savez istekao",
+  "army {0}": "vojska {0}",
   "atomic bomb flies": "atomska bomba leti",
   "atomic bombs fly": "atomske bombe lete",
   "attack ": "napadaj ",
@@ -15844,7 +15856,13 @@ Object.assign(RA.UI.prototype, {
       d: ready ? RA.t("Instantly +{0} troops. Army growth then stops for 45 s.", RA.fmt(add)) : RA.t("Ready again in {0}", RA.dur(me.mobReady - tk)),
       r: '+' + RA.fmt(add),
     }) + '</div>';
-    h += RA.t("<div class=\"sec-t\">Recruit a unit</div><p class=\"explain\">Place it along the border — it follows the front by itself. It makes enemy breakthroughs harder and your attacks nearby cheaper.</p><div class=\"btns\">");
+    if (G.opts.tree) {
+      // the intelligence agency and weapons research live here too (Darko 28. 9.: they were hard to find)
+      const I = me.n.intel ? G.intelOf(me) : null, rdy = I ? I.agents.filter((x) => x.busy <= G.clock()).length : 0, B = me.rsBusy;
+      h += '<div class="btns">' + this.btn({ icon: 'eye', attrs: 'data-intel', t: RA.t("Intelligence agency"), d: I ? RA.t("Agents {0}/{1} · {2} ready — recruit, train, send on missions", I.agents.length, G.intelMax(me), rdy) : RA.t("Not built yet: Build → {0}", RA.STRUCT.intel.name) })
+        + this.btn({ icon: 'rocket', attrs: 'data-rschopen', t: RA.t("Weapons research"), d: B ? RA.t("Now: {0} {1}", RA.esc(RA.RSCH[B.k].name), B.lv) : RA.t("Stronger drones, missiles and more — pay once, better for the rest of the game") }) + '</div>';
+    }
+    h += RA.t("<div class=\"sec-t\">Recruit a unit</div><p class=\"explain\">Place it anywhere on your land — it goes to the nearest border and follows the front by itself. It makes enemy breakthroughs harder and your attacks nearby cheaper.</p><div class=\"btns\">");
     for (const type of ['inf', 'tank', 'art', 'ship', 'sub']) {
       const U = RA.UNIT[type];
       if (U.na) continue;
@@ -15874,6 +15892,8 @@ Object.assign(RA.UI.prototype, {
     const needs = ['inf', 'tank', 'art'].map((t) => RA.UNIT[t]).filter((U) => !U.na && U.needs).map((U) => `${U.name} ${U.pl ? RA.t("need") : RA.t("needs")}: ${RA.STRUCT[U.needs].name}`).join('. ');
     h += RA.t("<p class=\"note\">Limit: {0} + {1} per “{2}”. {3}Tap your unit on the map, then a new spot, to move it. Disbanding returns 60% of the troops.</p>", C.UNIT_BASE_CAP, C.UNIT_PER_BARRACKS, RA.STRUCT.barracks.name, needs ? needs + '. ' : '');
     this.openSheet(h, (s) => {
+      s.querySelectorAll('[data-intel]').forEach((b) => (b.onclick = () => this.intelSheet()));
+      s.querySelectorAll('[data-rschopen]').forEach((b) => (b.onclick = () => this.researchSheet()));
       const mb = s.querySelector('[data-mob]');
       if (mb) mb.onclick = () => {
         this.closeSheet();
@@ -16042,7 +16062,9 @@ Object.assign(RA.UI.prototype, {
     }
     const sam = RA.STRUCT.sam;
     h += RA.t("</div><p class=\"note\">{0}The first tap on the map aims and shows the blast area, the second tap (or “Launch”) fires. Drones fly on every tap.{1}{2}{3}</p>", peace ? RA.t("<b>Peace time:</b> strikes are allowed in {0}. ", G.peaceLeft()) : '', RA.missileTypes().some((t) => RA.MISSILE[t].range) ? RA.t(" White circles show the range of your buildings — build them closer to the front.") : '', sam.na ? '' : RA.t(" An enemy “{0}” shoots down missiles within {1} cells (red circles while aiming).", sam.name, RA.CFG.SAM_R), RA.MISSILE.atom.na ? '' : RA.t(" Nukes sour relations with everyone; an ally you hit breaks the alliance."));
+    if (G.opts.tree) h += '<div class="btns">' + this.btn({ icon: 'rocket', attrs: 'data-rschopen', t: RA.t("Weapons research"), d: RA.t("Stronger drones, missiles and more — pay once, better for the rest of the game") }) + '</div>';
     this.openSheet(h, (s) => {
+      s.querySelectorAll('[data-rschopen]').forEach((b) => (b.onclick = () => this.researchSheet()));
       const b = s.querySelector('[data-silo]');
       if (b) b.onclick = () => {
         this.closeSheet();
@@ -16575,7 +16597,14 @@ Object.assign(RA.UI.prototype, {
       t += RA.t("<article class=\"research-card\" data-branch=\"{0}\"><div class=\"research-heading\"><i>{1}</i><span>{2}<small>Level {3} / {4}</small></span></div>{5}<p>{6}</p>{7}</article>", k, RA.icon(T.icon), T.name, lv, RA.TECH_MAX, this.techProgress(lv), RA.esc(T.desc), max ? RA.t("<span class=\"research-max\">Fully developed</span>") : this.mini(RA.t("Research · {0}", RA.fmt(cost)), RA.t("data-tech=\"{0}\" aria-label=\"Research {1}, level {2}, {3} gold\"", k, T.name, lv+1, RA.fmt(cost)), 'ok', me.gold < cost));
     }
     t += '</div>';
-    // weapons research (03c-research.js): one at a time, it takes a while
+    t += this.rschHtml();
+    const i = h.indexOf('<div class="field">');
+    return i < 0 ? h + t : h.slice(0, i) + t + h.slice(i);
+  },
+  /* weapons research (03c-research.js): one at a time, it takes a while */
+  rschHtml() {
+    const G = this.G, me = G.me;
+    let t = '';
     const B = me.rsBusy, left = B ? B.done - G.clock() : 0, secs = G.sub ? left : left / 10;
     t += RA.t("<div class=\"sec-t\">Weapons research</div><p class=\"explain\">Pay and wait: the weapon is better for the rest of the game. One research at a time.{0}</p><div class=\"research-grid\" id=\"rschGrid\">", B ? RA.t(" Now: <b>{0} {1}</b> — {2} to go.", RA.esc(RA.RSCH[B.k].name), B.lv, RA.fmtTime(Math.max(0, secs))) : '');
     for (const k of RA.RSCH_ORDER) {
@@ -16590,8 +16619,18 @@ Object.assign(RA.UI.prototype, {
       t += RA.t("<article class=\"research-card\" data-rsch-card=\"{0}\"><div class=\"research-heading\"><i>{1}</i><span>{2}<small>Level {3} / {4}</small></span></div><p>{5}</p>{6}</article>", k, RA.icon(R.icon), R.name, lv, R.max, RA.esc(R.desc), progress + action + (reason ? `<small class="research-reason">${reason}</small>` : ''));
     }
     t += '</div>';
-    const i = h.indexOf('<div class="field">');
-    return i < 0 ? h + t : h.slice(0, i) + t + h.slice(i);
+    return t;
+  },
+  /* weapons research on its own (from Army and Missiles; Darko 28. 9.: it was only at the bottom of Economy) */
+  researchSheet(keep) {
+    const G = this.G, me = G && G.me;
+    if (!me || G.state !== 'play') return;
+    let h = this.head(RA.t("Weapons research"), RA.t("Stronger drones, missiles and more · gold {0}", RA.fmt(me.gold)));
+    h += G.opts.tree ? this.rschHtml() : RA.t("<p class=\"note\">Weapons research comes with the tech tree — it is off in this game.</p>");
+    this.openSheet(h, (s) => s.querySelectorAll('[data-rsch]').forEach((b) => (b.onclick = () => {
+      this.act('rsch', [b.dataset.rsch]);
+      setTimeout(() => this.researchSheet(true), G.online || G.long ? 1200 : 50);
+    })), keep, () => this.researchSheet(true));
   },
   techProgress(level, max = 5) {
     return `<div class="research-progress" role="img" aria-label="${RA.t('Level {0} of {1}', level, max)}">${Array.from({length:max},(_,i)=>`<i class="${i<level?'earned':i===level?'next':''}"></i>`).join('')}</div>`;
@@ -19054,10 +19093,18 @@ Object.assign(RA.UI.prototype, {
         const bs = RA.STRUCT_ORDER.filter((k) => T.n[k]).map((k) => RA.STRUCT[k].name + ' ' + T.n[k]).join(', ');
         h += RA.t("<div class=\"sec-t\">Latest report</div><p class=\"note\">Army {0} · gold {1} · agents {2}<br>Buildings: {3}<br>Research: {4}</p>", RA.fmt(T.troops), RA.fmt(T.gold), T.intel ? T.intel.agents.length : 0, RA.esc(bs), RA.esc(rs));
       }
-    } else h += RA.t("<p class=\"note\">Send an agent from a state's sheet (tap the state → Intelligence). At most {0} agents; after a mission an agent rests 1 min; a caught agent is lost and the state trusts you less.</p>", C.INTEL_MAX);
+    } else {
+      // send an agent: pick a state (neighbours first); training raises an agent's level and its odds
+      const nb = me.nbCache || new Map();
+      const L = G.P.filter((o) => o && o.alive && o.spawned && o !== me && o.type !== 'bot').sort((a, b) => (nb.has(b.id) ? 1 : 0) - (nb.has(a.id) ? 1 : 0) || b.tiles - a.tiles).slice(0, 24);
+      h += RA.t("<div class=\"sec-t\">Send an agent</div><p class=\"explain\">Pick a state, then the mission: scout (see its army, gold, buildings and research, and lift the fog over it), sabotage a building or steal research. <b>Train</b> an agent above to raise its level: every level +17% odds.</p>") + '<div class="list">';
+      for (const o of L) h += `<div class="prow wide"><span class="sw" style="background:${o.hex}"></span><div class="pn"><div class="nm">${RA.esc(o.name)}</div><div class="d">${nb.has(o.id) ? RA.t("neighbour · ") : ''}${RA.t("army {0}", RA.fmt(o.troops))}${G.intelSeen(me, o) ? RA.t(" · scouted") : ''}</div></div><div class="bb">${this.mini(RA.t("Missions"), `data-ito="${o.id}"`, 'ok')}</div></div>`;
+      h += '</div>' + RA.t("<p class=\"note\">At most {0} agents (+1 per agency level); after a mission an agent rests 1 min; a caught agent is lost and the state trusts you less.</p>", C.INTEL_MAX);
+    }
     this.openSheet(h, (s) => {
       const again = () => setTimeout(() => this.intelSheet(tid, true), G.online || G.long ? 1200 : 60);
       const q = (sel, fn) => s.querySelectorAll(sel).forEach((b) => (b.onclick = () => (fn(b), again())));
+      s.querySelectorAll('[data-ito]').forEach((b) => (b.onclick = () => this.intelSheet(+b.dataset.ito)));
       q('[data-irec]', () => this.act('intel', ['rec']));
       q('[data-itrain]', (b) => this.act('intel', ['train', +b.dataset.itrain]));
       q('[data-ispy]', (b) => {
@@ -22137,7 +22184,7 @@ Object.assign(RA.UI.prototype, {
   },
 });
 
-RA.BUILD = '3c06337f';
+RA.BUILD = 'c2771622';
 new RA.App().boot();
 }
 function __raFallback(){

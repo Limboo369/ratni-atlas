@@ -52,7 +52,13 @@ Object.assign(RA.UI.prototype, {
       d: ready ? RA.t("Instantly +{0} troops. Army growth then stops for 45 s.", RA.fmt(add)) : RA.t("Ready again in {0}", RA.dur(me.mobReady - tk)),
       r: '+' + RA.fmt(add),
     }) + '</div>';
-    h += RA.t("<div class=\"sec-t\">Recruit a unit</div><p class=\"explain\">Place it along the border — it follows the front by itself. It makes enemy breakthroughs harder and your attacks nearby cheaper.</p><div class=\"btns\">");
+    if (G.opts.tree) {
+      // the intelligence agency and weapons research live here too (Darko 28. 9.: they were hard to find)
+      const I = me.n.intel ? G.intelOf(me) : null, rdy = I ? I.agents.filter((x) => x.busy <= G.clock()).length : 0, B = me.rsBusy;
+      h += '<div class="btns">' + this.btn({ icon: 'eye', attrs: 'data-intel', t: RA.t("Intelligence agency"), d: I ? RA.t("Agents {0}/{1} · {2} ready — recruit, train, send on missions", I.agents.length, G.intelMax(me), rdy) : RA.t("Not built yet: Build → {0}", RA.STRUCT.intel.name) })
+        + this.btn({ icon: 'rocket', attrs: 'data-rschopen', t: RA.t("Weapons research"), d: B ? RA.t("Now: {0} {1}", RA.esc(RA.RSCH[B.k].name), B.lv) : RA.t("Stronger drones, missiles and more — pay once, better for the rest of the game") }) + '</div>';
+    }
+    h += RA.t("<div class=\"sec-t\">Recruit a unit</div><p class=\"explain\">Place it anywhere on your land — it goes to the nearest border and follows the front by itself. It makes enemy breakthroughs harder and your attacks nearby cheaper.</p><div class=\"btns\">");
     for (const type of ['inf', 'tank', 'art', 'ship', 'sub']) {
       const U = RA.UNIT[type];
       if (U.na) continue;
@@ -82,6 +88,8 @@ Object.assign(RA.UI.prototype, {
     const needs = ['inf', 'tank', 'art'].map((t) => RA.UNIT[t]).filter((U) => !U.na && U.needs).map((U) => `${U.name} ${U.pl ? RA.t("need") : RA.t("needs")}: ${RA.STRUCT[U.needs].name}`).join('. ');
     h += RA.t("<p class=\"note\">Limit: {0} + {1} per “{2}”. {3}Tap your unit on the map, then a new spot, to move it. Disbanding returns 60% of the troops.</p>", C.UNIT_BASE_CAP, C.UNIT_PER_BARRACKS, RA.STRUCT.barracks.name, needs ? needs + '. ' : '');
     this.openSheet(h, (s) => {
+      s.querySelectorAll('[data-intel]').forEach((b) => (b.onclick = () => this.intelSheet()));
+      s.querySelectorAll('[data-rschopen]').forEach((b) => (b.onclick = () => this.researchSheet()));
       const mb = s.querySelector('[data-mob]');
       if (mb) mb.onclick = () => {
         this.closeSheet();
@@ -250,7 +258,9 @@ Object.assign(RA.UI.prototype, {
     }
     const sam = RA.STRUCT.sam;
     h += RA.t("</div><p class=\"note\">{0}The first tap on the map aims and shows the blast area, the second tap (or “Launch”) fires. Drones fly on every tap.{1}{2}{3}</p>", peace ? RA.t("<b>Peace time:</b> strikes are allowed in {0}. ", G.peaceLeft()) : '', RA.missileTypes().some((t) => RA.MISSILE[t].range) ? RA.t(" White circles show the range of your buildings — build them closer to the front.") : '', sam.na ? '' : RA.t(" An enemy “{0}” shoots down missiles within {1} cells (red circles while aiming).", sam.name, RA.CFG.SAM_R), RA.MISSILE.atom.na ? '' : RA.t(" Nukes sour relations with everyone; an ally you hit breaks the alliance."));
+    if (G.opts.tree) h += '<div class="btns">' + this.btn({ icon: 'rocket', attrs: 'data-rschopen', t: RA.t("Weapons research"), d: RA.t("Stronger drones, missiles and more — pay once, better for the rest of the game") }) + '</div>';
     this.openSheet(h, (s) => {
+      s.querySelectorAll('[data-rschopen]').forEach((b) => (b.onclick = () => this.researchSheet()));
       const b = s.querySelector('[data-silo]');
       if (b) b.onclick = () => {
         this.closeSheet();
@@ -783,7 +793,14 @@ Object.assign(RA.UI.prototype, {
       t += RA.t("<article class=\"research-card\" data-branch=\"{0}\"><div class=\"research-heading\"><i>{1}</i><span>{2}<small>Level {3} / {4}</small></span></div>{5}<p>{6}</p>{7}</article>", k, RA.icon(T.icon), T.name, lv, RA.TECH_MAX, this.techProgress(lv), RA.esc(T.desc), max ? RA.t("<span class=\"research-max\">Fully developed</span>") : this.mini(RA.t("Research · {0}", RA.fmt(cost)), RA.t("data-tech=\"{0}\" aria-label=\"Research {1}, level {2}, {3} gold\"", k, T.name, lv+1, RA.fmt(cost)), 'ok', me.gold < cost));
     }
     t += '</div>';
-    // weapons research (03c-research.js): one at a time, it takes a while
+    t += this.rschHtml();
+    const i = h.indexOf('<div class="field">');
+    return i < 0 ? h + t : h.slice(0, i) + t + h.slice(i);
+  },
+  /* weapons research (03c-research.js): one at a time, it takes a while */
+  rschHtml() {
+    const G = this.G, me = G.me;
+    let t = '';
     const B = me.rsBusy, left = B ? B.done - G.clock() : 0, secs = G.sub ? left : left / 10;
     t += RA.t("<div class=\"sec-t\">Weapons research</div><p class=\"explain\">Pay and wait: the weapon is better for the rest of the game. One research at a time.{0}</p><div class=\"research-grid\" id=\"rschGrid\">", B ? RA.t(" Now: <b>{0} {1}</b> — {2} to go.", RA.esc(RA.RSCH[B.k].name), B.lv, RA.fmtTime(Math.max(0, secs))) : '');
     for (const k of RA.RSCH_ORDER) {
@@ -798,8 +815,18 @@ Object.assign(RA.UI.prototype, {
       t += RA.t("<article class=\"research-card\" data-rsch-card=\"{0}\"><div class=\"research-heading\"><i>{1}</i><span>{2}<small>Level {3} / {4}</small></span></div><p>{5}</p>{6}</article>", k, RA.icon(R.icon), R.name, lv, R.max, RA.esc(R.desc), progress + action + (reason ? `<small class="research-reason">${reason}</small>` : ''));
     }
     t += '</div>';
-    const i = h.indexOf('<div class="field">');
-    return i < 0 ? h + t : h.slice(0, i) + t + h.slice(i);
+    return t;
+  },
+  /* weapons research on its own (from Army and Missiles; Darko 28. 9.: it was only at the bottom of Economy) */
+  researchSheet(keep) {
+    const G = this.G, me = G && G.me;
+    if (!me || G.state !== 'play') return;
+    let h = this.head(RA.t("Weapons research"), RA.t("Stronger drones, missiles and more · gold {0}", RA.fmt(me.gold)));
+    h += G.opts.tree ? this.rschHtml() : RA.t("<p class=\"note\">Weapons research comes with the tech tree — it is off in this game.</p>");
+    this.openSheet(h, (s) => s.querySelectorAll('[data-rsch]').forEach((b) => (b.onclick = () => {
+      this.act('rsch', [b.dataset.rsch]);
+      setTimeout(() => this.researchSheet(true), G.online || G.long ? 1200 : 50);
+    })), keep, () => this.researchSheet(true));
   },
   techProgress(level, max = 5) {
     return `<div class="research-progress" role="img" aria-label="${RA.t('Level {0} of {1}', level, max)}">${Array.from({length:max},(_,i)=>`<i class="${i<level?'earned':i===level?'next':''}"></i>`).join('')}</div>`;
