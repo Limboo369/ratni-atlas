@@ -133,7 +133,26 @@ Object.assign(RA.UI.prototype, {
         t: `${S.name} <span class="d">(${me.n[t]})</span>`, d: RA.esc(S.desc), r: RA.fmt(cost),
       });
     }
-    h += this.btn({ icon: 'fort', attrs: 'data-trench', t: RA.t("Trenches"), d: RA.t("Along a border with one state: attackers there lose more and are slower. Gone where the land is lost."), r: RA.t("{0}/cell", RA.fmt(RA.CFG.TRENCH_GOLD)) });
+    const C = RA.CFG, trenchCost = Math.round(C.TRENCH_GOLD * (me.bCost || 1));
+    let ready = 0, digging = 0;
+    for (const c of new Set(G.trenchCells || [])) if (G.owner[c] === me.id) {
+      if (G.trench[c] === 2) ready++;
+      else if (G.trench[c] === 1) digging++;
+    }
+    const reason = ready + digging >= C.TRENCH_MAX ? RA.t("Trench limit reached") : me.gold < trenchCost ? RA.t("Not enough gold for one section") : '';
+    h += `<button class="btn trench-build" data-trench ${reason ? 'disabled' : ''}>
+      <svg class="trench-preview" viewBox="0 0 80 64" fill="none" aria-hidden="true">
+        <path d="M5 43h15V26h20v13h19V22h16" stroke="#302a20" stroke-width="14" stroke-linejoin="round"/>
+        <path d="M5 43h15V26h20v13h19V22h16" stroke="#ac9467" stroke-width="11" stroke-linejoin="round"/>
+        <path d="M5 43h15V26h20v13h19V22h16" stroke="#252720" stroke-width="5" stroke-linejoin="round"/>
+        <path d="M18 34h4m6-10v4m10 3h4m6 6v4m9-13h4m7-8v4" stroke="#d5bd8e" stroke-width="1.5"/>
+      </svg>
+      <span class="trench-copy"><span class="t">${RA.t("Trenches")}</span>
+        <span class="d">${RA.t("Tap your side of a border to dig a connected defensive line.")}</span>
+        <span class="trench-meta"><b>${RA.t("{0}/cell", RA.fmt(trenchCost))}</b><span>${RA.t("Ready in {0} s", C.TRENCH_SECS)}</span></span>
+        <span class="trench-state">${reason || RA.t("Ready {0} · digging {1} · limit {2}", ready, digging, C.TRENCH_MAX)}</span>
+      </span>
+    </button>`;
     h += RA.t("</div><p class=\"note\">After choosing, tap a spot on your land. Buildings must be at least 4 cells apart, and a new city at least 5 cells from existing cities.</p>");
     this.openSheet(h, (s) => {
       s.querySelectorAll('[data-t]').forEach((b) => (b.onclick = () => {

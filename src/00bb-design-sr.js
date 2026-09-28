@@ -26,3 +26,10 @@ Object.assign(RA.SR, {
 });
 
 Object.assign(RA.SR, {"CONQUEROR": "OSVAJAČ"});
+
+Object.assign(RA.SR, {
+  'Tap your side of a border to dig a connected defensive line.': 'Dodirni svoju stranu granice da iskopaš povezanu odbrambenu liniju.',
+  'Ready {0} · digging {1} · limit {2}': 'Gotovo {0} · u izgradnji {1} · najviše {2}',
+  'Trench limit reached': 'Dostignut je najveći broj rovova',
+  'Not enough gold for one section': 'Nema dovoljno zlata za jednu dionicu'
+});
