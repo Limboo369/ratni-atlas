@@ -1513,3 +1513,16 @@ html[lang=sr] .replay-bar::before{content:"SNIMAK PARTIJE"}
 .report-more summary{min-height:44px;padding:12px 0}
 /* Darko 27. 9.: no scale bar and no credits over the map (credits: "About the game and map sources") */
 .leaflet-control-scale, .leaflet-control-attribution { display: none !important; }
+
+/* Earthworks have their own 2D symbol and legible construction feedback. */
+#sheet .btn.trench-build{display:grid;grid-template-columns:68px minmax(0,1fr);align-items:center;gap:16px;padding:18px;border:1px solid #b9a17466;border-radius:4px;background:linear-gradient(120deg,#ae956619,#13212a);text-align:left}
+#sheet .trench-build>.trench-preview{width:68px;height:58px;border-radius:4px;background:#0d171b;flex:none}
+.trench-copy{display:grid;gap:8px;min-width:0}
+#sheet .trench-build .t{font-size:18px;color:#e6dcc4}
+#sheet .trench-build .d{font-size:12px;line-height:1.5;color:#a8b8bd}
+.trench-meta{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;font-size:12px;color:#b8c7ca}
+.trench-meta b{color:#dac08e;font-weight:500;font-variant-numeric:tabular-nums}
+.trench-state{display:block;font-size:11px;line-height:1.4;color:#98aaa9}
+#sheet .trench-build:disabled .trench-state{color:#e3ac94}
+#sheet .trench-build:not(:disabled):hover{background:#29352f;border-color:#d2b780}
+@media(max-width:400px){#sheet .btn.trench-build{grid-template-columns:54px minmax(0,1fr);gap:12px;padding:14px}#sheet .trench-build>.trench-preview{width:54px;height:52px}}
