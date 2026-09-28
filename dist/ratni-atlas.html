@@ -1474,10 +1474,11 @@ html[lang=sr] .replay-bar::before{content:"SNIMAK PARTIJE"}
 .mode-heading .lab{letter-spacing:.15em;font-size:10px;color:#9cacb4}
 #modeContinue{width:100%;margin:18px 0}
 /* Both launcher tabs share typography, spacing and card geometry. */
-#paceSeg,.online-pane,.solo-extras{display:grid;width:100%;grid-template-columns:1fr;gap:10px;margin:0}
+#paceSeg,.online-pane,.solo-extras,.solo-primary{display:grid;width:100%;grid-template-columns:1fr;gap:10px;margin:0}
 .solo-extras{margin-top:10px}
+.solo-primary{margin-bottom:10px}
 .launcher-intro{margin:20px 0 16px}
-#startScreen.mode-setup :is(.launcher-intro,.solo-extras){display:none}
+#startScreen.mode-setup :is(.launcher-intro,.solo-extras,.solo-primary){display:none}
 #startScreen .launcher-card{display:grid;grid-template-columns:38px minmax(0,1fr) 16px;align-items:center;gap:14px;width:100%;min-height:78px;padding:16px;margin:0;border:1px solid #bbcbd127;border-radius:4px;background:linear-gradient(110deg,#23374270,#0b171ed9);color:var(--launch-text,#e8eef0);font-family:inherit;text-align:left;box-shadow:none;cursor:pointer}
 #startScreen .launcher-card b{display:block;font-size:16px;font-weight:700;line-height:1.3;letter-spacing:.035em;text-transform:none}
 #startScreen .launcher-card small{display:block;margin-top:5px;font-size:11px;line-height:1.5;color:#a7b6be;opacity:1;text-align:left}
@@ -1517,6 +1518,19 @@ html[lang=sr] .replay-bar::before{content:"SNIMAK PARTIJE"}
 .report-more summary{min-height:44px;padding:12px 0}
 /* Darko 27. 9.: no scale bar and no credits over the map (credits: "About the game and map sources") */
 .leaflet-control-scale, .leaflet-control-attribution { display: none !important; }
+
+/* Earthworks have their own 2D symbol and legible construction feedback. */
+#sheet .btn.trench-build{display:grid;grid-template-columns:68px minmax(0,1fr);align-items:center;gap:16px;padding:18px;border:1px solid #b9a17466;border-radius:4px;background:linear-gradient(120deg,#ae956619,#13212a);text-align:left}
+#sheet .trench-build>.trench-preview{width:68px;height:58px;border-radius:4px;background:#0d171b;flex:none}
+.trench-copy{display:grid;gap:8px;min-width:0}
+#sheet .trench-build .t{font-size:18px;color:#e6dcc4}
+#sheet .trench-build .d{font-size:12px;line-height:1.5;color:#a8b8bd}
+.trench-meta{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;font-size:12px;color:#b8c7ca}
+.trench-meta b{color:#dac08e;font-weight:500;font-variant-numeric:tabular-nums}
+.trench-state{display:block;font-size:11px;line-height:1.4;color:#98aaa9}
+#sheet .trench-build:disabled .trench-state{color:#e3ac94}
+#sheet .trench-build:not(:disabled):hover{background:#29352f;border-color:#d2b780}
+@media(max-width:400px){#sheet .btn.trench-build{grid-template-columns:54px minmax(0,1fr);gap:12px;padding:14px}#sheet .trench-build>.trench-preview{width:54px;height:52px}}
 
 #app{touch-action:none}#sheet,.screen{touch-action:pan-y}</style>
 <div id="app">
@@ -1637,18 +1651,18 @@ html[lang=sr] .replay-bar::before{content:"SNIMAK PARTIJE"}
           </div>
           <div class="mode-heading" id="modeHeading" hidden><button id="modeBack" class="command-tool" aria-label="Back to modes">←</button><div><span class="lab">SELECTED MODE</span><h2 id="selectedMode" tabindex="-1"></h2></div></div>
           <p class="online-intro launcher-intro">Choose your battlefield.<span class="solo-only">solo, against the computer</span><span class="online-only">Sign in to play online.</span></p>
+          <div class="solo-primary solo-only"><button class="online-card launcher-card featured-card" id="campBigBtn"><span class="featured-mark" aria-hidden="true"><svg viewBox="0 0 66 72" fill="none"><path d="M33 3 59 14v22c0 15-26 32-26 32S7 51 7 36V14Z" stroke="currentColor" stroke-width="2"/><path d="M33 10 53 18v18c0 10-20 25-20 25S13 46 13 36V18Z" stroke="currentColor" opacity=".45"/><path d="M25 51V22l10 4 9-4v20l-9 4-10-4m0-10 10 4 9-4" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/></svg></span><span class="online-copy"><span class="online-eyebrow">CONQUEROR</span><b>Campaign</b><small>Your dynasty through missions · from Bosnia to the whole world</small></span><span class="online-arrow" aria-hidden="true">↗</span></button><button class="online-card launcher-card" id="quickBtn"><span class="online-symbol" aria-hidden="true"><i data-ic="play"></i></span><span class="online-copy"><b>Play now</b><small>Blitz · random state · no choices</small></span><span class="online-arrow" aria-hidden="true">↗</span></button></div>
           <div class="pace-seg solo-only" id="paceSeg" role="group" aria-label="Game mode"><button class="online-card launcher-card featured-card" data-v="blitz" aria-pressed="true"><span class="featured-mark" aria-hidden="true"><svg viewBox="0 0 66 72" fill="none"><path d="M33 3 59 14v22c0 15-26 32-26 32S7 51 7 36V14Z" stroke="currentColor" stroke-width="2"/><path d="M33 10 53 18v18c0 10-20 25-20 25S13 46 13 36V18Z" stroke="currentColor" opacity=".45"/><path d="m36 19-17 23h12l-2 14 18-24H35l1-13Z" fill="currentColor"/></svg></span><span class="online-copy"><span class="online-eyebrow">CONQUEROR</span><b>Blitz</b><small>a quick match, 20–40 min</small></span><span class="online-arrow" aria-hidden="true">↗</span></button><button class="online-card launcher-card" data-v="focus" aria-pressed="false"><span class="online-symbol" aria-hidden="true"><i data-ic="clock"></i></span><span class="online-copy"><b>Focus</b><small>lasts days, runs without you</small></span><span class="online-arrow" aria-hidden="true">↗</span></button><button class="online-card launcher-card" data-v="custom" aria-pressed="false"><span class="online-symbol" aria-hidden="true"><i data-ic="menu"></i></span><span class="online-copy"><b>Make your choice</b><small>you set the rules</small></span><span class="online-arrow" aria-hidden="true">↗</span></button></div>
-          <div class="solo-extras solo-only"><button class="online-card launcher-card" id="campBigBtn"><span class="online-symbol" aria-hidden="true"><i data-ic="flag"></i></span><span class="online-copy"><b>Campaign</b><small>Your dynasty through missions · from Bosnia to the whole world</small></span><span class="online-arrow" aria-hidden="true">↗</span></button><button class="online-card launcher-card" id="marketBtn"><span class="online-symbol" aria-hidden="true"><i data-ic="globe"></i></span><span class="online-copy"><b>Community market</b><small>Players' scenarios · make your own in the editor</small></span><span class="online-arrow" aria-hidden="true">↗</span></button></div>
+          <div class="solo-extras solo-only"><button class="online-card launcher-card" id="marketBtn"><span class="online-symbol" aria-hidden="true"><i data-ic="globe"></i></span><span class="online-copy"><b>Community market</b><small>Players' scenarios · make your own in the editor</small></span><span class="online-arrow" aria-hidden="true">↗</span></button></div>
           <div class="online-pane online-only" id="onlinePane">
             <button class="online-card launcher-card featured-card league-entry" id="leagueBtn"><span class="league-mark" aria-hidden="true"></span><span class="online-copy"><span class="online-eyebrow">RANKED</span><b>Conquest <em>League</em></b><small>1v1 · 2v2 · 5v5 <span>Blitz / Focus</span></small></span><span class="online-arrow" aria-hidden="true">↗</span></button>
             <button class="online-card launcher-card" id="skirmishBtn"><span class="online-symbol" aria-hidden="true"><i data-ic="globe"></i></span><span class="online-copy"><b>Skirmish</b><small>Public games · teams · your rules</small></span><span class="online-arrow" aria-hidden="true">↗</span></button>
             <button class="online-card launcher-card" id="onlineToggle" aria-expanded="false" aria-controls="onlineBox"><span class="online-symbol" aria-hidden="true"><i data-ic="lock"></i></span><span class="online-copy"><b>Private room</b><small>Invite friends and play through a link</small></span><span class="online-arrow" aria-hidden="true">+</span></button>
           </div>
           <p class="pace-note solo-only" id="paceNote"></p>
-          <div class="pace-days solo-only" id="paceDays" hidden><span>Duration</span><div class="seg" id="daysSeg" role="group" aria-label="Focus game duration"><button data-v="1" aria-pressed="true">~1 day</button><button data-v="3" aria-pressed="false">~3 days</button><button data-v="7" aria-pressed="false">~7 days</button></div></div>
 
           <button class="go command-play solo-only" id="goBtn"><span>Start the conquest</span><span aria-hidden="true">↗</span></button>
-          <button class="command-quick solo-only" id="quickBtn"><b>Play now</b><small>Blitz · random state · no choices</small></button>
+
           <button class="command-resume solo-only" id="resumeBtn" hidden></button>
           <button class="command-resume focus-resume solo-only" id="focusBtn" hidden></button>
           <button class="command-quick command-install" id="installBtn" hidden><b>Install the app</b><small>Overtake as a real app on your computer or phone</small></button>
@@ -1686,7 +1700,7 @@ html[lang=sr] .replay-bar::before{content:"SNIMAK PARTIJE"}
       <div class="operation-head"><div><span class="command-kicker">PREPARING FOR CONQUEST</span><h2 id="operationTitle">Your operation.</h2></div><button id="configClose" class="command-tool" aria-label="Close settings"><i data-ic="close"></i></button></div>
       <div class="operation-body">
         <div class="field preset-only"><span class="lab">Mode rules</span><p class="note era-note" id="rulesNote"></p></div>
-        <div class="field custom-only"><span class="lab" id="cPaceLabel">Pace</span><div class="seg" id="cPaceSeg" role="group" aria-labelledby="cPaceLabel"><button data-v="blitz" aria-pressed="true">Blitz · fast</button><button data-v="focus" aria-pressed="false">Focus · days</button></div><p class="note era-note">A Focus game runs on the server even while you're away; you pick the duration on the start screen.</p></div>
+        <div class="field custom-only"><span class="lab" id="cPaceLabel">Pace</span><div class="seg" id="cPaceSeg" role="group" aria-labelledby="cPaceLabel"><button data-v="blitz" aria-pressed="true">Blitz · fast</button><button data-v="focus" aria-pressed="false">Focus · days</button></div><p class="note era-note">A Focus game runs on the server even while you're away and lasts until someone wins.</p></div>
         <div class="field custom-only"><span class="lab" id="treeLabel">Tech tree</span><div class="seg" id="treeSeg" role="group" aria-labelledby="treeLabel"><button data-v="0" aria-pressed="true">Off</button><button data-v="1" aria-pressed="false">On</button></div><p class="note era-note">Research for gold: economy, army, science and diplomacy, 5 levels each (Economy → Tech tree).</p></div>
         <div class="field custom-only"><span class="lab" id="nukeLabel">Nuclear weapons</span><div class="seg" id="nukeSeg" role="group" aria-labelledby="nukeLabel"><button data-v="0" aria-pressed="true">Allowed</button><button data-v="1" aria-pressed="false">Forbidden</button></div></div>
         <div class="field"><span class="lab" id="startLabel">Start</span><div class="seg" id="startSeg" role="group" aria-labelledby="startLabel"><button data-v="granice" aria-pressed="true">Real borders</button><button data-v="slobodno" aria-pressed="false">From the capital</button></div></div>
@@ -2143,6 +2157,7 @@ RA.SR = {
   "<b>{0}</b> · level {1}{2}": "<b>{0}</b> · nivo {1}{2}",
   "<br><span class=\"d\">world</span>": "<br><span class=\"d\">svijet</span>",
   "<br>No trade partner has it — make a trade pact (Alliances).": "<br>Nijedan trgovinski partner ga nema — sklopi trgovinski savez (Savezi).",
+  "<br>⛨ allied with {0}": "<br>⛨ u savezu sa: {0}",
   "<button class=\"btn good\" data-on=\"{0}\">{1}<span><span class=\"t\">Join: {2}</span><br><span class=\"d\">The room is open — go in and pick a state</span></span></button>": "<button class=\"btn good\" data-on=\"{0}\">{1}<span><span class=\"t\">Pridruži se: {2}</span><br><span class=\"d\">Soba je otvorena — uđi i izaberi državu</span></span></button>",
   "<button class=\"btn primary\" data-on=\"{0}\">{1}<span><span class=\"t\">{2} is waiting for you in an online room</span><br><span class=\"d\">Tap to join</span></span></button>": "<button class=\"btn primary\" data-on=\"{0}\">{1}<span><span class=\"t\">{2} te čeka u online sobi</span><br><span class=\"d\">Dodirni da se pridružiš</span></span></button>",
   "<button class=\"btn\" data-m=\"endv\"><span><span class=\"t\">{0}</span><br><span class=\"d\">Votes {1}/{2} — when everyone votes, {3} wins</span></span></button>\n        <button class=\"btn danger\" data-m=\"surr\" {4}><span><span class=\"t\">{5}</span><br><span class=\"d\">{6}</span></span></button>": "<button class=\"btn\" data-m=\"endv\"><span><span class=\"t\">{0}</span><br><span class=\"d\">Glasova {1}/{2} — kad glasaju svi, pobjeđuje {3}</span></span></button>\n        <button class=\"btn danger\" data-m=\"surr\" {4}><span><span class=\"t\">{5}</span><br><span class=\"d\">{6}</span></span></button>",
@@ -2183,6 +2198,7 @@ RA.SR = {
   "<div class=\"field\"><span class=\"lab\">Teams</span><div class=\"seg wrap\" id=\"skTeams\">{0}</div></div>": "<div class=\"field\"><span class=\"lab\">Timovi</span><div class=\"seg wrap\" id=\"skTeams\">{0}</div></div>",
   "<div class=\"field\"><span class=\"lab\">Your team</span><div class=\"seg\" id=\"teamSeg\">{0}</div></div>": "<div class=\"field\"><span class=\"lab\">Tvoj tim</span><div class=\"seg\" id=\"teamSeg\">{0}</div></div>",
   "<div class=\"howto\">\n      <h4>Goal</h4><p>Take {0}% of the land of the chosen part of the map or be the last state standing. When you win you can play on and conquer everything. Whoever holds more than {1}% of the map pays more for every new conquest.</p>\n      <h4>Modes</h4><ul>\n        <li><b>Blitz</b>: a quick game (20–40 min), no tech tree or resources, 1 min of peace.</li>\n        <li><b>Focus</b>: the game lasts days (~1, 3 or 7) on the server and runs even while you are away — the computer plays your state. Gold and orders come every second, armies move slowly. Tech tree, weapons research, resources and trade, a longer peace time. The main menu keeps the game (<i>Continue Focus game</i>), and when you come back you see what happened. <i>Leave the game</i> deletes your progress for good.</li>\n        <li><b>Make your choice</b>: you pick the pace, the tech tree, resources, nuclear weapons and peace time yourself.</li></ul>\n      <h4>Eras</h4><p>On the start screen you pick the period you fight in. Every era has its own borders, cities, units, buildings and weapons:</p><ul>{2}</ul>\n      <h4>Start</h4><ul>\n        <li><b>Real borders</b>: every state starts with its land from that era. Tap a state or pick it from the list — you get its land, army and gold.</li>\n        <li><b>From the capital</b>: states start from a small circle around their capital, the rest is free (grey) land and city-states.</li>\n        <li>The first minute (adjustable) is <b>peace time</b>: nobody may attack states — build, take free land, make alliances.</li></ul>\n      <h4>Battle royale</h4><p>After peace time and another 90 s a radioactive zone starts shrinking towards a random point ({3} circles). The white dashed circle shows where it's going. Everything outside the red circle is lost — the land and the troops on it. Whoever is left wins.</p>\n      <h4>Expanding and attacking</h4><ul>\n        <li><b>Tap</b> free land or a neighbour — you send as many troops as the <b>Attack strength</b> slider shows.</li>\n        <li><b>Directed attack</b>: tapping a neighbouring state sends troops from your nearest border straight to that spot (an arrow on the map) — only that part is taken, then the rest of the troops come back. The more troops you send, the wider the corridor.</li>\n        <li>On a computer: <b>drag an arrow with the right mouse button</b> from your land to the target — the attack goes exactly that way.</li>\n        <li>A front along the whole border with a state: long press (right click) on it → <b>Attack the whole border</b>. Free land is always taken along the whole border.</li>\n        <li><b>Retake</b>: when a state takes your land, a yellow “Retake N cells” button appears in the attack bar — one click sends a counter-attack only on that land (taken in the last 3 minutes), without going further.</li>\n        <li><b>Right of passage</b>: a military ally lets you through its land — you can attack a state bordering it even if you have no border with it.</li>\n        <li>Rivers, hills, mountains and cities slow the attacker down.</li>\n        <li>Active attacks are above the bottom bar. <b>✕</b> stops an attack and brings the troops back (an attack on a state: 25% is lost in the retreat).</li></ul>\n      <h4>Army and gold</h4><ul>\n        <li>The army grows by itself, fastest around <b>42%</b> of capacity (the green zone on the bar).</li>\n        <li><b>Mobilisation</b> (Army): instantly +30% of capacity, but growth stops for 45 s. Once every 4 minutes.</li>\n        <li>Gold comes from land, cities, ports, trains or caravans and trade.</li>\n        <li><b>Navy</b> (Army): two ships per era, from your port. Tap a ship, then the sea. A warship sinks landings and trade ships, blockades enemy ports nearby (no gold, no trade) and shells the coast; the other ship hunts landings and trade ships (the submarine from 1914 is invisible until a warship comes close).</li>\n        <li><b>Air force</b> (from 1938, Landing or key A): fighters guard the sky around the airfield and escort your planes, bombers destroy buildings, units and troops up to 70 cells from the airfield. <b>Drones</b> (today, Missiles): cheap, fly straight from your border — kamikaze or unit hunter; every tap sends one until you cancel.</li>\n        <li><b>Iron Dome</b> (a building, from 1938): when someone launches a nuke at you, every ready dome fires an atomic bomb at their capital and cities by itself.</li>\n        <li><b>Resources</b> (an option in the settings): grain, metal and fuel at real deposits (signs on the map). Without them everything is dearer or slower; what you lack you buy from a trade partner (Economy).</li>\n        <li><b>Straits</b> (Economy): whoever holds both shores can close a strait to foreign ships. Everyone who sails there gets angry — closing is aggression.</li>\n        <li><b>Loan</b> (Economy: click the gold or Z): a computer state lends you gold, part of your land is the pledge (hatched). Don't repay in time → the pledge is theirs.</li>\n        <li><b>Vassal</b> (Alliances menu): you can make a weak neighbouring state your vassal instead of conquering it — it pays you tribute and fights at your side. If you weaken, it breaks free.</li>\n        <li><b>Aggressive expansion</b> (Alliances menu): every state you attack and subdue angers the others. Too many conquests at once → computer states join forces against you. The anger fades with time.</li>\n        <li><b>Tax</b> (click the gold at the top or key Z): a higher tax gives more gold, but the army grows more slowly. Saved gold earns a little interest.</li></ul>\n      <h4>Units</h4><ul>\n        <li>Three kinds in every era (e.g. legion, cavalry and archers in Rome; infantry, tanks and artillery today): the first holds the border firmly, the second makes your attacks faster and cheaper, the third hits the enemy from afar.</li>\n        <li>Units follow the border by themselves. Tap your unit, then a new spot, to move it. A surrounded unit is lost.</li></ul>\n      <h4>Building</h4><ul>\n        <li><b>City</b>: troops, gold and defence. <b>Factory</b> (a market or manufactory in older eras): a route to your cities within 18 cells — trains or caravans bring gold.</li>\n        <li><b>Barracks</b> (+troops, +2 units), <b>Fort</b>, <b>Port</b>, and depending on the era <b>Airfield</b> (paratroopers), <b>Missile silo</b> or siege workshop, <b>Air defence</b>.</li></ul>\n      <h4>Sea and air</h4><p>A landing by ship on any coast (at most {4} ships). From 1938 paratroopers jump up to {5} cells from an airfield; air defence can shoot them down.</p>\n      <h4>Strikes and bombs</h4><ul>\n        <li>In older eras onagers, trebuchets, bombards, rockets and cannons only reach their <b>range</b> (white circles while aiming) — build them near the front.</li>\n        <li>1914: Big Bertha and zeppelins. 1938: V-2 rockets, and the atomic bomb only from minute 10. Cold War and today: everything up to the hydrogen bomb and MIRV.</li>\n        <li>The <b>atomic</b> and <b>hydrogen</b> bomb wipe out land, destroy EVERY building and unit in the circle and kill a large part of the target's army.</li></ul>\n      <h4>Alliances</h4><ul>\n        <li><b>Military alliance</b> (at most {6}, lasts 5 min): you don't attack each other, and your allies help you when someone attacks you. You can send them troops and ask for help.</li>\n        <li><b>Trade pact</b> (at most {7}): trade ships between ports and trade across a border bring gold to both sides — no duties in war.</li>\n        <li>Betraying an ally = 30 s of halved defence and a bad name with everyone.</li></ul>\n      <h4>Winter and capitals</h4><p>Every 4 minutes {8} is covered with snow for 1 minute: attacks and units are slower there. Losing your capital means a crisis: −25% troops, half income for 60 s and loot for the conqueror.</p>\n      <h4>Online with a friend</h4><p>Both open war.deovilab.com; one presses “Create a room”, the other “Join”. The host picks the era, the map and the type: <b>together against everyone</b> (a permanent alliance, you share the win) or <b>against each other</b>, with battle royale if you like. The host controls speed and pause.</p>\n      <h4>Controls</h4><p>One finger: move · two fingers: zoom · long press (right click): menu for that spot. You can pause and speed up the game (1×–3×).</p>\n    </div>": "<div class=\"howto\">\n      <h4>Cilj</h4><p>Zauzmi {0}% kopna odabranog dijela karte ili ostani posljednja država. Kad pobijediš, možeš nastaviti igru i osvojiti sve. Ko drži više od {1}% karte, plaća svako novo osvajanje skuplje.</p>\n      <h4>Modovi</h4><ul>\n        <li><b>Blitz</b>: brza partija (20–40 min), bez stabla tehnologija i resursa, 1 min mira.</li>\n        <li><b>Focus</b>: igra traje danima (~1, 3 ili 7) na serveru i teče i dok nisi tu — kompjuter vodi tvoju državu. Stablo tehnologija, resursi i trgovina, duže mirno doba. Glavni meni čuva igru (<i>Nastavi Focus igru</i>), a kad se vratiš, vidiš šta se desilo. <i>Napusti igru</i> briše tvoj progres zauvijek.</li>\n        <li><b>Make your choice</b>: sam biraš tempo, stablo tehnologija, resurse, nuklearno oružje i mirno doba.</li></ul>\n      <h4>Doba</h4><p>Na početnom ekranu biraš period u kojem se boriš. Svako doba ima svoje granice, gradove, jedinice, zgrade i oružje:</p><ul>{2}</ul>\n      <h4>Početak</h4><ul>\n        <li><b>Stvarne granice</b>: sve države kreću sa svojom teritorijom iz tog doba. Dodirni državu ili je izaberi sa spiska — dobijaš njenu zemlju, vojsku i zlato.</li>\n        <li><b>Od prijestolnice</b>: države kreću od malog kruga oko glavnog grada, a ostalo je slobodna (siva) zemlja i gradovi-države.</li>\n        <li>Prvi minut (podesivo) je <b>mirno doba</b>: niko ne smije napadati države — gradi, zauzimaj slobodnu zemlju, sklapaj saveze.</li></ul>\n      <h4>Battle royale</h4><p>Poslije mirnog doba i još 90 s radioaktivna zona počinje da se sužava prema nasumičnoj tački ({3} krugova). Bijeli isprekidani krug pokazuje kuda ide. Sve izvan crvenog kruga propada — i zemlja i vojska na njoj. Pobjeđuje ko ostane.</p>\n      <h4>Širenje i napad</h4><ul>\n        <li><b>Dodirni</b> slobodno kopno ili susjeda — šalješ onoliko vojske koliko pokazuje klizač <b>Snaga napada</b>.</li>\n        <li><b>Usmjereni napad</b>: dodir na susjednu državu šalje vojsku s tvoje najbliže granice pravo do tog mjesta (strelica na karti) — osvaja se samo taj dio, pa se ostatak vojske vraća. Što više vojske pošalješ, to je koridor širi.</li>\n        <li>Na računaru: <b>desnim dugmetom miša povuci strelicu</b> od svoje teritorije do cilja — napad ide baš tim pravcem.</li>\n        <li>Front na cijeloj granici s državom: dugi pritisak (desni klik) na nju → <b>Napadni cijelu granicu</b>. Slobodno kopno se uvijek zauzima s cijele granice.</li>\n        <li><b>Vrati granice</b>: kad ti neka država otme zemlju, u traci napada se pojavi žuto dugme „Vrati N polja” — jedan klik šalje kontranapad samo na tu zemlju (oteto u zadnje 3 minute), bez širenja dalje.</li>\n        <li><b>Pravo prolaza</b>: vojni saveznik te pušta preko svoje zemlje — državu koja graniči s njim možeš napasti i ako ti s njom nemaš granicu.</li>\n        <li>Rijeke, brda, planine i gradovi usporavaju napadača.</li>\n        <li>Aktivni napadi su iznad donje trake. <b>✕</b> obustavlja napad i vraća vojsku (napad na državu: 25% se izgubi u povlačenju).</li></ul>\n      <h4>Vojska i zlato</h4><ul>\n        <li>Vojska raste sama, najbrže oko <b>42%</b> kapaciteta (zelena zona na traci).</li>\n        <li><b>Mobilizacija</b> (Vojska): odmah +30% kapaciteta, ali rast stoji 45 s. Jednom u 4 minute.</li>\n        <li>Zlato donose teritorija, gradovi, luke, vozovi ili karavani i trgovina.</li>\n        <li><b>Mornarica</b> (Vojska): dva broda po dobu, iz tvoje luke. Dodirni brod pa more. Ratni brod potapa desante i trgovačke brodove, blokira neprijateljske luke u blizini (bez zlata i trgovine) i gađa obalu; drugi brod lovi desante i trgovačke brodove (podmornica od 1914. je nevidljiva dok joj ratni brod ne priđe).</li>\n        <li><b>Avijacija</b> (od 1938., Desant ili tipka A): lovci brane nebo oko aerodroma i prate tvoje avione, bombarderi ruše zgrade, jedinice i vojsku do 70 polja od aerodroma. <b>Dronovi</b> (danas, Rakete): jeftini, lete pravo s tvoje granice — kamikaza ili lovac na jedinice.</li>\n        <li><b>Gvozdena kupola</b> (zgrada, od 1938.): kad neko lansira nuklearku na tebe, svaka spremna kupola sama ispali atomsku bombu na njegovu prijestolnicu i gradove.</li>\n        <li><b>Resursi</b> (opcija u postavkama): žito, metal i gorivo na stvarnim nalazištima (znakovi na karti). Bez njih je sve skuplje ili sporije; što nemaš, kupiš od trgovinskog partnera (Ekonomija).</li>\n        <li><b>Moreuzi</b> (Ekonomija): ko drži obje obale može zatvoriti moreuz za tuđe brodove. Svi koji tuda plove se ljute — zatvaranje je agresija.</li>\n        <li><b>Zajam</b> (Ekonomija: klik na zlato ili Z): država kompjutera ti posudi zlato, dio tvoje zemlje je zalog (šrafirano). Ne vratiš na vrijeme → zalog je njen.</li>\n        <li><b>Vazal</b> (meni Savezi): slabu susjednu državu možeš učiniti vazalom umjesto da je osvojiš — plaća ti danak i bori se uz tebe. Ako oslabiš, oslobodi se.</li>\n        <li><b>Agresivna ekspanzija</b> (meni Savezi): svaka napadnuta i pokorena država ljuti ostale. Previše osvajanja odjednom → kompjuterske države se udružuju protiv tebe. Ljutnja vremenom opada.</li>\n        <li><b>Porez</b> (klik na zlato gore ili tipka Z): viši porez daje više zlata, ali vojska sporije raste. Ušteđeno zlato donosi malu kamatu.</li></ul>\n      <h4>Jedinice</h4><ul>\n        <li>Tri vrste u svakom dobu (npr. legija, konjica i strijelci u Rimu; pješadija, tenkovi i artiljerija danas): prva čvrsto brani granicu, druga ubrzava i pojeftinjuje tvoje napade, treća gađa neprijatelja iz daljine.</li>\n        <li>Jedinice same prate granicu. Dodirni svoju jedinicu pa novo mjesto da je premjestiš. Opkoljena jedinica propada.</li></ul>\n      <h4>Gradnja</h4><ul>\n        <li><b>Grad</b>: vojska, zlato i odbrana. <b>Fabrika</b> (u starim dobima tržnica ili manufaktura): put do tvojih gradova u krugu 18 polja — vozovi ili karavani donose zlato.</li>\n        <li><b>Kasarna</b> (+vojska, +2 jedinice), <b>Utvrda</b>, <b>Luka</b>, a zavisno od doba i <b>Aerodrom</b> (padobranci), <b>Raketni silos</b> ili opsadna radionica, <b>PVO</b>.</li></ul>\n      <h4>More i zrak</h4><p>Desant brodom na bilo koju obalu (najviše {4} broda). Od 1938. padobranci skaču do {5} polja od aerodroma; PVO ih može oboriti.</p>\n      <h4>Udari i bombe</h4><ul>\n        <li>U starim dobima onageri, trebušei, bombarde, rakete i topovi gađaju samo do svog <b>dometa</b> (bijeli krugovi pri ciljanju) — gradi ih blizu fronta.</li>\n        <li>1914: Debela Berta i cepelini. 1938: V-2 rakete, a atomska bomba tek od 10. minute. Hladni rat i danas: sve do hidrogenske bombe i MIRV-a.</li>\n        <li><b>Atomska</b> i <b>hidrogenska</b> bomba brišu teritoriju, uništavaju SVE zgrade i jedinice u krugu i ubijaju velik dio vojske mete.</li></ul>\n      <h4>Savezi</h4><ul>\n        <li><b>Vojni savez</b> (najviše {6}, traje 5 min): ne napadate se, a saveznici ti pomažu kad te neko napadne. Možeš im slati vojsku i tražiti pomoć.</li>\n        <li><b>Trgovinski savez</b> (najviše {7}): trgovački brodovi između luka i trgovina preko granice donose zlato objema stranama — bez obaveza u ratu.</li>\n        <li>Izdaja saveznika = 30 s prepolovljene odbrane i loš ugled kod svih.</li></ul>\n      <h4>Zima i prijestolnice</h4><p>Svake 4 minute {8} prekrije snijeg na 1 minut: napadi i jedinice su tamo sporiji. Pad prijestolnice znači krizu: −25% vojske, pola prihoda 60 s i plijen za osvajača.</p>\n      <h4>Online s prijateljem</h4><p>Oboje otvorite war.deovilab.com; jedan pritisne „Napravi sobu”, drugi „Pridruži se”. Domaćin bira doba, kartu i način: <b>zajedno protiv svih</b> (stalni savez, dijelite pobjedu) ili <b>jedan protiv drugog</b>, uz battle royale ako želite. Brzinu i pauzu kontroliše domaćin.</p>\n      <h4>Kontrole</h4><p>Jedan prst: pomjeranje · dva prsta: zum · dugi pritisak (desni klik): meni za to mjesto. Igru možeš pauzirati i ubrzati (1×–3×).</p>\n    </div>",
+  "<div class=\"howto\">\n      <h4>Goal</h4><p>Take {0}% of the land of the chosen part of the map or be the last state standing. When you win you can play on and conquer everything. Whoever holds more than {1}% of the map pays more for every new conquest.</p>\n      <h4>Modes</h4><ul>\n        <li><b>Blitz</b>: a quick game (20–40 min), no tech tree or resources, 1 min of peace.</li>\n        <li><b>Focus</b>: the game lasts until someone wins (often days) on the server and runs even while you are away — the computer plays your state. Gold and orders come every second, armies move slowly. Tech tree, weapons research, resources and trade, a longer peace time. The main menu keeps the game (<i>Continue Focus game</i>), and when you come back you see what happened. <i>Leave the game</i> deletes your progress for good.</li>\n        <li><b>Make your choice</b>: you pick the pace, the tech tree, resources, nuclear weapons and peace time yourself.</li></ul>\n      <h4>Eras</h4><p>On the start screen you pick the period you fight in. Every era has its own borders, cities, units, buildings and weapons:</p><ul>{2}</ul>\n      <h4>Start</h4><ul>\n        <li><b>Real borders</b>: every state starts with its land from that era. Tap a state or pick it from the list — you get its land, army and gold.</li>\n        <li><b>From the capital</b>: states start from a small circle around their capital, the rest is free (grey) land and city-states.</li>\n        <li>The first minute (adjustable) is <b>peace time</b>: nobody may attack states — build, take free land, make alliances.</li></ul>\n      <h4>Battle royale</h4><p>After peace time and another 90 s a radioactive zone starts shrinking towards a random point ({3} circles). The white dashed circle shows where it's going. Everything outside the red circle is lost — the land and the troops on it. Whoever is left wins.</p>\n      <h4>Expanding and attacking</h4><ul>\n        <li><b>Tap</b> free land or a neighbour — you send as many troops as the <b>Attack strength</b> slider shows.</li>\n        <li><b>Directed attack</b>: tapping a neighbouring state sends troops from your nearest border straight to that spot (an arrow on the map) — only that part is taken, then the rest of the troops come back. The more troops you send, the wider the corridor.</li>\n        <li>On a computer: <b>drag an arrow with the right mouse button</b> from your land to the target — the attack goes exactly that way.</li>\n        <li>A front along the whole border with a state: long press (right click) on it → <b>Attack the whole border</b>. Free land is always taken along the whole border.</li>\n        <li><b>Retake</b>: when a state takes your land, a yellow “Retake N cells” button appears in the attack bar — one click sends a counter-attack only on that land (taken in the last 3 minutes), without going further.</li>\n        <li><b>Right of passage</b>: a military ally lets you through its land — you can attack a state bordering it even if you have no border with it.</li>\n        <li>Rivers, hills, mountains and cities slow the attacker down.</li>\n        <li>Active attacks are above the bottom bar. <b>✕</b> stops an attack and brings the troops back (an attack on a state: 25% is lost in the retreat).</li></ul>\n      <h4>Army and gold</h4><ul>\n        <li>The army grows by itself, fastest around <b>42%</b> of capacity (the green zone on the bar).</li>\n        <li><b>Mobilisation</b> (Army): instantly +30% of capacity, but growth stops for 45 s. Once every 4 minutes.</li>\n        <li>Gold comes from land, cities, ports, trains or caravans and trade.</li>\n        <li><b>Navy</b> (Army): two ships per era, from your port. Tap a ship, then the sea. A warship sinks landings and trade ships, blockades enemy ports nearby (no gold, no trade) and shells the coast; the other ship hunts landings and trade ships (the submarine from 1914 is invisible until a warship comes close).</li>\n        <li><b>Air force</b> (from 1938, Landing or key A): fighters guard the sky around the airfield and escort your planes, bombers destroy buildings, units and troops up to 70 cells from the airfield. <b>Drones</b> (today, Missiles): cheap, fly straight from your border — kamikaze or unit hunter; every tap sends one until you cancel.</li>\n        <li><b>Iron Dome</b> (a building, from 1938): when someone launches a nuke at you, every ready dome fires an atomic bomb at their capital and cities by itself.</li>\n        <li><b>Resources</b> (an option in the settings): grain, metal and fuel at real deposits (signs on the map). Without them everything is dearer or slower; what you lack you buy from a trade partner (Economy).</li>\n        <li><b>Straits</b> (Economy): whoever holds both shores can close a strait to foreign ships. Everyone who sails there gets angry — closing is aggression.</li>\n        <li><b>Loan</b> (Economy: click the gold or Z): a computer state lends you gold, part of your land is the pledge (hatched). Don't repay in time → the pledge is theirs.</li>\n        <li><b>Vassal</b> (Alliances menu): you can make a weak neighbouring state your vassal instead of conquering it — it pays you tribute and fights at your side. If you weaken, it breaks free.</li>\n        <li><b>Aggressive expansion</b> (Alliances menu): every state you attack and subdue angers the others. Too many conquests at once → computer states join forces against you. The anger fades with time.</li>\n        <li><b>Tax</b> (click the gold at the top or key Z): a higher tax gives more gold, but the army grows more slowly. Saved gold earns a little interest.</li></ul>\n      <h4>Units</h4><ul>\n        <li>Three kinds in every era (e.g. legion, cavalry and archers in Rome; infantry, tanks and artillery today): the first holds the border firmly, the second makes your attacks faster and cheaper, the third hits the enemy from afar.</li>\n        <li>Units follow the border by themselves. Tap your unit, then a new spot, to move it. A surrounded unit is lost.</li></ul>\n      <h4>Building</h4><ul>\n        <li><b>City</b>: troops, gold and defence. <b>Factory</b> (a market or manufactory in older eras): a route to your cities within 18 cells — trains or caravans bring gold.</li>\n        <li><b>Barracks</b> (+troops, +2 units), <b>Fort</b>, <b>Port</b>, and depending on the era <b>Airfield</b> (paratroopers), <b>Missile silo</b> or siege workshop, <b>Air defence</b>.</li></ul>\n      <h4>Sea and air</h4><p>A landing by ship on any coast (at most {4} ships). From 1938 paratroopers jump up to {5} cells from an airfield; air defence can shoot them down.</p>\n      <h4>Strikes and bombs</h4><ul>\n        <li>In older eras onagers, trebuchets, bombards, rockets and cannons only reach their <b>range</b> (white circles while aiming) — build them near the front.</li>\n        <li>1914: Big Bertha and zeppelins. 1938: V-2 rockets, and the atomic bomb only from minute 10. Cold War and today: everything up to the hydrogen bomb and MIRV.</li>\n        <li>The <b>atomic</b> and <b>hydrogen</b> bomb wipe out land, destroy EVERY building and unit in the circle and kill a large part of the target's army.</li></ul>\n      <h4>Alliances</h4><ul>\n        <li><b>Military alliance</b> (at most {6}, lasts 5 min): you don't attack each other, and your allies help you when someone attacks you. You can send them troops and ask for help.</li>\n        <li><b>Trade pact</b> (at most {7}): trade ships between ports and trade across a border bring gold to both sides — no duties in war.</li>\n        <li>Betraying an ally = 30 s of halved defence and a bad name with everyone.</li></ul>\n      <h4>Winter and capitals</h4><p>Every 4 minutes {8} is covered with snow for 1 minute: attacks and units are slower there. Losing your capital means a crisis: −25% troops, half income for 60 s and loot for the conqueror.</p>\n      <h4>Online with a friend</h4><p>Both open war.deovilab.com; one presses “Create a room”, the other “Join”. The host picks the era, the map and the type: <b>together against everyone</b> (a permanent alliance, you share the win) or <b>against each other</b>, with battle royale if you like. The host controls speed and pause.</p>\n      <h4>Controls</h4><p>One finger: move · two fingers: zoom · long press (right click): menu for that spot. You can pause and speed up the game (1×–3×).</p>\n    </div>": "<div class=\"howto\">\n      <h4>Cilj</h4><p>Zauzmi {0}% kopna odabranog dijela karte ili ostani posljednja država. Kad pobijediš, možeš nastaviti igru i osvojiti sve. Ko drži više od {1}% karte, plaća svako novo osvajanje skuplje.</p>\n      <h4>Modovi</h4><ul>\n        <li><b>Blitz</b>: brza partija (20–40 min), bez stabla tehnologija i resursa, 1 min mira.</li>\n        <li><b>Focus</b>: igra traje dok neko ne pobijedi (često danima) na serveru i teče i dok nisi tu — kompjuter vodi tvoju državu. Stablo tehnologija, resursi i trgovina, duže mirno doba. Glavni meni čuva igru (<i>Nastavi Focus igru</i>), a kad se vratiš, vidiš šta se desilo. <i>Napusti igru</i> briše tvoj progres zauvijek.</li>\n        <li><b>Make your choice</b>: sam biraš tempo, stablo tehnologija, resurse, nuklearno oružje i mirno doba.</li></ul>\n      <h4>Doba</h4><p>Na početnom ekranu biraš period u kojem se boriš. Svako doba ima svoje granice, gradove, jedinice, zgrade i oružje:</p><ul>{2}</ul>\n      <h4>Početak</h4><ul>\n        <li><b>Stvarne granice</b>: sve države kreću sa svojom teritorijom iz tog doba. Dodirni državu ili je izaberi sa spiska — dobijaš njenu zemlju, vojsku i zlato.</li>\n        <li><b>Od prijestolnice</b>: države kreću od malog kruga oko glavnog grada, a ostalo je slobodna (siva) zemlja i gradovi-države.</li>\n        <li>Prvi minut (podesivo) je <b>mirno doba</b>: niko ne smije napadati države — gradi, zauzimaj slobodnu zemlju, sklapaj saveze.</li></ul>\n      <h4>Battle royale</h4><p>Poslije mirnog doba i još 90 s radioaktivna zona počinje da se sužava prema nasumičnoj tački ({3} krugova). Bijeli isprekidani krug pokazuje kuda ide. Sve izvan crvenog kruga propada — i zemlja i vojska na njoj. Pobjeđuje ko ostane.</p>\n      <h4>Širenje i napad</h4><ul>\n        <li><b>Dodirni</b> slobodno kopno ili susjeda — šalješ onoliko vojske koliko pokazuje klizač <b>Snaga napada</b>.</li>\n        <li><b>Usmjereni napad</b>: dodir na susjednu državu šalje vojsku s tvoje najbliže granice pravo do tog mjesta (strelica na karti) — osvaja se samo taj dio, pa se ostatak vojske vraća. Što više vojske pošalješ, to je koridor širi.</li>\n        <li>Na računaru: <b>desnim dugmetom miša povuci strelicu</b> od svoje teritorije do cilja — napad ide baš tim pravcem.</li>\n        <li>Front na cijeloj granici s državom: dugi pritisak (desni klik) na nju → <b>Napadni cijelu granicu</b>. Slobodno kopno se uvijek zauzima s cijele granice.</li>\n        <li><b>Vrati granice</b>: kad ti neka država otme zemlju, u traci napada se pojavi žuto dugme „Vrati N polja” — jedan klik šalje kontranapad samo na tu zemlju (oteto u zadnje 3 minute), bez širenja dalje.</li>\n        <li><b>Pravo prolaza</b>: vojni saveznik te pušta preko svoje zemlje — državu koja graniči s njim možeš napasti i ako ti s njom nemaš granicu.</li>\n        <li>Rijeke, brda, planine i gradovi usporavaju napadača.</li>\n        <li>Aktivni napadi su iznad donje trake. <b>✕</b> obustavlja napad i vraća vojsku (napad na državu: 25% se izgubi u povlačenju).</li></ul>\n      <h4>Vojska i zlato</h4><ul>\n        <li>Vojska raste sama, najbrže oko <b>42%</b> kapaciteta (zelena zona na traci).</li>\n        <li><b>Mobilizacija</b> (Vojska): odmah +30% kapaciteta, ali rast stoji 45 s. Jednom u 4 minute.</li>\n        <li>Zlato donose teritorija, gradovi, luke, vozovi ili karavani i trgovina.</li>\n        <li><b>Mornarica</b> (Vojska): dva broda po dobu, iz tvoje luke. Dodirni brod pa more. Ratni brod potapa desante i trgovačke brodove, blokira neprijateljske luke u blizini (bez zlata i trgovine) i gađa obalu; drugi brod lovi desante i trgovačke brodove (podmornica od 1914. je nevidljiva dok joj ratni brod ne priđe).</li>\n        <li><b>Avijacija</b> (od 1938., Desant ili tipka A): lovci brane nebo oko aerodroma i prate tvoje avione, bombarderi ruše zgrade, jedinice i vojsku do 70 polja od aerodroma. <b>Dronovi</b> (danas, Rakete): jeftini, lete pravo s tvoje granice — kamikaza ili lovac na jedinice.</li>\n        <li><b>Gvozdena kupola</b> (zgrada, od 1938.): kad neko lansira nuklearku na tebe, svaka spremna kupola sama ispali atomsku bombu na njegovu prijestolnicu i gradove.</li>\n        <li><b>Resursi</b> (opcija u postavkama): žito, metal i gorivo na stvarnim nalazištima (znakovi na karti). Bez njih je sve skuplje ili sporije; što nemaš, kupiš od trgovinskog partnera (Ekonomija).</li>\n        <li><b>Moreuzi</b> (Ekonomija): ko drži obje obale može zatvoriti moreuz za tuđe brodove. Svi koji tuda plove se ljute — zatvaranje je agresija.</li>\n        <li><b>Zajam</b> (Ekonomija: klik na zlato ili Z): država kompjutera ti posudi zlato, dio tvoje zemlje je zalog (šrafirano). Ne vratiš na vrijeme → zalog je njen.</li>\n        <li><b>Vazal</b> (meni Savezi): slabu susjednu državu možeš učiniti vazalom umjesto da je osvojiš — plaća ti danak i bori se uz tebe. Ako oslabiš, oslobodi se.</li>\n        <li><b>Agresivna ekspanzija</b> (meni Savezi): svaka napadnuta i pokorena država ljuti ostale. Previše osvajanja odjednom → kompjuterske države se udružuju protiv tebe. Ljutnja vremenom opada.</li>\n        <li><b>Porez</b> (klik na zlato gore ili tipka Z): viši porez daje više zlata, ali vojska sporije raste. Ušteđeno zlato donosi malu kamatu.</li></ul>\n      <h4>Jedinice</h4><ul>\n        <li>Tri vrste u svakom dobu (npr. legija, konjica i strijelci u Rimu; pješadija, tenkovi i artiljerija danas): prva čvrsto brani granicu, druga ubrzava i pojeftinjuje tvoje napade, treća gađa neprijatelja iz daljine.</li>\n        <li>Jedinice same prate granicu. Dodirni svoju jedinicu pa novo mjesto da je premjestiš. Opkoljena jedinica propada.</li></ul>\n      <h4>Gradnja</h4><ul>\n        <li><b>Grad</b>: vojska, zlato i odbrana. <b>Fabrika</b> (u starim dobima tržnica ili manufaktura): put do tvojih gradova u krugu 18 polja — vozovi ili karavani donose zlato.</li>\n        <li><b>Kasarna</b> (+vojska, +2 jedinice), <b>Utvrda</b>, <b>Luka</b>, a zavisno od doba i <b>Aerodrom</b> (padobranci), <b>Raketni silos</b> ili opsadna radionica, <b>PVO</b>.</li></ul>\n      <h4>More i zrak</h4><p>Desant brodom na bilo koju obalu (najviše {4} broda). Od 1938. padobranci skaču do {5} polja od aerodroma; PVO ih može oboriti.</p>\n      <h4>Udari i bombe</h4><ul>\n        <li>U starim dobima onageri, trebušei, bombarde, rakete i topovi gađaju samo do svog <b>dometa</b> (bijeli krugovi pri ciljanju) — gradi ih blizu fronta.</li>\n        <li>1914: Debela Berta i cepelini. 1938: V-2 rakete, a atomska bomba tek od 10. minute. Hladni rat i danas: sve do hidrogenske bombe i MIRV-a.</li>\n        <li><b>Atomska</b> i <b>hidrogenska</b> bomba brišu teritoriju, uništavaju SVE zgrade i jedinice u krugu i ubijaju velik dio vojske mete.</li></ul>\n      <h4>Savezi</h4><ul>\n        <li><b>Vojni savez</b> (najviše {6}, traje 5 min): ne napadate se, a saveznici ti pomažu kad te neko napadne. Možeš im slati vojsku i tražiti pomoć.</li>\n        <li><b>Trgovinski savez</b> (najviše {7}): trgovački brodovi između luka i trgovina preko granice donose zlato objema stranama — bez obaveza u ratu.</li>\n        <li>Izdaja saveznika = 30 s prepolovljene odbrane i loš ugled kod svih.</li></ul>\n      <h4>Zima i prijestolnice</h4><p>Svake 4 minute {8} prekrije snijeg na 1 minut: napadi i jedinice su tamo sporiji. Pad prijestolnice znači krizu: −25% vojske, pola prihoda 60 s i plijen za osvajača.</p>\n      <h4>Online s prijateljem</h4><p>Oboje otvorite war.deovilab.com; jedan pritisne „Napravi sobu”, drugi „Pridruži se”. Domaćin bira doba, kartu i način: <b>zajedno protiv svih</b> (stalni savez, dijelite pobjedu) ili <b>jedan protiv drugog</b>, uz battle royale ako želite. Brzinu i pauzu kontroliše domaćin.</p>\n      <h4>Kontrole</h4><p>Jedan prst: pomjeranje · dva prsta: zum · dugi pritisak (desni klik): meni za to mjesto. Igru možeš pauzirati i ubrzati (1×–3×).</p>\n    </div>",
   "<div class=\"howto\"><p><strong>Overtake</strong> — a strategy game of conquering Europe and the world through seven historical eras.</p><p>Map: Natural Earth (public domain). Historical borders: historical-basemaps, A. Ourednik (GPL-3.0). Relief: NASA. Map engine: Leaflet.</p><p>Version 0.5 · eras and battle royale.</p></div>": "<div class=\"howto\"><p><strong>Overtake</strong> — strateška igra osvajanja Evrope i svijeta kroz sedam istorijskih doba.</p><p>Karta: Natural Earth (javno vlasništvo). Istorijske granice: historical-basemaps, A. Ourednik (GPL-3.0). Reljef: NASA. Motor karte: Leaflet.</p><p>Verzija 0.5 · doba i battle royale.</p></div>",
   "<div class=\"kv\"><div><div class=\"k\">Army</div><div class=\"v\">{0}</div></div><div><div class=\"k\">Land</div><div class=\"v\">{1}</div></div><div><div class=\"k\">Cities</div><div class=\"v\">{2}</div></div></div>": "<div class=\"kv\"><div><div class=\"k\">Vojska</div><div class=\"v\">{0}</div></div><div><div class=\"k\">Kopno</div><div class=\"v\">{1}</div></div><div><div class=\"k\">Gradovi</div><div class=\"v\">{2}</div></div></div>",
   "<div class=\"list\"><div class=\"prow wide\"><div class=\"pn\"><div class=\"nm\">Territory</div><div class=\"d\">{0}</div></div></div>\n      <div class=\"prow wide\"><div class=\"pn\"><div class=\"nm\">Cities</div><div class=\"d\">{1}</div></div></div>\n      <div class=\"prow wide\"><div class=\"pn\"><div class=\"nm\">Army</div><div class=\"d\">{2}</div></div></div>\n      <div class=\"prow wide\"><div class=\"pn\"><div class=\"nm\">Gold</div><div class=\"d\">{3}</div></div></div>\n      <div class=\"prow wide\"><div class=\"pn\"><div class=\"nm\">Allies</div><div class=\"d\">{4}</div></div></div></div>": "<div class=\"list\"><div class=\"prow wide\"><div class=\"pn\"><div class=\"nm\">Teritorija</div><div class=\"d\">{0}</div></div></div>\n      <div class=\"prow wide\"><div class=\"pn\"><div class=\"nm\">Gradovi</div><div class=\"d\">{1}</div></div></div>\n      <div class=\"prow wide\"><div class=\"pn\"><div class=\"nm\">Vojska</div><div class=\"d\">{2}</div></div></div>\n      <div class=\"prow wide\"><div class=\"pn\"><div class=\"nm\">Zlato</div><div class=\"d\">{3}</div></div></div>\n      <div class=\"prow wide\"><div class=\"pn\"><div class=\"nm\">Saveznici</div><div class=\"d\">{4}</div></div></div></div>",
@@ -2190,6 +2206,7 @@ RA.SR = {
   "<div class=\"prow wide\"><div class=\"pn\"><div class=\"nm\">Players {0}/{1}</div><div class=\"d\">{2}</div></div><div class=\"bb\">{3}</div></div>": "<div class=\"prow wide\"><div class=\"pn\"><div class=\"nm\">Igrača {0}/{1}</div><div class=\"d\">{2}</div></div><div class=\"bb\">{3}</div></div>",
   "<div class=\"prow wide\"><div class=\"pn\"><div class=\"nm\">{0}. {1}</div><div class=\"d\"><span class=\"lg-tier lg-{2}\">{3}</span> · ELO {4} · {5}/{6} wins</div></div></div>": "<div class=\"prow wide\"><div class=\"pn\"><div class=\"nm\">{0}. {1}</div><div class=\"d\"><span class=\"lg-tier lg-{2}\">{3}</span> · ELO {4} · {5}/{6} pobjeda</div></div></div>",
   "<div class=\"prow wide\"><div class=\"pn\"><div class=\"nm\">{0}</div><div class=\"d\">Maps: {1} · ban {2}<br>Ages: {3} · ban {4}</div></div></div>": "<div class=\"prow wide\"><div class=\"pn\"><div class=\"nm\">{0}</div><div class=\"d\">Mape: {1} · ban {2}<br>Doba: {3} · ban {4}</div></div></div>",
+  "<div class=\"prow wide\"><div class=\"pn\"><div class=\"nm\">{0}</div><div class=\"d\">last seen {1}</div></div><div class=\"bb\">{2}</div></div>": "<div class=\"prow wide\"><div class=\"pn\"><div class=\"nm\">{0}</div><div class=\"d\">zadnji put {1}</div></div><div class=\"bb\">{2}</div></div>",
   "<div class=\"prow wide\"><div class=\"pn\"><div class=\"nm\">{0}</div><div class=\"d\">~{1} {2} · last seen {3}</div></div><div class=\"bb\">{4}</div></div>": "<div class=\"prow wide\"><div class=\"pn\"><div class=\"nm\">{0}</div><div class=\"d\">~{1} {2} · zadnji put {3}</div></div><div class=\"bb\">{4}</div></div>",
   "<div class=\"prow wide\"><span class=\"sw\" style=\"background:{0}\"></span><div class=\"pn\"><div class=\"nm\">{1}</div><div class=\"d\">army {2}</div></div><div class=\"bb\">{3}</div></div>": "<div class=\"prow wide\"><span class=\"sw\" style=\"background:{0}\"></span><div class=\"pn\"><div class=\"nm\">{1}</div><div class=\"d\">vojska {2}</div></div><div class=\"bb\">{3}</div></div>",
   "<div class=\"prow wide\"><span class=\"sw\" style=\"background:{0}\"></span><div class=\"pn\"><div class=\"nm\">{1}</div><div class=\"d\">you owe <b>{2}</b> · due {3} · pledge {4} cells</div></div><div class=\"bb\">{5}</div></div>": "<div class=\"prow wide\"><span class=\"sw\" style=\"background:{0}\"></span><div class=\"pn\"><div class=\"nm\">{1}</div><div class=\"d\">duguješ <b>{2}</b> · rok {3} · zalog {4} polja</div></div><div class=\"bb\">{5}</div></div>",
@@ -2205,21 +2222,26 @@ RA.SR = {
   "<div class=\"sec-t\">Dynasty home</div><div class=\"campaign-homes qm-grid\">": "<div class=\"sec-t\">Dom dinastije</div><div class=\"campaign-homes qm-grid\">",
   "<div class=\"sec-t\">Dynasty tech tree</div><p class=\"explain\">Invest the experience from missions here; upgrades apply in every age.</p><div class=\"research-grid\">": "<div class=\"sec-t\">Tehnološko stablo dinastije</div><p class=\"explain\">Iskustvo iz misija ulažeš ovdje; poboljšanja važe u svim dobima.</p><div class=\"research-grid\">",
   "<div class=\"sec-t\">Events</div><div class=\"list\">{0}</div>": "<div class=\"sec-t\">Događaji</div><div class=\"list\">{0}</div>",
+  "<div class=\"sec-t\">How it works</div>": "<div class=\"sec-t\">Kako funkcioniše</div>",
   "<div class=\"sec-t\">Latest report</div><p class=\"note\">Army {0} · gold {1} · agents {2}<br>Buildings: {3}<br>Research: {4}</p>": "<div class=\"sec-t\">Zadnji izvještaj</div><p class=\"note\">Vojska {0} · zlato {1} · agenti {2}<br>Zgrade: {3}<br>Istraživanja: {4}</p>",
   "<div class=\"sec-t\">Loans</div><p class=\"explain\">A computer state lends you gold; the part of your land nearest to it is the pledge (hatched on the map). You repay the amount + {0}% within {1} min — at the due date it's taken only if you have the gold. Don't repay → the pledge is theirs.</p>": "<div class=\"sec-t\">Zajmovi</div><p class=\"explain\">Država kompjutera ti posudi zlato; dio tvoje zemlje najbliži njoj je zalog (šrafirano na karti). Vraćaš iznos + {0}% za {1} min — kad dođe rok, uzima se samo ako imaš zlata. Ne vratiš → zalog je njen.</p>",
   "<div class=\"sec-t\">Maps (picked {0}/2, ban {1}/1)</div><div class=\"lg-chips\">{2}</div>": "<div class=\"sec-t\">Mape (izabrano {0}/2, ban {1}/1)</div><div class=\"lg-chips\">{2}</div>",
   "<div class=\"sec-t\">Mark for allies</div><div class=\"grid2\">{0}</div>": "<div class=\"sec-t\">Označi za saveznike</div><div class=\"grid2\">{0}</div>",
+  "<div class=\"sec-t\">Military alliances · {0}/{1}</div>": "<div class=\"sec-t\">Vojni savezi · {0}/{1}</div>",
   "<div class=\"sec-t\">Military alliances · {0}/{1}</div><p class=\"explain\">You don't attack each other. When someone attacks you, your allies strike at them or send you troops. Lasts 5 min, can be extended.</p>": "<div class=\"sec-t\">Vojni savezi · {0}/{1}</div><p class=\"explain\">Ne napadate se. Kad te neko napadne, saveznici udaraju na njega ili ti šalju vojsku. Traje 5 min, može se produžiti.</p>",
   "<div class=\"sec-t\">Missions against {0}</div>": "<div class=\"sec-t\">Misije protiv države {0}</div>",
   "<div class=\"sec-t\">Offers</div><div class=\"list\">": "<div class=\"sec-t\">Ponude</div><div class=\"list\">",
   "<div class=\"sec-t\">Open games</div><div class=\"list\" id=\"skirmList\"><p class=\"note\">Looking for games…</p></div>": "<div class=\"sec-t\">Otvorene igre</div><div class=\"list\" id=\"skirmList\"><p class=\"note\">Tražim igre…</p></div>",
+  "<div class=\"sec-t\">Or pick one or more</div>": "<div class=\"sec-t\">Ili izaberi jedno ili više</div>",
   "<div class=\"sec-t\">Recruit a unit</div><p class=\"explain\">Place it along the border — it follows the front by itself. It makes enemy breakthroughs harder and your attacks nearby cheaper.</p><div class=\"btns\">": "<div class=\"sec-t\">Regrutuj jedinicu</div><p class=\"explain\">Postavi je uz granicu — sama prati front. Neprijatelju otežava proboj, a tvoje napade u blizini čini jeftinijim.</p><div class=\"btns\">",
   "<div class=\"sec-t\">Relations</div><div class=\"bb\" style=\"display:flex;flex-wrap:wrap;gap:6px\">{0}</div>": "<div class=\"sec-t\">Odnosi</div><div class=\"bb\" style=\"display:flex;flex-wrap:wrap;gap:6px\">{0}</div>",
   "<div class=\"sec-t\">Resources</div><p class=\"explain\">Without resources nothing is forbidden, just dearer or slower. What you lack you buy from a trade partner for part of your income while you buy (whoever has more deposits sells cheaper).</p><div class=\"list\">": "<div class=\"sec-t\">Resursi</div><p class=\"explain\">Bez resursa ništa nije zabranjeno, samo skuplje ili sporije. Što nemaš, kupuješ od trgovinskog partnera za dio svog prihoda dok kupuješ (ko ima više nalazišta, prodaje jeftinije).</p><div class=\"list\">",
   "<div class=\"sec-t\">Sabotage · {0}</div><p class=\"note\">{1}</p><div class=\"btns\">": "<div class=\"sec-t\">Sabotaža · {0}</div><p class=\"note\">{1}</p><div class=\"btns\">",
   "<div class=\"sec-t\">States</div><div class=\"list\">": "<div class=\"sec-t\">Države</div><div class=\"list\">",
   "<div class=\"sec-t\">Straits</div><p class=\"explain\">Whoever holds both shores of a strait can close it to foreign ships (landings and trade). Only their ships and their allies' pass.</p><div class=\"list\">": "<div class=\"sec-t\">Moreuzi</div><p class=\"explain\">Ko drži obje obale moreuza može ga zatvoriti za tuđe brodove (desanti i trgovina). Prolaze samo njegovi i savezniči brodovi.</p><div class=\"list\">",
+  "<div class=\"sec-t\">Targets</div>": "<div class=\"sec-t\">Mete</div>",
   "<div class=\"sec-t\">Tech tree</div><p class=\"explain\">Research for gold: every branch has 5 levels, each level costs twice as much. Lasts until the end of the game.</p><div class=\"research-grid\">": "<div class=\"sec-t\">Stablo tehnologija</div><p class=\"explain\">Istraživanje za zlato: svaka grana ima 5 nivoa, svaki nivo je duplo skuplji. Traje do kraja igre.</p><div class=\"research-grid\">",
+  "<div class=\"sec-t\">Trade pacts · {0}/{1}</div>": "<div class=\"sec-t\">Trgovinski savezi · {0}/{1}</div>",
   "<div class=\"sec-t\">Trade pacts · {0}/{1}</div><p class=\"explain\">Trade ships between your ports and trade across a shared border bring gold to both sides. No duty to help in war. An attack ends the trade.</p>": "<div class=\"sec-t\">Trgovinski savezi · {0}/{1}</div><p class=\"explain\">Trgovački brodovi između vaših luka i trgovina preko zajedničke granice donose zlato objema stranama. Nema obaveze pomoći u ratu. Napad prekida trgovinu.</p>",
   "<div class=\"sec-t\">Weapons research</div><p class=\"explain\">Pay and wait: the weapon is better for the rest of the game. One research at a time.{0}</p><div class=\"research-grid\" id=\"rschGrid\">": "<div class=\"sec-t\">Istraživanje oružja</div><p class=\"explain\">Plati i sačekaj: oružje je bolje do kraja igre. Jedno istraživanje u isto vrijeme.{0}</p><div class=\"research-grid\" id=\"rschGrid\">",
   "<div class=\"sec-t\">Your buildings here</div><div class=\"list\">": "<div class=\"sec-t\">Tvoje zgrade ovdje</div><div class=\"list\">",
@@ -2237,6 +2259,8 @@ RA.SR = {
   "<label class=\"deal-row\">Troops<input type=\"number\" min=\"0\" step=\"1000\" data-k=\"{0}.t\" value=\"{1}\" placeholder=\"0\"><small>has {2}</small></label>": "<label class=\"deal-row\">Vojska<input type=\"number\" min=\"0\" step=\"1000\" data-k=\"{0}.t\" value=\"{1}\" placeholder=\"0\"><small>ima {2}</small></label>",
   "<option value=\"\">Random</option>": "<option value=\"\">Nasumično</option>",
   "<option value=\"{0}\"{1}>open the {2}</option>": "<option value=\"{0}\"{1}>otvori {2}</option>",
+  "<p class=\"explain\"><b>Military alliance</b> (at most {0}): you don't attack each other; when someone attacks you, your allies strike at them or send you troops. Lasts {1}, can be extended.</p>": "<p class=\"explain\"><b>Vojni savez</b> (najviše {0}): ne napadate se; kad te neko napadne, saveznici udare na njega ili ti pošalju vojsku. Traje {1}, može se produžiti.</p>",
+  "<p class=\"explain\"><b>Trade pact</b> (at most {0}): trade ships between your ports and trade across a shared border bring gold to both sides. No duty to help in war. An attack ends the trade. Sea trade needs ports; neighbours can also trade over land.</p>": "<p class=\"explain\"><b>Trgovinski savez</b> (najviše {0}): trgovački brodovi između vaših luka i trgovina preko zajedničke granice donose zlato objema stranama. Bez obaveze pomoći u ratu. Napad prekida trgovinu. Pomorska trgovina traži luke; susjedi mogu trgovati i kopnom.</p>",
   "<p class=\"explain\">Agent {0} (level {1}) goes. The higher the level, the better the odds; their own agency and missions against them in the last 10 min make it harder.</p>": "<p class=\"explain\">Ide agent {0} (nivo {1}). Što je viši nivo, veće su šanse; njihova obavještajna služba i misije protiv njih u zadnjih 10 min otežavaju.</p>",
   "<p class=\"explain\">Aggressive expansion: <b{0}>{1}/100</b>. It rises with every state you attack and conquer (the number of states, not the area) and fades with time. From {2} computer states avoid you, break alliances with you and join forces against you.</p>": "<p class=\"explain\">Agresivna ekspanzija: <b{0}>{1}/100</b>. Raste sa svakom napadnutom i pokorenom državom (broj država, ne površina), vremenom opada. Od {2} kompjuterske države te izbjegavaju, raskidaju saveze s tobom i udružuju se protiv tebe.</p>",
   "<p class=\"explain\">Attitude towards you: {0}{1} · units: {2}</p>": "<p class=\"explain\">Stav prema tebi: {0}{1} · jedinica: {2}</p>",
@@ -2257,6 +2281,7 @@ RA.SR = {
   "<p class=\"note\"><button class=\"mini warn\" data-reset>New campaign</button></p>": "<p class=\"note\"><button class=\"mini warn\" data-reset>Nova kampanja</button></p>",
   "<p class=\"note\">Allies: {0} · key L: alliances on the map</p>": "<p class=\"note\">Saveznici: {0} · tipka L: savezi na karti</p>",
   "<p class=\"note\">At most {0} military alliances and {1} trade pacts. Betraying an ally = 30 s of halved defence and a bad name with everyone.</p>": "<p class=\"note\">Najviše {0} vojna i {1} trgovinskih saveza. Izdaja saveznika = 30 s prepolovljene odbrane i loš ugled kod svih.</p>",
+  "<p class=\"note\">Betraying an ally = 30 s of halved defence and a bad name with everyone.</p>": "<p class=\"note\">Izdaja saveznika = 30 s prepolovljene odbrane i loš ugled kod svih.</p>",
   "<p class=\"note\">Confirmed — waiting for the opponents.</p>": "<p class=\"note\">Potvrđeno — čekam protivnike.</p>",
   "<p class=\"note\">Free land: nobody holds it at the start.</p>": "<p class=\"note\">Slobodna zemlja: niko je ne drži na početku.</p>",
   "<p class=\"note\">Humans against states: all players are one team.</p>": "<p class=\"note\">Ljudi protiv država: svi igrači su jedan tim.</p>",
@@ -2286,9 +2311,11 @@ RA.SR = {
   "<small>Highest rank</small>": "<small>Najviši čin</small>",
   "<span class=\"campaign-marker\" hidden></span><div class=\"dynasty-banner\"><div class=\"dynasty-seal\" aria-hidden=\"true\">{0}</div><div><span>A LEGACY THROUGH SEVEN AGES</span><h3>{1}</h3><p>{2} · {3} of 70 missions completed</p></div><div class=\"dynasty-xp\"><b>{4}</b><span>free XP</span></div></div>": "<span class=\"campaign-marker\" hidden></span><div class=\"dynasty-banner\"><div class=\"dynasty-seal\" aria-hidden=\"true\">{0}</div><div><span>NASLIJEĐE KROZ SEDAM DOBA</span><h3>{1}</h3><p>{2} · {3} od 70 misija završeno</p></div><div class=\"dynasty-xp\"><b>{4}</b><span>slobodno XP</span></div></div>",
   "<span class=\"neg\">closed</span> · {0}": "<span class=\"neg\">zatvoren</span> · {0}",
+  "<span class=\"neg\">no</span> ({0})": "<span class=\"neg\">nema</span> ({0})",
   "<span class=\"neg\">you lack it</span> — {0}": "<span class=\"neg\">nemaš</span> — {0}",
   "<span class=\"note\">Empty.</span>": "<span class=\"note\">Prazno.</span>",
   "<span class=\"nuke-bar\" title=\"The price returns to normal\"><i style=\"width:{0}%\"></i></span><span class=\"nuke-up\">Dearer ×{1} · normal price in {2}</span>": "<span class=\"nuke-bar\" title=\"Cijena se vraća na normalu\"><i style=\"width:{0}%\"></i></span><span class=\"nuke-up\">Skuplje ×{1} · normalna cijena za {2}</span>",
+  "<span class=\"pos\">yes</span>": "<span class=\"pos\">ima</span>",
   "<span class=\"pos\">you have it</span> · {0} {1}": "<span class=\"pos\">imaš</span> · {0} {1}",
   "<span class=\"rel fr\">Friendly</span>": "<span class=\"rel fr\">Prijateljski</span>",
   "<span class=\"rel hos\">Cold</span>": "<span class=\"rel hos\">Hladan</span>",
@@ -2298,6 +2325,7 @@ RA.SR = {
   "<span class=\"research-max\">Fully trained</span>": "<span class=\"research-max\">Potpuno obučen</span>",
   "<span class=\"research-max\">Researching…</span>": "<span class=\"research-max\">Istražuje se…</span>",
   "<span class=\"t\">Continue Focus game{0}</span><span class=\"d\">{1} · ~{2} {3}</span>": "<span class=\"t\">Nastavi Focus igru{0}</span><span class=\"d\">{1} · ~{2} {3}</span>",
+  "<span class=\"t\">Continue Focus game{0}</span><span class=\"d\">{1}</span>": "<span class=\"t\">Nastavi Focus igru{0}</span><span class=\"d\">{1}</span>",
   "<span class=\"t\">Continue game</span><span class=\"d\">{0} · {1} · {2} · {3} · {4}%</span>": "<span class=\"t\">Nastavi igru</span><span class=\"d\">{0} · {1} · {2} · {3} · {4}%</span>",
   "<span class=\"tag al\">team · permanent alliance</span>": "<span class=\"tag al\">tim · stalni savez</span>",
   "<span class=\"tag al\">vassal · tribute +{0}/s</span>": "<span class=\"tag al\">vazal · danak +{0}/s</span>",
@@ -2307,6 +2335,7 @@ RA.SR = {
   "<span class=\"tag tr\">⇄ trade</span>": "<span class=\"tag tr\">⇄ trgovina</span>",
   "A 74-gun ship: sinks landings and trade ships, blockades ports and shells the coast up to 7 cells.": "Brod sa 74 topa: potapa desante i trgovačke brodove, blokira luke i gađa obalu do 7 polja.",
   "A CONQUEST STRATEGY GAME": "STRATEGIJA OSVAJANJA",
+  "A Focus game runs on the server even while you're away and lasts until someone wins.": "Focus igra teče na serveru i dok nisi tu i traje dok neko ne pobijedi.",
   "A Focus game runs on the server even while you're away; you pick the duration on the start screen.": "Focus igra teče na serveru i dok nisi tu; trajanje biraš na početnom ekranu.",
   "A Judas in a crown! That's what you are!": "Juda u kruni! Eto šta si!",
   "A MIRV targets a state — tap foreign land.": "MIRV cilja državu — dodirni tuđu teritoriju.",
@@ -2507,11 +2536,13 @@ RA.SR = {
   "Build Cities and Factories: a factory links cities by rail, and trains bring gold.": "Gradi Gradove i Fabrike: fabrika povezuje gradove prugom, a vozovi donose zlato.",
   "Build Cities and {0}: caravans carry gold from your cities.": "Gradi Gradove i {0}: karavani nose zlato iz tvojih gradova.",
   "Build an empire. Forge alliances. Take control.": "Izgradi carstvo. Sklopi saveze. Preuzmi kontrolu.",
+  "Build the army": "Gradi vojsku",
   "Build the economy": "Gradi ekonomiju",
   "Build: {0}": "Izgradi: {0}",
   "Builder": "Graditelj",
   "Building: {0} ({1} s).": "Gradnja: {0} ({1} s).",
   "Builds onagers: stones at the enemy up to 16 cells away.": "Gradi onagre: kamenje na neprijatelja do 16 polja daleko.",
+  "Build{=2}": "Gradi",
   "Buy bombers first.": "Prvo kupi bombardere.",
   "Buy, sell, don't fight. At least not today.": "Kupuj, prodaj, ne ratuj. Barem ne danas.",
   "Buying needs a trade pact ({0}).": "Za kupovinu treba trgovinski savez ({0}).",
@@ -2559,11 +2590,13 @@ RA.SR = {
   "Choose a state to attack.": "Izaberi državu za napad.",
   "Choose enemy land.": "Izaberi neprijateljsku teritoriju.",
   "Choose land.": "Izaberi kopno.",
+  "Choose language": "Izaberi jezik",
   "Choose what you demand or offer.": "Izaberi šta zahtijevaš ili nudiš.",
   "Choose your start": "Odaberi početak",
   "Cities": "Gradovi",
   "Cities and population: {0} points": "Gradovi i stanovništvo: {0} bodova",
   "Cities conquered": "Osvojeno gradova",
+  "Cities, factories and ports": "Gradovi, fabrike i luke",
   "City": "Grad",
   "City captured: {0}!": "Osvojen grad: {0}!",
   "City founded: {0}.": "Osnovan je grad {0}.",
@@ -2727,6 +2760,7 @@ RA.SR = {
   "Fine, {ti}... I bow. Reluctantly.": "Dobro, {ti}... Klanjam se. Nerado.",
   "Fine. You want war? You'll get war.": "Dobro. Hoćeš rat? Imaćeš rat.",
   "Finish": "Završi",
+  "First": "Prva",
   "First boundaries": "Prve međe",
   "First build an intelligence agency.": "Prvo izgradi obavještajnu službu.",
   "First let it finish.": "Prvo neka se završi.",
@@ -2743,8 +2777,10 @@ RA.SR = {
   "Focus games only work on war.deovilab.com.": "Focus igra radi samo na war.deovilab.com.",
   "Focus · armies move every {0} s · {1} players": "Focus · potez svakih {0} s · igrača {1}",
   "Focus · days": "Focus · danima",
+  "Focus · {0} players": "Focus · {0} igrača",
   "Focus: catching up with the server… {0}%": "Focus: sustižem server… {0}%",
   "Focus: gold and orders every second, armies move every {0} s — the game goes on while you're away. Link: <b>{1}</b>": "Focus: zlato i naredbe svake sekunde, vojske se pomjeraju svakih {0} s — igra teče i kad nisi tu. Link: <b>{1}</b>",
+  "Focus: the game goes on while you're away. Link: <b>{0}</b>": "Focus: igra teče i dok nisi tu. Link: <b>{0}</b>",
   "Focus: the game lasts days and goes on while you're away (the computer leads your state). Tech tree, resources and trade, a longer peace time; when you come back, a report of what happened.": "Focus: igra traje danima i teče i dok nisi tu (kompjuter vodi tvoju državu). Stablo tehnologija, resursi i trgovina, duže mirno doba; kad se vratiš, izvještaj šta se desilo.",
   "Fog of war: land far from yours is under clouds. Scout it with an agent (Intelligence agency) or send a drone.": "Magla rata: zemlja daleko od tvoje je pod oblacima. Izvidi je agentom (obavještajna služba) ili pošalji dron.",
   "Foot soldiers": "Pješaci",
@@ -2753,6 +2789,7 @@ RA.SR = {
   "Fort Hill": "Tvrđavac",
   "Fortress continent": "Tvrđava kontinent",
   "Fortresses and market towns": "Tvrđave i trgovišta",
+  "Forts, air defence and trenches along the border; strikes back when attacked": "Utvrde, PVO i rovovi uz granicu; uzvraća kad ga napadnu",
   "Frederick": "Fridrih",
   "Free for all": "Svako za sebe",
   "Free land": "Slobodna zemlja",
@@ -3211,6 +3248,7 @@ RA.SR = {
   "Not against your allies.": "Ne protiv saveznika.",
   "Not built yet (Build)": "Još nije izgrađena (Gradi)",
   "Not enough gold": "Nedovoljno zlata",
+  "Not enough gold for one section": "Nema dovoljno zlata ni za jedan dio",
   "Not enough gold.": "Nemaš dovoljno zlata.",
   "Not enough gold{=2}": "Nemaš dovoljno zlata",
   "Not enough land to pledge.": "Nemaš dovoljno zemlje za zalog.",
@@ -3289,6 +3327,8 @@ RA.SR = {
   "Peace on our terms": "Mir po našim uslovima",
   "Peace time ({0} s): nobody may attack states. Build, make alliances (the “Alliances” button) and get your army ready along the border.": "Mirno doba ({0} s): niko ne smije napadati države. Gradi, sklapaj saveze (dugme „Savezi”) i spremi vojsku uz granicu.",
   "Peace time ({0} s): nobody may attack states. Take as much free (grey) land as you can and make military and trade alliances (the “Alliances” button).": "Mirno doba ({0} s): niko ne smije napadati države. Zauzmi što više slobodne (sive) zemlje i sklopi vojne i trgovinske saveze (dugme „Savezi”).",
+  "Peace time ({0}): nobody may attack states. Build, make alliances (the “Alliances” button) and get your army ready along the border.": "Mirno doba ({0}): niko ne smije napadati države. Gradi, sklapaj saveze (dugme „Savezi”) i spremi vojsku uz granicu.",
+  "Peace time ({0}): nobody may attack states. Take as much free (grey) land as you can and make military and trade alliances (the “Alliances” button).": "Mirno doba ({0}): niko ne smije napadati države. Zauzmi što više slobodne (sive) zemlje i sklopi vojne i trgovinske saveze (dugme „Savezi”).",
   "Peace time at the start": "Mirno doba na početku",
   "Peace time for another {0}.": "Mirno doba još {0}.",
   "Peace time — attacks are allowed in {0}.": "Mirno doba — napadi su dozvoljeni za {0}.",
@@ -3305,6 +3345,7 @@ RA.SR = {
   "Philip": "Filip",
   "Pick a state": "Izaberi državu",
   "Pick a state.": "Izaberi državu.",
+  "Pick the first state to attack (or turn Attack off).": "Izaberi prvu državu za napad (ili isključi Napad).",
   "Pinefield": "Borovo Polje",
   "Place the unit on your own land (best near the border).": "Jedinicu postavi na svoju teritoriju (najbolje uz granicu).",
   "Placement {0}/5": "Kvalifikacije {0}/5",
@@ -3356,6 +3397,7 @@ RA.SR = {
   "Ready again in {0}": "Ponovo spremna za {0}",
   "Ready for conquest": "Spremno za osvajanje",
   "Ready in {0} s": "Spreman za {0} s",
+  "Ready {0} · digging {1} · limit {2}": "Gotovo {0} · kopa se {1} · limit {2}",
   "Real borders": "Stvarne granice",
   "Real borders: every state starts with its land from that era — you pick one and lead it. ": "Stvarne granice: svaka država kreće sa svojom teritorijom iz tog doba — izabereš jednu i vodiš je. ",
   "Recruit": "Regrut",
@@ -3408,6 +3450,7 @@ RA.SR = {
   "Sails the sea: sinks landings, trade ships and warships, blockades enemy ports and shells the coast up to 8 cells.": "Plovi morem: potapa desante, trgovačke i ratne brodove, blokira neprijateljske luke i gađa obalu do 8 polja.",
   "Same settings and the same state, straight into the game": "Iste postavke i ista država, odmah u igru",
   "Sanctions and blockades": "Sankcije i blokade",
+  "Save the orders": "Sačuvaj naredbe",
   "Saved to your account.": "Sačuvano na nalogu.",
   "Scenario": "Scenarij",
   "Scenario · {0} · ▶ {1} · ♥ {2}": "Scenarij · {0} · ▶ {1} · ♥ {2}",
@@ -3416,6 +3459,7 @@ RA.SR = {
   "Scout": "Izviđanje",
   "Sea. For a landing pick “Landing”, then tap the coast.": "More. Za desant izaberi „Desant” pa dodirni obalu.",
   "Searching {0}… <span id=\"lgWait\">0:00</span>": "Tražim {0}… <span id=\"lgWait\">0:00</span>",
+  "Second": "Druga",
   "Security alliance": "Savez sigurnosti",
   "Seeking… {0}%": "Premotavam… {0}%",
   "Selected": "Izabrano",
@@ -3539,6 +3583,7 @@ RA.SR = {
   "Take over the state": "Preuzmi državu",
   "Taking over the state — confirmation comes with the server's next move.": "Preuzimaš državu — potvrda stiže sa sljedećim potezom servera.",
   "Tanks": "Tenkovi",
+  "Tanks, artillery and infantry at the front, barracks": "Tenkovi, artiljerija i pješadija na frontu, kasarne",
   "Tap a foreign or free coast — the ship sails there": "Dodirni tuđu ili slobodnu obalu — brod plovi tamo",
   "Tap a foreign or free coast. The ship sails around the land.": "Dodirni tuđu ili slobodnu obalu. Brod plovi oko kopna.",
   "Tap a state on land.": "Dodirni državu na kopnu.",
@@ -3547,6 +3592,7 @@ RA.SR = {
   "Tap a target: ": "Dodirni metu: ",
   "Tap anywhere on land or pick a state.": "Dodirni bilo gdje na kopnu ili izaberi državu.",
   "Tap anywhere on land{0} or pick a state. Tapping a <b>capital</b> (small square) takes over the whole state.": "Dodirni bilo gdje na kopnu{0} ili izaberi državu. Dodir na <b>prijestolnicu</b> (kvadratić) preuzima cijelu državu.",
+  "Tap anywhere on your land: {0} (it goes to the nearest border by itself)": "Dodirni bilo gdje na svojoj zemlji: {0} (sama ide do najbliže granice)",
   "Tap enemy land up to {0} cells from an airfield.": "Dodirni neprijateljsku zemlju do {0} polja od aerodroma.",
   "Tap enemy land: {0}": "Dodirni neprijateljsku zemlju: {0}",
   "Tap free land to expand — the front heads for the point you tap. The slider sets how many troops you send.": "Dodirni slobodnu zemlju da se širiš — front ide prema tački koju dodirneš. Klizač određuje koliko vojske šalješ.",
@@ -3560,6 +3606,7 @@ RA.SR = {
   "Tap your land right at a border: trenches along it ({0} per cell)": "Dodirni svoju zemlju uz granicu: rovovi duž nje ({0} po polju)",
   "Tap your land: {0}": "Dodirni svoju zemlju: {0}",
   "Tap your own land at the border.": "Dodirni svoju zemlju na granici.",
+  "Tap your side of a border to dig a connected defensive line.": "Dodirni svoju stranu granice da iskopaš povezanu odbrambenu liniju.",
   "Tap your units to add them, then press Move.": "Dodirni svoje jedinice da ih dodaš, pa pritisni Pomjeri.",
   "Target out of range ({0} cells from a {1}). Build closer to the front.": "Meta je izvan dometa ({0} polja od zgrade {1}). Gradi bliže frontu.",
   "Target out of range: {0} cells from a {1}.": "Meta je izvan dometa: {0} polja od zgrade {1}.",
@@ -3813,6 +3860,7 @@ RA.SR = {
   "Treasury · development · trade": "Riznica · razvoj · trgovina",
   "Trebuchet": "Trebušet",
   "Trebuchets and bombards: strikes on the enemy up to 24 cells away.": "Trebušei i bombarde: udari na neprijatelja do 24 polja daleko.",
+  "Trench limit reached": "Dostignut je limit rovova",
   "Trenches": "Rovovi",
   "Trenches and forts": "Rovovi i utvrde",
   "Trenches dug ({0} cells).": "Rovovi iskopani ({0} polja).",
@@ -3872,6 +3920,7 @@ RA.SR = {
   "Waiting for everyone to load the map…": "Čeka se da svi učitaju kartu…",
   "War industry": "Industrija rata",
   "War loans": "Ratni zajmovi",
+  "War on the states you pick below: the first while it can be reached, then the second": "Rat protiv država koje izabereš ispod: prva dok je dohvatljiva, pa druga",
   "Warhead": "Bojeva glava",
   "Warlord": "Vojskovođa",
   "Warning: the games on your devices have drifted apart. Results may differ — it is best to start a new match.": "Upozorenje: igre na vašim uređajima su se razišle. Rezultati se mogu razlikovati — najbolje je početi novu partiju.",
@@ -3900,6 +3949,7 @@ RA.SR = {
   "When I'm on the map, the others are just decoration.": "Kad sam ja na karti, ostali su samo ukras.",
   "When everyone has picked a state, press “Start game”. A state can't be taken twice.": "Kad svi izaberu države, pritisni „Počni igru”. Ista država se ne može uzeti dvaput.",
   "When peace time is over (you can speed the game up with the 1×/2×/3× button), click part of a neighbouring state: the army goes from your nearest border straight there and takes only that part. On a computer you can also drag an arrow with the right mouse button.": "Kad mirno doba prođe (možeš ubrzati igru dugmetom 1×/2×/3×), klikni dio susjedne države: vojska ide s tvoje najbliže granice pravo tamo i osvaja samo taj dio. Na računaru možeš i povući strelicu desnim dugmetom miša.",
+  "When you close the game, the computer plays your state by these orders": "Kad zatvoriš igru, računar vodi tvoju državu po ovim naredbama",
   "When you close the game, the computer plays your state by this order": "Kad zatvoriš igru, kompjuter vodi tvoju državu po ovoj naredbi",
   "While I'm away": "Dok me nema",
   "While you were away": "Dok te nije bilo",
@@ -4068,6 +4118,7 @@ RA.SR = {
   "Your offer is funnier than my court jester.": "Tvoja ponuda je smiješnija od mog dvorskog lude.",
   "Your operation.": "Tvoja operacija.",
   "Your pilots are worse than your generals.": "Tvoji piloti su gori od tvojih generala.",
+  "Your resources:": "Tvoji resursi:",
   "Your ships smell of gunpowder and bad manners.": "Tvoji brodovi smrde po barutu i bezobrazluku.",
   "Your ships, your rules? Not like that.": "Tvoji brodovi, tvoja pravila? Nećemo tako.",
   "Your soldiers are trampling my lawn!": "Tvoji vojnici gaze moj travnjak!",
@@ -4112,8 +4163,10 @@ RA.SR = {
   "bombed": "bombardovana",
   "bomber": "bombarder",
   "bombing": "bombardovanje",
+  "build the army": "gradi vojsku",
   "build the economy": "gradi ekonomiju",
   "building and alliances": "gradnja i savezi",
+  "buildings and missiles at the normal price": "zgrade i rakete po normalnoj cijeni",
   "buildings and missiles cost 30% more": "zgrade i rakete su 30% skuplje",
   "buildings, units and missiles 5% cheaper per level": "zgrade, jedinice i rakete 5% jeftinije po nivou",
   "buildings, units and missiles 6% cheaper per level": "zgrade, jedinice i rakete 6% jeftinije po nivou",
@@ -4143,6 +4196,7 @@ RA.SR = {
   "encircled": "opkoljena",
   "every state likes you more (+10 per level)": "sve države te vole više (+10 po nivou)",
   "expires in ": "ističe za ",
+  "feeds the army: it grows at full speed": "hrani vojsku: raste punom brzinom",
   "free for all": "svako za sebe",
   "free land": "slobodna zemlja",
   "free play": "slobodna igra",
@@ -4225,6 +4279,7 @@ RA.SR = {
   "sunk": "potopljen",
   "surrender": "predaja",
   "survive {0} more": "preživi još {0}",
+  "tanks, artillery, infantry and ships at the normal price": "tenkovi, artiljerija, pješadija i brodovi po normalnoj cijeni",
   "the Brave": "Hrabri",
   "the Great": "Veliki",
   "the Red": "Crveni",
@@ -4329,6 +4384,7 @@ RA.SR = {
   "{0} has no {1}.": "{0} nema: {1}.",
   "{0} has vassals of its own.": "{0} ima svoje vazale.",
   "{0} hasn't closed that strait.": "{0} nije zatvorio taj moreuz.",
+  "{0} here · reach {1} cells · tap elsewhere to move it": "{0} ovdje · domet {1} polja · dodirni drugo mjesto da je pomjeriš",
   "{0} is a vassal ({1}) — it makes no alliances.": "{0} je vazal ({1}) — ne sklapa saveze.",
   "{0} is already a vassal ({1}).": "{0} je već vazal ({1}).",
   "{0} is already at the top level.": "{0} je već na najvišem nivou.",
@@ -4397,6 +4453,7 @@ RA.SR = {
   "{0} · {1}/{2} ready": "{0} · {1}/{2} spremno",
   "{0} · {1}{2} · {3} · time {4}": "{0} · {1}{2} · {3} · vrijeme {4}",
   "{0} · {1}{2} · ~{3} {4}. The game runs on the server even when you are away (then the computer plays your state): armies move every {5} seconds. You get a link — send it to friends (up to 8 players); you come back through it too.": "{0} · {1}{2} · ~{3} {4}. Igra teče na serveru i dok nisi tu (tada kompjuter vodi tvoju državu): jedan potez svakih {5} sekundi. Dobićeš link — pošalji ga prijateljima (do 8 igrača), preko njega se i ti vraćaš.",
+  "{0} · {1}{2}. The game runs on the server even when you are away (then the computer plays your state) and lasts until someone wins. You get a link — send it to friends (up to 8 players); you come back through it too.": "{0} · {1}{2}. Igra teče na serveru i kad nisi tu (tada računar vodi tvoju državu) i traje dok neko ne pobijedi. Dobijaš link — pošalji ga prijateljima (do 8 igrača); preko njega se i vraćaš.",
   "{0} — missile shot down: {1}!": "{0} — oboren projektil: {1}!",
   "{0} — {1} troops return to the reserve.": "{0} — {1} vojnika se vraća u rezervu.",
   "{0} → {1} · {2}-cell radius · {3}{4}{5}": "{0} → {1} · krug {2} polja · {3}{4}{5}",
@@ -4464,6 +4521,8 @@ RA.SR = {
   "✈ Bombing ({0}): −{1} troops{2}{3}.": "✈ Bombardovanje ({0}): −{1} vojske{2}{3}.",
   "✈ The bombers found nothing of value at the target.": "✈ Bombarderi nisu našli ništa vrijedno na meti.",
   "✈ The bombers hit the target — {0}.": "✈ Bombarderi su pogodili metu — {0}.",
+  "✓ First": "✓ Prva",
+  "✓ Second": "✓ Druga",
   "❄ Winter in {0}": "❄ Zima za {0}",
   "❄ Winter is in the north! Attacks over snow are slower, units move with difficulty.": "❄ Zima je na sjeveru! Napadi preko snijega su sporiji, jedinice se teže kreću.",
   "❄ Winter reaches the north in 30 s — attacks over snow will be slower and costlier.": "❄ Zima stiže na sjever za 30 s — napadi preko snijega biće sporiji i skuplji.",
@@ -4502,6 +4561,13 @@ Object.assign(RA.SR, {
 });
 
 Object.assign(RA.SR, {"CONQUEROR": "OSVAJAČ"});
+
+Object.assign(RA.SR, {
+  'Tap your side of a border to dig a connected defensive line.': 'Dodirni svoju stranu granice da iskopaš povezanu odbrambenu liniju.',
+  'Ready {0} · digging {1} · limit {2}': 'Gotovo {0} · u izgradnji {1} · najviše {2}',
+  'Trench limit reached': 'Dostignut je najveći broj rovova',
+  'Not enough gold for one section': 'Nema dovoljno zlata za jednu dionicu'
+});
 
 
 /* English names of places (states, cities, seas) that the map data has in Bosnian/Serbian: RA.tn(name), src/00a-i18n.js.
@@ -5029,7 +5095,11 @@ RA.CFG = {
   // Focus (a game of days, opts.sub): the world moves one step every `sub` seconds, but gold comes every second and
   // orders are carried out within a second (Darko, 27. 9.: slow armies, a fast economy — build while there is peace)
   FOCUS_GOLD: 24, // gold of one world step × days, spread over its seconds (Darko 27. 9.: +20%)
-  FOCUS_BUILD: 0.6, // a building takes its Blitz time × this, in seconds
+  FOCUS_BUILD: 0.1, // a building takes as long as in Blitz (its time is in Blitz ticks; Darko 28. 9.)
+  FOCUS_TRAIN: 2, // Focus: a train brings this × its gold (a factory with two cities ≈ the base income of a mid state)
+  FOCUS_CITY: 3, // Focus: a built city's gold ×
+  FOCUS_COST_N: 0.6, // Focus: every next city, factory and port costs 2^(0.6 n) (~1.5×) more, not 2× more
+  FOCUS_PEACE: 20, // Focus: real seconds of peace per second of the setting (180 → 1 h; Darko 28. 9.)
 };
 /* tax (plan 33): more gold ↔ slower army growth; every state starts at 'Srednji' */
 RA.TAX = [
@@ -5114,6 +5184,7 @@ RA.Game = class Game {
     this.st = 0;
     this.goldMul = this.sub ? RA.CFG.FOCUS_GOLD * (opts.days || 1) : 1;
     this.peaceUntil = opts.peace !== undefined ? Math.round(opts.peace * 10) : RA.CFG.PEACE;
+    if (this.sub && opts.peace !== undefined) this.peaceUntil = Math.round((opts.peace * RA.CFG.FOCUS_PEACE) / this.sub); // Focus: in real time
     if (opts.gm === 'defcon') this.peaceUntil = Math.max(this.peaceUntil, RA.CFG.DEFCON_STEP); // DEFCON 5: no attacks
     this.era = opts.era || 'danas';
     this.borders = false;
@@ -5319,7 +5390,7 @@ RA.Game = class Game {
         this.tell(p, 'good', RA.t("The world has calmed down: the coalition against you breaks up."), p.id);
       }
     } else p.ae = 0;
-    let g = 70 + Math.sqrt(p.tiles) * 1.2 + p.cityG + (p.n.port - p.portsOff + 0.5 * this.lvx(p, 'port')) * RA.CFG.PORT_G + (p.n.city + 0.5 * this.lvx(p, 'city')) * RA.CFG.CITY_BUILT_G;
+    let g = 70 + Math.sqrt(p.tiles) * 1.2 + p.cityG + (p.n.port - p.portsOff + 0.5 * this.lvx(p, 'port')) * RA.CFG.PORT_G + (p.n.city + 0.5 * this.lvx(p, 'city')) * RA.CFG.CITY_BUILT_G * (this.sub ? RA.CFG.FOCUS_CITY : 1);
     if (p.type === 'bot') g *= 0.4;
     if (p.crisisUntil > tk) g *= 0.5;
     g *= tax.g * (p.bGold || 1);
@@ -5342,7 +5413,7 @@ RA.Game = class Game {
     const gs = ((g + it) * mul) / sub;
     p.gold += gs;
     p.gSub = this.sub ? gs : 0;
-    p.goldRate = this.sub ? gs : (g + it) * 10 + (p.trainRate || 0) + (p.tradeRate || 0) + (p.tributeRate || 0) + (p.resRateIn || 0);
+    p.goldRate = this.sub ? gs + (p.trainRate || 0) : (g + it) * 10 + (p.trainRate || 0) + (p.tradeRate || 0) + (p.tributeRate || 0) + (p.resRateIn || 0);
     p.growRate = this.sub ? add / this.sub : add * 10; // per real second
   }
 
@@ -5876,7 +5947,8 @@ RA.Game = class Game {
 
   /* ---------------- structures ---------------- */
   structCost(p, type) {
-    const c = RA.STRUCT[type].cost(p.built[type]);
+    const eco = this.sub && (type === 'city' || type === 'factory' || type === 'port');
+    const c = RA.STRUCT[type].cost(eco ? p.built[type] * RA.CFG.FOCUS_COST_N : p.built[type]);
     const k = p.bCost || 1; // the campaign's science
     return Math.round((this.deps && !this.hasRes(p, 2) ? c * RA.CFG.RES_DEAR : c) * k); // no fuel: dearer
   }
@@ -5922,7 +5994,7 @@ RA.Game = class Game {
     const W = this.map.W;
     const s = { id: this.structs.length, type, owner: pid, c, x: c % W, y: (c / W) | 0, doneAt: this.tick + RA.STRUCT[type].time, ready: false, cd: 0, dead: false, empUntil: 0 };
     if (this.sub) {
-      // Focus: built in seconds (Blitz time × FOCUS_BUILD), not in slow world steps
+      // Focus: built in real seconds as fast as in Blitz, not in slow world steps
       const secs = Math.max(1, Math.ceil(RA.STRUCT[type].time * RA.CFG.FOCUS_BUILD));
       s.startSt = this.st;
       s.doneSt = this.st + secs;
@@ -6666,7 +6738,7 @@ RA.NUKE = RA.MISSILE;
     const W = this.map.W;
     const u = {
       id: this.nextId++, type, owner: pid, x: (c % W) + 0.5, y: ((c / W) | 0) + 0.5, anchor: c, hp: U.hp,
-      ready: this.tick + U.deploy, path: null, pi: 0, empUntil: 0, lastHit: -999, fireAt: 0, dead: false, retargetNow: true,
+      ready: this.tick + (this.sub ? 1 : U.deploy), path: null, pi: 0, empUntil: 0, lastHit: -999, fireAt: 0, dead: false, retargetNow: true,
     };
     this.units.push(u);
     p.units.push(u);
@@ -6811,6 +6883,7 @@ RA.NUKE = RA.MISSILE;
   };
   P._stepUnits = function () {
     const tk = this.tick, W = this.map.W;
+    const fk = this.sub ? this.rtK() / 5 : 1; // Focus: units walk at a fifth of the Blitz speed in real time (Darko 28. 9.)
     const wl = this.wLevel || 0;
     for (const u of this.units) {
       if (u.dead) continue;
@@ -6841,7 +6914,7 @@ RA.NUKE = RA.MISSILE;
         this._retarget(u, false);
       }
       if (u.path && u.pi < u.path.length) {
-        let step = U.speed * this.unitSpd(this.P[u.owner]) * (wl > 0 && this.isSnow(c) ? 1 - 0.45 * wl : 1);
+        let step = U.speed * this.unitSpd(this.P[u.owner]) * (wl > 0 && this.isSnow(c) ? 1 - 0.45 * wl : 1) * fk;
         while (step > 0 && u.pi < u.path.length) {
           const tc = u.path[u.pi];
           const tx = (tc % W) + 0.5, ty = ((tc / W) | 0) + 0.5;
@@ -6893,7 +6966,7 @@ RA.NUKE = RA.MISSILE;
       }
     }
     if (u.path && u.pi < u.path.length) {
-      let step = U.speed * this.unitSpd(this.P[u.owner]);
+      let step = U.speed * this.unitSpd(this.P[u.owner]) * (this.sub ? this.rtK() / 5 : 1); // Focus: like units on land
       while (step > 0 && u.pi < u.path.length) {
         const tc = u.path[u.pi];
         const tx = (tc % W) + 0.5, ty = ((tc / W) | 0) + 0.5;
@@ -7525,17 +7598,19 @@ RA.NUKE = RA.MISSILE;
       tr.done = true;
       const p = this.P[tr.owner];
       if (!p.alive || this.owner[tr.dc] !== tr.owner) continue;
-      const g = tr.gold * (p.crisisUntil > tk ? 0.5 : 1);
+      const g = tr.gold * (p.crisisUntil > tk ? 0.5 : 1) * (this.sub ? RA.CFG.FOCUS_TRAIN : 1);
       p.gold += g;
       p.trainAcc = (p.trainAcc || 0) + g;
       if (p.human) this.fx.push({ kind: 'coin', x: tr.tx, y: tr.ty, v: g, tick: tk, pid: p.id });
     }
     if (tk % 20 === 0) this.trains = this.trains.filter((t) => !t.done);
-    if (tk % 100 === 0) {
-      // smoothed train income per second for the HUD
+    const win = this.sub ? 12 : 100; // a minute (Focus) or 10 s of real time
+    if (tk % win === 0) {
+      // smoothed train income per real second for the HUD
+      const secs = win * (this.sub || 0.1);
       for (const p of this.P) {
         if (!p) continue;
-        p.trainRate = (p.trainRate || 0) * 0.5 + ((p.trainAcc || 0) / 10) * 0.5;
+        p.trainRate = (p.trainRate || 0) * 0.5 + ((p.trainAcc || 0) / secs) * 0.5;
         p.trainAcc = 0;
       }
     }
@@ -8232,12 +8307,21 @@ RA.QUICK_MSGS = [RA.t("Attacking!"), RA.t("I need help!"), RA.t("Watch out, we'r
         return player(a[0]) ? this.makeOffer(pid, a[0], a[1], a[2]) : RA.t("Invalid state.");
       case 'offerRes':
         return this.answerOffer(pid, id(a[0]), a[1], a[2], a[3]);
-      case 'stance':
-        // orders for the computer while I'm away (Focus): auto | def | eco | atk + target
+      case 'stance': {
+        // orders for the computer while I'm away (Focus): auto | def | eco | atk + target (older games), or
+        // mix [flags, target 1, target 2] — any mix of RA.STANCE (Darko 28. 9.): defend, economy, army, attack
+        if (a[0] === 'mix') {
+          const f = Number.isInteger(a[1]) ? a[1] & 15 : 0, t1 = player(a[2]) ? a[2] : 0, t2 = player(a[3]) && a[3] !== t1 ? a[3] : 0;
+          if (f & 8 && !t1) return RA.t("Choose a state to attack.");
+          p.stance = f ? { f, t1, t2: f & 8 ? t2 : 0 } : null;
+          if (p.stance && !(f & 8)) p.stance.t1 = 0;
+          return { stance: 'mix' };
+        }
         if (!['auto', 'def', 'eco', 'atk'].includes(a[0])) return RA.t("Invalid order.");
         if (a[0] === 'atk' && !player(a[1])) return RA.t("Choose a state to attack.");
-        p.stance = a[0] === 'auto' ? null : { k: a[0], t: a[0] === 'atk' ? a[1] : 0 };
+        p.stance = a[0] === 'auto' ? null : { f: { def: 1, eco: 2, atk: 8 }[a[0]], t1: a[0] === 'atk' ? a[1] : 0, t2: 0 };
         return { stance: a[0] };
+      }
       case 'tech':
         return typeof a[0] === 'string' && RA.TECH_ORDER.includes(a[0]) ? this.buyTech(pid, a[0]) : RA.t("Unknown branch.");
       case 'buy':
@@ -8584,9 +8668,9 @@ RA.CFG.AE_STRAIT = 15; // closing a strait is aggression, like attacking a state
    No exchange: a trade partner that has a kind sells it to you directly, for a share of your gold income for as long
    as you buy (the more deposits it has, the cheaper). */
 RA.RES = [
-  { id: 'food', icon: 'wheat', lack: RA.t("the army grows 15% slower") },
-  { id: 'metal', icon: 'ore', lack: RA.t("units cost 30% more") },
-  { id: 'fuel', icon: 'fuel', lack: RA.t("buildings and missiles cost 30% more") },
+  { id: 'food', icon: 'wheat', lack: RA.t("the army grows 15% slower"), use: RA.t("feeds the army: it grows at full speed") },
+  { id: 'metal', icon: 'ore', lack: RA.t("units cost 30% more"), use: RA.t("tanks, artillery, infantry and ships at the normal price") },
+  { id: 'fuel', icon: 'fuel', lack: RA.t("buildings and missiles cost 30% more"), use: RA.t("buildings and missiles at the normal price") },
 ];
 Object.assign(RA.CFG, {
   RES_FOOD: 0.85, // army growth without food
@@ -9365,18 +9449,18 @@ RA.AI = {
     if (p.type === 'bot') return RA.AI.thinkBot(G, p, info);
 
     const peace = G.tick < G.peaceUntil;
-    // a player's orders while away (Focus, plan 2): defend / build / attack X; the computer follows them
-    const st = p.human && p.stance ? p.stance : null;
-    const calm = st && (st.k === 'def' || st.k === 'eco'); // no new wars against states
+    // a player's orders while away (Focus): any mix of defend / economy / army / attack X, then Y; the computer follows
+    const st = p.human && p.stance ? p.stance : null, sf = st ? st.f | 0 : 0;
+    const calm = st && !(sf & 8); // no new wars against states
     if (ai.pers0 === undefined) ai.pers0 = ai.pers;
-    ai.pers = st && st.k === 'def' ? 'graditelj' : st && st.k === 'eco' ? 'trgovac' : ai.pers0;
+    ai.pers = !st ? ai.pers0 : sf & 4 || sf & 8 ? 'osvajac' : sf & 2 ? 'trgovac' : 'graditelj';
     RA.AI.diplomacy(G, p, info);
     RA.AI.maybeBuild(G, p, info);
     RA.AI.maybeRecruit(G, p, info);
     if (G.deps) RA.AI.maybeBuyRes(G, p);
     if (G.opts.tree) RA.AI.maybeTech(G, p), RA.AI.maybeResearch(G, p), RA.AI.maybeIntel(G, p);
     RA.AI.maybeUpgrade(G, p), RA.AI.maybeTrench(G, p);
-    if (st && st.k === 'eco') RA.AI.maybeBuild(G, p, info); // building comes first
+    if (st) RA.AI.stanceBuild(G, p, info, sf); // what the player asked for comes first
     if (!peace && p.n.port) RA.AI.navy(G, p, info);
     if (!peace && !calm && p.n.airport && RA.airOn()) RA.AI.air(G, p, info);
     if (!peace && !calm && !RA.MISSILE.drone.na) RA.AI.drones(G, p, info);
@@ -9427,8 +9511,10 @@ RA.AI = {
     if (calm) return; // defend / build: only counter-attacks and free land
     // war
     if (ratio >= ai.trig && info.nb.size) {
-      const X = st && st.k === 'atk' ? G.P[st.t] : null;
-      const tgt = X && X.alive && info.nb.has(X.id) && !G.isFriendly(p, X) && !peace ? X : RA.AI.pickTarget(G, p, info);
+      // the player's targets in order of priority (one we can reach and are not allied with)
+      const ok = (X) => X && X.alive && info.nb.has(X.id) && !G.isFriendly(p, X) && !peace;
+      const X = st && sf & 8 ? [G.P[st.t1], G.P[st.t2]].find(ok) : null;
+      const tgt = X || RA.AI.pickTarget(G, p, info);
       if (tgt) {
         const troops = p.troops - ai.reserve * p.maxT;
         if (troops > p.troops * 0.15) {
@@ -9722,6 +9808,56 @@ RA.AI = {
     return RA.AI.sampleCell(G, p, (c) => own[c - 1] === eid || own[c + 1] === eid || own[c - W] === eid || own[c + W] === eid, 160);
   },
 
+  /* a player's orders while away: one step towards what was asked (economy, army, defence), now and then */
+  stanceBuild(G, p, info, f) {
+    if (G.tick < 60 || G.rng() > 0.6) return;
+    const ks = [f & 2 ? 'eco' : '', f & 4 ? 'army' : '', f & 1 ? 'def' : ''].filter(Boolean);
+    if (!ks.length) return;
+    const k = ks[Math.floor(G.rng() * ks.length)], W = G.map.W, own = G.owner, S = RA.STRUCT;
+    const can = (t, max) => !S[t].na && (!S[t].tree || G.opts.tree) && p.built[t] < max && p.gold >= G.structCost(p, t) * 1.1;
+    const place = (type, pred) => {
+      const c = RA.AI.sampleCell(G, p, (c) => pred(c) && typeof G.canBuild(p, type, c) === 'number', 60);
+      if (c >= 0) G.build(p.id, type, c);
+      return c >= 0;
+    };
+    const inner = (c) => RA.AI.interior(G, p, c);
+    const edge = (c) => {
+      for (const d of [1, 2, 3]) for (const n of [c - d, c + d, c - d * W, c + d * W]) if (n >= 0 && n < G.map.N && own[n] && own[n] !== p.id) return true;
+      return false;
+    };
+    const cities = (c) => {
+      let n = 0;
+      const x = c % W, y = (c / W) | 0, R = RA.CFG.TRAIN_RANGE;
+      for (const ct of G.cities) if (ct.owner === p.id && RA.dist(ct.x - x, ct.y - y) <= R) n++;
+      for (const s of G.structs) if (!s.dead && s.type === 'city' && s.owner === p.id && RA.dist(s.x - x, s.y - y) <= R) n++;
+      return n;
+    };
+    if (k === 'eco') {
+      if (can('factory', 12) && place('factory', (c) => cities(c) >= 2 && inner(c))) return;
+      if (can('city', 12) && place('city', inner)) return;
+      if (info.coast > 0 && can('port', 6) && place('port', (c) => G.map.coast[c])) return;
+    } else if (k === 'army') {
+      const U = RA.UNIT, ready = (t) => !U[t].na && (!U[t].needs || p.n[U[t].needs]) && p.gold >= G.unitCost(p, t) * 1.1 && p.troops > U[t].troops * 3;
+      const type = ['tank', 'art', 'inf'].find(ready);
+      if (type && p.units.length < G.unitCap(p)) {
+        let foe = RA.AI.frontEnemy(G, p, info);
+        if (!foe) for (const [oid] of info.nb) if (!G.isFriendly(p, G.P[oid]) && (!foe || G.P[oid].troops > foe.troops)) foe = G.P[oid];
+        const c = foe ? RA.AI.borderCellFacing(G, p, foe.id) : -1;
+        if (c >= 0 && typeof G.recruitUnit(p.id, type, c) === 'object') return;
+      }
+      if (can('barracks', 8) && place('barracks', inner)) return;
+      if (!S.factory.na && !p.built.factory && can('factory', 1) && place('factory', inner)) return; // tanks and artillery need one
+    } else {
+      if (can('fort', 8) && place('fort', edge)) return;
+      if (can('sam', 2) && place('sam', inner)) return;
+      let foe = null;
+      for (const [oid] of info.nb) if (!G.isFriendly(p, G.P[oid]) && G.P[oid].type !== 'bot' && (!foe || G.P[oid].troops > foe.troops)) foe = G.P[oid];
+      if (foe && (p.trenchN | 0) < RA.CFG.TRENCH_MAX && p.gold > RA.CFG.TRENCH_GOLD * 40) {
+        const c = RA.AI.borderCellFacing(G, p, foe.id);
+        if (c >= 0) G.dig(p.id, c);
+      }
+    }
+  },
   maybeRecruit(G, p, info) {
     if (G.tick < 500 || p.tiles < 60) return;
     if (p.units.length >= G.unitCap(p)) return;
@@ -12105,6 +12241,9 @@ void main(){
     }
     G.dirty.clear();
     G.dirtyFlag.fill(0);
+    this.slowQ = [];
+    this.slowI = 0;
+    this.slowTick = undefined;
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, this.tOwner);
     gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, M.W, M.H, gl.LUMINANCE_ALPHA, gl.UNSIGNED_BYTE, this.ownerData);
@@ -12137,15 +12276,43 @@ void main(){
     gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 256, 1, gl.RGBA, gl.UNSIGNED_BYTE, d);
     this.dirtyView = true;
   },
+  /* cells still waiting to be shown (Focus slow motion) */
+  slowLeft() {
+    return this.slowQ ? this.slowQ.length - this.slowI : 0;
+  },
   sync() {
     const G = this.G;
     if (!G || !this.ok) return;
     const M = this.gm, W = M.W, gl = this.gl;
-    const L = G.dirty;
+    let L = G.dirty;
+    // Focus (Darko 28. 9.): a world step comes every few seconds and takes many cells at once; show them one after
+    // another over the time to the next step (the order they were taken in), so fronts move all the time instead of
+    // jumping. Catching up (after a pause or a reload) shows everything at once.
+    const slow = G.sub && G.long && !G.rp && RA.TICK_REAL > 1000, now = performance.now();
+    if (slow) {
+      const Q = this.slowQ || (this.slowQ = []);
+      if (L.n) {
+        const jump = this.slowTick !== undefined && G.tick - this.slowTick > 1;
+        if (this.slowI > 4096) Q.splice(0, this.slowI), (this.slowI = 0);
+        for (let i = 0; i < L.n; i++) Q.push(L.a[i]), (G.dirtyFlag[L.a[i]] = 0);
+        L.clear();
+        if (jump || Q.length - this.slowI > 40000) this.slowRate = Infinity;
+        else this.slowRate = (Q.length - this.slowI) / (RA.TICK_REAL * 0.9);
+        this.slowAt = now;
+      }
+      this.slowTick = G.tick;
+      const left = Q.length - (this.slowI | 0);
+      if (left > 0) {
+        const n = Math.min(left, Math.max(1, Math.ceil((now - this.slowAt) * this.slowRate)));
+        this.slowAt = now;
+        L = { a: Q, n: this.slowI + n, i0: this.slowI | 0 };
+        this.slowI = L.n;
+      } else L = { n: 0 };
+    }
     if (L.n) {
       let r0 = 1e9, r1 = -1;
       const od = this.ownerData, own = G.owner, cap = G.capTick, off = M.mirOff, lst = M.mirList;
-      for (let i = 0; i < L.n; i++) {
+      for (let i = L.i0 || 0; i < L.n; i++) {
         const c = L.a[i];
         G.dirtyFlag[c] = 0;
         const o = own[c], t = cap[c];
@@ -12163,13 +12330,14 @@ void main(){
           if (mr > r1) r1 = mr;
         }
       }
-      L.clear();
+      if (L.clear) L.clear();
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, this.tOwner);
       gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, r0, W, r1 - r0 + 1, gl.LUMINANCE_ALPHA, gl.UNSIGNED_BYTE, od.subarray(r0 * W * 2, (r1 + 1) * W * 2));
       this.dirtyView = true;
       this.lastChange = performance.now();
     }
+    if (slow && this.slowI >= this.slowQ.length) this.slowQ.length = this.slowI = 0;
     if (G.falloutDirty) {
       G.falloutDirty = false;
       gl.activeTexture(gl.TEXTURE1);
@@ -12499,27 +12667,8 @@ RA.FxLayer = L.Layer.extend({
       }
     }
 
-    // trenches (03g-trench.js): a dark zigzag on each cell, dashed while being dug ------------------
-    if (G.trenchCells && G.trenchCells.length && cell >= 1.6) {
-      const W = G.map.W;
-      ctx.lineWidth = Math.max(1.2, cell * 0.22);
-      for (const c of G.trenchCells) {
-        const v = G.trench[c];
-        if (!v) continue;
-        const x = gx((c % W) + 0.5), y = gy(((c / W) | 0) + 0.5);
-        if (!inView(x, y, 10)) continue;
-        const h = cell * 0.42;
-        ctx.strokeStyle = v === 2 ? 'rgba(58,40,22,0.9)' : 'rgba(58,40,22,0.45)';
-        ctx.beginPath();
-        ctx.moveTo(x - h, y + h * 0.4);
-        ctx.lineTo(x - h / 2, y - h * 0.4);
-        ctx.lineTo(x, y + h * 0.4);
-        ctx.lineTo(x + h / 2, y - h * 0.4);
-        ctx.lineTo(x + h, y + h * 0.4);
-        ctx.stroke();
-      }
-      if (G.trenchCells.length > 4000) G.trenchCells = G.trenchCells.filter((c) => G.trench[c]); // drop old ones
-    }
+    // Connected trench earthworks; construction and fog visibility share the live cell state.
+    RA.Trenches.draw(ctx, G, cell, gx, gy, inView);
 
     // structures ----------------------------------------------------------------
     const ss = RA.clamp(cell * 1.8, 12, 25);
@@ -12532,6 +12681,23 @@ RA.FxLayer = L.Layer.extend({
       ctx.globalAlpha = s.ready ? 1 : 0.55;
       RA.drawStructIcon(ctx, RA.STRUCT[s.type].icon || s.type, x, y, s.type === 'city' ? ss * 1.15 : ss, o.hex);
       ctx.globalAlpha = 1;
+      if ((s.lv || 1) > 1 || s.upTo) {
+        // the building's level (03f-upgrade.js); a yellow ring while it is being raised
+        const r = Math.max(6, ss * 0.3), bx = x + ss * 0.58, by = y - ss * 0.58;
+        ctx.beginPath();
+        ctx.arc(bx, by, r, 0, Math.PI * 2);
+        ctx.fillStyle = '#20252b';
+        ctx.fill();
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = s.upTo ? '#f2b134' : '#ffffff';
+        ctx.stroke();
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `700 ${Math.round(r * 1.35)}px ${RA.FONT_UI}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(String(s.lv || 1), bx, by + 0.5);
+        ctx.textBaseline = 'alphabetic';
+      }
       if (s.type === 'city' && this.showCities && cell >= 1.2) {
         ctx.font = `600 11px ${RA.FONT_UI}`;
         ctx.textAlign = 'left';
@@ -12563,6 +12729,30 @@ RA.FxLayer = L.Layer.extend({
       }
       if (ui.selStruct === s.type && s.owner === (G.me && G.me.id)) {
         // show ranges while placing similar buildings
+      }
+    }
+    // a building I just ordered (Focus: until the server's next second brings it) and one I am placing, with its reach
+    if (G.me) {
+      const pend = ui.pendingBuild;
+      if (pend && pend.length) ui.pendingBuild = pend.filter((b) => now - b.at < 6000 && !(G.structAt[b.c] >= 0 && G.structs[G.structAt[b.c]].owner === G.me.id && !G.structs[G.structAt[b.c]].dead));
+      const ghosts = (ui.pendingBuild || []).map((b) => [b.type, b.c, 0.45]);
+      if (ui.mode && ui.mode.kind === 'build' && ui.mode.at >= 0) ghosts.push([ui.mode.type, ui.mode.at, 0.7, RA.buildRange(ui.mode.type)]);
+      for (const [type, c, a, R] of ghosts) {
+        const x = gx((c % W) + 0.5), y = gy(((c / W) | 0) + 0.5);
+        if (R) {
+          ctx.beginPath();
+          ctx.arc(x, y, R * cell, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(255,255,255,0.08)';
+          ctx.fill();
+          ctx.setLineDash([6, 5]);
+          ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+        ctx.globalAlpha = a;
+        RA.drawStructIcon(ctx, RA.STRUCT[type].icon || type, x, y, type === 'city' ? ss * 1.15 : ss, G.me.hex);
+        ctx.globalAlpha = 1;
       }
     }
     // targeting overlays: my airports' reach (paratroopers), hostile air defence (missiles & planes)
@@ -12652,7 +12842,7 @@ RA.FxLayer = L.Layer.extend({
     const uw = RA.unitSize(cell);
     if (!this.unitMotion) this.unitMotion = new RA.UnitMotion();
     const still = RA.motionPreference.matches || ui.app.paused || (!G.online && !G.long && ui.app.sheetPaused);
-    const duration = G.long ? 160 : RA.clamp(RA.CFG.TICK_MS / (ui.app.speed || 1), 25, 120);
+    const duration = G.long ? (G.sub ? RA.TICK_REAL : 160) : RA.clamp(RA.CFG.TICK_MS / (ui.app.speed || 1), 25, 120); // Focus: over the whole world step
     const selId = ui.mode && ui.mode.kind === 'unit' ? ui.mode.id : -1;
     const grp = ui.mode && ui.mode.kind === 'group' ? ui.mode.ids : null;
     for (const u of G.units) {
@@ -12660,7 +12850,7 @@ RA.FxLayer = L.Layer.extend({
       const mine = me && u.owner === me.id;
       if (!mine && cell < 1.15) continue;
       if (!mine && RA.Clouds.hidden(G, u.x, u.y)) continue;
-      const pose = this.unitMotion.sample(u, W, now, duration, still || u.ready > G.tick || u.empUntil > G.tick);
+      const pose = this.unitMotion.sample(u, W, now, duration, still || u.ready > G.tick || u.empUntil > G.tick, G.sub ? 12 : 4);
       const x = gx(pose.x), y = gy(pose.y);
       if (!inView(x, y, 40)) continue;
       const U = RA.UNIT[u.type];
@@ -13583,11 +13773,11 @@ RA.drawImpact = function(ctx,x,y,r,age) {
 RA.UnitMotion = class {
   constructor() { this.poses = new WeakMap(); }
   get(u) { return this.poses.get(u) || u; }
-  sample(u, W, now, duration, snap) {
+  sample(u, W, now, duration, snap, jump = 4) {
     let p = this.poses.get(u);
     const next = u.path && u.pi < u.path.length ? u.path[u.pi] : -1;
     const aim = next < 0 ? null : Math.atan2(((next / W) | 0) + .5 - u.y, next % W + .5 - u.x);
-    if (!p || snap || now - p.last > 500 || Math.hypot(u.x-p.tx,u.y-p.ty)>4) {
+    if (!p || snap || now - p.last > 500 || Math.hypot(u.x-p.tx,u.y-p.ty)>jump) {
       p = { x:u.x, y:u.y, fx:u.x, fy:u.y, tx:u.x, ty:u.y, at:now, last:now, angle:aim ?? (p ? p.angle : -.35), duration };
       this.poses.set(u,p);return p;
     }
@@ -13706,14 +13896,15 @@ RA.Clouds = (function () {
     st.gh = gh;
   };
 
-  /* the mask (alpha = how cloudy) at block resolution: outside the region dense, fog a little lighter */
+  /* the mask (alpha = how clear) at block resolution: outside the region and under the fog nothing is clear.
+     It is cut out of a fully clouded layer (destination-out), so its edges and the blur never let the dark page
+     background show through (Darko 28. 9.: a black frame when zoomed out) */
   const buildMask = (G) => {
     const map = G.map, W = map.W, H = map.H, gw = Math.ceil(W / B), gh = Math.ceil(H / B);
     const c = st.mask || document.createElement('canvas'), P = 2; // P blocks of cloud all around (no clear seam)
     c.width = gw + 2 * P;
     c.height = gh + 2 * P;
-    const x = c.getContext('2d'), img = x.createImageData(c.width, c.height), blk = map.block, land = map.land;
-    for (let i = 3; i < img.data.length; i += 4) img.data[i] = 255;
+    const x = c.getContext('2d'), img = x.createImageData(c.width, c.height), blk = map.block;
     for (let by = 0; by < gh; by++)
       for (let bx = 0; bx < gw; bx++) {
         let a = 0;
@@ -13723,11 +13914,8 @@ RA.Clouds = (function () {
           for (let y = by * B; y < Math.min(H, by * B + B); y++) for (let xx = bx * B; xx < Math.min(W, bx * B + B); xx++) (t++, blk[y * W + xx] && n++);
           if (n * 2 > t) a = 255;
         }
-        if (!a && st.fog && st.vis && !st.vis[by * gw + bx]) {
-          const cc = Math.min(H - 1, by * B + 2) * W + Math.min(W - 1, bx * B + 2);
-          a = land[cc] ? 255 : 235;
-        }
-        img.data[((by + P) * c.width + bx + P) * 4 + 3] = a;
+        if (!a && st.fog && st.vis && !st.vis[by * gw + bx]) a = 255; // land and sea alike (thinner over the sea showed as dark smudges)
+        img.data[((by + P) * c.width + bx + P) * 4 + 3] = 255 - a;
       }
     x.putImageData(img, 0, 0);
     st.mask = c;
@@ -13760,7 +13948,8 @@ RA.Clouds = (function () {
       const off = st.off || (st.off = document.createElement('canvas'));
       const ms = st.ms || (st.ms = document.createElement('canvas'));
       if (off.width !== ow || off.height !== oh) (off.width = ms.width = ow), (off.height = ms.height = oh);
-      // where the clouds are: everything off the map grid, and the mask on it
+      // where the clouds are: everywhere, minus the clear parts of the mask (softened by a blur that scales with
+      // the blocks, so zoomed out the clear land stays clear instead of being smeared into the clouds)
       const mc = ms.getContext('2d');
       mc.setTransform(1, 0, 0, 1, 0, 0);
       mc.globalCompositeOperation = 'source-over';
@@ -13769,11 +13958,12 @@ RA.Clouds = (function () {
       mc.fillRect(0, 0, ow, oh);
       const x0 = v.ox * s, y0 = v.oy * s, gw = G.map.W * v.cell * s, gh = G.map.H * v.cell * s;
       const bw = gw / (st.mask.width - 4), bh = gh / (st.mask.height - 4); // one mask block on the screen
-      mc.clearRect(x0 - 2 * bw, y0 - 2 * bh, gw + 4 * bw, gh + 4 * bh);
+      mc.globalCompositeOperation = 'destination-out';
       mc.imageSmoothingEnabled = true;
-      mc.filter = 'blur(6px)';
+      mc.filter = `blur(${Math.max(0.5, Math.min(6, bw * 0.8)).toFixed(1)}px)`;
       mc.drawImage(st.mask, x0 - 2 * bw, y0 - 2 * bh, gw + 4 * bw, gh + 4 * bh);
       mc.filter = 'none';
+      mc.globalCompositeOperation = 'source-over';
       // the clouds: a grey base and drifting billows (two layers at different speeds), anchored to the map
       const oc = off.getContext('2d');
       oc.setTransform(1, 0, 0, 1, 0, 0);
@@ -13805,6 +13995,75 @@ RA.Clouds = (function () {
     },
   };
 })();
+
+
+/* Presentation only: connected earthworks, with lighter dashed excavation.
+   Read the live cell state; never modify simulation arrays from the renderer. */
+RA.Trenches = {
+  draw(ctx, G, cell, gx, gy, inView) {
+    if (!G.trenchCells || !G.trench || cell < 1.2) return;
+    const W = G.map.W, N = G.map.N, owner = G.owner;
+    const cells = new Set(G.trenchCells.filter(c => G.trench[c] && owner[c]));
+    const visible = new Set();
+    for (const c of cells) {
+      const x = c % W, y = (c / W) | 0;
+      if (inView(gx(x + .5), gy(y + .5), cell * 2) && !RA.Clouds.hidden(G, x, y)) visible.add(c);
+    }
+    const ready = new Path2D(), digging = new Path2D(), timbers = new Path2D();
+    const same = (a, b) => b >= 0 && b < N && cells.has(b) && owner[a] === owner[b];
+    const segment = (path, x, y, ex, ey, seed, detail) => {
+      const dx = ex - x, dy = ey - y, len = Math.hypot(dx, dy);
+      if (!len) return;
+      const nx = -dy / len, ny = dx / len;
+      const bend = cell >= 9 ? Math.min(cell * .18, 4) * (seed % 2 ? 1 : -1) : 0;
+      path.moveTo(x, y);
+      path.lineTo(x + dx * .3, y + dy * .3);
+      path.lineTo(x + dx * .3 + nx * bend, y + dy * .3 + ny * bend);
+      path.lineTo(x + dx * .7 + nx * bend, y + dy * .7 + ny * bend);
+      path.lineTo(x + dx * .7, y + dy * .7);
+      path.lineTo(ex, ey);
+      if (detail && cell >= 9) {
+        const mx = x + dx * .5 + nx * bend, my = y + dy * .5 + ny * bend;
+        const r = Math.min(cell * .12, 2.5);
+        timbers.moveTo(mx - nx * r, my - ny * r);
+        timbers.lineTo(mx + nx * r, my + ny * r);
+      }
+    };
+    for (const c of visible) {
+      const cx = c % W, cy = (c / W) | 0, x = gx(cx + .5), y = gy(cy + .5);
+      const built = G.trench[c] === 2, path = built ? ready : digging;
+      let linked = false;
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+        if ((!dx && !dy) || cx + dx < 0 || cx + dx >= W) continue;
+        const n = c + dy * W + dx;
+        if (!same(c, n) || !visible.has(n)) continue;
+        // A diagonal bridges a staircase only when no orthogonal link exists.
+        if (dx && dy && (same(c, c + dx) || same(c, c + dy * W))) continue;
+        segment(path, x, y, x + dx * cell * .5, y + dy * cell * .5, Math.min(c, n), built);
+        linked = true;
+      }
+      if (!linked) {
+        const vertical = [cx ? c - 1 : -1, cx < W - 1 ? c + 1 : -1].some(n => n >= 0 && n < N && owner[n] && owner[n] !== owner[c]);
+        const d = cell * .4;
+        segment(path, x - (vertical ? 0 : d), y - (vertical ? d : 0), x + (vertical ? 0 : d), y + (vertical ? d : 0), c, built);
+      }
+    }
+    const width = RA.clamp(cell * .52, 2.8, 12);
+    ctx.save();
+    ctx.lineJoin = 'miter'; ctx.lineCap = 'butt'; ctx.miterLimit = 2;
+    ctx.setLineDash([]);
+    // Dark outer edge, earthen parapets, then the recessed channel.
+    ctx.strokeStyle = '#332d23'; ctx.lineWidth = width + 1.4; ctx.stroke(ready);
+    ctx.strokeStyle = '#ac9467'; ctx.lineWidth = width; ctx.stroke(ready);
+    ctx.strokeStyle = '#292821'; ctx.lineWidth = Math.max(1.1, width * .44); ctx.stroke(ready);
+    ctx.strokeStyle = '#c6ad7c'; ctx.lineWidth = .8; ctx.stroke(timbers);
+    // Construction is a dashed survey/excavation line, never a finished dark channel.
+    ctx.setLineDash([Math.max(3, cell * .35), Math.max(2, cell * .2)]);
+    ctx.strokeStyle = 'rgba(38,34,27,.75)'; ctx.lineWidth = Math.max(2.5, width * .75); ctx.stroke(digging);
+    ctx.strokeStyle = '#d2b878'; ctx.lineWidth = Math.max(1, width * .3); ctx.stroke(digging);
+    ctx.restore();
+  },
+};
 
 
 /* Ratni Atlas — interface core: HUD, dock, status pills, attack chips, toasts, offers, modes, map input.
@@ -13892,6 +14151,16 @@ RA.trDom = function (root) {
 };
 
 RA.phone = () => !!(window.matchMedia && matchMedia('(max-width: 760px)').matches);
+/* how far a building reaches (drawn while placing it): rails, the fort's ring, air defence, paratroopers, siege weapons */
+RA.buildRange = function (type) {
+  const C = RA.CFG;
+  if (type === 'factory') return C.TRAIN_RANGE;
+  if (type === 'fort') return C.FORT_R;
+  if (type === 'sam') return C.SAM_R;
+  if (type === 'airport') return RA.STRUCT.airport.na ? 0 : C.PARA_RANGE;
+  if (type === 'silo') return Math.max(0, ...Object.values(RA.MISSILE).filter((M) => !M.na && M.range).map((M) => M.range));
+  return 0;
+};
 
 RA.TERR_NAME = [RA.t("sea"), RA.t("plains"), RA.t("hills"), RA.t("mountains")];
 
@@ -13992,7 +14261,6 @@ RA.UI = class {
     $('leagueBtn').onclick = () => this.needAccount(() => this.leagueSheet());
     $('skirmishBtn').onclick = () => this.needAccount(() => this.skirmishSheet());
     $('marketBtn').onclick = () => this.marketSheet(); // Community market (09i-editor.js): browsing and playing need no account
-    this._seg('daysSeg', String([1, 3, 7].includes(this.settings.days) ? this.settings.days : 1), (v) => (this.settings.days = +v));
     this._seg('cPaceSeg', this.settings.cPace === 'focus' ? 'focus' : 'blitz', (v) => {
       this.settings.cPace = v;
       this.paceShow();
@@ -14350,7 +14618,6 @@ RA.UI = class {
   }
   paceShow() {
     const s = this.settings, P = this.playSet(), f = P.pace === 'focus', M = RA.MODES[s.pace] || RA.MODES.blitz;
-    this.$('paceDays').hidden = !f;
     this.$('goBtn').firstElementChild.textContent = f ? RA.t("Start a Focus game") : RA.t("Start the conquest");
     const custom = s.pace === 'custom';
     this.$('operationDialog').classList.toggle('preset', !custom);
@@ -14913,7 +15180,7 @@ RA.UI = class {
     if (me && me.alive && G.state === 'play') {
       if (G.opts.camp && G.opts.camp.type !== 'free' && this.campProg) pills.push(['goal', `🎯 ${this.campProg}`]);
       if (G.long && this.app.long.rec && this.app.long.rec.set.fast) pills.push(['calm', RA.t("Skirmish · {0} players", G.humans.filter((p) => p.alive && !p.surr).length)]);
-      else if (G.long && this.app.long.rec) pills.push(['calm', RA.t("Focus · armies move every {0} s · {1} players", Math.round((this.app.long.rec.tickMs * (this.app.long.rec.sub || 1)) / 1000), G.humans.filter((p) => p.alive).length)]);
+      else if (G.long && this.app.long.rec) pills.push(['calm', RA.t("Focus · {0} players", G.humans.filter((p) => p.alive).length)]);
       const dc = G.defcon();
       if (dc) {
         const next = (6 - dc) * C.DEFCON_STEP;
@@ -14958,9 +15225,9 @@ RA.UI = class {
     const U = RA.UNIT, S = RA.STRUCT;
     const T = [
       [1, G.borders
-        ? (peace > 0 ? RA.t("Peace time ({0} s): nobody may attack states. Build, make alliances (the “Alliances” button) and get your army ready along the border.", Math.round(peace)) : RA.t("Click the part of a neighbouring state you want: the army goes from the nearest border straight there and takes only that part. On a computer, drag an arrow with the right mouse button for an exact direction. An attack along the whole border: right click / long press → “Attack the whole border”."))
+        ? (peace > 0 ? RA.t("Peace time ({0}): nobody may attack states. Build, make alliances (the “Alliances” button) and get your army ready along the border.", RA.dur(G.peaceUntil)) : RA.t("Click the part of a neighbouring state you want: the army goes from the nearest border straight there and takes only that part. On a computer, drag an arrow with the right mouse button for an exact direction. An attack along the whole border: right click / long press → “Attack the whole border”."))
         : peace > 0
-        ? RA.t("Peace time ({0} s): nobody may attack states. Take as much free (grey) land as you can and make military and trade alliances (the “Alliances” button).", Math.round(peace))
+        ? RA.t("Peace time ({0}): nobody may attack states. Take as much free (grey) land as you can and make military and trade alliances (the “Alliances” button).", RA.dur(G.peaceUntil))
         : RA.t("Tap grey, free land to expand. The front moves towards the spot you tap.")],
       [9, G.borders ? RA.t("The attack heads for the point you tap, and the “Attack strength” slider sets how many troops you send.") : RA.t("Tap free land to expand — the front heads for the point you tap. The slider sets how many troops you send.")],
       [22, RA.t("The army grows fastest when the bar is in the green zone (about 42% of capacity). Don't keep it full.")],
@@ -15043,6 +15310,12 @@ RA.UI = class {
     let txt = '', btn = null;
     if (m.kind === 'build') {
       txt = m.type === 'city' ? RA.t("Tap your land (at least 5 cells from other cities): a new city") : RA.t("Tap your land: {0}", RA.STRUCT[m.type].name);
+      if (m.at >= 0) {
+        txt = RA.t("{0} here · reach {1} cells · tap elsewhere to move it", RA.STRUCT[m.type].name, RA.buildRange(m.type));
+        ex.textContent = RA.t("Build{=2}");
+        ex.classList.add('fire');
+        ex.hidden = false;
+      }
       btn = 'aBuild';
     } else if (m.kind === 'boat') {
       txt = RA.t("Tap a foreign or free coast — the ship sails there");
@@ -15067,7 +15340,7 @@ RA.UI = class {
       txt = RA.t("Tap enemy land: {0}", RA.airName('bomber'));
       btn = 'aLand';
     } else if (m.kind === 'recruit') {
-      txt = RA.t("Tap your land near the border: {0}", RA.UNIT[m.type].name);
+      txt = RA.t("Tap anywhere on your land: {0} (it goes to the nearest border by itself)", RA.UNIT[m.type].name);
       btn = 'aArmy';
     } else if (m.kind === 'trench') {
       txt = RA.t("Tap your land right at a border: trenches along it ({0} per cell)", RA.fmt(RA.CFG.TRENCH_GOLD));
@@ -15117,8 +15390,15 @@ RA.UI = class {
     }
     this.setMode({ kind: 'missile', type, aim: c, fired: (this.mode && this.mode.fired) || 0 });
   }
+  /* build now; until the building shows up (a Focus order waits for the server's next second) a ghost stands there */
+  placeBuild(type, c) {
+    this.act('build', [type, c]);
+    if (this.G.long) (this.pendingBuild = this.pendingBuild || []).push({ type, c, at: performance.now() });
+    this.setMode(null);
+  }
   modeExtra() {
     const m = this.mode;
+    if (m && m.kind === 'build' && m.at >= 0) return this.placeBuild(m.type, m.at);
     if (m && m.kind === 'group') return this.setMode(Object.assign({}, m, { move: true }));
     if (m && m.kind === 'missile' && m.aim >= 0) {
       this.fireMissile(m.type, m.aim);
@@ -15236,8 +15516,9 @@ RA.UI = class {
       const why = G.canBuild(me, m.type, cc);
       if (typeof why === 'string') return fail(why);
       this.ping(cp, false);
-      this.act('build', [m.type, cc]);
-      this.setMode(null);
+      // a building with a range (Darko 28. 9.): first where it would stand and what it reaches, then "Build"
+      if (RA.buildRange(m.type) > 0 && m.at !== why) return this.setMode(Object.assign({}, m, { at: why }));
+      this.placeBuild(m.type, why);
     } else if (m.kind === 'boat') {
       if (!G.map.coast[c]) return fail(G.boatErr(G.map.land[c] ? 'nocoast' : 'water'));
       this.ping(cp, false);
@@ -15644,7 +15925,26 @@ Object.assign(RA.UI.prototype, {
         t: `${S.name} <span class="d">(${me.n[t]})</span>`, d: RA.esc(S.desc), r: RA.fmt(cost),
       });
     }
-    h += this.btn({ icon: 'fort', attrs: 'data-trench', t: RA.t("Trenches"), d: RA.t("Along a border with one state: attackers there lose more and are slower. Gone where the land is lost."), r: RA.t("{0}/cell", RA.fmt(RA.CFG.TRENCH_GOLD)) });
+    const C = RA.CFG, trenchCost = Math.round(C.TRENCH_GOLD * (me.bCost || 1));
+    let ready = 0, digging = 0;
+    for (const c of new Set(G.trenchCells || [])) if (G.owner[c] === me.id) {
+      if (G.trench[c] === 2) ready++;
+      else if (G.trench[c] === 1) digging++;
+    }
+    const reason = ready + digging >= C.TRENCH_MAX ? RA.t("Trench limit reached") : me.gold < trenchCost ? RA.t("Not enough gold for one section") : '';
+    h += `<button class="btn trench-build" data-trench ${reason ? 'disabled' : ''}>
+      <svg class="trench-preview" viewBox="0 0 80 64" fill="none" aria-hidden="true">
+        <path d="M5 43h15V26h20v13h19V22h16" stroke="#302a20" stroke-width="14" stroke-linejoin="round"/>
+        <path d="M5 43h15V26h20v13h19V22h16" stroke="#ac9467" stroke-width="11" stroke-linejoin="round"/>
+        <path d="M5 43h15V26h20v13h19V22h16" stroke="#252720" stroke-width="5" stroke-linejoin="round"/>
+        <path d="M18 34h4m6-10v4m10 3h4m6 6v4m9-13h4m7-8v4" stroke="#d5bd8e" stroke-width="1.5"/>
+      </svg>
+      <span class="trench-copy"><span class="t">${RA.t("Trenches")}</span>
+        <span class="d">${RA.t("Tap your side of a border to dig a connected defensive line.")}</span>
+        <span class="trench-meta"><b>${RA.t("{0}/cell", RA.fmt(trenchCost))}</b><span>${RA.t("Ready in {0} s", C.TRENCH_SECS)}</span></span>
+        <span class="trench-state">${reason || RA.t("Ready {0} · digging {1} · limit {2}", ready, digging, C.TRENCH_MAX)}</span>
+      </span>
+    </button>`;
     h += RA.t("</div><p class=\"note\">After choosing, tap a spot on your land. Buildings must be at least 4 cells apart, and a new city at least 5 cells from existing cities.</p>");
     this.openSheet(h, (s) => {
       s.querySelectorAll('[data-t]').forEach((b) => (b.onclick = () => {
@@ -15865,7 +16165,6 @@ Object.assign(RA.UI.prototype, {
     const row = (o, meta, buttons, wide) => `<div class="prow${wide ? ' wide' : ''}"><span class="sw" style="background:${o.hex}"></span><div class="pn" data-do="show:${o.id}"><div class="nm">${RA.esc(o.name)}</div><div class="d">${meta}</div></div><div class="bb">${buttons}</div></div>`;
     let h = this.head(RA.t("Alliances"), RA.t("Military {0}/{1} · trade {2}/{3} · +{4}/s from trade", G.allyCount(me), C.ALLY_MAX, me.trade.size, C.TRADE_MAX, RA.fmt(me.tradeRate || 0)));
     const ae = Math.round(me.ae || 0);
-    h += RA.t("<p class=\"explain\">Aggressive expansion: <b{0}>{1}/100</b>. It rises with every state you attack and conquer (the number of states, not the area) and fades with time. From {2} computer states avoid you, break alliances with you and join forces against you.</p>", ae >= C.AE_COALITION ? ' class="neg"' : '', ae, C.AE_COALITION);
     if (G.online) h += `<div class="btns" style="margin-bottom:10px">${this.btn({ icon: 'chat', attrs: 'data-do="chat:0"', t: RA.t("Quick messages to allies"), d: RA.t("Messages and emoji your allies and team see (key T)") })}</div>`;
     // offers
     const offers = G.allyReqs.filter((r) => r.to === me.id).map((r) => ['A', r]).concat(G.tradeReqs.filter((r) => r.to === me.id).map((r) => ['T', r]));
@@ -15887,23 +16186,18 @@ Object.assign(RA.UI.prototype, {
       }
       h += '</div>';
     }
-    // military alliances
-    h += RA.t("<div class=\"sec-t\">Military alliances · {0}/{1}</div><p class=\"explain\">You don't attack each other. When someone attacks you, your allies strike at them or send you troops. Lasts 5 min, can be extended.</p>", G.allyCount(me), C.ALLY_MAX);
-    if (!me.allies.size) h += RA.t("<p class=\"note\" style=\"margin-top:0\">You have no military allies.</p>");
-    else {
-      h += '<div class="list">';
+    // my military alliances and trade pacts (only when there are some; the rules are at the end)
+    if (me.allies.size) {
+      h += RA.t("<div class=\"sec-t\">Military alliances · {0}/{1}</div>", G.allyCount(me), C.ALLY_MAX) + '<div class="list">';
       for (const [oid, exp] of me.allies) {
         const o = G.P[oid];
-        const kind = o.lord === me.id ? RA.t("<span class=\"tag al\">vassal · tribute +{0}/s</span>", RA.fmt(o.tribute || 0)) : me.lord === oid ? RA.t("<span class=\"tag al\">your overlord · you pay tribute</span>") : isFinite(exp) ? RA.t("expires in ") + RA.fmtTime(Math.max(0, (exp - tk) / 10)) : RA.t("<span class=\"tag al\">team · permanent alliance</span>");
+        const kind = o.lord === me.id ? RA.t("<span class=\"tag al\">vassal · tribute +{0}/s</span>", RA.fmt(o.tribute || 0)) : me.lord === oid ? RA.t("<span class=\"tag al\">your overlord · you pay tribute</span>") : isFinite(exp) ? RA.t("expires in ") + RA.dur(Math.max(0, exp - tk)) : RA.t("<span class=\"tag al\">team · permanent alliance</span>");
         h += row(o, RA.t("{0} · army {1}{2}", kind, RA.fmt(o.troops), o.trade && me.trade.has(oid) ? RA.t(" · <span class=\"tag tr\">⇄ trade</span>") : ''), this.diploButtons(o, true), true);
       }
       h += '</div>';
     }
-    // trade agreements
-    h += RA.t("<div class=\"sec-t\">Trade pacts · {0}/{1}</div><p class=\"explain\">Trade ships between your ports and trade across a shared border bring gold to both sides. No duty to help in war. An attack ends the trade.</p>", me.trade.size, C.TRADE_MAX);
-    if (!me.trade.size) h += RA.t("<p class=\"note\" style=\"margin-top:0\">You have no trade pacts. Sea trade needs ports; neighbours can also trade over land.</p>");
-    else {
-      h += '<div class="list">';
+    if (me.trade.size) {
+      h += RA.t("<div class=\"sec-t\">Trade pacts · {0}/{1}</div>", me.trade.size, C.TRADE_MAX) + '<div class="list">';
       for (const oid of me.trade) {
         const o = G.P[oid];
         const land = me.nbCache && me.nbCache.has(oid);
@@ -15913,7 +16207,7 @@ Object.assign(RA.UI.prototype, {
       }
       h += '</div>';
     }
-    // everybody else
+    // everybody else, with whom each is allied (Darko 28. 9.: on a phone there was no way to see it)
     const nb = me.nbCache || new Map();
     const others = G.P.filter((o) => o && o.alive && o.spawned && o !== me && (o.type !== 'bot' || nb.has(o.id)))
       .sort((a, b) => (nb.has(b.id) ? 1 : 0) - (nb.has(a.id) ? 1 : 0) || b.tiles - a.tiles)
@@ -15921,12 +16215,18 @@ Object.assign(RA.UI.prototype, {
     h += RA.t("<div class=\"sec-t\">States</div><div class=\"list\">");
     for (const o of others) {
       const tags = (o.lord ? RA.t("<span class=\"tag al\">vassal: {0}</span>", RA.esc(G.P[o.lord].name)) : me.allies.has(o.id) ? RA.t("<span class=\"tag al\">⛨ alliance</span>") : '') + (me.trade.has(o.id) ? RA.t("<span class=\"tag tr\">⇄ trade</span>") : '');
-      const meta = RA.t("{0}{1}army {2}{3}", o.ai ? this.relLabel(o.rel[me.id]) + ' · ' : '', nb.has(o.id) ? RA.t("neighbour · ") : '', RA.fmt(o.troops), tags);
+      const theirs = [...o.allies.keys()].filter((id) => id !== me.id && G.P[id] && G.P[id].alive).map((id) => RA.esc(G.P[id].name));
+      const meta = RA.t("{0}{1}army {2}{3}", o.ai ? this.relLabel(o.rel[me.id]) + ' · ' : '', nb.has(o.id) ? RA.t("neighbour · ") : '', RA.fmt(o.troops), tags) + (theirs.length ? RA.t("<br>⛨ allied with {0}", theirs.join(', ')) : '');
       h += row(o, meta, this.diploButtons(o, false), true);
     }
     h += '</div>';
+    // the rules, at the end
+    h += RA.t("<div class=\"sec-t\">How it works</div>");
+    h += RA.t("<p class=\"explain\">Aggressive expansion: <b{0}>{1}/100</b>. It rises with every state you attack and conquer (the number of states, not the area) and fades with time. From {2} computer states avoid you, break alliances with you and join forces against you.</p>", ae >= C.AE_COALITION ? ' class="neg"' : '', ae, C.AE_COALITION);
+    h += RA.t("<p class=\"explain\"><b>Military alliance</b> (at most {0}): you don't attack each other; when someone attacks you, your allies strike at them or send you troops. Lasts {1}, can be extended.</p>", C.ALLY_MAX, RA.dur(C.ALLY_DUR));
+    h += RA.t("<p class=\"explain\"><b>Trade pact</b> (at most {0}): trade ships between your ports and trade across a shared border bring gold to both sides. No duty to help in war. An attack ends the trade. Sea trade needs ports; neighbours can also trade over land.</p>", C.TRADE_MAX);
     h += RA.t("<p class=\"note\">Vassal: a weak state (at most {0}% of your troops and {1}% of your land), a neighbour or an enemy at war, may agree to be your vassal instead of being conquered — it pays {2}% of its income and fights at your side; at most {3}. If you weaken, it breaks free.</p>", Math.round(C.VASSAL_TROOPS * 100), Math.round(C.VASSAL_AREA * 100), Math.round(C.TRIBUTE * 100), C.VASSAL_MAX);
-    h += RA.t("<p class=\"note\">At most {0} military alliances and {1} trade pacts. Betraying an ally = 30 s of halved defence and a bad name with everyone.</p>", C.ALLY_MAX, C.TRADE_MAX);
+    h += RA.t("<p class=\"note\">Betraying an ally = 30 s of halved defence and a bad name with everyone.</p>");
     this.openSheet(h, (s) => this.bindDiplo(s), keep, () => this.diploSheet(true));
   },
 
@@ -16093,36 +16393,71 @@ Object.assign(RA.UI.prototype, {
     }, keep, () => this.cellSheet(c, true));
   },
 
-  stanceName() {
-    const st = this.G.me && this.G.me.stance, T = st && this.G.P[st.t];
-    return !st ? RA.t("like the computer") : st.k === 'def' ? RA.t("defend") : st.k === 'eco' ? RA.t("build the economy") : RA.t("attack {0}", T ? T.name : '');
+  stanceName(st) {
+    const G = this.G;
+    if (st === undefined) st = G.me && G.me.stance;
+    if (!st) return RA.t("like the computer");
+    const f = st.f | 0, T = [st.t1, st.t2].filter((i) => i && G.P[i]).map((i) => G.P[i].name).join(' → ');
+    return [f & 1 ? RA.t("defend") : '', f & 2 ? RA.t("build the economy") : '', f & 4 ? RA.t("build the army") : '', f & 8 ? RA.t("attack {0}", T) : ''].filter(Boolean).join(' · ');
   },
-  /* Focus: orders for the computer while I'm away (command 'stance') */
-  stanceSheet() {
+  /* Focus: orders for the computer while I'm away (command 'stance'): any mix, and attack targets by priority */
+  stanceSheet(draft) {
     const G = this.G, me = G.me;
     if (!me) return;
-    const cur = me.stance ? me.stance.k : 'auto';
-    const opt = (k, t, d) => this.btn({ attrs: `data-st="${k}"`, cls: cur === k ? 'primary' : '', t, d });
-    let h = this.head(RA.t("While I'm away"), RA.t("When you close the game, the computer plays your state by this order")) + '<div class="btns">';
-    h += opt('auto', RA.t("Like the computer"), RA.t("Decides by itself: expands, goes to war, makes alliances"));
-    h += opt('def', RA.t("Defend"), RA.t("No new wars: forts and air defence, strikes back only when attacked, accepts alliances"));
-    h += opt('eco', RA.t("Build the economy"), RA.t("No new wars: cities, factories and ports, expands onto free land"));
-    h += RA.t("</div><div class=\"sec-t\">Attack a state</div><div class=\"list\">");
-    // my neighbours (no RA.AI.scan here: it draws from the game's random numbers)
-    const W = G.map.W, ids = new Set();
-    for (let i = 0; i < me.tiles; i++) {
-      const c = me.cells[i];
-      for (const n of [c - 1, c + 1, c - W, c + W]) if (n >= 0 && n < G.map.N && G.owner[n] && G.owner[n] !== me.id) ids.add(G.owner[n]);
+    const st = me.stance;
+    const cur = (this._stance = draft || (st ? { f: st.f | 0, t1: st.t1 || 0, t2: st.t2 || 0 } : { f: 0, t1: 0, t2: 0 }));
+    const tog = (bit, t, d) => this.btn({ attrs: `data-sf="${bit}"`, cls: cur.f & bit ? 'primary' : '', t: (cur.f & bit ? '✓ ' : '') + t, d });
+    let h = this.head(RA.t("While I'm away"), RA.t("When you close the game, the computer plays your state by these orders"));
+    h += '<div class="btns">' + this.btn({ attrs: 'data-sa="1"', cls: cur.f ? '' : 'primary', t: (cur.f ? '' : '✓ ') + RA.t("Like the computer"), d: RA.t("Decides by itself: expands, goes to war, makes alliances") }) + '</div>';
+    h += RA.t("<div class=\"sec-t\">Or pick one or more</div>") + '<div class="btns">';
+    h += tog(1, RA.t("Defend"), RA.t("Forts, air defence and trenches along the border; strikes back when attacked"));
+    h += tog(2, RA.t("Build the economy"), RA.t("Cities, factories and ports"));
+    h += tog(4, RA.t("Build the army"), RA.t("Tanks, artillery and infantry at the front, barracks"));
+    h += tog(8, RA.t("Attack"), RA.t("War on the states you pick below: the first while it can be reached, then the second"));
+    h += '</div>';
+    if (cur.f & 8) {
+      h += RA.t("<div class=\"sec-t\">Targets</div>") + '<div class="list">';
+      // my neighbours (no RA.AI.scan here: it draws from the game's random numbers)
+      const W = G.map.W, ids = new Set();
+      for (let i = 0; i < me.tiles; i++) {
+        const c = me.cells[i];
+        for (const n of [c - 1, c + 1, c - W, c + W]) if (n >= 0 && n < G.map.N && G.owner[n] && G.owner[n] !== me.id) ids.add(G.owner[n]);
+      }
+      const nb = [...ids].map((id) => G.P[id]).filter((o) => o && o.alive && o.type !== 'bot' && !G.isFriendly(me, o));
+      for (const o of nb) {
+        const k = cur.t1 === o.id ? 1 : cur.t2 === o.id ? 2 : 0;
+        h += RA.t("<div class=\"prow wide\"><span class=\"sw\" style=\"background:{0}\"></span><div class=\"pn\"><div class=\"nm\">{1}</div><div class=\"d\">army {2}</div></div><div class=\"bb\">{3}</div></div>", o.hex, RA.esc(o.name), RA.fmt(o.troops),
+          this.mini(k === 1 ? RA.t("✓ First") : RA.t("First"), `data-t1="${o.id}"`, k === 1 ? 'warn' : '') + this.mini(k === 2 ? RA.t("✓ Second") : RA.t("Second"), `data-t2="${o.id}"`, k === 2 ? 'warn' : ''));
+      }
+      if (!nb.length) h += RA.t("<p class=\"note\">You have no neighbour you are not allied with.</p>");
+      h += '</div>';
     }
-    const nb = [...ids].map((id) => G.P[id]).filter((o) => o && o.alive && o.type !== 'bot' && !G.isFriendly(me, o));
-    for (const o of nb) h += RA.t("<div class=\"prow wide\"><span class=\"sw\" style=\"background:{0}\"></span><div class=\"pn\"><div class=\"nm\">{1}</div><div class=\"d\">army {2}</div></div><div class=\"bb\">{3}</div></div>", o.hex, RA.esc(o.name), RA.fmt(o.troops), this.mini(me.stance && me.stance.t === o.id ? RA.t("Selected") : RA.t("Attack"), `data-st="atk:${o.id}"`, 'warn'));
-    if (!nb.length) h += RA.t("<p class=\"note\">You have no neighbour you are not allied with.</p>");
-    this.openSheet(h + '</div>', (s) => s.querySelectorAll('[data-st]').forEach((b) => (b.onclick = () => {
-      const [k, t] = b.dataset.st.split(':');
-      this.act('stance', k === 'atk' ? [k, +t] : [k]);
-      this.toast('good', RA.t("While you're away: {0}.", k === 'auto' ? RA.t("like the computer") : k === 'def' ? RA.t("defend") : k === 'eco' ? RA.t("build the economy") : RA.t("attack ") + G.P[+t].name));
-      this.closeSheet();
-    })));
+    h += '<div class="btns" style="margin-top:12px">' + this.btn({ attrs: 'data-ssave="1"', cls: 'primary', t: RA.t("Save the orders") }) + '</div>';
+    this.openSheet(h, (s) => {
+      const redraw = () => this.stanceSheet(cur);
+      s.querySelectorAll('[data-sf]').forEach((b) => (b.onclick = () => ((cur.f ^= +b.dataset.sf), redraw())));
+      s.querySelectorAll('[data-sa]').forEach((b) => (b.onclick = () => ((cur.f = 0), (cur.t1 = cur.t2 = 0), redraw())));
+      s.querySelectorAll('[data-t1]').forEach((b) => (b.onclick = () => {
+        const id = +b.dataset.t1;
+        if (cur.t2 === id) cur.t2 = 0;
+        cur.t1 = cur.t1 === id ? 0 : id;
+        redraw();
+      }));
+      s.querySelectorAll('[data-t2]').forEach((b) => (b.onclick = () => {
+        const id = +b.dataset.t2;
+        if (cur.t1 === id) cur.t1 = 0;
+        cur.t2 = cur.t2 === id ? 0 : id;
+        redraw();
+      }));
+      const save = s.querySelector('[data-ssave]');
+      if (save) save.onclick = () => {
+        if (cur.f & 8 && !cur.t1 && cur.t2) (cur.t1 = cur.t2), (cur.t2 = 0);
+        if (cur.f & 8 && !cur.t1) return this.toast('info', RA.t("Pick the first state to attack (or turn Attack off)."));
+        this.act('stance', cur.f ? ['mix', cur.f, cur.t1, cur.t2] : ['auto']);
+        this.closeSheet();
+        this.toast('good', RA.t("While you're away: {0}.", RA.esc(this.stanceName(cur.f ? cur : null))));
+      };
+    }, !!draft);
   },
   /* nuclear spam: how much dearer the next one is and until when (a bar that runs out) */
   nukeBar(M) {
@@ -16151,6 +16486,7 @@ Object.assign(RA.UI.prototype, {
       return h + '</div>';
     };
     let h = '<div id="dealSheet"></div>' + this.head(pre && pre.reply ? RA.t("Counter-offer") : RA.t("Negotiations"), `${RA.esc(O.name)} · ${O.ai && !O.human ? RA.t("the computer answers at once: accepts, asks for more or declines") : RA.t("a player: accepts, declines or makes a counter-offer")}`, O.hex);
+    if (G.deps && me.res) h += `<p class="explain">${RA.t("Your resources:")} ${[0, 1, 2].map((s) => `<b>${RA.resKind(s, G.era).name}</b> ${G.hasRes(me, s) ? RA.t("<span class=\"pos\">yes</span>") : RA.t("<span class=\"neg\">no</span> ({0})", RA.RES[s].lack)}`).join(' · ')}</p>`;
     h += `<div class="deal-grid">${side(O, want, 'want')}${side(me, give, 'give')}</div>`;
     if (!allied) h += RA.t("<p class=\"note\">You can exchange troops only as military allies. A city goes with its surroundings (3 cells); a capital can't be given.</p>");
     h += `<div class="btns"><button class="btn primary" data-send><span class="t">${pre && pre.reply ? RA.t("Send the counter-offer") : RA.t("Send the offer")}</span></button></div>`;
@@ -16186,8 +16522,9 @@ Object.assign(RA.UI.prototype, {
     const T = RA.TAX, cur = RA.TAX[me.tax] || T[2], pct = (v) => (v >= 1 ? '+' : '−') + Math.round(Math.abs(v - 1) * 100) + '%';
     const h = this.head(RA.t("Economy"), RA.t("Treasury · development · trade")) +
       RA.t("<div class=\"economy-overview\"><div><span>Treasury</span><strong>{0}</strong><small>gold available</small></div><div><span>Income</span><strong>+{1}</strong><small>gold / second</small></div><div><span>Army</span><strong>{2}{3}</strong><small>troops / second</small></div></div>", RA.fmt(me.gold), RA.fmt(me.goldRate || 0), me.growRate >= 0 ? '+' : '−', RA.fmt(Math.abs(me.growRate || 0))) +
+      this.resHtml() + // what I have and what for, at the top (Darko 28. 9.)
       RA.t("<div class=\"field\"><span class=\"lab\">Tax: {0}</span><div class=\"seg wrap\" id=\"taxSeg\" role=\"group\" aria-label=\"Tax\">{1}</div>\n      <p class=\"note\">Higher tax: more gold, but the army grows more slowly. Lower: the army grows faster, less gold.<br>Now: gold {2}, army growth {3}.</p></div>\n      <div class=\"field\"><span class=\"lab\">Interest</span><p class=\"note\">Saved gold earns 1% a minute, at most a quarter of your income. Now: <b>+{4}/s</b>.</p></div>", RA.esc(cur.name), T.map((t, i) => `<button data-v="${i}" aria-pressed="${i === me.tax}">${RA.esc(t.name)}</button>`).join(''), cur.g === 1 ? RA.t("normal") : pct(cur.g), cur.grow === 1 ? RA.t("normal{=2}") : pct(cur.grow), RA.fmt(me.interest || 0)) +
-      this.resHtml() + this.loanHtml() + this.straitHtml() +
+      this.loanHtml() + this.straitHtml() +
       (G.opts.tree ? RA.t("<div class=\"btns\"><button class=\"btn\" data-intel>{0}<span><span class=\"t\">Intelligence agency</span><br><span class=\"d\">{1}</span></span></button></div>", RA.icon('eye'), me.n.intel ? RA.t("Agents: {0}/{1}", G.intelOf(me).agents.length, RA.CFG.INTEL_MAX) : RA.t("Not built yet (Build)")) : '');
     this.openSheet(this.techHtml(h), (s) => {
       s.querySelectorAll('[data-tech]').forEach((b) => (b.onclick = () => {
@@ -16267,9 +16604,9 @@ Object.assign(RA.UI.prototype, {
     for (let s = 0; s < 3; s++) {
       const K = RA.resKind(s, G.era), sid = me.imp[s], q = G.P[sid];
       let d, bb = '';
-      if (me.res[s]) d = RA.t("<span class=\"pos\">you have it</span> · {0} {1}", me.res[s], me.res[s] === 1 ? RA.t("deposit") : RA.t("deposits"));
+      if (me.res[s]) d = RA.t("<span class=\"pos\">you have it</span> · {0} {1}", me.res[s], me.res[s] === 1 ? RA.t("deposit") : RA.t("deposits")) + ' · ' + RA.RES[s].use;
       else if (sid && q) {
-        d = RA.t("you buy from {0} · {1}% of income", RA.esc(q.name), Math.round(G.resRate(q, s) * 100));
+        d = RA.t("you buy from {0} · {1}% of income", RA.esc(q.name), Math.round(G.resRate(q, s) * 100)) + ' · ' + RA.RES[s].use;
         bb = this.mini(RA.t("Stop"), `data-buy="${s}:0"`, 'warn');
       } else {
         d = RA.t("<span class=\"neg\">you lack it</span> — {0}", RA.RES[s].lack);
@@ -16404,7 +16741,7 @@ Object.assign(RA.UI.prototype, {
     const k = mm.winShare > 0 ? C.WIN_SHARE / mm.winShare : 1, pc = (v) => Math.round(v / k);
     const win = Math.round(C.WIN_SHARE * 100);
     const eras = RA.ERAS.map((e) => `<li><b>${RA.esc(e.name)}</b> (${RA.esc(e.sub)}) — ${RA.esc(RA.eraBlurb(e, M.id))}</li>`).join('');
-    const h = this.head(RA.t("How to play"), RA.t("Overtake — the rules in short")) + RA.t("<div class=\"howto\">\n      <h4>Goal</h4><p>Take {0}% of the land of the chosen part of the map or be the last state standing. When you win you can play on and conquer everything. Whoever holds more than {1}% of the map pays more for every new conquest.</p>\n      <h4>Modes</h4><ul>\n        <li><b>Blitz</b>: a quick game (20–40 min), no tech tree or resources, 1 min of peace.</li>\n        <li><b>Focus</b>: the game lasts days (~1, 3 or 7) on the server and runs even while you are away — the computer plays your state. Gold and orders come every second, armies move slowly. Tech tree, weapons research, resources and trade, a longer peace time. The main menu keeps the game (<i>Continue Focus game</i>), and when you come back you see what happened. <i>Leave the game</i> deletes your progress for good.</li>\n        <li><b>Make your choice</b>: you pick the pace, the tech tree, resources, nuclear weapons and peace time yourself.</li></ul>\n      <h4>Eras</h4><p>On the start screen you pick the period you fight in. Every era has its own borders, cities, units, buildings and weapons:</p><ul>{2}</ul>\n      <h4>Start</h4><ul>\n        <li><b>Real borders</b>: every state starts with its land from that era. Tap a state or pick it from the list — you get its land, army and gold.</li>\n        <li><b>From the capital</b>: states start from a small circle around their capital, the rest is free (grey) land and city-states.</li>\n        <li>The first minute (adjustable) is <b>peace time</b>: nobody may attack states — build, take free land, make alliances.</li></ul>\n      <h4>Battle royale</h4><p>After peace time and another 90 s a radioactive zone starts shrinking towards a random point ({3} circles). The white dashed circle shows where it's going. Everything outside the red circle is lost — the land and the troops on it. Whoever is left wins.</p>\n      <h4>Expanding and attacking</h4><ul>\n        <li><b>Tap</b> free land or a neighbour — you send as many troops as the <b>Attack strength</b> slider shows.</li>\n        <li><b>Directed attack</b>: tapping a neighbouring state sends troops from your nearest border straight to that spot (an arrow on the map) — only that part is taken, then the rest of the troops come back. The more troops you send, the wider the corridor.</li>\n        <li>On a computer: <b>drag an arrow with the right mouse button</b> from your land to the target — the attack goes exactly that way.</li>\n        <li>A front along the whole border with a state: long press (right click) on it → <b>Attack the whole border</b>. Free land is always taken along the whole border.</li>\n        <li><b>Retake</b>: when a state takes your land, a yellow “Retake N cells” button appears in the attack bar — one click sends a counter-attack only on that land (taken in the last 3 minutes), without going further.</li>\n        <li><b>Right of passage</b>: a military ally lets you through its land — you can attack a state bordering it even if you have no border with it.</li>\n        <li>Rivers, hills, mountains and cities slow the attacker down.</li>\n        <li>Active attacks are above the bottom bar. <b>✕</b> stops an attack and brings the troops back (an attack on a state: 25% is lost in the retreat).</li></ul>\n      <h4>Army and gold</h4><ul>\n        <li>The army grows by itself, fastest around <b>42%</b> of capacity (the green zone on the bar).</li>\n        <li><b>Mobilisation</b> (Army): instantly +30% of capacity, but growth stops for 45 s. Once every 4 minutes.</li>\n        <li>Gold comes from land, cities, ports, trains or caravans and trade.</li>\n        <li><b>Navy</b> (Army): two ships per era, from your port. Tap a ship, then the sea. A warship sinks landings and trade ships, blockades enemy ports nearby (no gold, no trade) and shells the coast; the other ship hunts landings and trade ships (the submarine from 1914 is invisible until a warship comes close).</li>\n        <li><b>Air force</b> (from 1938, Landing or key A): fighters guard the sky around the airfield and escort your planes, bombers destroy buildings, units and troops up to 70 cells from the airfield. <b>Drones</b> (today, Missiles): cheap, fly straight from your border — kamikaze or unit hunter; every tap sends one until you cancel.</li>\n        <li><b>Iron Dome</b> (a building, from 1938): when someone launches a nuke at you, every ready dome fires an atomic bomb at their capital and cities by itself.</li>\n        <li><b>Resources</b> (an option in the settings): grain, metal and fuel at real deposits (signs on the map). Without them everything is dearer or slower; what you lack you buy from a trade partner (Economy).</li>\n        <li><b>Straits</b> (Economy): whoever holds both shores can close a strait to foreign ships. Everyone who sails there gets angry — closing is aggression.</li>\n        <li><b>Loan</b> (Economy: click the gold or Z): a computer state lends you gold, part of your land is the pledge (hatched). Don't repay in time → the pledge is theirs.</li>\n        <li><b>Vassal</b> (Alliances menu): you can make a weak neighbouring state your vassal instead of conquering it — it pays you tribute and fights at your side. If you weaken, it breaks free.</li>\n        <li><b>Aggressive expansion</b> (Alliances menu): every state you attack and subdue angers the others. Too many conquests at once → computer states join forces against you. The anger fades with time.</li>\n        <li><b>Tax</b> (click the gold at the top or key Z): a higher tax gives more gold, but the army grows more slowly. Saved gold earns a little interest.</li></ul>\n      <h4>Units</h4><ul>\n        <li>Three kinds in every era (e.g. legion, cavalry and archers in Rome; infantry, tanks and artillery today): the first holds the border firmly, the second makes your attacks faster and cheaper, the third hits the enemy from afar.</li>\n        <li>Units follow the border by themselves. Tap your unit, then a new spot, to move it. A surrounded unit is lost.</li></ul>\n      <h4>Building</h4><ul>\n        <li><b>City</b>: troops, gold and defence. <b>Factory</b> (a market or manufactory in older eras): a route to your cities within 18 cells — trains or caravans bring gold.</li>\n        <li><b>Barracks</b> (+troops, +2 units), <b>Fort</b>, <b>Port</b>, and depending on the era <b>Airfield</b> (paratroopers), <b>Missile silo</b> or siege workshop, <b>Air defence</b>.</li></ul>\n      <h4>Sea and air</h4><p>A landing by ship on any coast (at most {4} ships). From 1938 paratroopers jump up to {5} cells from an airfield; air defence can shoot them down.</p>\n      <h4>Strikes and bombs</h4><ul>\n        <li>In older eras onagers, trebuchets, bombards, rockets and cannons only reach their <b>range</b> (white circles while aiming) — build them near the front.</li>\n        <li>1914: Big Bertha and zeppelins. 1938: V-2 rockets, and the atomic bomb only from minute 10. Cold War and today: everything up to the hydrogen bomb and MIRV.</li>\n        <li>The <b>atomic</b> and <b>hydrogen</b> bomb wipe out land, destroy EVERY building and unit in the circle and kill a large part of the target's army.</li></ul>\n      <h4>Alliances</h4><ul>\n        <li><b>Military alliance</b> (at most {6}, lasts 5 min): you don't attack each other, and your allies help you when someone attacks you. You can send them troops and ask for help.</li>\n        <li><b>Trade pact</b> (at most {7}): trade ships between ports and trade across a border bring gold to both sides — no duties in war.</li>\n        <li>Betraying an ally = 30 s of halved defence and a bad name with everyone.</li></ul>\n      <h4>Winter and capitals</h4><p>Every 4 minutes {8} is covered with snow for 1 minute: attacks and units are slower there. Losing your capital means a crisis: −25% troops, half income for 60 s and loot for the conqueror.</p>\n      <h4>Online with a friend</h4><p>Both open war.deovilab.com; one presses “Create a room”, the other “Join”. The host picks the era, the map and the type: <b>together against everyone</b> (a permanent alliance, you share the win) or <b>against each other</b>, with battle royale if you like. The host controls speed and pause.</p>\n      <h4>Controls</h4><p>One finger: move · two fingers: zoom · long press (right click): menu for that spot. You can pause and speed up the game (1×–3×).</p>\n    </div>", win, pc(35), eras, C.BR_PHASES, C.BOAT_MAX, C.PARA_RANGE, C.ALLY_MAX, C.TRADE_MAX, RA.esc(I.winterHow));
+    const h = this.head(RA.t("How to play"), RA.t("Overtake — the rules in short")) + RA.t("<div class=\"howto\">\n      <h4>Goal</h4><p>Take {0}% of the land of the chosen part of the map or be the last state standing. When you win you can play on and conquer everything. Whoever holds more than {1}% of the map pays more for every new conquest.</p>\n      <h4>Modes</h4><ul>\n        <li><b>Blitz</b>: a quick game (20–40 min), no tech tree or resources, 1 min of peace.</li>\n        <li><b>Focus</b>: the game lasts until someone wins (often days) on the server and runs even while you are away — the computer plays your state. Gold and orders come every second, armies move slowly. Tech tree, weapons research, resources and trade, a longer peace time. The main menu keeps the game (<i>Continue Focus game</i>), and when you come back you see what happened. <i>Leave the game</i> deletes your progress for good.</li>\n        <li><b>Make your choice</b>: you pick the pace, the tech tree, resources, nuclear weapons and peace time yourself.</li></ul>\n      <h4>Eras</h4><p>On the start screen you pick the period you fight in. Every era has its own borders, cities, units, buildings and weapons:</p><ul>{2}</ul>\n      <h4>Start</h4><ul>\n        <li><b>Real borders</b>: every state starts with its land from that era. Tap a state or pick it from the list — you get its land, army and gold.</li>\n        <li><b>From the capital</b>: states start from a small circle around their capital, the rest is free (grey) land and city-states.</li>\n        <li>The first minute (adjustable) is <b>peace time</b>: nobody may attack states — build, take free land, make alliances.</li></ul>\n      <h4>Battle royale</h4><p>After peace time and another 90 s a radioactive zone starts shrinking towards a random point ({3} circles). The white dashed circle shows where it's going. Everything outside the red circle is lost — the land and the troops on it. Whoever is left wins.</p>\n      <h4>Expanding and attacking</h4><ul>\n        <li><b>Tap</b> free land or a neighbour — you send as many troops as the <b>Attack strength</b> slider shows.</li>\n        <li><b>Directed attack</b>: tapping a neighbouring state sends troops from your nearest border straight to that spot (an arrow on the map) — only that part is taken, then the rest of the troops come back. The more troops you send, the wider the corridor.</li>\n        <li>On a computer: <b>drag an arrow with the right mouse button</b> from your land to the target — the attack goes exactly that way.</li>\n        <li>A front along the whole border with a state: long press (right click) on it → <b>Attack the whole border</b>. Free land is always taken along the whole border.</li>\n        <li><b>Retake</b>: when a state takes your land, a yellow “Retake N cells” button appears in the attack bar — one click sends a counter-attack only on that land (taken in the last 3 minutes), without going further.</li>\n        <li><b>Right of passage</b>: a military ally lets you through its land — you can attack a state bordering it even if you have no border with it.</li>\n        <li>Rivers, hills, mountains and cities slow the attacker down.</li>\n        <li>Active attacks are above the bottom bar. <b>✕</b> stops an attack and brings the troops back (an attack on a state: 25% is lost in the retreat).</li></ul>\n      <h4>Army and gold</h4><ul>\n        <li>The army grows by itself, fastest around <b>42%</b> of capacity (the green zone on the bar).</li>\n        <li><b>Mobilisation</b> (Army): instantly +30% of capacity, but growth stops for 45 s. Once every 4 minutes.</li>\n        <li>Gold comes from land, cities, ports, trains or caravans and trade.</li>\n        <li><b>Navy</b> (Army): two ships per era, from your port. Tap a ship, then the sea. A warship sinks landings and trade ships, blockades enemy ports nearby (no gold, no trade) and shells the coast; the other ship hunts landings and trade ships (the submarine from 1914 is invisible until a warship comes close).</li>\n        <li><b>Air force</b> (from 1938, Landing or key A): fighters guard the sky around the airfield and escort your planes, bombers destroy buildings, units and troops up to 70 cells from the airfield. <b>Drones</b> (today, Missiles): cheap, fly straight from your border — kamikaze or unit hunter; every tap sends one until you cancel.</li>\n        <li><b>Iron Dome</b> (a building, from 1938): when someone launches a nuke at you, every ready dome fires an atomic bomb at their capital and cities by itself.</li>\n        <li><b>Resources</b> (an option in the settings): grain, metal and fuel at real deposits (signs on the map). Without them everything is dearer or slower; what you lack you buy from a trade partner (Economy).</li>\n        <li><b>Straits</b> (Economy): whoever holds both shores can close a strait to foreign ships. Everyone who sails there gets angry — closing is aggression.</li>\n        <li><b>Loan</b> (Economy: click the gold or Z): a computer state lends you gold, part of your land is the pledge (hatched). Don't repay in time → the pledge is theirs.</li>\n        <li><b>Vassal</b> (Alliances menu): you can make a weak neighbouring state your vassal instead of conquering it — it pays you tribute and fights at your side. If you weaken, it breaks free.</li>\n        <li><b>Aggressive expansion</b> (Alliances menu): every state you attack and subdue angers the others. Too many conquests at once → computer states join forces against you. The anger fades with time.</li>\n        <li><b>Tax</b> (click the gold at the top or key Z): a higher tax gives more gold, but the army grows more slowly. Saved gold earns a little interest.</li></ul>\n      <h4>Units</h4><ul>\n        <li>Three kinds in every era (e.g. legion, cavalry and archers in Rome; infantry, tanks and artillery today): the first holds the border firmly, the second makes your attacks faster and cheaper, the third hits the enemy from afar.</li>\n        <li>Units follow the border by themselves. Tap your unit, then a new spot, to move it. A surrounded unit is lost.</li></ul>\n      <h4>Building</h4><ul>\n        <li><b>City</b>: troops, gold and defence. <b>Factory</b> (a market or manufactory in older eras): a route to your cities within 18 cells — trains or caravans bring gold.</li>\n        <li><b>Barracks</b> (+troops, +2 units), <b>Fort</b>, <b>Port</b>, and depending on the era <b>Airfield</b> (paratroopers), <b>Missile silo</b> or siege workshop, <b>Air defence</b>.</li></ul>\n      <h4>Sea and air</h4><p>A landing by ship on any coast (at most {4} ships). From 1938 paratroopers jump up to {5} cells from an airfield; air defence can shoot them down.</p>\n      <h4>Strikes and bombs</h4><ul>\n        <li>In older eras onagers, trebuchets, bombards, rockets and cannons only reach their <b>range</b> (white circles while aiming) — build them near the front.</li>\n        <li>1914: Big Bertha and zeppelins. 1938: V-2 rockets, and the atomic bomb only from minute 10. Cold War and today: everything up to the hydrogen bomb and MIRV.</li>\n        <li>The <b>atomic</b> and <b>hydrogen</b> bomb wipe out land, destroy EVERY building and unit in the circle and kill a large part of the target's army.</li></ul>\n      <h4>Alliances</h4><ul>\n        <li><b>Military alliance</b> (at most {6}, lasts 5 min): you don't attack each other, and your allies help you when someone attacks you. You can send them troops and ask for help.</li>\n        <li><b>Trade pact</b> (at most {7}): trade ships between ports and trade across a border bring gold to both sides — no duties in war.</li>\n        <li>Betraying an ally = 30 s of halved defence and a bad name with everyone.</li></ul>\n      <h4>Winter and capitals</h4><p>Every 4 minutes {8} is covered with snow for 1 minute: attacks and units are slower there. Losing your capital means a crisis: −25% troops, half income for 60 s and loot for the conqueror.</p>\n      <h4>Online with a friend</h4><p>Both open war.deovilab.com; one presses “Create a room”, the other “Join”. The host picks the era, the map and the type: <b>together against everyone</b> (a permanent alliance, you share the win) or <b>against each other</b>, with battle royale if you like. The host controls speed and pause.</p>\n      <h4>Controls</h4><p>One finger: move · two fingers: zoom · long press (right click): menu for that spot. You can pause and speed up the game (1×–3×).</p>\n    </div>", win, pc(35), eras, C.BR_PHASES, C.BOAT_MAX, C.PARA_RANGE, C.ALLY_MAX, C.TRADE_MAX, RA.esc(I.winterHow));
     this.openSheet(h);
   },
 
@@ -16741,8 +17078,7 @@ Object.assign(RA.UI.prototype, {
   /* a long game with the start screen's settings (the map, part, era, mode and difficulty) */
   confirmLong() {
     const s = this.settings, reg = RA.REGIONS.find((r) => r.id === s.region && r.map === s.map);
-    const d = [1, 3, 7].includes(s.days) ? s.days : 1;
-    this.confirm(RA.t("Create a Focus game?"), RA.t("{0} · {1}{2} · ~{3} {4}. The game runs on the server even when you are away (then the computer plays your state): armies move every {5} seconds. You get a link — send it to friends (up to 8 players); you come back through it too.", reg ? reg.name : RA.mapInfo(s.map).all, RA.eraById(s.era).name, s.gm === 'defcon' ? ' · DEFCON' : '', d, d === 1 ? RA.t("day") : RA.t("days"), 5 * d), RA.t("Create"), () => this.app.long.create());
+    this.confirm(RA.t("Create a Focus game?"), RA.t("{0} · {1}{2}. The game runs on the server even when you are away (then the computer plays your state) and lasts until someone wins. You get a link — send it to friends (up to 8 players); you come back through it too.", reg ? reg.name : RA.mapInfo(s.map).all, RA.eraById(s.era).name, s.gm === 'defcon' ? ' · DEFCON' : ''), RA.t("Create"), () => this.app.long.create());
   },
   renderLobby() {
     const net = this.app.net, $ = this.$;
@@ -19375,7 +19711,7 @@ RA.App = class {
         this.lastT = now;
       }
       const ui = this.ui;
-      const anim = moving || G.state === 'spawn' || G.boats.length || G.missiles.length || G.units.length || G.trains.length || G.planes.length || G.tships.length || (ui.mode && (ui.mode.aim >= 0 || ui.mode.kind === 'unit' || ui.mode.kind === 'group')) || ui.fxList.length || G.pings.some((g) => G.tick - g.tick < 60) || (ui.pingState && now - ui.pingState.t0 < 700) || (G.me && G.attacks.some((a) => !a.done && a.a === G.me.id && a.focus >= 0));
+      const anim = moving || G.state === 'spawn' || G.boats.length || G.missiles.length || G.units.length || G.trains.length || G.planes.length || G.tships.length || (ui.mode && (ui.mode.aim >= 0 || ui.mode.at >= 0 || ui.mode.kind === 'unit' || ui.mode.kind === 'group')) || (ui.pendingBuild && ui.pendingBuild.length) || this.terr.slowLeft() > 0 || ui.fxList.length || G.pings.some((g) => G.tick - g.tick < 60) || (ui.pingState && now - ui.pingState.t0 < 700) || (G.me && G.attacks.some((a) => !a.done && a.a === G.me.id && a.focus >= 0));
       // Cached models follow display cadence on desktop; retain the phone frame budget.
       const fxInterval = anim ? (this.fx.w > 900 && this.simMs < 12 ? 16 : 30) : !this.attractMode && RA.Clouds.active(G) ? 90 : 200; // drifting clouds
       if (moving || now - (this.lastF || 0) >= fxInterval) {
@@ -20288,6 +20624,14 @@ RA.Long = class {
     this.known = 0; // entries of the record received so far
     this.code = '';
     addEventListener('pagehide', () => this.rec && this.snap());
+    // back from another app (phone): a dropped connection is dialled again at once, not after its back-off
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden || !this.rec || !this.code || this.closed) return;
+      if (!this.ws || this.ws.readyState > 1) {
+        this.tries = 0;
+        this.dial(this.code);
+      }
+    });
   }
   get url() {
     return this.app.net && this.app.net.wsUrl;
@@ -20314,7 +20658,7 @@ RA.Long = class {
   /* a new long game with the start screen's settings */
   create(extra) {
     const s = this.app.ui.playSet(); // Focus preset or Make your choice
-    const set = Object.assign({ map: s.map, reg: s.region, era: s.era, gm: s.gm === 'br' ? 'klasik' : s.gm, dif: s.difficulty, cs: s.cityStates, peace: s.peace, res: s.res ? 1 : 0, tree: s.tree ? 1 : 0, nn: s.noNuke ? 1 : 0, days: [1, 3, 7].includes(s.days) ? s.days : 1 }, extra || {});
+    const set = Object.assign({ map: s.map, reg: s.region, era: s.era, gm: s.gm === 'br' ? 'klasik' : s.gm, dif: s.difficulty, cs: s.cityStates, peace: s.peace, res: s.res ? 1 : 0, tree: s.tree ? 1 : 0, nn: s.noNuke ? 1 : 0, days: 1 }, extra || {});
     this.connect('new', { create: { set, name: this.name(), uid: this.uid() } });
   }
   open(code) {
@@ -20438,8 +20782,10 @@ RA.Long = class {
   frame() {
     const G = this.app.G;
     if (!G || !G.long || this.replaying) return;
-    const t0 = performance.now();
-    while (G.state === 'play' && G.clock() < this.T - 1 && performance.now() - t0 < 30) {
+    const t0 = performance.now(), behind = this.T - 1 - G.clock();
+    // far behind (the page was in the background): catch up in bigger bites so gold and army are current at once
+    const budget = behind > 3 ? 180 : 30;
+    while (G.state === 'play' && G.clock() < this.T - 1 && performance.now() - t0 < budget) {
       if (!this.applyDue(G)) return;
       G.step();
     }
@@ -20550,7 +20896,7 @@ Object.assign(RA.App.prototype, {
       if (r.set.lg && LG.startAt > Date.now()) ui.toast('info', RA.t("Conquest League {0}v{1}: starts in {2} s — destroy the enemy team.", r.set.lg, r.set.lg, Math.ceil((LG.startAt - Date.now()) / 1000)), { ms: 6000 });
       if (G.state === 'over' && !G.continued) RA.focusDrop(r.code);
       if (!r.set.fast && mine && mine.alive) ui.toast('info', RA.t("Fog of war: land far from yours is under clouds. Scout it with an agent (Intelligence agency) or send a drone."), { ms: 9000 });
-      if (!r.set.fast) ui.toast('info', RA.t("Focus: gold and orders every second, armies move every {0} s — the game goes on while you're away. Link: <b>{1}</b>", Math.round((r.tickMs * (r.sub || 1)) / 1000), RA.esc(location.origin + '/long-' + r.code)), { ms: 9000 });
+      if (!r.set.fast) ui.toast('info', RA.t("Focus: the game goes on while you're away. Link: <b>{0}</b>", RA.esc(location.origin + '/long-' + r.code)), { ms: 9000 });
     };
     slice();
   },
@@ -20649,13 +20995,13 @@ Object.assign(RA.UI.prototype, {
     b.hidden = !l.length || !(net && net.wsUrl);
     if (b.hidden) return;
     const e = l[0];
-    b.innerHTML = RA.t("<span class=\"t\">Continue Focus game{0}</span><span class=\"d\">{1} · ~{2} {3}</span>", l.length > 1 ? ` (${l.length})` : '', RA.esc(e.title || 'Focus · ' + e.code), e.days || 1, (e.days || 1) === 1 ? RA.t('day') : RA.t('days'));
+    b.innerHTML = RA.t("<span class=\"t\">Continue Focus game{0}</span><span class=\"d\">{1}</span>", l.length > 1 ? ` (${l.length})` : '', RA.esc(e.title || 'Focus · ' + e.code));
     b.onclick = () => {
       this.settings.name = this.$('nameIn').value.trim().slice(0, 18);
       this._save();
       if (l.length === 1) return this.app.long.open(e.code);
       let h = this.head(RA.t("Your Focus games"), RA.t("Games go on while you're away — the computer leads your state")) + '<div class="list focus-games">';
-      for (const x of l) h += RA.t("<div class=\"prow wide\"><div class=\"pn\"><div class=\"nm\">{0}</div><div class=\"d\">~{1} {2} · last seen {3}</div></div><div class=\"bb\">{4}</div></div>", RA.esc(x.title || x.code), x.days || 1, (x.days || 1) === 1 ? RA.t('day') : RA.t('days'), new Date(x.at || 0).toLocaleString(RA.LOCALE), this.mini(RA.t("Continue"), `data-fo="${x.code}"`, 'ok'));
+      for (const x of l) h += RA.t("<div class=\"prow wide\"><div class=\"pn\"><div class=\"nm\">{0}</div><div class=\"d\">last seen {1}</div></div><div class=\"bb\">{2}</div></div>", RA.esc(x.title || x.code), new Date(x.at || 0).toLocaleString(RA.LOCALE), this.mini(RA.t("Continue"), `data-fo="${x.code}"`, 'ok'));
       this.openSheet(h + '</div>', (s) => s.querySelectorAll('[data-fo]').forEach((q) => (q.onclick = () => {
         this.closeSheet();
         this.app.long.open(q.dataset.fo);
@@ -21791,7 +22137,7 @@ Object.assign(RA.UI.prototype, {
   },
 });
 
-RA.BUILD = 'c3567041';
+RA.BUILD = '3c06337f';
 new RA.App().boot();
 }
 function __raFallback(){

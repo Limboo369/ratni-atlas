@@ -161,7 +161,7 @@ RA.NUKE = RA.MISSILE;
     const W = this.map.W;
     const u = {
       id: this.nextId++, type, owner: pid, x: (c % W) + 0.5, y: ((c / W) | 0) + 0.5, anchor: c, hp: U.hp,
-      ready: this.tick + U.deploy, path: null, pi: 0, empUntil: 0, lastHit: -999, fireAt: 0, dead: false, retargetNow: true,
+      ready: this.tick + (this.sub ? 1 : U.deploy), path: null, pi: 0, empUntil: 0, lastHit: -999, fireAt: 0, dead: false, retargetNow: true,
     };
     this.units.push(u);
     p.units.push(u);
@@ -306,6 +306,7 @@ RA.NUKE = RA.MISSILE;
   };
   P._stepUnits = function () {
     const tk = this.tick, W = this.map.W;
+    const fk = this.sub ? this.rtK() / 5 : 1; // Focus: units walk at a fifth of the Blitz speed in real time (Darko 28. 9.)
     const wl = this.wLevel || 0;
     for (const u of this.units) {
       if (u.dead) continue;
@@ -336,7 +337,7 @@ RA.NUKE = RA.MISSILE;
         this._retarget(u, false);
       }
       if (u.path && u.pi < u.path.length) {
-        let step = U.speed * this.unitSpd(this.P[u.owner]) * (wl > 0 && this.isSnow(c) ? 1 - 0.45 * wl : 1);
+        let step = U.speed * this.unitSpd(this.P[u.owner]) * (wl > 0 && this.isSnow(c) ? 1 - 0.45 * wl : 1) * fk;
         while (step > 0 && u.pi < u.path.length) {
           const tc = u.path[u.pi];
           const tx = (tc % W) + 0.5, ty = ((tc / W) | 0) + 0.5;
@@ -388,7 +389,7 @@ RA.NUKE = RA.MISSILE;
       }
     }
     if (u.path && u.pi < u.path.length) {
-      let step = U.speed * this.unitSpd(this.P[u.owner]);
+      let step = U.speed * this.unitSpd(this.P[u.owner]) * (this.sub ? this.rtK() / 5 : 1); // Focus: like units on land
       while (step > 0 && u.pi < u.path.length) {
         const tc = u.path[u.pi];
         const tx = (tc % W) + 0.5, ty = ((tc / W) | 0) + 0.5;
@@ -1020,17 +1021,19 @@ RA.NUKE = RA.MISSILE;
       tr.done = true;
       const p = this.P[tr.owner];
       if (!p.alive || this.owner[tr.dc] !== tr.owner) continue;
-      const g = tr.gold * (p.crisisUntil > tk ? 0.5 : 1);
+      const g = tr.gold * (p.crisisUntil > tk ? 0.5 : 1) * (this.sub ? RA.CFG.FOCUS_TRAIN : 1);
       p.gold += g;
       p.trainAcc = (p.trainAcc || 0) + g;
       if (p.human) this.fx.push({ kind: 'coin', x: tr.tx, y: tr.ty, v: g, tick: tk, pid: p.id });
     }
     if (tk % 20 === 0) this.trains = this.trains.filter((t) => !t.done);
-    if (tk % 100 === 0) {
-      // smoothed train income per second for the HUD
+    const win = this.sub ? 12 : 100; // a minute (Focus) or 10 s of real time
+    if (tk % win === 0) {
+      // smoothed train income per real second for the HUD
+      const secs = win * (this.sub || 0.1);
       for (const p of this.P) {
         if (!p) continue;
-        p.trainRate = (p.trainRate || 0) * 0.5 + ((p.trainAcc || 0) / 10) * 0.5;
+        p.trainRate = (p.trainRate || 0) * 0.5 + ((p.trainAcc || 0) / secs) * 0.5;
         p.trainAcc = 0;
       }
     }

@@ -99,14 +99,15 @@ RA.Clouds = (function () {
     st.gh = gh;
   };
 
-  /* the mask (alpha = how cloudy) at block resolution: outside the region dense, fog a little lighter */
+  /* the mask (alpha = how clear) at block resolution: outside the region and under the fog nothing is clear.
+     It is cut out of a fully clouded layer (destination-out), so its edges and the blur never let the dark page
+     background show through (Darko 28. 9.: a black frame when zoomed out) */
   const buildMask = (G) => {
     const map = G.map, W = map.W, H = map.H, gw = Math.ceil(W / B), gh = Math.ceil(H / B);
     const c = st.mask || document.createElement('canvas'), P = 2; // P blocks of cloud all around (no clear seam)
     c.width = gw + 2 * P;
     c.height = gh + 2 * P;
-    const x = c.getContext('2d'), img = x.createImageData(c.width, c.height), blk = map.block, land = map.land;
-    for (let i = 3; i < img.data.length; i += 4) img.data[i] = 255;
+    const x = c.getContext('2d'), img = x.createImageData(c.width, c.height), blk = map.block;
     for (let by = 0; by < gh; by++)
       for (let bx = 0; bx < gw; bx++) {
         let a = 0;
@@ -116,11 +117,8 @@ RA.Clouds = (function () {
           for (let y = by * B; y < Math.min(H, by * B + B); y++) for (let xx = bx * B; xx < Math.min(W, bx * B + B); xx++) (t++, blk[y * W + xx] && n++);
           if (n * 2 > t) a = 255;
         }
-        if (!a && st.fog && st.vis && !st.vis[by * gw + bx]) {
-          const cc = Math.min(H - 1, by * B + 2) * W + Math.min(W - 1, bx * B + 2);
-          a = land[cc] ? 255 : 235;
-        }
-        img.data[((by + P) * c.width + bx + P) * 4 + 3] = a;
+        if (!a && st.fog && st.vis && !st.vis[by * gw + bx]) a = 255; // land and sea alike (thinner over the sea showed as dark smudges)
+        img.data[((by + P) * c.width + bx + P) * 4 + 3] = 255 - a;
       }
     x.putImageData(img, 0, 0);
     st.mask = c;
@@ -153,7 +151,8 @@ RA.Clouds = (function () {
       const off = st.off || (st.off = document.createElement('canvas'));
       const ms = st.ms || (st.ms = document.createElement('canvas'));
       if (off.width !== ow || off.height !== oh) (off.width = ms.width = ow), (off.height = ms.height = oh);
-      // where the clouds are: everything off the map grid, and the mask on it
+      // where the clouds are: everywhere, minus the clear parts of the mask (softened by a blur that scales with
+      // the blocks, so zoomed out the clear land stays clear instead of being smeared into the clouds)
       const mc = ms.getContext('2d');
       mc.setTransform(1, 0, 0, 1, 0, 0);
       mc.globalCompositeOperation = 'source-over';
@@ -162,11 +161,12 @@ RA.Clouds = (function () {
       mc.fillRect(0, 0, ow, oh);
       const x0 = v.ox * s, y0 = v.oy * s, gw = G.map.W * v.cell * s, gh = G.map.H * v.cell * s;
       const bw = gw / (st.mask.width - 4), bh = gh / (st.mask.height - 4); // one mask block on the screen
-      mc.clearRect(x0 - 2 * bw, y0 - 2 * bh, gw + 4 * bw, gh + 4 * bh);
+      mc.globalCompositeOperation = 'destination-out';
       mc.imageSmoothingEnabled = true;
-      mc.filter = 'blur(6px)';
+      mc.filter = `blur(${Math.max(0.5, Math.min(6, bw * 0.8)).toFixed(1)}px)`;
       mc.drawImage(st.mask, x0 - 2 * bw, y0 - 2 * bh, gw + 4 * bw, gh + 4 * bh);
       mc.filter = 'none';
+      mc.globalCompositeOperation = 'source-over';
       // the clouds: a grey base and drifting billows (two layers at different speeds), anchored to the map
       const oc = off.getContext('2d');
       oc.setTransform(1, 0, 0, 1, 0, 0);

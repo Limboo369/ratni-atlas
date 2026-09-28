@@ -40,7 +40,11 @@ RA.CFG = {
   // Focus (a game of days, opts.sub): the world moves one step every `sub` seconds, but gold comes every second and
   // orders are carried out within a second (Darko, 27. 9.: slow armies, a fast economy — build while there is peace)
   FOCUS_GOLD: 24, // gold of one world step × days, spread over its seconds (Darko 27. 9.: +20%)
-  FOCUS_BUILD: 0.6, // a building takes its Blitz time × this, in seconds
+  FOCUS_BUILD: 0.1, // a building takes as long as in Blitz (its time is in Blitz ticks; Darko 28. 9.)
+  FOCUS_TRAIN: 2, // Focus: a train brings this × its gold (a factory with two cities ≈ the base income of a mid state)
+  FOCUS_CITY: 3, // Focus: a built city's gold ×
+  FOCUS_COST_N: 0.6, // Focus: every next city, factory and port costs 2^(0.6 n) (~1.5×) more, not 2× more
+  FOCUS_PEACE: 20, // Focus: real seconds of peace per second of the setting (180 → 1 h; Darko 28. 9.)
 };
 /* tax (plan 33): more gold ↔ slower army growth; every state starts at 'Srednji' */
 RA.TAX = [
@@ -125,6 +129,7 @@ RA.Game = class Game {
     this.st = 0;
     this.goldMul = this.sub ? RA.CFG.FOCUS_GOLD * (opts.days || 1) : 1;
     this.peaceUntil = opts.peace !== undefined ? Math.round(opts.peace * 10) : RA.CFG.PEACE;
+    if (this.sub && opts.peace !== undefined) this.peaceUntil = Math.round((opts.peace * RA.CFG.FOCUS_PEACE) / this.sub); // Focus: in real time
     if (opts.gm === 'defcon') this.peaceUntil = Math.max(this.peaceUntil, RA.CFG.DEFCON_STEP); // DEFCON 5: no attacks
     this.era = opts.era || 'danas';
     this.borders = false;
@@ -330,7 +335,7 @@ RA.Game = class Game {
         this.tell(p, 'good', RA.t("The world has calmed down: the coalition against you breaks up."), p.id);
       }
     } else p.ae = 0;
-    let g = 70 + Math.sqrt(p.tiles) * 1.2 + p.cityG + (p.n.port - p.portsOff + 0.5 * this.lvx(p, 'port')) * RA.CFG.PORT_G + (p.n.city + 0.5 * this.lvx(p, 'city')) * RA.CFG.CITY_BUILT_G;
+    let g = 70 + Math.sqrt(p.tiles) * 1.2 + p.cityG + (p.n.port - p.portsOff + 0.5 * this.lvx(p, 'port')) * RA.CFG.PORT_G + (p.n.city + 0.5 * this.lvx(p, 'city')) * RA.CFG.CITY_BUILT_G * (this.sub ? RA.CFG.FOCUS_CITY : 1);
     if (p.type === 'bot') g *= 0.4;
     if (p.crisisUntil > tk) g *= 0.5;
     g *= tax.g * (p.bGold || 1);
@@ -353,7 +358,7 @@ RA.Game = class Game {
     const gs = ((g + it) * mul) / sub;
     p.gold += gs;
     p.gSub = this.sub ? gs : 0;
-    p.goldRate = this.sub ? gs : (g + it) * 10 + (p.trainRate || 0) + (p.tradeRate || 0) + (p.tributeRate || 0) + (p.resRateIn || 0);
+    p.goldRate = this.sub ? gs + (p.trainRate || 0) : (g + it) * 10 + (p.trainRate || 0) + (p.tradeRate || 0) + (p.tributeRate || 0) + (p.resRateIn || 0);
     p.growRate = this.sub ? add / this.sub : add * 10; // per real second
   }
 
@@ -887,7 +892,8 @@ RA.Game = class Game {
 
   /* ---------------- structures ---------------- */
   structCost(p, type) {
-    const c = RA.STRUCT[type].cost(p.built[type]);
+    const eco = this.sub && (type === 'city' || type === 'factory' || type === 'port');
+    const c = RA.STRUCT[type].cost(eco ? p.built[type] * RA.CFG.FOCUS_COST_N : p.built[type]);
     const k = p.bCost || 1; // the campaign's science
     return Math.round((this.deps && !this.hasRes(p, 2) ? c * RA.CFG.RES_DEAR : c) * k); // no fuel: dearer
   }
@@ -933,7 +939,7 @@ RA.Game = class Game {
     const W = this.map.W;
     const s = { id: this.structs.length, type, owner: pid, c, x: c % W, y: (c / W) | 0, doneAt: this.tick + RA.STRUCT[type].time, ready: false, cd: 0, dead: false, empUntil: 0 };
     if (this.sub) {
-      // Focus: built in seconds (Blitz time × FOCUS_BUILD), not in slow world steps
+      // Focus: built in real seconds as fast as in Blitz, not in slow world steps
       const secs = Math.max(1, Math.ceil(RA.STRUCT[type].time * RA.CFG.FOCUS_BUILD));
       s.startSt = this.st;
       s.doneSt = this.st + secs;

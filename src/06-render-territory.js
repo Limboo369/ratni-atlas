@@ -200,6 +200,9 @@ void main(){
     }
     G.dirty.clear();
     G.dirtyFlag.fill(0);
+    this.slowQ = [];
+    this.slowI = 0;
+    this.slowTick = undefined;
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, this.tOwner);
     gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, M.W, M.H, gl.LUMINANCE_ALPHA, gl.UNSIGNED_BYTE, this.ownerData);
@@ -232,15 +235,43 @@ void main(){
     gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 256, 1, gl.RGBA, gl.UNSIGNED_BYTE, d);
     this.dirtyView = true;
   },
+  /* cells still waiting to be shown (Focus slow motion) */
+  slowLeft() {
+    return this.slowQ ? this.slowQ.length - this.slowI : 0;
+  },
   sync() {
     const G = this.G;
     if (!G || !this.ok) return;
     const M = this.gm, W = M.W, gl = this.gl;
-    const L = G.dirty;
+    let L = G.dirty;
+    // Focus (Darko 28. 9.): a world step comes every few seconds and takes many cells at once; show them one after
+    // another over the time to the next step (the order they were taken in), so fronts move all the time instead of
+    // jumping. Catching up (after a pause or a reload) shows everything at once.
+    const slow = G.sub && G.long && !G.rp && RA.TICK_REAL > 1000, now = performance.now();
+    if (slow) {
+      const Q = this.slowQ || (this.slowQ = []);
+      if (L.n) {
+        const jump = this.slowTick !== undefined && G.tick - this.slowTick > 1;
+        if (this.slowI > 4096) Q.splice(0, this.slowI), (this.slowI = 0);
+        for (let i = 0; i < L.n; i++) Q.push(L.a[i]), (G.dirtyFlag[L.a[i]] = 0);
+        L.clear();
+        if (jump || Q.length - this.slowI > 40000) this.slowRate = Infinity;
+        else this.slowRate = (Q.length - this.slowI) / (RA.TICK_REAL * 0.9);
+        this.slowAt = now;
+      }
+      this.slowTick = G.tick;
+      const left = Q.length - (this.slowI | 0);
+      if (left > 0) {
+        const n = Math.min(left, Math.max(1, Math.ceil((now - this.slowAt) * this.slowRate)));
+        this.slowAt = now;
+        L = { a: Q, n: this.slowI + n, i0: this.slowI | 0 };
+        this.slowI = L.n;
+      } else L = { n: 0 };
+    }
     if (L.n) {
       let r0 = 1e9, r1 = -1;
       const od = this.ownerData, own = G.owner, cap = G.capTick, off = M.mirOff, lst = M.mirList;
-      for (let i = 0; i < L.n; i++) {
+      for (let i = L.i0 || 0; i < L.n; i++) {
         const c = L.a[i];
         G.dirtyFlag[c] = 0;
         const o = own[c], t = cap[c];
@@ -258,13 +289,14 @@ void main(){
           if (mr > r1) r1 = mr;
         }
       }
-      L.clear();
+      if (L.clear) L.clear();
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, this.tOwner);
       gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, r0, W, r1 - r0 + 1, gl.LUMINANCE_ALPHA, gl.UNSIGNED_BYTE, od.subarray(r0 * W * 2, (r1 + 1) * W * 2));
       this.dirtyView = true;
       this.lastChange = performance.now();
     }
+    if (slow && this.slowI >= this.slowQ.length) this.slowQ.length = this.slowI = 0;
     if (G.falloutDirty) {
       G.falloutDirty = false;
       gl.activeTexture(gl.TEXTURE1);

@@ -293,6 +293,23 @@ RA.FxLayer = L.Layer.extend({
       ctx.globalAlpha = s.ready ? 1 : 0.55;
       RA.drawStructIcon(ctx, RA.STRUCT[s.type].icon || s.type, x, y, s.type === 'city' ? ss * 1.15 : ss, o.hex);
       ctx.globalAlpha = 1;
+      if ((s.lv || 1) > 1 || s.upTo) {
+        // the building's level (03f-upgrade.js); a yellow ring while it is being raised
+        const r = Math.max(6, ss * 0.3), bx = x + ss * 0.58, by = y - ss * 0.58;
+        ctx.beginPath();
+        ctx.arc(bx, by, r, 0, Math.PI * 2);
+        ctx.fillStyle = '#20252b';
+        ctx.fill();
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = s.upTo ? '#f2b134' : '#ffffff';
+        ctx.stroke();
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `700 ${Math.round(r * 1.35)}px ${RA.FONT_UI}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(String(s.lv || 1), bx, by + 0.5);
+        ctx.textBaseline = 'alphabetic';
+      }
       if (s.type === 'city' && this.showCities && cell >= 1.2) {
         ctx.font = `600 11px ${RA.FONT_UI}`;
         ctx.textAlign = 'left';
@@ -324,6 +341,30 @@ RA.FxLayer = L.Layer.extend({
       }
       if (ui.selStruct === s.type && s.owner === (G.me && G.me.id)) {
         // show ranges while placing similar buildings
+      }
+    }
+    // a building I just ordered (Focus: until the server's next second brings it) and one I am placing, with its reach
+    if (G.me) {
+      const pend = ui.pendingBuild;
+      if (pend && pend.length) ui.pendingBuild = pend.filter((b) => now - b.at < 6000 && !(G.structAt[b.c] >= 0 && G.structs[G.structAt[b.c]].owner === G.me.id && !G.structs[G.structAt[b.c]].dead));
+      const ghosts = (ui.pendingBuild || []).map((b) => [b.type, b.c, 0.45]);
+      if (ui.mode && ui.mode.kind === 'build' && ui.mode.at >= 0) ghosts.push([ui.mode.type, ui.mode.at, 0.7, RA.buildRange(ui.mode.type)]);
+      for (const [type, c, a, R] of ghosts) {
+        const x = gx((c % W) + 0.5), y = gy(((c / W) | 0) + 0.5);
+        if (R) {
+          ctx.beginPath();
+          ctx.arc(x, y, R * cell, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(255,255,255,0.08)';
+          ctx.fill();
+          ctx.setLineDash([6, 5]);
+          ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+        ctx.globalAlpha = a;
+        RA.drawStructIcon(ctx, RA.STRUCT[type].icon || type, x, y, type === 'city' ? ss * 1.15 : ss, G.me.hex);
+        ctx.globalAlpha = 1;
       }
     }
     // targeting overlays: my airports' reach (paratroopers), hostile air defence (missiles & planes)
@@ -413,7 +454,7 @@ RA.FxLayer = L.Layer.extend({
     const uw = RA.unitSize(cell);
     if (!this.unitMotion) this.unitMotion = new RA.UnitMotion();
     const still = RA.motionPreference.matches || ui.app.paused || (!G.online && !G.long && ui.app.sheetPaused);
-    const duration = G.long ? 160 : RA.clamp(RA.CFG.TICK_MS / (ui.app.speed || 1), 25, 120);
+    const duration = G.long ? (G.sub ? RA.TICK_REAL : 160) : RA.clamp(RA.CFG.TICK_MS / (ui.app.speed || 1), 25, 120); // Focus: over the whole world step
     const selId = ui.mode && ui.mode.kind === 'unit' ? ui.mode.id : -1;
     const grp = ui.mode && ui.mode.kind === 'group' ? ui.mode.ids : null;
     for (const u of G.units) {
@@ -421,7 +462,7 @@ RA.FxLayer = L.Layer.extend({
       const mine = me && u.owner === me.id;
       if (!mine && cell < 1.15) continue;
       if (!mine && RA.Clouds.hidden(G, u.x, u.y)) continue;
-      const pose = this.unitMotion.sample(u, W, now, duration, still || u.ready > G.tick || u.empUntil > G.tick);
+      const pose = this.unitMotion.sample(u, W, now, duration, still || u.ready > G.tick || u.empUntil > G.tick, G.sub ? 12 : 4);
       const x = gx(pose.x), y = gy(pose.y);
       if (!inView(x, y, 40)) continue;
       const U = RA.UNIT[u.type];

@@ -79,18 +79,18 @@ RA.AI = {
     if (p.type === 'bot') return RA.AI.thinkBot(G, p, info);
 
     const peace = G.tick < G.peaceUntil;
-    // a player's orders while away (Focus, plan 2): defend / build / attack X; the computer follows them
-    const st = p.human && p.stance ? p.stance : null;
-    const calm = st && (st.k === 'def' || st.k === 'eco'); // no new wars against states
+    // a player's orders while away (Focus): any mix of defend / economy / army / attack X, then Y; the computer follows
+    const st = p.human && p.stance ? p.stance : null, sf = st ? st.f | 0 : 0;
+    const calm = st && !(sf & 8); // no new wars against states
     if (ai.pers0 === undefined) ai.pers0 = ai.pers;
-    ai.pers = st && st.k === 'def' ? 'graditelj' : st && st.k === 'eco' ? 'trgovac' : ai.pers0;
+    ai.pers = !st ? ai.pers0 : sf & 4 || sf & 8 ? 'osvajac' : sf & 2 ? 'trgovac' : 'graditelj';
     RA.AI.diplomacy(G, p, info);
     RA.AI.maybeBuild(G, p, info);
     RA.AI.maybeRecruit(G, p, info);
     if (G.deps) RA.AI.maybeBuyRes(G, p);
     if (G.opts.tree) RA.AI.maybeTech(G, p), RA.AI.maybeResearch(G, p), RA.AI.maybeIntel(G, p);
     RA.AI.maybeUpgrade(G, p), RA.AI.maybeTrench(G, p);
-    if (st && st.k === 'eco') RA.AI.maybeBuild(G, p, info); // building comes first
+    if (st) RA.AI.stanceBuild(G, p, info, sf); // what the player asked for comes first
     if (!peace && p.n.port) RA.AI.navy(G, p, info);
     if (!peace && !calm && p.n.airport && RA.airOn()) RA.AI.air(G, p, info);
     if (!peace && !calm && !RA.MISSILE.drone.na) RA.AI.drones(G, p, info);
@@ -141,8 +141,10 @@ RA.AI = {
     if (calm) return; // defend / build: only counter-attacks and free land
     // war
     if (ratio >= ai.trig && info.nb.size) {
-      const X = st && st.k === 'atk' ? G.P[st.t] : null;
-      const tgt = X && X.alive && info.nb.has(X.id) && !G.isFriendly(p, X) && !peace ? X : RA.AI.pickTarget(G, p, info);
+      // the player's targets in order of priority (one we can reach and are not allied with)
+      const ok = (X) => X && X.alive && info.nb.has(X.id) && !G.isFriendly(p, X) && !peace;
+      const X = st && sf & 8 ? [G.P[st.t1], G.P[st.t2]].find(ok) : null;
+      const tgt = X || RA.AI.pickTarget(G, p, info);
       if (tgt) {
         const troops = p.troops - ai.reserve * p.maxT;
         if (troops > p.troops * 0.15) {
@@ -436,6 +438,56 @@ RA.AI = {
     return RA.AI.sampleCell(G, p, (c) => own[c - 1] === eid || own[c + 1] === eid || own[c - W] === eid || own[c + W] === eid, 160);
   },
 
+  /* a player's orders while away: one step towards what was asked (economy, army, defence), now and then */
+  stanceBuild(G, p, info, f) {
+    if (G.tick < 60 || G.rng() > 0.6) return;
+    const ks = [f & 2 ? 'eco' : '', f & 4 ? 'army' : '', f & 1 ? 'def' : ''].filter(Boolean);
+    if (!ks.length) return;
+    const k = ks[Math.floor(G.rng() * ks.length)], W = G.map.W, own = G.owner, S = RA.STRUCT;
+    const can = (t, max) => !S[t].na && (!S[t].tree || G.opts.tree) && p.built[t] < max && p.gold >= G.structCost(p, t) * 1.1;
+    const place = (type, pred) => {
+      const c = RA.AI.sampleCell(G, p, (c) => pred(c) && typeof G.canBuild(p, type, c) === 'number', 60);
+      if (c >= 0) G.build(p.id, type, c);
+      return c >= 0;
+    };
+    const inner = (c) => RA.AI.interior(G, p, c);
+    const edge = (c) => {
+      for (const d of [1, 2, 3]) for (const n of [c - d, c + d, c - d * W, c + d * W]) if (n >= 0 && n < G.map.N && own[n] && own[n] !== p.id) return true;
+      return false;
+    };
+    const cities = (c) => {
+      let n = 0;
+      const x = c % W, y = (c / W) | 0, R = RA.CFG.TRAIN_RANGE;
+      for (const ct of G.cities) if (ct.owner === p.id && RA.dist(ct.x - x, ct.y - y) <= R) n++;
+      for (const s of G.structs) if (!s.dead && s.type === 'city' && s.owner === p.id && RA.dist(s.x - x, s.y - y) <= R) n++;
+      return n;
+    };
+    if (k === 'eco') {
+      if (can('factory', 12) && place('factory', (c) => cities(c) >= 2 && inner(c))) return;
+      if (can('city', 12) && place('city', inner)) return;
+      if (info.coast > 0 && can('port', 6) && place('port', (c) => G.map.coast[c])) return;
+    } else if (k === 'army') {
+      const U = RA.UNIT, ready = (t) => !U[t].na && (!U[t].needs || p.n[U[t].needs]) && p.gold >= G.unitCost(p, t) * 1.1 && p.troops > U[t].troops * 3;
+      const type = ['tank', 'art', 'inf'].find(ready);
+      if (type && p.units.length < G.unitCap(p)) {
+        let foe = RA.AI.frontEnemy(G, p, info);
+        if (!foe) for (const [oid] of info.nb) if (!G.isFriendly(p, G.P[oid]) && (!foe || G.P[oid].troops > foe.troops)) foe = G.P[oid];
+        const c = foe ? RA.AI.borderCellFacing(G, p, foe.id) : -1;
+        if (c >= 0 && typeof G.recruitUnit(p.id, type, c) === 'object') return;
+      }
+      if (can('barracks', 8) && place('barracks', inner)) return;
+      if (!S.factory.na && !p.built.factory && can('factory', 1) && place('factory', inner)) return; // tanks and artillery need one
+    } else {
+      if (can('fort', 8) && place('fort', edge)) return;
+      if (can('sam', 2) && place('sam', inner)) return;
+      let foe = null;
+      for (const [oid] of info.nb) if (!G.isFriendly(p, G.P[oid]) && G.P[oid].type !== 'bot' && (!foe || G.P[oid].troops > foe.troops)) foe = G.P[oid];
+      if (foe && (p.trenchN | 0) < RA.CFG.TRENCH_MAX && p.gold > RA.CFG.TRENCH_GOLD * 40) {
+        const c = RA.AI.borderCellFacing(G, p, foe.id);
+        if (c >= 0) G.dig(p.id, c);
+      }
+    }
+  },
   maybeRecruit(G, p, info) {
     if (G.tick < 500 || p.tiles < 60) return;
     if (p.units.length >= G.unitCap(p)) return;

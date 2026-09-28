@@ -71,8 +71,12 @@ the dynasty's tree bonuses `p.bGold`, `p.bGrow`, `p.bCost`).
 Game modes (start screen `#paceSeg`, `settings.pace`, `RA.MODES` in `src/08-ui.js`): **Blitz** and **Focus** are presets of
 the rules (tempo, tech tree, resources, nukes, peace); **Make your choice** (`pace: 'custom'`) lets the player set them all
 in the operation dialog (`cPace`, `tree`, `noNuke`, `res`, `peace`). Map, era, start, game type and difficulty are free in
-every mode. Every new game takes its rules from `ui.playSet()`. Focus creates a long game (below) of ~1/3/7 days
-(`settings.days` → `set.days`, the clock is `LONG_TICK_MS × days`). My Focus games are listed in localStorage `ra_focus`
+every mode. Every new game takes its rules from `ui.playSet()`. Focus creates a long game (below) that lasts until someone
+wins (no duration choice since 28. 9.: `set.days` is always 1, a world step every `LONG_TICK_MS`; older games keep theirs).
+Focus in real time: peace = setting × `FOCUS_PEACE` s (180 → 1 h), buildings as fast as in Blitz (`FOCUS_BUILD`), units
+ready at the next world step and walking at a fifth of Blitz speed, trains ×`FOCUS_TRAIN`, built cities ×`FOCUS_CITY`, the
+next city/factory/port costs 2^(`FOCUS_COST_N`·n); the page shows each world step's captured cells spread over the step
+(`terr.sync` slow queue) and units glide (`UnitMotion`), so nothing jumps every 5 s. My Focus games are listed in localStorage `ra_focus`
 ("Nastavi Focus igru"; the main menu or closing the tab keeps them, a finished game drops out); "Napusti igru" asks twice,
 then sends `{leave: 1}` (the server clears the seat's uid, the computer keeps the state). Coming back shows "Dok te nije
 bilo" (`ui.focusReport`, from the last snapshot of my state).
@@ -88,8 +92,8 @@ built by `make.py`) with the same `RA.longGame` / `RA.longApply` (`src/04c-longs
 browser-free (no DOM) — it runs in node too.
 Opinions remember their reasons: change `o.rel[id]` only through `G.relTo(o, id, value, why)` (reasons in `o.why`, labels
 `RA.WHY`, shown in the country sheet). Timers people read go through `RA.dur(ticks)` (real time in Focus: `RA.TICK_REAL`).
-Focus orders while away: command `'stance'` (`p.stance`: def / eco / atk + target; the AI follows it when it plays a
-human's state). Signed in, a Focus seat belongs to the account (`acct<id>`, resolved by the relay from the `ot` cookie) and
+Focus orders while away: command `'stance'` [`'mix'`, flags, target 1, target 2] (`p.stance` {f, t1, t2}: 1 defend, 2
+economy, 4 army, 8 attack t1 then t2; old ['def'|'eco'|'atk', t] still work; `RA.AI.stanceBuild` + the war target). Signed in, a Focus seat belongs to the account (`acct<id>`, resolved by the relay from the `ot` cookie) and
 the list of my Focus games is on the account (`/api/focus`).
 Intelligence agency (`src/03d-intel.js`, sheet `src/08l-intel.js`; with the tech tree): building `intel` (one per
 state), up to `INTEL_MAX` agents, command `'intel'` [`rec` | `train` id | `spy` id, target, `scout`|`sab`|`steal`,

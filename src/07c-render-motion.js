@@ -3,11 +3,11 @@
 RA.UnitMotion = class {
   constructor() { this.poses = new WeakMap(); }
   get(u) { return this.poses.get(u) || u; }
-  sample(u, W, now, duration, snap) {
+  sample(u, W, now, duration, snap, jump = 4) {
     let p = this.poses.get(u);
     const next = u.path && u.pi < u.path.length ? u.path[u.pi] : -1;
     const aim = next < 0 ? null : Math.atan2(((next / W) | 0) + .5 - u.y, next % W + .5 - u.x);
-    if (!p || snap || now - p.last > 500 || Math.hypot(u.x-p.tx,u.y-p.ty)>4) {
+    if (!p || snap || now - p.last > 500 || Math.hypot(u.x-p.tx,u.y-p.ty)>jump) {
       p = { x:u.x, y:u.y, fx:u.x, fy:u.y, tx:u.x, ty:u.y, at:now, last:now, angle:aim ?? (p ? p.angle : -.35), duration };
       this.poses.set(u,p);return p;
     }

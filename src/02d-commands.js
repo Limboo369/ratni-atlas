@@ -153,12 +153,21 @@ RA.QUICK_MSGS = [RA.t("Attacking!"), RA.t("I need help!"), RA.t("Watch out, we'r
         return player(a[0]) ? this.makeOffer(pid, a[0], a[1], a[2]) : RA.t("Invalid state.");
       case 'offerRes':
         return this.answerOffer(pid, id(a[0]), a[1], a[2], a[3]);
-      case 'stance':
-        // orders for the computer while I'm away (Focus): auto | def | eco | atk + target
+      case 'stance': {
+        // orders for the computer while I'm away (Focus): auto | def | eco | atk + target (older games), or
+        // mix [flags, target 1, target 2] — any mix of RA.STANCE (Darko 28. 9.): defend, economy, army, attack
+        if (a[0] === 'mix') {
+          const f = Number.isInteger(a[1]) ? a[1] & 15 : 0, t1 = player(a[2]) ? a[2] : 0, t2 = player(a[3]) && a[3] !== t1 ? a[3] : 0;
+          if (f & 8 && !t1) return RA.t("Choose a state to attack.");
+          p.stance = f ? { f, t1, t2: f & 8 ? t2 : 0 } : null;
+          if (p.stance && !(f & 8)) p.stance.t1 = 0;
+          return { stance: 'mix' };
+        }
         if (!['auto', 'def', 'eco', 'atk'].includes(a[0])) return RA.t("Invalid order.");
         if (a[0] === 'atk' && !player(a[1])) return RA.t("Choose a state to attack.");
-        p.stance = a[0] === 'auto' ? null : { k: a[0], t: a[0] === 'atk' ? a[1] : 0 };
+        p.stance = a[0] === 'auto' ? null : { f: { def: 1, eco: 2, atk: 8 }[a[0]], t1: a[0] === 'atk' ? a[1] : 0, t2: 0 };
         return { stance: a[0] };
+      }
       case 'tech':
         return typeof a[0] === 'string' && RA.TECH_ORDER.includes(a[0]) ? this.buyTech(pid, a[0]) : RA.t("Unknown branch.");
       case 'buy':

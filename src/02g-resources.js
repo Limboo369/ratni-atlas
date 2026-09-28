@@ -7,9 +7,9 @@
    No exchange: a trade partner that has a kind sells it to you directly, for a share of your gold income for as long
    as you buy (the more deposits it has, the cheaper). */
 RA.RES = [
-  { id: 'food', icon: 'wheat', lack: RA.t("the army grows 15% slower") },
-  { id: 'metal', icon: 'ore', lack: RA.t("units cost 30% more") },
-  { id: 'fuel', icon: 'fuel', lack: RA.t("buildings and missiles cost 30% more") },
+  { id: 'food', icon: 'wheat', lack: RA.t("the army grows 15% slower"), use: RA.t("feeds the army: it grows at full speed") },
+  { id: 'metal', icon: 'ore', lack: RA.t("units cost 30% more"), use: RA.t("tanks, artillery, infantry and ships at the normal price") },
+  { id: 'fuel', icon: 'fuel', lack: RA.t("buildings and missiles cost 30% more"), use: RA.t("buildings and missiles at the normal price") },
 ];
 Object.assign(RA.CFG, {
   RES_FOOD: 0.85, // army growth without food
