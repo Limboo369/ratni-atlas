@@ -20,3 +20,4 @@ deploy/game/data/
 dist/icons/
 dist/sw.js
 dist/manifest.webmanifest
+dist/icons_export/

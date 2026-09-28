@@ -287,7 +287,13 @@ RA.Models = (() => {
     if(!previews.has(key)) { if(previews.size>=64) previews.clear(); previews.set(key,sprite(type,color).toDataURL()); }
     return `<span class="model-preview${structures.has(type) ? ' flat-model' : ''}" aria-hidden="true"><img alt="" src="${previews.get(key)}" width="96" height="96"></span>`;
   }
-  return {draw,preview};
+  /* one model on its own canvas of px × px (the icon export for painters, build/export_icons.py) */
+  function render(type,color,px=256) {
+    const canvas=document.createElement('canvas');canvas.width=canvas.height=px;
+    const c=canvas.getContext('2d');c.translate(px/2,px/2);c.scale(px/64,px/64);paint(c,type,color,RA.ERA ? RA.ERA.id : 'modern');
+    return canvas;
+  }
+  return {draw,preview,render};
 })();
 
 RA.drawStructIcon = (ctx,type,x,y,size,color) => RA.Models.draw(ctx,type,x,y,size*1.45,color);
