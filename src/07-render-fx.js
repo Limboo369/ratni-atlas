@@ -293,9 +293,9 @@ RA.FxLayer = L.Layer.extend({
         if (!inView(x, y, R + 10)) continue;
         ctx.beginPath();
         ctx.arc(x, y, R, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(90,170,255,0.06)';
+        ctx.fillStyle = 'rgba(90,170,255,0.07)';
         ctx.fill();
-        ctx.strokeStyle = 'rgba(140,195,255,0.4)';
+        ctx.strokeStyle = 'rgba(150,200,255,0.55)';
         ctx.stroke();
       }
       ctx.setLineDash([]);
