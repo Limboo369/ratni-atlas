@@ -48,10 +48,18 @@ Object.assign(RA.UI.prototype, {
         const bs = RA.STRUCT_ORDER.filter((k) => T.n[k]).map((k) => RA.STRUCT[k].name + ' ' + T.n[k]).join(', ');
         h += RA.t("<div class=\"sec-t\">Latest report</div><p class=\"note\">Army {0} · gold {1} · agents {2}<br>Buildings: {3}<br>Research: {4}</p>", RA.fmt(T.troops), RA.fmt(T.gold), T.intel ? T.intel.agents.length : 0, RA.esc(bs), RA.esc(rs));
       }
-    } else h += RA.t("<p class=\"note\">Send an agent from a state's sheet (tap the state → Intelligence). At most {0} agents; after a mission an agent rests 1 min; a caught agent is lost and the state trusts you less.</p>", C.INTEL_MAX);
+    } else {
+      // send an agent: pick a state (neighbours first); training raises an agent's level and its odds
+      const nb = me.nbCache || new Map();
+      const L = G.P.filter((o) => o && o.alive && o.spawned && o !== me && o.type !== 'bot').sort((a, b) => (nb.has(b.id) ? 1 : 0) - (nb.has(a.id) ? 1 : 0) || b.tiles - a.tiles).slice(0, 24);
+      h += RA.t("<div class=\"sec-t\">Send an agent</div><p class=\"explain\">Pick a state, then the mission: scout (see its army, gold, buildings and research, and lift the fog over it), sabotage a building or steal research. <b>Train</b> an agent above to raise its level: every level +17% odds.</p>") + '<div class="list">';
+      for (const o of L) h += `<div class="prow wide"><span class="sw" style="background:${o.hex}"></span><div class="pn"><div class="nm">${RA.esc(o.name)}</div><div class="d">${nb.has(o.id) ? RA.t("neighbour · ") : ''}${RA.t("army {0}", RA.fmt(o.troops))}${G.intelSeen(me, o) ? RA.t(" · scouted") : ''}</div></div><div class="bb">${this.mini(RA.t("Missions"), `data-ito="${o.id}"`, 'ok')}</div></div>`;
+      h += '</div>' + RA.t("<p class=\"note\">At most {0} agents (+1 per agency level); after a mission an agent rests 1 min; a caught agent is lost and the state trusts you less.</p>", C.INTEL_MAX);
+    }
     this.openSheet(h, (s) => {
       const again = () => setTimeout(() => this.intelSheet(tid, true), G.online || G.long ? 1200 : 60);
       const q = (sel, fn) => s.querySelectorAll(sel).forEach((b) => (b.onclick = () => (fn(b), again())));
+      s.querySelectorAll('[data-ito]').forEach((b) => (b.onclick = () => this.intelSheet(+b.dataset.ito)));
       q('[data-irec]', () => this.act('intel', ['rec']));
       q('[data-itrain]', (b) => this.act('intel', ['train', +b.dataset.itrain]));
       q('[data-ispy]', (b) => {
