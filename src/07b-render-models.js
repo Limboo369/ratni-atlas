@@ -286,17 +286,19 @@ RA.Models = (() => {
     const A = window.RA_ART;
     if (!A) return null;
     const era = RA.ERA ? RA.ERA.id : 'danas', modern = ['ww1','ww2','hladni','danas'].includes(era);
-    const k = [`map_${type}_${era}`, `map_${type}_${modern ? 'modern' : 'old'}`, `map_${type}`].find((n) => A[n]);
+    // a name ending in ".top" is seen from above, facing right: it is turned with its heading instead of mirrored
+    const k = [`map_${type}_${era}`, `map_${type}_${modern ? 'modern' : 'old'}`, `map_${type}`].flatMap((n) => [n, n + '.top']).find((n) => A[n]);
     if (!k) return null;
     let im = artImg.get(k);
     if (!im) { im = new Image(); im.src = A[k]; artImg.set(k, im); }
+    im.top = k.endsWith('.top');
     return im.complete && im.naturalWidth ? im : null;
   }
   function draw(ctx,type,x,y,size,color,angle=0) {
     const im = art(type);
     if (im) {
       const s = size * 1.5;
-      ctx.save();ctx.translate(x,y);if(Math.cos(angle)<0) ctx.scale(-1,1);ctx.drawImage(im,-s/2,-s/2,s,s);ctx.restore();
+      ctx.save();ctx.translate(x,y);if(im.top) ctx.rotate(angle);else if(Math.cos(angle)<0) ctx.scale(-1,1);ctx.drawImage(im,-s/2,-s/2,s,s);ctx.restore();
       return;
     }
     ctx.save();ctx.translate(x,y);ctx.rotate(angle);ctx.drawImage(sprite(type,color),-size*.7,-size*.7,size*1.4,size*1.4);ctx.restore();
