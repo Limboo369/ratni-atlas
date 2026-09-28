@@ -324,6 +324,7 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
 .tag { display: inline-block; padding: 0 6px; border-radius: 6px; font-size: 11px; font-weight: 700; background: var(--ink-3); color: var(--text); margin-left: 4px; vertical-align: 1px; }
 .tag.al { background: rgba(62, 199, 194, 0.22); color: #9ff0ec; }
 .tag.tr { background: rgba(242, 177, 52, 0.2); color: #ffd98a; }
+.tag.neg { background: rgba(255, 93, 93, 0.2); color: #ffb0b0; }
 .explain { font-size: 12.5px; color: #b9c6d0; margin: -2px 2px 8px; line-height: 1.4; }
 .rel { display: inline-block; padding: 1px 7px; border-radius: 999px; font-size: 11.5px; font-weight: 600; background: var(--ink-3); }
 .rel.hos { background: rgba(255,93,93,0.2); color: #ffb0b0; }
@@ -2231,6 +2232,7 @@ RA.SR = {
   "<div class=\"sec-t\">Military alliances · {0}/{1}</div>": "<div class=\"sec-t\">Vojni savezi · {0}/{1}</div>",
   "<div class=\"sec-t\">Military alliances · {0}/{1}</div><p class=\"explain\">You don't attack each other. When someone attacks you, your allies strike at them or send you troops. Lasts 5 min, can be extended.</p>": "<div class=\"sec-t\">Vojni savezi · {0}/{1}</div><p class=\"explain\">Ne napadate se. Kad te neko napadne, saveznici udaraju na njega ili ti šalju vojsku. Traje 5 min, može se produžiti.</p>",
   "<div class=\"sec-t\">Missions against {0}</div>": "<div class=\"sec-t\">Misije protiv države {0}</div>",
+  "<div class=\"sec-t\">Offers</div>": "<div class=\"sec-t\">Ponude</div>",
   "<div class=\"sec-t\">Offers</div><div class=\"list\">": "<div class=\"sec-t\">Ponude</div><div class=\"list\">",
   "<div class=\"sec-t\">Open games</div><div class=\"list\" id=\"skirmList\"><p class=\"note\">Looking for games…</p></div>": "<div class=\"sec-t\">Otvorene igre</div><div class=\"list\" id=\"skirmList\"><p class=\"note\">Tražim igre…</p></div>",
   "<div class=\"sec-t\">Or pick one or more</div>": "<div class=\"sec-t\">Ili izaberi jedno ili više</div>",
@@ -2277,6 +2279,7 @@ RA.SR = {
   "<p class=\"explain\">Units here: {0}</p>": "<p class=\"explain\">Jedinice ovdje: {0}</p>",
   "<p class=\"explain\">{0}</p><p class=\"note\">Tap: once = pick (at most 2), twice = ban (1), three times = clear. The opponent doesn't see your choice until the computer draws.</p><div id=\"lgPickBody\"></div>": "<p class=\"explain\">{0}</p><p class=\"note\">Dodirni: jednom = biraš (najviše 2), dvaput = banuješ (1), triput = poništi. Protivnik ne vidi tvoj izbor dok računar ne izvuče.</p><div id=\"lgPickBody\"></div>",
   "<p class=\"note\" style=\"margin-top:-4px;font-size:14px;color:#c9d4dc\">{0}</p><div class=\"btns\" style=\"margin-top:14px\"><button class=\"btn danger\" data-y><span class=\"t\">{1}</span></button><button class=\"btn\" data-n><span class=\"t\">Cancel</span></button></div>": "<p class=\"note\" style=\"margin-top:-4px;font-size:14px;color:#c9d4dc\">{0}</p><div class=\"btns\" style=\"margin-top:14px\"><button class=\"btn danger\" data-y><span class=\"t\">{1}</span></button><button class=\"btn\" data-n><span class=\"t\">Odustani</span></button></div>",
+  "<p class=\"note\" style=\"margin-top:0\">No offers yet. Tap <b>Negotiate</b> next to a state to demand or offer gold, cities, troops or resources — its answer shows up here.</p>": "<p class=\"note\" style=\"margin-top:0\">Još nema ponuda. Dodirni <b>Pregovaraj</b> kod neke države da tražiš ili ponudiš zlato, gradove, vojsku ili resurse — njen odgovor se pojavi ovdje.</p>",
   "<p class=\"note\" style=\"margin-top:0\">You have no military allies.</p>": "<p class=\"note\" style=\"margin-top:0\">Nemaš vojnih saveznika.</p>",
   "<p class=\"note\" style=\"margin-top:0\">You have no trade pacts. Sea trade needs ports; neighbours can also trade over land.</p>": "<p class=\"note\" style=\"margin-top:0\">Nemaš trgovinskih saveza. Za pomorsku trgovinu trebate luke; susjedi mogu trgovati i kopnom.</p>",
   "<p class=\"note\" style=\"margin-top:0\">You have no units yet.</p>": "<p class=\"note\" style=\"margin-top:0\">Još nemaš jedinica.</p>",
@@ -2335,9 +2338,18 @@ RA.SR = {
   "<span class=\"tag al\">team · permanent alliance</span>": "<span class=\"tag al\">tim · stalni savez</span>",
   "<span class=\"tag al\">vassal · tribute +{0}/s</span>": "<span class=\"tag al\">vazal · danak +{0}/s</span>",
   "<span class=\"tag al\">vassal: {0}</span>": "<span class=\"tag al\">vazal: {0}</span>",
+  "<span class=\"tag al\">waiting for your answer</span><br>gives you: <b>{0}</b><br>wants: <b>{1}</b>": "<span class=\"tag al\">čeka tvoj odgovor</span><br>daje ti: <b>{0}</b><br>traži: <b>{1}</b>",
   "<span class=\"tag al\">your overlord · you pay tribute</span>": "<span class=\"tag al\">tvoj gospodar · daješ danak</span>",
+  "<span class=\"tag al\">↩ counter-offer</span>": "<span class=\"tag al\">↩ kontraponuda</span>",
   "<span class=\"tag al\">⛨ alliance</span>": "<span class=\"tag al\">⛨ savez</span>",
+  "<span class=\"tag neg\">✗ declined</span>": "<span class=\"tag neg\">✗ odbijeno</span>",
+  "<span class=\"tag neg\">✗ failed</span>": "<span class=\"tag neg\">✗ nije uspjelo</span>",
   "<span class=\"tag tr\">⇄ trade</span>": "<span class=\"tag tr\">⇄ trgovina</span>",
+  "<span class=\"tag tr\">✓ deal done</span>": "<span class=\"tag tr\">✓ dogovoreno</span>",
+  "<span class=\"tag\">no answer in time</span>": "<span class=\"tag\">bez odgovora na vrijeme</span>",
+  "<span class=\"tag\">sent · waiting for an answer ({0})</span><br>you give: <b>{1}</b><br>you want: <b>{2}</b>": "<span class=\"tag\">poslano · čeka odgovor ({0})</span><br>daješ: <b>{1}</b><br>tražiš: <b>{2}</b>",
+  "<span class=\"tag\">sent · waiting</span> you asked for a <b>military alliance</b>": "<span class=\"tag\">poslano · čeka</span> tražio si <b>vojni savez</b>",
+  "<span class=\"tag\">sent · waiting</span> you asked for a <b>trade pact</b>": "<span class=\"tag\">poslano · čeka</span> tražio si <b>trgovinski savez</b>",
   "A 74-gun ship: sinks landings and trade ships, blockades ports and shells the coast up to 7 cells.": "Brod sa 74 topa: potapa desante i trgovačke brodove, blokira luke i gađa obalu do 7 polja.",
   "A CONQUEST STRATEGY GAME": "STRATEGIJA OSVAJANJA",
   "A Focus game runs on the server even while you're away and lasts until someone wins.": "Focus igra teče na serveru i dok nisi tu i traje dok neko ne pobijedi.",
@@ -4348,6 +4360,7 @@ RA.SR = {
   "you declined their alliance": "odbio si njihov savez",
   "you declined trade": "odbio si trgovinu",
   "you didn't repay a loan": "nisi vratio zajam",
+  "you give: <b>{0}</b> · you get: <b>{1}</b>": "daješ: <b>{0}</b> · dobijaš: <b>{1}</b>",
   "you have your own": "imaš svoje",
   "you left the match": "napustio/la si partiju",
   "you offered an alliance": "ponudio si savez",
@@ -4377,6 +4390,7 @@ RA.SR = {
   "{0} closes the {1} to foreign ships": "{0} zatvara {1} za tuđe brodove",
   "{0} comes with the tech tree — it is off in this game.": "{0} ide uz stablo tehnologija — nije uključeno u ovoj igri.",
   "{0} declines the offer — it's not enough for them.": "{0} odbija ponudu — nije im dovoljno.",
+  "{0} declines the offer.": "{0} odbija ponudu.",
   "{0} declines your offer.": "{0} odbija tvoju ponudu.",
   "{0} doesn't have enough states in this era": "{0} u ovom dobu nema dovoljno država",
   "{0} doesn't have that many troops.": "{0} nema toliko vojske.",
@@ -4415,6 +4429,7 @@ RA.SR = {
   "{0} is your ally.": "{0} ti je saveznik.",
   "{0} left the game — the computer takes over their state.": "{0} je napustio igru — kompjuter preuzima njegovu državu.",
   "{0} left: then the team with more land wins.": "Još {0}: tada pobjeđuje tim s više zemlje.",
+  "{0} made a counter-offer.": "{0} je dao kontraponudu.",
   "{0} matches": "{0} partija",
   "{0} more": "još {0}",
   "{0} move to a new position": "{0} kreću na novi položaj",
@@ -4441,6 +4456,8 @@ RA.SR = {
   "{0} upgraded to level {1}.": "{0} nadograđen na nivo {1}.",
   "{0} votes to surrender ({1}/{2}).": "{0} glasa za predaju ({1}/{2}).",
   "{0} wants {1} more gold for that deal (Alliances → Offers).": "{0} traži još {1} zlata za taj dogovor (Savezi → Ponude).",
+  "{0} wants {1} more gold for that deal.": "{0} traži još {1} zlata za taj dogovor.",
+  "{0} wants {1} more gold — answer it in Alliances → Offers.": "{0} traži još {1} zlata — odgovori u Savezi → Ponude.",
   "{0} was already asked for help — wait a little.": "{0} je već pozvan u pomoć — pričekaj malo.",
   "{0} was decommissioned": "{0} je rashodovan",
   "{0} was decommissioned{=2}": "{0} je rashodovana",
@@ -9136,6 +9153,19 @@ Object.assign(RA.CFG, {
 
 (function (P) {
   const EMPTY = { g: 0, t: 0, c: -1, r: -1, s: -1 };
+  /* what happened to each offer, for the Offers list (Darko 28. 9.: on a phone you never saw the answer):
+     {id, from, to, give, want, tick, st: wait | deal | no | counter | expired | fail, msg, more}. Never read by the sim. */
+  P._offerLog = function (o, st, msg, more) {
+    const L = this.dealLog || (this.dealLog = []);
+    let e = L.find((x) => x.id === o.id);
+    if (!e) {
+      e = { id: o.id, from: o.from, to: o.to, give: o.give, want: o.want, tick: this.tick, st: 'wait' };
+      L.push(e);
+      if (L.length > 40) L.shift();
+    }
+    if (st) Object.assign(e, { st, msg: msg || '', more: more || 0, at: this.tick });
+    return e;
+  };
   /* args from other devices: numbers in range, anything else dropped */
   P.offerClean = function (b) {
     b = b && typeof b === 'object' ? b : {};
@@ -9208,6 +9238,7 @@ Object.assign(RA.CFG, {
     if (this.offers.filter((o) => o.from === pid).length >= RA.CFG.OFFER_MAX) return RA.t("You are already waiting for an answer to three offers.");
     this.offers = this.offers.filter((o) => !(o.from === pid && o.to === to));
     const o = { id: this.nextId++, from: pid, to, give, want, tick: this.tick, round: round || 1 };
+    this._offerLog(o);
     if (q.ai && !q.human) return this._aiAnswer(o);
     this.offers.push(o);
     this.tell(q, 'info', RA.t("{0} sends you an offer (Alliances → Offers).", p.name), pid, p.capital);
@@ -9226,13 +9257,16 @@ Object.assign(RA.CFG, {
       // a counter-offer: the same deal for more of your gold
       const c = { id: this.nextId++, from: q.id, to: p.id, give: o.want, want: Object.assign({}, o.give, { g: o.give.g + more }), tick: this.tick, round: o.round + 1 };
       this.offers.push(c);
+      this._offerLog(o, 'counter', RA.t("{0} wants {1} more gold for that deal.", q.name, RA.fmt(more)), more);
+      this._offerLog(c);
       this.tell(p, 'info', RA.t("{0} wants {1} more gold for that deal (Alliances → Offers).", q.name, RA.fmt(more)), q.id, q.capital);
       return { st: 'counter', id: c.id, more };
     }
     return this._offerEnd(o, 'no', RA.t("{0} declines the offer — it's not enough for them.", q.name));
   };
-  P._offerEnd = function (o, st, msg) {
+  P._offerEnd = function (o, st, msg, log) {
     this.offers = this.offers.filter((x) => x.id !== o.id);
+    this._offerLog(o, log || st, msg);
     const p = this.P[o.from];
     if (p && p.human && msg) this.tell(p, 'info', msg, o.to);
     return { st, id: o.id };
@@ -9240,10 +9274,11 @@ Object.assign(RA.CFG, {
   P._offerDeal = function (o) {
     const p = this.P[o.from], q = this.P[o.to];
     const e = this.offerErr(p, q, o.give) || this.offerErr(q, p, o.want);
-    if (e) return this._offerEnd(o, 'no', RA.t("Deal failed: {0}", e));
+    if (e) return this._offerEnd(o, 'no', RA.t("Deal failed: {0}", e), 'fail');
     this._dealGive(p, q, o.give);
     this._dealGive(q, p, o.want);
     this.offers = this.offers.filter((x) => x.id !== o.id);
+    this._offerLog(o, 'deal');
     this.relTo(p, q.id, Math.min(100, p.rel[q.id] + 5), 'deal');
     this.relTo(q, p.id, Math.min(100, q.rel[p.id] + 5), 'deal');
     this.news('deal', p.id, q.id);
@@ -9257,18 +9292,27 @@ Object.assign(RA.CFG, {
     if (ans === 'yes') return this._offerDeal(o);
     if (ans === 'no') {
       this.offers = this.offers.filter((x) => x.id !== id);
+      this._offerLog(o, 'no', RA.t("{0} declines your offer.", this.P[pid].name));
       this.relTo(this.P[o.from], pid, this.P[o.from].rel[pid] - 2, 'tdecl');
       if (this.P[o.from].human) this.tell(this.P[o.from], 'info', RA.t("{0} declines your offer.", this.P[pid].name), pid);
       return { st: 'no' };
     }
     if (ans === 'counter') {
+      const r = this.makeOffer(pid, o.from, give, want, o.round + 1);
+      if (typeof r === 'string') return r; // the counter-offer is not valid: the offer stays
       this.offers = this.offers.filter((x) => x.id !== id);
-      return this.makeOffer(pid, o.from, give, want, o.round + 1);
+      this._offerLog(o, 'counter', RA.t("{0} made a counter-offer.", this.P[pid].name));
+      return r;
     }
     return RA.t("Invalid answer.");
   };
   P._stepOffers = function () {
-    if (this.offers.length && this.tick % 50 === 0) this.offers = this.offers.filter((o) => this.tick - o.tick < RA.CFG.OFFER_TTL && this.P[o.from].alive && this.P[o.to].alive);
+    if (this.offers.length && this.tick % 50 === 0)
+      this.offers = this.offers.filter((o) => {
+        const ok = this.tick - o.tick < RA.CFG.OFFER_TTL && this.P[o.from].alive && this.P[o.to].alive;
+        if (!ok) this._offerLog(o, 'expired');
+        return ok;
+      });
   };
   P.offerText = function (b) {
     const out = [];
@@ -15128,10 +15172,13 @@ RA.UI = class {
       if (r && typeof r === 'object') say('good', RA.t("{0} took off.", RA.airName('bomber')));
       else if (err(r)) say('info', RA.esc(r));
     } else if (kind === 'offer' || kind === 'offerRes') {
+      const who = kind === 'offer' ? this.G.P[a[0]] : null;
       if (r && r.st === 'sent') say('good', RA.t("Offer sent — waiting for an answer (Alliances → Offers)."));
       else if (r && r.st === 'deal') say('good', RA.t("Deal!"));
+      else if (r && r.st === 'counter') say('info', RA.t("{0} wants {1} more gold — answer it in Alliances → Offers.", who ? RA.esc(who.name) : '', RA.fmt(r.more || 0)));
+      else if (r && r.st === 'no' && who) say('info', RA.t("{0} declines the offer.", RA.esc(who.name)));
       else if (err(r)) say('info', RA.esc(r));
-      if (!this.$('sheetWrap').hidden && this.$('sheet').querySelector('#dealSheet')) this.closeSheet();
+      if (!this.$('sheetWrap').hidden && this.$('sheet').querySelector('#dealSheet') && !err(r)) this.closeSheet();
     } else if (kind === 'dig') {
       if (r && r.dig) {
         say('good', RA.t("Digging trenches along the border with {0}: {1} cells ({2}). Tap another stretch or Cancel.", this.G.P[r.foe].name, r.dig, RA.fmt(r.cost)));
@@ -16188,26 +16235,8 @@ Object.assign(RA.UI.prototype, {
     let h = this.head(RA.t("Alliances"), RA.t("Military {0}/{1} · trade {2}/{3} · +{4}/s from trade", G.allyCount(me), C.ALLY_MAX, me.trade.size, C.TRADE_MAX, RA.fmt(me.tradeRate || 0)));
     const ae = Math.round(me.ae || 0);
     if (G.online) h += `<div class="btns" style="margin-bottom:10px">${this.btn({ icon: 'chat', attrs: 'data-do="chat:0"', t: RA.t("Quick messages to allies"), d: RA.t("Messages and emoji your allies and team see (key T)") })}</div>`;
-    // offers
-    const offers = G.allyReqs.filter((r) => r.to === me.id).map((r) => ['A', r]).concat(G.tradeReqs.filter((r) => r.to === me.id).map((r) => ['T', r]));
-    if (offers.length) {
-      h += RA.t("<div class=\"sec-t\">Offers</div><div class=\"list\">");
-      for (const [k, r] of offers) {
-        const o = G.P[r.from];
-        h += row(o, k === 'A' ? RA.t("offers a <b>military alliance</b>") : RA.t("offers a <b>trade pact</b>"), this.mini(RA.t("Accept"), `data-do="acc${k}:${o.id}"`, 'ok') + this.mini(RA.t("Decline"), `data-do="dec${k}:${o.id}"`));
-      }
-      h += '</div>';
-    }
-    // offers and demands from other states (02l-offers.js)
-    const deals = G.offers.filter((o) => o.to === me.id);
-    if (deals.length) {
-      h += RA.t("<div class=\"sec-t\">Deal offers</div><div class=\"list\">");
-      for (const d of deals) {
-        const o = G.P[d.from];
-        h += row(o, RA.t("gives: <b>{0}</b><br>wants: <b>{1}</b>", RA.esc(G.offerText(d.give)), RA.esc(G.offerText(d.want))), this.mini(RA.t("Accept"), `data-do="offY:${d.id}"`, 'ok') + this.mini(RA.t("Counter-offer"), `data-do="offC:${d.id}"`) + this.mini(RA.t("Decline"), `data-do="offN:${d.id}"`), true);
-      }
-      h += '</div>';
-    }
+    // offers (Darko 28. 9.): what I got (answer or counter-offer), what I sent (waiting), what became of the last ones
+    h += this.offersHtml(row);
     // my military alliances and trade pacts (only when there are some; the rules are at the end)
     if (me.allies.size) {
       h += RA.t("<div class=\"sec-t\">Military alliances · {0}/{1}</div>", G.allyCount(me), C.ALLY_MAX) + '<div class="list">';
@@ -16250,6 +16279,46 @@ Object.assign(RA.UI.prototype, {
     h += RA.t("<p class=\"note\">Vassal: a weak state (at most {0}% of your troops and {1}% of your land), a neighbour or an enemy at war, may agree to be your vassal instead of being conquered — it pays {2}% of its income and fights at your side; at most {3}. If you weaken, it breaks free.</p>", Math.round(C.VASSAL_TROOPS * 100), Math.round(C.VASSAL_AREA * 100), Math.round(C.TRIBUTE * 100), C.VASSAL_MAX);
     h += RA.t("<p class=\"note\">Betraying an ally = 30 s of halved defence and a bad name with everyone.</p>");
     this.openSheet(h, (s) => this.bindDiplo(s), keep, () => this.diploSheet(true));
+  },
+
+  /* the Offers part of the Alliances sheet: requests and deals to me, mine that wait, and the last results */
+  offersHtml(row) {
+    const G = this.G, me = G.me, tk = G.tick, C = RA.CFG;
+    const txt = (b) => RA.esc(G.offerText(b));
+    let h = RA.t("<div class=\"sec-t\">Offers</div>") + '<div class="list">', n = 0;
+    for (const [k, L] of [['A', G.allyReqs], ['T', G.tradeReqs]])
+      for (const r of L.filter((r) => r.to === me.id)) {
+        const o = G.P[r.from];
+        h += row(o, k === 'A' ? RA.t("offers a <b>military alliance</b>") : RA.t("offers a <b>trade pact</b>"), this.mini(RA.t("Accept"), `data-do="acc${k}:${o.id}"`, 'ok') + this.mini(RA.t("Decline"), `data-do="dec${k}:${o.id}"`));
+        n++;
+      }
+    for (const d of G.offers.filter((o) => o.to === me.id)) {
+      const o = G.P[d.from];
+      h += row(o, RA.t("<span class=\"tag al\">waiting for your answer</span><br>gives you: <b>{0}</b><br>wants: <b>{1}</b>", txt(d.give), txt(d.want)), this.mini(RA.t("Accept"), `data-do="offY:${d.id}"`, 'ok') + this.mini(RA.t("Counter-offer"), `data-do="offC:${d.id}"`) + this.mini(RA.t("Decline"), `data-do="offN:${d.id}"`), true);
+      n++;
+    }
+    for (const d of G.offers.filter((o) => o.from === me.id)) {
+      h += row(G.P[d.to], RA.t("<span class=\"tag\">sent · waiting for an answer ({0})</span><br>you give: <b>{1}</b><br>you want: <b>{2}</b>", RA.dur(Math.max(0, d.tick + C.OFFER_TTL - tk)), txt(d.give), txt(d.want)), '', true);
+      n++;
+    }
+    for (const [k, L] of [['A', G.allyReqs], ['T', G.tradeReqs]])
+      for (const r of L.filter((r) => r.from === me.id)) {
+        h += row(G.P[r.to], k === 'A' ? RA.t("<span class=\"tag\">sent · waiting</span> you asked for a <b>military alliance</b>") : RA.t("<span class=\"tag\">sent · waiting</span> you asked for a <b>trade pact</b>"), '');
+        n++;
+      }
+    // what became of the last deals (mine and to me)
+    const past = (G.dealLog || []).filter((e) => (e.from === me.id || e.to === me.id) && e.st !== 'wait').slice(-6).reverse();
+    for (const e of past) {
+      const mine = e.from === me.id, O = G.P[mine ? e.to : e.from];
+      if (!O) continue;
+      const gave = mine ? e.give : e.want, got = mine ? e.want : e.give;
+      const st = e.st === 'deal' ? RA.t("<span class=\"tag tr\">✓ deal done</span>") : e.st === 'counter' ? RA.t("<span class=\"tag al\">↩ counter-offer</span>") : e.st === 'expired' ? RA.t("<span class=\"tag\">no answer in time</span>") : e.st === 'fail' ? RA.t("<span class=\"tag neg\">✗ failed</span>") : RA.t("<span class=\"tag neg\">✗ declined</span>");
+      h += row(O, `${st} ${e.msg ? RA.esc(e.msg) : ''}<br>${RA.t("you give: <b>{0}</b> · you get: <b>{1}</b>", txt(gave), txt(got))}`, '', true);
+      n++;
+    }
+    h += '</div>';
+    if (!n) h += RA.t("<p class=\"note\" style=\"margin-top:0\">No offers yet. Tap <b>Negotiate</b> next to a state to demand or offer gold, cities, troops or resources — its answer shows up here.</p>");
+    return h;
   },
 
   /* ---------------- long-press menu for one map cell ---------------- */
@@ -16522,6 +16591,7 @@ Object.assign(RA.UI.prototype, {
         });
         if (pre && pre.reply) this.act('offerRes', [pre.reply, 'counter', b.give, b.want]);
         else this.act('offer', [O.id, b.give, b.want]);
+        this.diploSheet(); // the Offers are at its top: the answer shows there (Focus: after the server's next second)
       };
     });
   },
@@ -22184,7 +22254,7 @@ Object.assign(RA.UI.prototype, {
   },
 });
 
-RA.BUILD = 'c2771622';
+RA.BUILD = '6ded66b6';
 new RA.App().boot();
 }
 function __raFallback(){

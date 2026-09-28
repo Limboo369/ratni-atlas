@@ -13,6 +13,19 @@ Object.assign(RA.CFG, {
 
 (function (P) {
   const EMPTY = { g: 0, t: 0, c: -1, r: -1, s: -1 };
+  /* what happened to each offer, for the Offers list (Darko 28. 9.: on a phone you never saw the answer):
+     {id, from, to, give, want, tick, st: wait | deal | no | counter | expired | fail, msg, more}. Never read by the sim. */
+  P._offerLog = function (o, st, msg, more) {
+    const L = this.dealLog || (this.dealLog = []);
+    let e = L.find((x) => x.id === o.id);
+    if (!e) {
+      e = { id: o.id, from: o.from, to: o.to, give: o.give, want: o.want, tick: this.tick, st: 'wait' };
+      L.push(e);
+      if (L.length > 40) L.shift();
+    }
+    if (st) Object.assign(e, { st, msg: msg || '', more: more || 0, at: this.tick });
+    return e;
+  };
   /* args from other devices: numbers in range, anything else dropped */
   P.offerClean = function (b) {
     b = b && typeof b === 'object' ? b : {};
@@ -85,6 +98,7 @@ Object.assign(RA.CFG, {
     if (this.offers.filter((o) => o.from === pid).length >= RA.CFG.OFFER_MAX) return RA.t("You are already waiting for an answer to three offers.");
     this.offers = this.offers.filter((o) => !(o.from === pid && o.to === to));
     const o = { id: this.nextId++, from: pid, to, give, want, tick: this.tick, round: round || 1 };
+    this._offerLog(o);
     if (q.ai && !q.human) return this._aiAnswer(o);
     this.offers.push(o);
     this.tell(q, 'info', RA.t("{0} sends you an offer (Alliances → Offers).", p.name), pid, p.capital);
@@ -103,13 +117,16 @@ Object.assign(RA.CFG, {
       // a counter-offer: the same deal for more of your gold
       const c = { id: this.nextId++, from: q.id, to: p.id, give: o.want, want: Object.assign({}, o.give, { g: o.give.g + more }), tick: this.tick, round: o.round + 1 };
       this.offers.push(c);
+      this._offerLog(o, 'counter', RA.t("{0} wants {1} more gold for that deal.", q.name, RA.fmt(more)), more);
+      this._offerLog(c);
       this.tell(p, 'info', RA.t("{0} wants {1} more gold for that deal (Alliances → Offers).", q.name, RA.fmt(more)), q.id, q.capital);
       return { st: 'counter', id: c.id, more };
     }
     return this._offerEnd(o, 'no', RA.t("{0} declines the offer — it's not enough for them.", q.name));
   };
-  P._offerEnd = function (o, st, msg) {
+  P._offerEnd = function (o, st, msg, log) {
     this.offers = this.offers.filter((x) => x.id !== o.id);
+    this._offerLog(o, log || st, msg);
     const p = this.P[o.from];
     if (p && p.human && msg) this.tell(p, 'info', msg, o.to);
     return { st, id: o.id };
@@ -117,10 +134,11 @@ Object.assign(RA.CFG, {
   P._offerDeal = function (o) {
     const p = this.P[o.from], q = this.P[o.to];
     const e = this.offerErr(p, q, o.give) || this.offerErr(q, p, o.want);
-    if (e) return this._offerEnd(o, 'no', RA.t("Deal failed: {0}", e));
+    if (e) return this._offerEnd(o, 'no', RA.t("Deal failed: {0}", e), 'fail');
     this._dealGive(p, q, o.give);
     this._dealGive(q, p, o.want);
     this.offers = this.offers.filter((x) => x.id !== o.id);
+    this._offerLog(o, 'deal');
     this.relTo(p, q.id, Math.min(100, p.rel[q.id] + 5), 'deal');
     this.relTo(q, p.id, Math.min(100, q.rel[p.id] + 5), 'deal');
     this.news('deal', p.id, q.id);
@@ -134,18 +152,27 @@ Object.assign(RA.CFG, {
     if (ans === 'yes') return this._offerDeal(o);
     if (ans === 'no') {
       this.offers = this.offers.filter((x) => x.id !== id);
+      this._offerLog(o, 'no', RA.t("{0} declines your offer.", this.P[pid].name));
       this.relTo(this.P[o.from], pid, this.P[o.from].rel[pid] - 2, 'tdecl');
       if (this.P[o.from].human) this.tell(this.P[o.from], 'info', RA.t("{0} declines your offer.", this.P[pid].name), pid);
       return { st: 'no' };
     }
     if (ans === 'counter') {
+      const r = this.makeOffer(pid, o.from, give, want, o.round + 1);
+      if (typeof r === 'string') return r; // the counter-offer is not valid: the offer stays
       this.offers = this.offers.filter((x) => x.id !== id);
-      return this.makeOffer(pid, o.from, give, want, o.round + 1);
+      this._offerLog(o, 'counter', RA.t("{0} made a counter-offer.", this.P[pid].name));
+      return r;
     }
     return RA.t("Invalid answer.");
   };
   P._stepOffers = function () {
-    if (this.offers.length && this.tick % 50 === 0) this.offers = this.offers.filter((o) => this.tick - o.tick < RA.CFG.OFFER_TTL && this.P[o.from].alive && this.P[o.to].alive);
+    if (this.offers.length && this.tick % 50 === 0)
+      this.offers = this.offers.filter((o) => {
+        const ok = this.tick - o.tick < RA.CFG.OFFER_TTL && this.P[o.from].alive && this.P[o.to].alive;
+        if (!ok) this._offerLog(o, 'expired');
+        return ok;
+      });
   };
   P.offerText = function (b) {
     const out = [];

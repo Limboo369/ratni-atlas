@@ -1049,10 +1049,13 @@ RA.UI = class {
       if (r && typeof r === 'object') say('good', RA.t("{0} took off.", RA.airName('bomber')));
       else if (err(r)) say('info', RA.esc(r));
     } else if (kind === 'offer' || kind === 'offerRes') {
+      const who = kind === 'offer' ? this.G.P[a[0]] : null;
       if (r && r.st === 'sent') say('good', RA.t("Offer sent — waiting for an answer (Alliances → Offers)."));
       else if (r && r.st === 'deal') say('good', RA.t("Deal!"));
+      else if (r && r.st === 'counter') say('info', RA.t("{0} wants {1} more gold — answer it in Alliances → Offers.", who ? RA.esc(who.name) : '', RA.fmt(r.more || 0)));
+      else if (r && r.st === 'no' && who) say('info', RA.t("{0} declines the offer.", RA.esc(who.name)));
       else if (err(r)) say('info', RA.esc(r));
-      if (!this.$('sheetWrap').hidden && this.$('sheet').querySelector('#dealSheet')) this.closeSheet();
+      if (!this.$('sheetWrap').hidden && this.$('sheet').querySelector('#dealSheet') && !err(r)) this.closeSheet();
     } else if (kind === 'dig') {
       if (r && r.dig) {
         say('good', RA.t("Digging trenches along the border with {0}: {1} cells ({2}). Tap another stretch or Cancel.", this.G.P[r.foe].name, r.dig, RA.fmt(r.cost)));
