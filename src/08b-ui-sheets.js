@@ -384,26 +384,8 @@ Object.assign(RA.UI.prototype, {
     let h = this.head(RA.t("Alliances"), RA.t("Military {0}/{1} · trade {2}/{3} · +{4}/s from trade", G.allyCount(me), C.ALLY_MAX, me.trade.size, C.TRADE_MAX, RA.fmt(me.tradeRate || 0)));
     const ae = Math.round(me.ae || 0);
     if (G.online) h += `<div class="btns" style="margin-bottom:10px">${this.btn({ icon: 'chat', attrs: 'data-do="chat:0"', t: RA.t("Quick messages to allies"), d: RA.t("Messages and emoji your allies and team see (key T)") })}</div>`;
-    // offers
-    const offers = G.allyReqs.filter((r) => r.to === me.id).map((r) => ['A', r]).concat(G.tradeReqs.filter((r) => r.to === me.id).map((r) => ['T', r]));
-    if (offers.length) {
-      h += RA.t("<div class=\"sec-t\">Offers</div><div class=\"list\">");
-      for (const [k, r] of offers) {
-        const o = G.P[r.from];
-        h += row(o, k === 'A' ? RA.t("offers a <b>military alliance</b>") : RA.t("offers a <b>trade pact</b>"), this.mini(RA.t("Accept"), `data-do="acc${k}:${o.id}"`, 'ok') + this.mini(RA.t("Decline"), `data-do="dec${k}:${o.id}"`));
-      }
-      h += '</div>';
-    }
-    // offers and demands from other states (02l-offers.js)
-    const deals = G.offers.filter((o) => o.to === me.id);
-    if (deals.length) {
-      h += RA.t("<div class=\"sec-t\">Deal offers</div><div class=\"list\">");
-      for (const d of deals) {
-        const o = G.P[d.from];
-        h += row(o, RA.t("gives: <b>{0}</b><br>wants: <b>{1}</b>", RA.esc(G.offerText(d.give)), RA.esc(G.offerText(d.want))), this.mini(RA.t("Accept"), `data-do="offY:${d.id}"`, 'ok') + this.mini(RA.t("Counter-offer"), `data-do="offC:${d.id}"`) + this.mini(RA.t("Decline"), `data-do="offN:${d.id}"`), true);
-      }
-      h += '</div>';
-    }
+    // offers (Darko 28. 9.): what I got (answer or counter-offer), what I sent (waiting), what became of the last ones
+    h += this.offersHtml(row);
     // my military alliances and trade pacts (only when there are some; the rules are at the end)
     if (me.allies.size) {
       h += RA.t("<div class=\"sec-t\">Military alliances · {0}/{1}</div>", G.allyCount(me), C.ALLY_MAX) + '<div class="list">';
@@ -446,6 +428,46 @@ Object.assign(RA.UI.prototype, {
     h += RA.t("<p class=\"note\">Vassal: a weak state (at most {0}% of your troops and {1}% of your land), a neighbour or an enemy at war, may agree to be your vassal instead of being conquered — it pays {2}% of its income and fights at your side; at most {3}. If you weaken, it breaks free.</p>", Math.round(C.VASSAL_TROOPS * 100), Math.round(C.VASSAL_AREA * 100), Math.round(C.TRIBUTE * 100), C.VASSAL_MAX);
     h += RA.t("<p class=\"note\">Betraying an ally = 30 s of halved defence and a bad name with everyone.</p>");
     this.openSheet(h, (s) => this.bindDiplo(s), keep, () => this.diploSheet(true));
+  },
+
+  /* the Offers part of the Alliances sheet: requests and deals to me, mine that wait, and the last results */
+  offersHtml(row) {
+    const G = this.G, me = G.me, tk = G.tick, C = RA.CFG;
+    const txt = (b) => RA.esc(G.offerText(b));
+    let h = RA.t("<div class=\"sec-t\">Offers</div>") + '<div class="list">', n = 0;
+    for (const [k, L] of [['A', G.allyReqs], ['T', G.tradeReqs]])
+      for (const r of L.filter((r) => r.to === me.id)) {
+        const o = G.P[r.from];
+        h += row(o, k === 'A' ? RA.t("offers a <b>military alliance</b>") : RA.t("offers a <b>trade pact</b>"), this.mini(RA.t("Accept"), `data-do="acc${k}:${o.id}"`, 'ok') + this.mini(RA.t("Decline"), `data-do="dec${k}:${o.id}"`));
+        n++;
+      }
+    for (const d of G.offers.filter((o) => o.to === me.id)) {
+      const o = G.P[d.from];
+      h += row(o, RA.t("<span class=\"tag al\">waiting for your answer</span><br>gives you: <b>{0}</b><br>wants: <b>{1}</b>", txt(d.give), txt(d.want)), this.mini(RA.t("Accept"), `data-do="offY:${d.id}"`, 'ok') + this.mini(RA.t("Counter-offer"), `data-do="offC:${d.id}"`) + this.mini(RA.t("Decline"), `data-do="offN:${d.id}"`), true);
+      n++;
+    }
+    for (const d of G.offers.filter((o) => o.from === me.id)) {
+      h += row(G.P[d.to], RA.t("<span class=\"tag\">sent · waiting for an answer ({0})</span><br>you give: <b>{1}</b><br>you want: <b>{2}</b>", RA.dur(Math.max(0, d.tick + C.OFFER_TTL - tk)), txt(d.give), txt(d.want)), '', true);
+      n++;
+    }
+    for (const [k, L] of [['A', G.allyReqs], ['T', G.tradeReqs]])
+      for (const r of L.filter((r) => r.from === me.id)) {
+        h += row(G.P[r.to], k === 'A' ? RA.t("<span class=\"tag\">sent · waiting</span> you asked for a <b>military alliance</b>") : RA.t("<span class=\"tag\">sent · waiting</span> you asked for a <b>trade pact</b>"), '');
+        n++;
+      }
+    // what became of the last deals (mine and to me)
+    const past = (G.dealLog || []).filter((e) => (e.from === me.id || e.to === me.id) && e.st !== 'wait').slice(-6).reverse();
+    for (const e of past) {
+      const mine = e.from === me.id, O = G.P[mine ? e.to : e.from];
+      if (!O) continue;
+      const gave = mine ? e.give : e.want, got = mine ? e.want : e.give;
+      const st = e.st === 'deal' ? RA.t("<span class=\"tag tr\">✓ deal done</span>") : e.st === 'counter' ? RA.t("<span class=\"tag al\">↩ counter-offer</span>") : e.st === 'expired' ? RA.t("<span class=\"tag\">no answer in time</span>") : e.st === 'fail' ? RA.t("<span class=\"tag neg\">✗ failed</span>") : RA.t("<span class=\"tag neg\">✗ declined</span>");
+      h += row(O, `${st} ${e.msg ? RA.esc(e.msg) : ''}<br>${RA.t("you give: <b>{0}</b> · you get: <b>{1}</b>", txt(gave), txt(got))}`, '', true);
+      n++;
+    }
+    h += '</div>';
+    if (!n) h += RA.t("<p class=\"note\" style=\"margin-top:0\">No offers yet. Tap <b>Negotiate</b> next to a state to demand or offer gold, cities, troops or resources — its answer shows up here.</p>");
+    return h;
   },
 
   /* ---------------- long-press menu for one map cell ---------------- */
@@ -718,6 +740,7 @@ Object.assign(RA.UI.prototype, {
         });
         if (pre && pre.reply) this.act('offerRes', [pre.reply, 'counter', b.give, b.want]);
         else this.act('offer', [O.id, b.give, b.want]);
+        this.diploSheet(); // the Offers are at its top: the answer shows there (Focus: after the server's next second)
       };
     });
   },
