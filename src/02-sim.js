@@ -21,7 +21,7 @@ RA.CFG = {
   SAM_CD: 75,
   NUKE_COOL: 900, // ticks after a nuclear launch until the price is normal again
   NUKE_UP: 0.6, // each nuclear launch in that time: next one +60%
-  STRUCT_MIN_DIST: 4,
+  STRUCT_MIN_DIST: 2.8, // no other building closer than this (Darko 28. 9.: was 4); air defence and domes may stand anywhere
   CITY_T: [0, 12000, 25000, 40000],
   CITY_G: [0, 5, 10, 16],
   PORT_G: 30,
@@ -46,6 +46,8 @@ RA.CFG = {
   FOCUS_COST_N: 0.6, // Focus: every next city, factory and port costs 2^(0.6 n) (~1.5×) more, not 2× more
   FOCUS_PEACE: 20, // Focus: real seconds of peace per second of the setting (180 → 1 h; Darko 28. 9.)
 };
+/* buildings that guard others (air defence, iron dome): no spacing to other buildings */
+RA.guardType = (t) => t === 'sam' || t === 'dome';
 /* tax (plan 33): more gold ↔ slower army growth; every state starts at 'Srednji' */
 RA.TAX = [
   { name: RA.t("Very low"), g: 0.6, grow: 1.22 },
@@ -913,15 +915,19 @@ RA.Game = class Game {
       if (ok === false) return RA.t("A port must be on the coast.");
       c = ok;
     }
-    const W = map.W, H = map.H, x = c % W, y = (c / W) | 0, R = RA.CFG.STRUCT_MIN_DIST;
-    // spacing: look at the cells around (structAt), not at every building on the map
-    for (let dy = 1 - R; dy < R; dy++)
-      for (let dx = 1 - R; dx < R; dx++) {
-        const sx = x + dx, sy = y + dy;
-        if (sx < 0 || sy < 0 || sx >= W || sy >= H || dx * dx + dy * dy >= R * R) continue;
-        const si = this.structAt[sy * W + sx];
-        if (si >= 0 && !this.structs[si].dead) return RA.t("Too close to another building.");
-      }
+    const W = map.W, H = map.H, x = c % W, y = (c / W) | 0, R = RA.CFG.STRUCT_MIN_DIST, Ri = Math.ceil(R);
+    const at = this.structAt[c];
+    if (at >= 0 && !this.structs[at].dead) return RA.t("There is a building here already.");
+    // spacing: look at the cells around (structAt), not at every building on the map. Air defence and domes guard the
+    // others, so they may stand right next to them (and the others next to them)
+    if (!RA.guardType(type))
+      for (let dy = -Ri; dy <= Ri; dy++)
+        for (let dx = -Ri; dx <= Ri; dx++) {
+          const sx = x + dx, sy = y + dy;
+          if (sx < 0 || sy < 0 || sx >= W || sy >= H || dx * dx + dy * dy >= R * R) continue;
+          const si = this.structAt[sy * W + sx];
+          if (si >= 0 && !this.structs[si].dead && !RA.guardType(this.structs[si].type)) return RA.t("Too close to another building.");
+        }
     if (type === 'city') {
       for (const ct of this.cities) if ((ct.x - x) * (ct.x - x) + (ct.y - y) * (ct.y - y) < 25) return RA.t("Too close to an existing city.");
     }
