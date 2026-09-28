@@ -132,6 +132,30 @@ RA.Models = (() => {
         rect(-8,-4,10,8,'#b8c2bc');rect(-5,-2,5,4,color);
         for (const x of [-17,8]) { ellipse(x,0,3,3,'#5d6f6c');line([[x,0],[x+9,0]],'#3c4c4b',1.4); }
       }
+    } else if (type === 'drone') {
+      // Fixed-wing loitering drone, nose to the right (the direction of flight).
+      path([[-18,0],[-22,-7],[-15,-6],[-10,-2]], metal);
+      path([[-18,0],[-22,7],[-15,6],[-10,2]], metal);
+      path([[10,0],[-8,-22],[-16,-22],[-7,0],[-16,22],[-8,22]], metal);
+      line([[-9,-17],[-6,-10]],color,3);
+      line([[-9,17],[-6,10]],color,3);
+      path([[24,0],[15,-3],[-17,-3],[-21,0],[-17,3],[15,3]],light);
+      line([[-20,-7],[-20,7]],steel,1.8);
+      rect(-5,-2,10,4,color,null,.5);
+      ellipse(15,0,2,1.5,ink);
+    } else if (type === 'hunter-drone') {
+      // Four rotor guards and a camera distinguish the unit hunter.
+      for (const x of [-15,15]) for (const y of [-15,15]) {
+        line([[0,0],[x,y]],ink,5);
+        line([[0,0],[x,y]],steel,2.8);
+        ellipse(x,y,7,7,'rgba(174,196,199,.12)',light);
+        line([[x-4,y-2],[x+4,y+2]],light,1.6);
+        ellipse(x,y,1.7,1.7,dark);
+      }
+      rect(-9,-6,18,12,metal,ink,3);
+      rect(-5,-4,8,8,color,null,1);
+      ellipse(10,0,3,3,dark,light);
+      ellipse(11,0,1.3,1.3,'#b2dfdf');
     } else if (type === 'missile') {
       path([[-20,-3],[12,-3],[24,0],[12,3],[-20,3]],'#c5d0c5');
       path([[-15,-3],[-22,-9],[-22,-3]],color);path([[-15,3],[-22,9],[-22,3]],color);
