@@ -125,7 +125,6 @@
             <button class="online-card launcher-card" id="onlineToggle" aria-expanded="false" aria-controls="onlineBox"><span class="online-symbol" aria-hidden="true"><i data-ic="lock"></i></span><span class="online-copy"><b>Private room</b><small>Invite friends and play through a link</small></span><span class="online-arrow" aria-hidden="true">+</span></button>
           </div>
           <p class="pace-note solo-only" id="paceNote"></p>
-          <div class="pace-days solo-only" id="paceDays" hidden><span>Duration</span><div class="seg" id="daysSeg" role="group" aria-label="Focus game duration"><button data-v="1" aria-pressed="true">~1 day</button><button data-v="3" aria-pressed="false">~3 days</button><button data-v="7" aria-pressed="false">~7 days</button></div></div>
 
           <button class="go command-play solo-only" id="goBtn"><span>Start the conquest</span><span aria-hidden="true">↗</span></button>
 
@@ -166,7 +165,7 @@
       <div class="operation-head"><div><span class="command-kicker">PREPARING FOR CONQUEST</span><h2 id="operationTitle">Your operation.</h2></div><button id="configClose" class="command-tool" aria-label="Close settings"><i data-ic="close"></i></button></div>
       <div class="operation-body">
         <div class="field preset-only"><span class="lab">Mode rules</span><p class="note era-note" id="rulesNote"></p></div>
-        <div class="field custom-only"><span class="lab" id="cPaceLabel">Pace</span><div class="seg" id="cPaceSeg" role="group" aria-labelledby="cPaceLabel"><button data-v="blitz" aria-pressed="true">Blitz · fast</button><button data-v="focus" aria-pressed="false">Focus · days</button></div><p class="note era-note">A Focus game runs on the server even while you're away; you pick the duration on the start screen.</p></div>
+        <div class="field custom-only"><span class="lab" id="cPaceLabel">Pace</span><div class="seg" id="cPaceSeg" role="group" aria-labelledby="cPaceLabel"><button data-v="blitz" aria-pressed="true">Blitz · fast</button><button data-v="focus" aria-pressed="false">Focus · days</button></div><p class="note era-note">A Focus game runs on the server even while you're away and lasts until someone wins.</p></div>
         <div class="field custom-only"><span class="lab" id="treeLabel">Tech tree</span><div class="seg" id="treeSeg" role="group" aria-labelledby="treeLabel"><button data-v="0" aria-pressed="true">Off</button><button data-v="1" aria-pressed="false">On</button></div><p class="note era-note">Research for gold: economy, army, science and diplomacy, 5 levels each (Economy → Tech tree).</p></div>
         <div class="field custom-only"><span class="lab" id="nukeLabel">Nuclear weapons</span><div class="seg" id="nukeSeg" role="group" aria-labelledby="nukeLabel"><button data-v="0" aria-pressed="true">Allowed</button><button data-v="1" aria-pressed="false">Forbidden</button></div></div>
         <div class="field"><span class="lab" id="startLabel">Start</span><div class="seg" id="startSeg" role="group" aria-labelledby="startLabel"><button data-v="granice" aria-pressed="true">Real borders</button><button data-v="slobodno" aria-pressed="false">From the capital</button></div></div>

@@ -373,7 +373,6 @@ Object.assign(RA.UI.prototype, {
     const row = (o, meta, buttons, wide) => `<div class="prow${wide ? ' wide' : ''}"><span class="sw" style="background:${o.hex}"></span><div class="pn" data-do="show:${o.id}"><div class="nm">${RA.esc(o.name)}</div><div class="d">${meta}</div></div><div class="bb">${buttons}</div></div>`;
     let h = this.head(RA.t("Alliances"), RA.t("Military {0}/{1} · trade {2}/{3} · +{4}/s from trade", G.allyCount(me), C.ALLY_MAX, me.trade.size, C.TRADE_MAX, RA.fmt(me.tradeRate || 0)));
     const ae = Math.round(me.ae || 0);
-    h += RA.t("<p class=\"explain\">Aggressive expansion: <b{0}>{1}/100</b>. It rises with every state you attack and conquer (the number of states, not the area) and fades with time. From {2} computer states avoid you, break alliances with you and join forces against you.</p>", ae >= C.AE_COALITION ? ' class="neg"' : '', ae, C.AE_COALITION);
     if (G.online) h += `<div class="btns" style="margin-bottom:10px">${this.btn({ icon: 'chat', attrs: 'data-do="chat:0"', t: RA.t("Quick messages to allies"), d: RA.t("Messages and emoji your allies and team see (key T)") })}</div>`;
     // offers
     const offers = G.allyReqs.filter((r) => r.to === me.id).map((r) => ['A', r]).concat(G.tradeReqs.filter((r) => r.to === me.id).map((r) => ['T', r]));
@@ -395,23 +394,18 @@ Object.assign(RA.UI.prototype, {
       }
       h += '</div>';
     }
-    // military alliances
-    h += RA.t("<div class=\"sec-t\">Military alliances · {0}/{1}</div><p class=\"explain\">You don't attack each other. When someone attacks you, your allies strike at them or send you troops. Lasts 5 min, can be extended.</p>", G.allyCount(me), C.ALLY_MAX);
-    if (!me.allies.size) h += RA.t("<p class=\"note\" style=\"margin-top:0\">You have no military allies.</p>");
-    else {
-      h += '<div class="list">';
+    // my military alliances and trade pacts (only when there are some; the rules are at the end)
+    if (me.allies.size) {
+      h += RA.t("<div class=\"sec-t\">Military alliances · {0}/{1}</div>", G.allyCount(me), C.ALLY_MAX) + '<div class="list">';
       for (const [oid, exp] of me.allies) {
         const o = G.P[oid];
-        const kind = o.lord === me.id ? RA.t("<span class=\"tag al\">vassal · tribute +{0}/s</span>", RA.fmt(o.tribute || 0)) : me.lord === oid ? RA.t("<span class=\"tag al\">your overlord · you pay tribute</span>") : isFinite(exp) ? RA.t("expires in ") + RA.fmtTime(Math.max(0, (exp - tk) / 10)) : RA.t("<span class=\"tag al\">team · permanent alliance</span>");
+        const kind = o.lord === me.id ? RA.t("<span class=\"tag al\">vassal · tribute +{0}/s</span>", RA.fmt(o.tribute || 0)) : me.lord === oid ? RA.t("<span class=\"tag al\">your overlord · you pay tribute</span>") : isFinite(exp) ? RA.t("expires in ") + RA.dur(Math.max(0, exp - tk)) : RA.t("<span class=\"tag al\">team · permanent alliance</span>");
         h += row(o, RA.t("{0} · army {1}{2}", kind, RA.fmt(o.troops), o.trade && me.trade.has(oid) ? RA.t(" · <span class=\"tag tr\">⇄ trade</span>") : ''), this.diploButtons(o, true), true);
       }
       h += '</div>';
     }
-    // trade agreements
-    h += RA.t("<div class=\"sec-t\">Trade pacts · {0}/{1}</div><p class=\"explain\">Trade ships between your ports and trade across a shared border bring gold to both sides. No duty to help in war. An attack ends the trade.</p>", me.trade.size, C.TRADE_MAX);
-    if (!me.trade.size) h += RA.t("<p class=\"note\" style=\"margin-top:0\">You have no trade pacts. Sea trade needs ports; neighbours can also trade over land.</p>");
-    else {
-      h += '<div class="list">';
+    if (me.trade.size) {
+      h += RA.t("<div class=\"sec-t\">Trade pacts · {0}/{1}</div>", me.trade.size, C.TRADE_MAX) + '<div class="list">';
       for (const oid of me.trade) {
         const o = G.P[oid];
         const land = me.nbCache && me.nbCache.has(oid);
@@ -421,7 +415,7 @@ Object.assign(RA.UI.prototype, {
       }
       h += '</div>';
     }
-    // everybody else
+    // everybody else, with whom each is allied (Darko 28. 9.: on a phone there was no way to see it)
     const nb = me.nbCache || new Map();
     const others = G.P.filter((o) => o && o.alive && o.spawned && o !== me && (o.type !== 'bot' || nb.has(o.id)))
       .sort((a, b) => (nb.has(b.id) ? 1 : 0) - (nb.has(a.id) ? 1 : 0) || b.tiles - a.tiles)
@@ -429,12 +423,18 @@ Object.assign(RA.UI.prototype, {
     h += RA.t("<div class=\"sec-t\">States</div><div class=\"list\">");
     for (const o of others) {
       const tags = (o.lord ? RA.t("<span class=\"tag al\">vassal: {0}</span>", RA.esc(G.P[o.lord].name)) : me.allies.has(o.id) ? RA.t("<span class=\"tag al\">⛨ alliance</span>") : '') + (me.trade.has(o.id) ? RA.t("<span class=\"tag tr\">⇄ trade</span>") : '');
-      const meta = RA.t("{0}{1}army {2}{3}", o.ai ? this.relLabel(o.rel[me.id]) + ' · ' : '', nb.has(o.id) ? RA.t("neighbour · ") : '', RA.fmt(o.troops), tags);
+      const theirs = [...o.allies.keys()].filter((id) => id !== me.id && G.P[id] && G.P[id].alive).map((id) => RA.esc(G.P[id].name));
+      const meta = RA.t("{0}{1}army {2}{3}", o.ai ? this.relLabel(o.rel[me.id]) + ' · ' : '', nb.has(o.id) ? RA.t("neighbour · ") : '', RA.fmt(o.troops), tags) + (theirs.length ? RA.t("<br>⛨ allied with {0}", theirs.join(', ')) : '');
       h += row(o, meta, this.diploButtons(o, false), true);
     }
     h += '</div>';
+    // the rules, at the end
+    h += RA.t("<div class=\"sec-t\">How it works</div>");
+    h += RA.t("<p class=\"explain\">Aggressive expansion: <b{0}>{1}/100</b>. It rises with every state you attack and conquer (the number of states, not the area) and fades with time. From {2} computer states avoid you, break alliances with you and join forces against you.</p>", ae >= C.AE_COALITION ? ' class="neg"' : '', ae, C.AE_COALITION);
+    h += RA.t("<p class=\"explain\"><b>Military alliance</b> (at most {0}): you don't attack each other; when someone attacks you, your allies strike at them or send you troops. Lasts {1}, can be extended.</p>", C.ALLY_MAX, RA.dur(C.ALLY_DUR));
+    h += RA.t("<p class=\"explain\"><b>Trade pact</b> (at most {0}): trade ships between your ports and trade across a shared border bring gold to both sides. No duty to help in war. An attack ends the trade. Sea trade needs ports; neighbours can also trade over land.</p>", C.TRADE_MAX);
     h += RA.t("<p class=\"note\">Vassal: a weak state (at most {0}% of your troops and {1}% of your land), a neighbour or an enemy at war, may agree to be your vassal instead of being conquered — it pays {2}% of its income and fights at your side; at most {3}. If you weaken, it breaks free.</p>", Math.round(C.VASSAL_TROOPS * 100), Math.round(C.VASSAL_AREA * 100), Math.round(C.TRIBUTE * 100), C.VASSAL_MAX);
-    h += RA.t("<p class=\"note\">At most {0} military alliances and {1} trade pacts. Betraying an ally = 30 s of halved defence and a bad name with everyone.</p>", C.ALLY_MAX, C.TRADE_MAX);
+    h += RA.t("<p class=\"note\">Betraying an ally = 30 s of halved defence and a bad name with everyone.</p>");
     this.openSheet(h, (s) => this.bindDiplo(s), keep, () => this.diploSheet(true));
   },
 
@@ -601,36 +601,71 @@ Object.assign(RA.UI.prototype, {
     }, keep, () => this.cellSheet(c, true));
   },
 
-  stanceName() {
-    const st = this.G.me && this.G.me.stance, T = st && this.G.P[st.t];
-    return !st ? RA.t("like the computer") : st.k === 'def' ? RA.t("defend") : st.k === 'eco' ? RA.t("build the economy") : RA.t("attack {0}", T ? T.name : '');
+  stanceName(st) {
+    const G = this.G;
+    if (st === undefined) st = G.me && G.me.stance;
+    if (!st) return RA.t("like the computer");
+    const f = st.f | 0, T = [st.t1, st.t2].filter((i) => i && G.P[i]).map((i) => G.P[i].name).join(' → ');
+    return [f & 1 ? RA.t("defend") : '', f & 2 ? RA.t("build the economy") : '', f & 4 ? RA.t("build the army") : '', f & 8 ? RA.t("attack {0}", T) : ''].filter(Boolean).join(' · ');
   },
-  /* Focus: orders for the computer while I'm away (command 'stance') */
-  stanceSheet() {
+  /* Focus: orders for the computer while I'm away (command 'stance'): any mix, and attack targets by priority */
+  stanceSheet(draft) {
     const G = this.G, me = G.me;
     if (!me) return;
-    const cur = me.stance ? me.stance.k : 'auto';
-    const opt = (k, t, d) => this.btn({ attrs: `data-st="${k}"`, cls: cur === k ? 'primary' : '', t, d });
-    let h = this.head(RA.t("While I'm away"), RA.t("When you close the game, the computer plays your state by this order")) + '<div class="btns">';
-    h += opt('auto', RA.t("Like the computer"), RA.t("Decides by itself: expands, goes to war, makes alliances"));
-    h += opt('def', RA.t("Defend"), RA.t("No new wars: forts and air defence, strikes back only when attacked, accepts alliances"));
-    h += opt('eco', RA.t("Build the economy"), RA.t("No new wars: cities, factories and ports, expands onto free land"));
-    h += RA.t("</div><div class=\"sec-t\">Attack a state</div><div class=\"list\">");
-    // my neighbours (no RA.AI.scan here: it draws from the game's random numbers)
-    const W = G.map.W, ids = new Set();
-    for (let i = 0; i < me.tiles; i++) {
-      const c = me.cells[i];
-      for (const n of [c - 1, c + 1, c - W, c + W]) if (n >= 0 && n < G.map.N && G.owner[n] && G.owner[n] !== me.id) ids.add(G.owner[n]);
+    const st = me.stance;
+    const cur = (this._stance = draft || (st ? { f: st.f | 0, t1: st.t1 || 0, t2: st.t2 || 0 } : { f: 0, t1: 0, t2: 0 }));
+    const tog = (bit, t, d) => this.btn({ attrs: `data-sf="${bit}"`, cls: cur.f & bit ? 'primary' : '', t: (cur.f & bit ? '✓ ' : '') + t, d });
+    let h = this.head(RA.t("While I'm away"), RA.t("When you close the game, the computer plays your state by these orders"));
+    h += '<div class="btns">' + this.btn({ attrs: 'data-sa="1"', cls: cur.f ? '' : 'primary', t: (cur.f ? '' : '✓ ') + RA.t("Like the computer"), d: RA.t("Decides by itself: expands, goes to war, makes alliances") }) + '</div>';
+    h += RA.t("<div class=\"sec-t\">Or pick one or more</div>") + '<div class="btns">';
+    h += tog(1, RA.t("Defend"), RA.t("Forts, air defence and trenches along the border; strikes back when attacked"));
+    h += tog(2, RA.t("Build the economy"), RA.t("Cities, factories and ports"));
+    h += tog(4, RA.t("Build the army"), RA.t("Tanks, artillery and infantry at the front, barracks"));
+    h += tog(8, RA.t("Attack"), RA.t("War on the states you pick below: the first while it can be reached, then the second"));
+    h += '</div>';
+    if (cur.f & 8) {
+      h += RA.t("<div class=\"sec-t\">Targets</div>") + '<div class="list">';
+      // my neighbours (no RA.AI.scan here: it draws from the game's random numbers)
+      const W = G.map.W, ids = new Set();
+      for (let i = 0; i < me.tiles; i++) {
+        const c = me.cells[i];
+        for (const n of [c - 1, c + 1, c - W, c + W]) if (n >= 0 && n < G.map.N && G.owner[n] && G.owner[n] !== me.id) ids.add(G.owner[n]);
+      }
+      const nb = [...ids].map((id) => G.P[id]).filter((o) => o && o.alive && o.type !== 'bot' && !G.isFriendly(me, o));
+      for (const o of nb) {
+        const k = cur.t1 === o.id ? 1 : cur.t2 === o.id ? 2 : 0;
+        h += RA.t("<div class=\"prow wide\"><span class=\"sw\" style=\"background:{0}\"></span><div class=\"pn\"><div class=\"nm\">{1}</div><div class=\"d\">army {2}</div></div><div class=\"bb\">{3}</div></div>", o.hex, RA.esc(o.name), RA.fmt(o.troops),
+          this.mini(k === 1 ? RA.t("✓ First") : RA.t("First"), `data-t1="${o.id}"`, k === 1 ? 'warn' : '') + this.mini(k === 2 ? RA.t("✓ Second") : RA.t("Second"), `data-t2="${o.id}"`, k === 2 ? 'warn' : ''));
+      }
+      if (!nb.length) h += RA.t("<p class=\"note\">You have no neighbour you are not allied with.</p>");
+      h += '</div>';
     }
-    const nb = [...ids].map((id) => G.P[id]).filter((o) => o && o.alive && o.type !== 'bot' && !G.isFriendly(me, o));
-    for (const o of nb) h += RA.t("<div class=\"prow wide\"><span class=\"sw\" style=\"background:{0}\"></span><div class=\"pn\"><div class=\"nm\">{1}</div><div class=\"d\">army {2}</div></div><div class=\"bb\">{3}</div></div>", o.hex, RA.esc(o.name), RA.fmt(o.troops), this.mini(me.stance && me.stance.t === o.id ? RA.t("Selected") : RA.t("Attack"), `data-st="atk:${o.id}"`, 'warn'));
-    if (!nb.length) h += RA.t("<p class=\"note\">You have no neighbour you are not allied with.</p>");
-    this.openSheet(h + '</div>', (s) => s.querySelectorAll('[data-st]').forEach((b) => (b.onclick = () => {
-      const [k, t] = b.dataset.st.split(':');
-      this.act('stance', k === 'atk' ? [k, +t] : [k]);
-      this.toast('good', RA.t("While you're away: {0}.", k === 'auto' ? RA.t("like the computer") : k === 'def' ? RA.t("defend") : k === 'eco' ? RA.t("build the economy") : RA.t("attack ") + G.P[+t].name));
-      this.closeSheet();
-    })));
+    h += '<div class="btns" style="margin-top:12px">' + this.btn({ attrs: 'data-ssave="1"', cls: 'primary', t: RA.t("Save the orders") }) + '</div>';
+    this.openSheet(h, (s) => {
+      const redraw = () => this.stanceSheet(cur);
+      s.querySelectorAll('[data-sf]').forEach((b) => (b.onclick = () => ((cur.f ^= +b.dataset.sf), redraw())));
+      s.querySelectorAll('[data-sa]').forEach((b) => (b.onclick = () => ((cur.f = 0), (cur.t1 = cur.t2 = 0), redraw())));
+      s.querySelectorAll('[data-t1]').forEach((b) => (b.onclick = () => {
+        const id = +b.dataset.t1;
+        if (cur.t2 === id) cur.t2 = 0;
+        cur.t1 = cur.t1 === id ? 0 : id;
+        redraw();
+      }));
+      s.querySelectorAll('[data-t2]').forEach((b) => (b.onclick = () => {
+        const id = +b.dataset.t2;
+        if (cur.t1 === id) cur.t1 = 0;
+        cur.t2 = cur.t2 === id ? 0 : id;
+        redraw();
+      }));
+      const save = s.querySelector('[data-ssave]');
+      if (save) save.onclick = () => {
+        if (cur.f & 8 && !cur.t1 && cur.t2) (cur.t1 = cur.t2), (cur.t2 = 0);
+        if (cur.f & 8 && !cur.t1) return this.toast('info', RA.t("Pick the first state to attack (or turn Attack off)."));
+        this.act('stance', cur.f ? ['mix', cur.f, cur.t1, cur.t2] : ['auto']);
+        this.closeSheet();
+        this.toast('good', RA.t("While you're away: {0}.", RA.esc(this.stanceName(cur.f ? cur : null))));
+      };
+    }, !!draft);
   },
   /* nuclear spam: how much dearer the next one is and until when (a bar that runs out) */
   nukeBar(M) {
@@ -659,6 +694,7 @@ Object.assign(RA.UI.prototype, {
       return h + '</div>';
     };
     let h = '<div id="dealSheet"></div>' + this.head(pre && pre.reply ? RA.t("Counter-offer") : RA.t("Negotiations"), `${RA.esc(O.name)} · ${O.ai && !O.human ? RA.t("the computer answers at once: accepts, asks for more or declines") : RA.t("a player: accepts, declines or makes a counter-offer")}`, O.hex);
+    if (G.deps && me.res) h += `<p class="explain">${RA.t("Your resources:")} ${[0, 1, 2].map((s) => `<b>${RA.resKind(s, G.era).name}</b> ${G.hasRes(me, s) ? RA.t("<span class=\"pos\">yes</span>") : RA.t("<span class=\"neg\">no</span> ({0})", RA.RES[s].lack)}`).join(' · ')}</p>`;
     h += `<div class="deal-grid">${side(O, want, 'want')}${side(me, give, 'give')}</div>`;
     if (!allied) h += RA.t("<p class=\"note\">You can exchange troops only as military allies. A city goes with its surroundings (3 cells); a capital can't be given.</p>");
     h += `<div class="btns"><button class="btn primary" data-send><span class="t">${pre && pre.reply ? RA.t("Send the counter-offer") : RA.t("Send the offer")}</span></button></div>`;
@@ -694,8 +730,9 @@ Object.assign(RA.UI.prototype, {
     const T = RA.TAX, cur = RA.TAX[me.tax] || T[2], pct = (v) => (v >= 1 ? '+' : '−') + Math.round(Math.abs(v - 1) * 100) + '%';
     const h = this.head(RA.t("Economy"), RA.t("Treasury · development · trade")) +
       RA.t("<div class=\"economy-overview\"><div><span>Treasury</span><strong>{0}</strong><small>gold available</small></div><div><span>Income</span><strong>+{1}</strong><small>gold / second</small></div><div><span>Army</span><strong>{2}{3}</strong><small>troops / second</small></div></div>", RA.fmt(me.gold), RA.fmt(me.goldRate || 0), me.growRate >= 0 ? '+' : '−', RA.fmt(Math.abs(me.growRate || 0))) +
+      this.resHtml() + // what I have and what for, at the top (Darko 28. 9.)
       RA.t("<div class=\"field\"><span class=\"lab\">Tax: {0}</span><div class=\"seg wrap\" id=\"taxSeg\" role=\"group\" aria-label=\"Tax\">{1}</div>\n      <p class=\"note\">Higher tax: more gold, but the army grows more slowly. Lower: the army grows faster, less gold.<br>Now: gold {2}, army growth {3}.</p></div>\n      <div class=\"field\"><span class=\"lab\">Interest</span><p class=\"note\">Saved gold earns 1% a minute, at most a quarter of your income. Now: <b>+{4}/s</b>.</p></div>", RA.esc(cur.name), T.map((t, i) => `<button data-v="${i}" aria-pressed="${i === me.tax}">${RA.esc(t.name)}</button>`).join(''), cur.g === 1 ? RA.t("normal") : pct(cur.g), cur.grow === 1 ? RA.t("normal{=2}") : pct(cur.grow), RA.fmt(me.interest || 0)) +
-      this.resHtml() + this.loanHtml() + this.straitHtml() +
+      this.loanHtml() + this.straitHtml() +
       (G.opts.tree ? RA.t("<div class=\"btns\"><button class=\"btn\" data-intel>{0}<span><span class=\"t\">Intelligence agency</span><br><span class=\"d\">{1}</span></span></button></div>", RA.icon('eye'), me.n.intel ? RA.t("Agents: {0}/{1}", G.intelOf(me).agents.length, RA.CFG.INTEL_MAX) : RA.t("Not built yet (Build)")) : '');
     this.openSheet(this.techHtml(h), (s) => {
       s.querySelectorAll('[data-tech]').forEach((b) => (b.onclick = () => {
@@ -775,9 +812,9 @@ Object.assign(RA.UI.prototype, {
     for (let s = 0; s < 3; s++) {
       const K = RA.resKind(s, G.era), sid = me.imp[s], q = G.P[sid];
       let d, bb = '';
-      if (me.res[s]) d = RA.t("<span class=\"pos\">you have it</span> · {0} {1}", me.res[s], me.res[s] === 1 ? RA.t("deposit") : RA.t("deposits"));
+      if (me.res[s]) d = RA.t("<span class=\"pos\">you have it</span> · {0} {1}", me.res[s], me.res[s] === 1 ? RA.t("deposit") : RA.t("deposits")) + ' · ' + RA.RES[s].use;
       else if (sid && q) {
-        d = RA.t("you buy from {0} · {1}% of income", RA.esc(q.name), Math.round(G.resRate(q, s) * 100));
+        d = RA.t("you buy from {0} · {1}% of income", RA.esc(q.name), Math.round(G.resRate(q, s) * 100)) + ' · ' + RA.RES[s].use;
         bb = this.mini(RA.t("Stop"), `data-buy="${s}:0"`, 'warn');
       } else {
         d = RA.t("<span class=\"neg\">you lack it</span> — {0}", RA.RES[s].lack);
@@ -912,7 +949,7 @@ Object.assign(RA.UI.prototype, {
     const k = mm.winShare > 0 ? C.WIN_SHARE / mm.winShare : 1, pc = (v) => Math.round(v / k);
     const win = Math.round(C.WIN_SHARE * 100);
     const eras = RA.ERAS.map((e) => `<li><b>${RA.esc(e.name)}</b> (${RA.esc(e.sub)}) — ${RA.esc(RA.eraBlurb(e, M.id))}</li>`).join('');
-    const h = this.head(RA.t("How to play"), RA.t("Overtake — the rules in short")) + RA.t("<div class=\"howto\">\n      <h4>Goal</h4><p>Take {0}% of the land of the chosen part of the map or be the last state standing. When you win you can play on and conquer everything. Whoever holds more than {1}% of the map pays more for every new conquest.</p>\n      <h4>Modes</h4><ul>\n        <li><b>Blitz</b>: a quick game (20–40 min), no tech tree or resources, 1 min of peace.</li>\n        <li><b>Focus</b>: the game lasts days (~1, 3 or 7) on the server and runs even while you are away — the computer plays your state. Gold and orders come every second, armies move slowly. Tech tree, weapons research, resources and trade, a longer peace time. The main menu keeps the game (<i>Continue Focus game</i>), and when you come back you see what happened. <i>Leave the game</i> deletes your progress for good.</li>\n        <li><b>Make your choice</b>: you pick the pace, the tech tree, resources, nuclear weapons and peace time yourself.</li></ul>\n      <h4>Eras</h4><p>On the start screen you pick the period you fight in. Every era has its own borders, cities, units, buildings and weapons:</p><ul>{2}</ul>\n      <h4>Start</h4><ul>\n        <li><b>Real borders</b>: every state starts with its land from that era. Tap a state or pick it from the list — you get its land, army and gold.</li>\n        <li><b>From the capital</b>: states start from a small circle around their capital, the rest is free (grey) land and city-states.</li>\n        <li>The first minute (adjustable) is <b>peace time</b>: nobody may attack states — build, take free land, make alliances.</li></ul>\n      <h4>Battle royale</h4><p>After peace time and another 90 s a radioactive zone starts shrinking towards a random point ({3} circles). The white dashed circle shows where it's going. Everything outside the red circle is lost — the land and the troops on it. Whoever is left wins.</p>\n      <h4>Expanding and attacking</h4><ul>\n        <li><b>Tap</b> free land or a neighbour — you send as many troops as the <b>Attack strength</b> slider shows.</li>\n        <li><b>Directed attack</b>: tapping a neighbouring state sends troops from your nearest border straight to that spot (an arrow on the map) — only that part is taken, then the rest of the troops come back. The more troops you send, the wider the corridor.</li>\n        <li>On a computer: <b>drag an arrow with the right mouse button</b> from your land to the target — the attack goes exactly that way.</li>\n        <li>A front along the whole border with a state: long press (right click) on it → <b>Attack the whole border</b>. Free land is always taken along the whole border.</li>\n        <li><b>Retake</b>: when a state takes your land, a yellow “Retake N cells” button appears in the attack bar — one click sends a counter-attack only on that land (taken in the last 3 minutes), without going further.</li>\n        <li><b>Right of passage</b>: a military ally lets you through its land — you can attack a state bordering it even if you have no border with it.</li>\n        <li>Rivers, hills, mountains and cities slow the attacker down.</li>\n        <li>Active attacks are above the bottom bar. <b>✕</b> stops an attack and brings the troops back (an attack on a state: 25% is lost in the retreat).</li></ul>\n      <h4>Army and gold</h4><ul>\n        <li>The army grows by itself, fastest around <b>42%</b> of capacity (the green zone on the bar).</li>\n        <li><b>Mobilisation</b> (Army): instantly +30% of capacity, but growth stops for 45 s. Once every 4 minutes.</li>\n        <li>Gold comes from land, cities, ports, trains or caravans and trade.</li>\n        <li><b>Navy</b> (Army): two ships per era, from your port. Tap a ship, then the sea. A warship sinks landings and trade ships, blockades enemy ports nearby (no gold, no trade) and shells the coast; the other ship hunts landings and trade ships (the submarine from 1914 is invisible until a warship comes close).</li>\n        <li><b>Air force</b> (from 1938, Landing or key A): fighters guard the sky around the airfield and escort your planes, bombers destroy buildings, units and troops up to 70 cells from the airfield. <b>Drones</b> (today, Missiles): cheap, fly straight from your border — kamikaze or unit hunter; every tap sends one until you cancel.</li>\n        <li><b>Iron Dome</b> (a building, from 1938): when someone launches a nuke at you, every ready dome fires an atomic bomb at their capital and cities by itself.</li>\n        <li><b>Resources</b> (an option in the settings): grain, metal and fuel at real deposits (signs on the map). Without them everything is dearer or slower; what you lack you buy from a trade partner (Economy).</li>\n        <li><b>Straits</b> (Economy): whoever holds both shores can close a strait to foreign ships. Everyone who sails there gets angry — closing is aggression.</li>\n        <li><b>Loan</b> (Economy: click the gold or Z): a computer state lends you gold, part of your land is the pledge (hatched). Don't repay in time → the pledge is theirs.</li>\n        <li><b>Vassal</b> (Alliances menu): you can make a weak neighbouring state your vassal instead of conquering it — it pays you tribute and fights at your side. If you weaken, it breaks free.</li>\n        <li><b>Aggressive expansion</b> (Alliances menu): every state you attack and subdue angers the others. Too many conquests at once → computer states join forces against you. The anger fades with time.</li>\n        <li><b>Tax</b> (click the gold at the top or key Z): a higher tax gives more gold, but the army grows more slowly. Saved gold earns a little interest.</li></ul>\n      <h4>Units</h4><ul>\n        <li>Three kinds in every era (e.g. legion, cavalry and archers in Rome; infantry, tanks and artillery today): the first holds the border firmly, the second makes your attacks faster and cheaper, the third hits the enemy from afar.</li>\n        <li>Units follow the border by themselves. Tap your unit, then a new spot, to move it. A surrounded unit is lost.</li></ul>\n      <h4>Building</h4><ul>\n        <li><b>City</b>: troops, gold and defence. <b>Factory</b> (a market or manufactory in older eras): a route to your cities within 18 cells — trains or caravans bring gold.</li>\n        <li><b>Barracks</b> (+troops, +2 units), <b>Fort</b>, <b>Port</b>, and depending on the era <b>Airfield</b> (paratroopers), <b>Missile silo</b> or siege workshop, <b>Air defence</b>.</li></ul>\n      <h4>Sea and air</h4><p>A landing by ship on any coast (at most {4} ships). From 1938 paratroopers jump up to {5} cells from an airfield; air defence can shoot them down.</p>\n      <h4>Strikes and bombs</h4><ul>\n        <li>In older eras onagers, trebuchets, bombards, rockets and cannons only reach their <b>range</b> (white circles while aiming) — build them near the front.</li>\n        <li>1914: Big Bertha and zeppelins. 1938: V-2 rockets, and the atomic bomb only from minute 10. Cold War and today: everything up to the hydrogen bomb and MIRV.</li>\n        <li>The <b>atomic</b> and <b>hydrogen</b> bomb wipe out land, destroy EVERY building and unit in the circle and kill a large part of the target's army.</li></ul>\n      <h4>Alliances</h4><ul>\n        <li><b>Military alliance</b> (at most {6}, lasts 5 min): you don't attack each other, and your allies help you when someone attacks you. You can send them troops and ask for help.</li>\n        <li><b>Trade pact</b> (at most {7}): trade ships between ports and trade across a border bring gold to both sides — no duties in war.</li>\n        <li>Betraying an ally = 30 s of halved defence and a bad name with everyone.</li></ul>\n      <h4>Winter and capitals</h4><p>Every 4 minutes {8} is covered with snow for 1 minute: attacks and units are slower there. Losing your capital means a crisis: −25% troops, half income for 60 s and loot for the conqueror.</p>\n      <h4>Online with a friend</h4><p>Both open war.deovilab.com; one presses “Create a room”, the other “Join”. The host picks the era, the map and the type: <b>together against everyone</b> (a permanent alliance, you share the win) or <b>against each other</b>, with battle royale if you like. The host controls speed and pause.</p>\n      <h4>Controls</h4><p>One finger: move · two fingers: zoom · long press (right click): menu for that spot. You can pause and speed up the game (1×–3×).</p>\n    </div>", win, pc(35), eras, C.BR_PHASES, C.BOAT_MAX, C.PARA_RANGE, C.ALLY_MAX, C.TRADE_MAX, RA.esc(I.winterHow));
+    const h = this.head(RA.t("How to play"), RA.t("Overtake — the rules in short")) + RA.t("<div class=\"howto\">\n      <h4>Goal</h4><p>Take {0}% of the land of the chosen part of the map or be the last state standing. When you win you can play on and conquer everything. Whoever holds more than {1}% of the map pays more for every new conquest.</p>\n      <h4>Modes</h4><ul>\n        <li><b>Blitz</b>: a quick game (20–40 min), no tech tree or resources, 1 min of peace.</li>\n        <li><b>Focus</b>: the game lasts until someone wins (often days) on the server and runs even while you are away — the computer plays your state. Gold and orders come every second, armies move slowly. Tech tree, weapons research, resources and trade, a longer peace time. The main menu keeps the game (<i>Continue Focus game</i>), and when you come back you see what happened. <i>Leave the game</i> deletes your progress for good.</li>\n        <li><b>Make your choice</b>: you pick the pace, the tech tree, resources, nuclear weapons and peace time yourself.</li></ul>\n      <h4>Eras</h4><p>On the start screen you pick the period you fight in. Every era has its own borders, cities, units, buildings and weapons:</p><ul>{2}</ul>\n      <h4>Start</h4><ul>\n        <li><b>Real borders</b>: every state starts with its land from that era. Tap a state or pick it from the list — you get its land, army and gold.</li>\n        <li><b>From the capital</b>: states start from a small circle around their capital, the rest is free (grey) land and city-states.</li>\n        <li>The first minute (adjustable) is <b>peace time</b>: nobody may attack states — build, take free land, make alliances.</li></ul>\n      <h4>Battle royale</h4><p>After peace time and another 90 s a radioactive zone starts shrinking towards a random point ({3} circles). The white dashed circle shows where it's going. Everything outside the red circle is lost — the land and the troops on it. Whoever is left wins.</p>\n      <h4>Expanding and attacking</h4><ul>\n        <li><b>Tap</b> free land or a neighbour — you send as many troops as the <b>Attack strength</b> slider shows.</li>\n        <li><b>Directed attack</b>: tapping a neighbouring state sends troops from your nearest border straight to that spot (an arrow on the map) — only that part is taken, then the rest of the troops come back. The more troops you send, the wider the corridor.</li>\n        <li>On a computer: <b>drag an arrow with the right mouse button</b> from your land to the target — the attack goes exactly that way.</li>\n        <li>A front along the whole border with a state: long press (right click) on it → <b>Attack the whole border</b>. Free land is always taken along the whole border.</li>\n        <li><b>Retake</b>: when a state takes your land, a yellow “Retake N cells” button appears in the attack bar — one click sends a counter-attack only on that land (taken in the last 3 minutes), without going further.</li>\n        <li><b>Right of passage</b>: a military ally lets you through its land — you can attack a state bordering it even if you have no border with it.</li>\n        <li>Rivers, hills, mountains and cities slow the attacker down.</li>\n        <li>Active attacks are above the bottom bar. <b>✕</b> stops an attack and brings the troops back (an attack on a state: 25% is lost in the retreat).</li></ul>\n      <h4>Army and gold</h4><ul>\n        <li>The army grows by itself, fastest around <b>42%</b> of capacity (the green zone on the bar).</li>\n        <li><b>Mobilisation</b> (Army): instantly +30% of capacity, but growth stops for 45 s. Once every 4 minutes.</li>\n        <li>Gold comes from land, cities, ports, trains or caravans and trade.</li>\n        <li><b>Navy</b> (Army): two ships per era, from your port. Tap a ship, then the sea. A warship sinks landings and trade ships, blockades enemy ports nearby (no gold, no trade) and shells the coast; the other ship hunts landings and trade ships (the submarine from 1914 is invisible until a warship comes close).</li>\n        <li><b>Air force</b> (from 1938, Landing or key A): fighters guard the sky around the airfield and escort your planes, bombers destroy buildings, units and troops up to 70 cells from the airfield. <b>Drones</b> (today, Missiles): cheap, fly straight from your border — kamikaze or unit hunter; every tap sends one until you cancel.</li>\n        <li><b>Iron Dome</b> (a building, from 1938): when someone launches a nuke at you, every ready dome fires an atomic bomb at their capital and cities by itself.</li>\n        <li><b>Resources</b> (an option in the settings): grain, metal and fuel at real deposits (signs on the map). Without them everything is dearer or slower; what you lack you buy from a trade partner (Economy).</li>\n        <li><b>Straits</b> (Economy): whoever holds both shores can close a strait to foreign ships. Everyone who sails there gets angry — closing is aggression.</li>\n        <li><b>Loan</b> (Economy: click the gold or Z): a computer state lends you gold, part of your land is the pledge (hatched). Don't repay in time → the pledge is theirs.</li>\n        <li><b>Vassal</b> (Alliances menu): you can make a weak neighbouring state your vassal instead of conquering it — it pays you tribute and fights at your side. If you weaken, it breaks free.</li>\n        <li><b>Aggressive expansion</b> (Alliances menu): every state you attack and subdue angers the others. Too many conquests at once → computer states join forces against you. The anger fades with time.</li>\n        <li><b>Tax</b> (click the gold at the top or key Z): a higher tax gives more gold, but the army grows more slowly. Saved gold earns a little interest.</li></ul>\n      <h4>Units</h4><ul>\n        <li>Three kinds in every era (e.g. legion, cavalry and archers in Rome; infantry, tanks and artillery today): the first holds the border firmly, the second makes your attacks faster and cheaper, the third hits the enemy from afar.</li>\n        <li>Units follow the border by themselves. Tap your unit, then a new spot, to move it. A surrounded unit is lost.</li></ul>\n      <h4>Building</h4><ul>\n        <li><b>City</b>: troops, gold and defence. <b>Factory</b> (a market or manufactory in older eras): a route to your cities within 18 cells — trains or caravans bring gold.</li>\n        <li><b>Barracks</b> (+troops, +2 units), <b>Fort</b>, <b>Port</b>, and depending on the era <b>Airfield</b> (paratroopers), <b>Missile silo</b> or siege workshop, <b>Air defence</b>.</li></ul>\n      <h4>Sea and air</h4><p>A landing by ship on any coast (at most {4} ships). From 1938 paratroopers jump up to {5} cells from an airfield; air defence can shoot them down.</p>\n      <h4>Strikes and bombs</h4><ul>\n        <li>In older eras onagers, trebuchets, bombards, rockets and cannons only reach their <b>range</b> (white circles while aiming) — build them near the front.</li>\n        <li>1914: Big Bertha and zeppelins. 1938: V-2 rockets, and the atomic bomb only from minute 10. Cold War and today: everything up to the hydrogen bomb and MIRV.</li>\n        <li>The <b>atomic</b> and <b>hydrogen</b> bomb wipe out land, destroy EVERY building and unit in the circle and kill a large part of the target's army.</li></ul>\n      <h4>Alliances</h4><ul>\n        <li><b>Military alliance</b> (at most {6}, lasts 5 min): you don't attack each other, and your allies help you when someone attacks you. You can send them troops and ask for help.</li>\n        <li><b>Trade pact</b> (at most {7}): trade ships between ports and trade across a border bring gold to both sides — no duties in war.</li>\n        <li>Betraying an ally = 30 s of halved defence and a bad name with everyone.</li></ul>\n      <h4>Winter and capitals</h4><p>Every 4 minutes {8} is covered with snow for 1 minute: attacks and units are slower there. Losing your capital means a crisis: −25% troops, half income for 60 s and loot for the conqueror.</p>\n      <h4>Online with a friend</h4><p>Both open war.deovilab.com; one presses “Create a room”, the other “Join”. The host picks the era, the map and the type: <b>together against everyone</b> (a permanent alliance, you share the win) or <b>against each other</b>, with battle royale if you like. The host controls speed and pause.</p>\n      <h4>Controls</h4><p>One finger: move · two fingers: zoom · long press (right click): menu for that spot. You can pause and speed up the game (1×–3×).</p>\n    </div>", win, pc(35), eras, C.BR_PHASES, C.BOAT_MAX, C.PARA_RANGE, C.ALLY_MAX, C.TRADE_MAX, RA.esc(I.winterHow));
     this.openSheet(h);
   },
 

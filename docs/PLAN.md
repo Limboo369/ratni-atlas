@@ -382,3 +382,19 @@ engleskom. `build/test_lang.py` (i u CI-ju) pada ako na engleskoj stranici ostan
 Nema protivnika za 30 s → prazna mjesta (protivnici i saigrači) popunjava računar; jačina po rangu (Raider lako,
 Vanguard/bez ranga srednje, Warlord teško, Emperor/Overlord ekspert); meč se računa u punom ELO-u (Darko 28. 9.: nije igrač kriv što nema drugih); računar bira/banuje
 nasumično. Urađeno.
+
+## Focus 28. 9. (Darko, testiranje na telefonu) — urađeno
+- Tajmeri (savez, mirno doba) pišu stvarno vrijeme; mirno doba u Focusu = postavka × 20 s (180 → 1 h).
+- Focus nema izbor 1/3/7 dana: traje dok neko ne pobijedi.
+- Zgrade se grade brzinom kao u Blitzu; naručena zgrada se odmah vidi (duh) dok server ne potvrdi.
+- Zgrade s dometom (fabrika, utvrda, PVO, aerodrom, opsadne): prvi dodir pokaže zgradu i domet, drugi dodir negdje drugo je
+  pomjera, dugme "Gradi" je postavlja.
+- Vojska se u Focusu ne kreće skokovima svakih 5 s: zauzeta polja se prikazuju redom tokom koraka, jedinice klize.
+  Jedinice su gotove odmah (sljedeći korak), idu petinom Blitz brzine; mogu se staviti bilo gdje na svojoj zemlji.
+- Nivo zgrade (2, 3) piše na mapi iznad nje.
+- Naredbe dok nisi tu: bilo koja kombinacija (odbrana, ekonomija, vojska, napad) + prva i druga meta napada.
+- Ekonomija u Focusu: vozovi ×2, izgrađeni gradovi ×3 zlata, svaki sljedeći grad/fabrika/luka ~1,5× skuplji (ne 2×);
+  prihod u HUD-u broji i vozove. Fabrika s dva grada ≈ osnovni prihod srednje države (otplati se za ~4 min).
+- Resursi na vrhu Ekonomije (šta imaš i za šta služi), i u pregovorima.
+- Savezi: dugme za poruke, pa države (uz svaku: s kim je u vojnom savezu), objašnjenja na kraju.
+- Oblaci: bez tamnog okvira i mrlja kad se odzumira; povratak iz druge aplikacije brže sustiže server.

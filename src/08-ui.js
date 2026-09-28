@@ -84,6 +84,16 @@ RA.trDom = function (root) {
 };
 
 RA.phone = () => !!(window.matchMedia && matchMedia('(max-width: 760px)').matches);
+/* how far a building reaches (drawn while placing it): rails, the fort's ring, air defence, paratroopers, siege weapons */
+RA.buildRange = function (type) {
+  const C = RA.CFG;
+  if (type === 'factory') return C.TRAIN_RANGE;
+  if (type === 'fort') return C.FORT_R;
+  if (type === 'sam') return C.SAM_R;
+  if (type === 'airport') return RA.STRUCT.airport.na ? 0 : C.PARA_RANGE;
+  if (type === 'silo') return Math.max(0, ...Object.values(RA.MISSILE).filter((M) => !M.na && M.range).map((M) => M.range));
+  return 0;
+};
 
 RA.TERR_NAME = [RA.t("sea"), RA.t("plains"), RA.t("hills"), RA.t("mountains")];
 
@@ -184,7 +194,6 @@ RA.UI = class {
     $('leagueBtn').onclick = () => this.needAccount(() => this.leagueSheet());
     $('skirmishBtn').onclick = () => this.needAccount(() => this.skirmishSheet());
     $('marketBtn').onclick = () => this.marketSheet(); // Community market (09i-editor.js): browsing and playing need no account
-    this._seg('daysSeg', String([1, 3, 7].includes(this.settings.days) ? this.settings.days : 1), (v) => (this.settings.days = +v));
     this._seg('cPaceSeg', this.settings.cPace === 'focus' ? 'focus' : 'blitz', (v) => {
       this.settings.cPace = v;
       this.paceShow();
@@ -542,7 +551,6 @@ RA.UI = class {
   }
   paceShow() {
     const s = this.settings, P = this.playSet(), f = P.pace === 'focus', M = RA.MODES[s.pace] || RA.MODES.blitz;
-    this.$('paceDays').hidden = !f;
     this.$('goBtn').firstElementChild.textContent = f ? RA.t("Start a Focus game") : RA.t("Start the conquest");
     const custom = s.pace === 'custom';
     this.$('operationDialog').classList.toggle('preset', !custom);
@@ -1105,7 +1113,7 @@ RA.UI = class {
     if (me && me.alive && G.state === 'play') {
       if (G.opts.camp && G.opts.camp.type !== 'free' && this.campProg) pills.push(['goal', `🎯 ${this.campProg}`]);
       if (G.long && this.app.long.rec && this.app.long.rec.set.fast) pills.push(['calm', RA.t("Skirmish · {0} players", G.humans.filter((p) => p.alive && !p.surr).length)]);
-      else if (G.long && this.app.long.rec) pills.push(['calm', RA.t("Focus · armies move every {0} s · {1} players", Math.round((this.app.long.rec.tickMs * (this.app.long.rec.sub || 1)) / 1000), G.humans.filter((p) => p.alive).length)]);
+      else if (G.long && this.app.long.rec) pills.push(['calm', RA.t("Focus · {0} players", G.humans.filter((p) => p.alive).length)]);
       const dc = G.defcon();
       if (dc) {
         const next = (6 - dc) * C.DEFCON_STEP;
@@ -1150,9 +1158,9 @@ RA.UI = class {
     const U = RA.UNIT, S = RA.STRUCT;
     const T = [
       [1, G.borders
-        ? (peace > 0 ? RA.t("Peace time ({0} s): nobody may attack states. Build, make alliances (the “Alliances” button) and get your army ready along the border.", Math.round(peace)) : RA.t("Click the part of a neighbouring state you want: the army goes from the nearest border straight there and takes only that part. On a computer, drag an arrow with the right mouse button for an exact direction. An attack along the whole border: right click / long press → “Attack the whole border”."))
+        ? (peace > 0 ? RA.t("Peace time ({0}): nobody may attack states. Build, make alliances (the “Alliances” button) and get your army ready along the border.", RA.dur(G.peaceUntil)) : RA.t("Click the part of a neighbouring state you want: the army goes from the nearest border straight there and takes only that part. On a computer, drag an arrow with the right mouse button for an exact direction. An attack along the whole border: right click / long press → “Attack the whole border”."))
         : peace > 0
-        ? RA.t("Peace time ({0} s): nobody may attack states. Take as much free (grey) land as you can and make military and trade alliances (the “Alliances” button).", Math.round(peace))
+        ? RA.t("Peace time ({0}): nobody may attack states. Take as much free (grey) land as you can and make military and trade alliances (the “Alliances” button).", RA.dur(G.peaceUntil))
         : RA.t("Tap grey, free land to expand. The front moves towards the spot you tap.")],
       [9, G.borders ? RA.t("The attack heads for the point you tap, and the “Attack strength” slider sets how many troops you send.") : RA.t("Tap free land to expand — the front heads for the point you tap. The slider sets how many troops you send.")],
       [22, RA.t("The army grows fastest when the bar is in the green zone (about 42% of capacity). Don't keep it full.")],
@@ -1235,6 +1243,12 @@ RA.UI = class {
     let txt = '', btn = null;
     if (m.kind === 'build') {
       txt = m.type === 'city' ? RA.t("Tap your land (at least 5 cells from other cities): a new city") : RA.t("Tap your land: {0}", RA.STRUCT[m.type].name);
+      if (m.at >= 0) {
+        txt = RA.t("{0} here · reach {1} cells · tap elsewhere to move it", RA.STRUCT[m.type].name, RA.buildRange(m.type));
+        ex.textContent = RA.t("Build{=2}");
+        ex.classList.add('fire');
+        ex.hidden = false;
+      }
       btn = 'aBuild';
     } else if (m.kind === 'boat') {
       txt = RA.t("Tap a foreign or free coast — the ship sails there");
@@ -1259,7 +1273,7 @@ RA.UI = class {
       txt = RA.t("Tap enemy land: {0}", RA.airName('bomber'));
       btn = 'aLand';
     } else if (m.kind === 'recruit') {
-      txt = RA.t("Tap your land near the border: {0}", RA.UNIT[m.type].name);
+      txt = RA.t("Tap anywhere on your land: {0} (it goes to the nearest border by itself)", RA.UNIT[m.type].name);
       btn = 'aArmy';
     } else if (m.kind === 'trench') {
       txt = RA.t("Tap your land right at a border: trenches along it ({0} per cell)", RA.fmt(RA.CFG.TRENCH_GOLD));
@@ -1309,8 +1323,15 @@ RA.UI = class {
     }
     this.setMode({ kind: 'missile', type, aim: c, fired: (this.mode && this.mode.fired) || 0 });
   }
+  /* build now; until the building shows up (a Focus order waits for the server's next second) a ghost stands there */
+  placeBuild(type, c) {
+    this.act('build', [type, c]);
+    if (this.G.long) (this.pendingBuild = this.pendingBuild || []).push({ type, c, at: performance.now() });
+    this.setMode(null);
+  }
   modeExtra() {
     const m = this.mode;
+    if (m && m.kind === 'build' && m.at >= 0) return this.placeBuild(m.type, m.at);
     if (m && m.kind === 'group') return this.setMode(Object.assign({}, m, { move: true }));
     if (m && m.kind === 'missile' && m.aim >= 0) {
       this.fireMissile(m.type, m.aim);
@@ -1428,8 +1449,9 @@ RA.UI = class {
       const why = G.canBuild(me, m.type, cc);
       if (typeof why === 'string') return fail(why);
       this.ping(cp, false);
-      this.act('build', [m.type, cc]);
-      this.setMode(null);
+      // a building with a range (Darko 28. 9.): first where it would stand and what it reaches, then "Build"
+      if (RA.buildRange(m.type) > 0 && m.at !== why) return this.setMode(Object.assign({}, m, { at: why }));
+      this.placeBuild(m.type, why);
     } else if (m.kind === 'boat') {
       if (!G.map.coast[c]) return fail(G.boatErr(G.map.land[c] ? 'nocoast' : 'water'));
       this.ping(cp, false);

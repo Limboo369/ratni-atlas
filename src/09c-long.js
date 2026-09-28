@@ -15,6 +15,14 @@ RA.Long = class {
     this.known = 0; // entries of the record received so far
     this.code = '';
     addEventListener('pagehide', () => this.rec && this.snap());
+    // back from another app (phone): a dropped connection is dialled again at once, not after its back-off
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden || !this.rec || !this.code || this.closed) return;
+      if (!this.ws || this.ws.readyState > 1) {
+        this.tries = 0;
+        this.dial(this.code);
+      }
+    });
   }
   get url() {
     return this.app.net && this.app.net.wsUrl;
@@ -41,7 +49,7 @@ RA.Long = class {
   /* a new long game with the start screen's settings */
   create(extra) {
     const s = this.app.ui.playSet(); // Focus preset or Make your choice
-    const set = Object.assign({ map: s.map, reg: s.region, era: s.era, gm: s.gm === 'br' ? 'klasik' : s.gm, dif: s.difficulty, cs: s.cityStates, peace: s.peace, res: s.res ? 1 : 0, tree: s.tree ? 1 : 0, nn: s.noNuke ? 1 : 0, days: [1, 3, 7].includes(s.days) ? s.days : 1 }, extra || {});
+    const set = Object.assign({ map: s.map, reg: s.region, era: s.era, gm: s.gm === 'br' ? 'klasik' : s.gm, dif: s.difficulty, cs: s.cityStates, peace: s.peace, res: s.res ? 1 : 0, tree: s.tree ? 1 : 0, nn: s.noNuke ? 1 : 0, days: 1 }, extra || {});
     this.connect('new', { create: { set, name: this.name(), uid: this.uid() } });
   }
   open(code) {
@@ -165,8 +173,10 @@ RA.Long = class {
   frame() {
     const G = this.app.G;
     if (!G || !G.long || this.replaying) return;
-    const t0 = performance.now();
-    while (G.state === 'play' && G.clock() < this.T - 1 && performance.now() - t0 < 30) {
+    const t0 = performance.now(), behind = this.T - 1 - G.clock();
+    // far behind (the page was in the background): catch up in bigger bites so gold and army are current at once
+    const budget = behind > 3 ? 180 : 30;
+    while (G.state === 'play' && G.clock() < this.T - 1 && performance.now() - t0 < budget) {
       if (!this.applyDue(G)) return;
       G.step();
     }
@@ -277,7 +287,7 @@ Object.assign(RA.App.prototype, {
       if (r.set.lg && LG.startAt > Date.now()) ui.toast('info', RA.t("Conquest League {0}v{1}: starts in {2} s — destroy the enemy team.", r.set.lg, r.set.lg, Math.ceil((LG.startAt - Date.now()) / 1000)), { ms: 6000 });
       if (G.state === 'over' && !G.continued) RA.focusDrop(r.code);
       if (!r.set.fast && mine && mine.alive) ui.toast('info', RA.t("Fog of war: land far from yours is under clouds. Scout it with an agent (Intelligence agency) or send a drone."), { ms: 9000 });
-      if (!r.set.fast) ui.toast('info', RA.t("Focus: gold and orders every second, armies move every {0} s — the game goes on while you're away. Link: <b>{1}</b>", Math.round((r.tickMs * (r.sub || 1)) / 1000), RA.esc(location.origin + '/long-' + r.code)), { ms: 9000 });
+      if (!r.set.fast) ui.toast('info', RA.t("Focus: the game goes on while you're away. Link: <b>{0}</b>", RA.esc(location.origin + '/long-' + r.code)), { ms: 9000 });
     };
     slice();
   },
@@ -376,13 +386,13 @@ Object.assign(RA.UI.prototype, {
     b.hidden = !l.length || !(net && net.wsUrl);
     if (b.hidden) return;
     const e = l[0];
-    b.innerHTML = RA.t("<span class=\"t\">Continue Focus game{0}</span><span class=\"d\">{1} · ~{2} {3}</span>", l.length > 1 ? ` (${l.length})` : '', RA.esc(e.title || 'Focus · ' + e.code), e.days || 1, (e.days || 1) === 1 ? RA.t('day') : RA.t('days'));
+    b.innerHTML = RA.t("<span class=\"t\">Continue Focus game{0}</span><span class=\"d\">{1}</span>", l.length > 1 ? ` (${l.length})` : '', RA.esc(e.title || 'Focus · ' + e.code));
     b.onclick = () => {
       this.settings.name = this.$('nameIn').value.trim().slice(0, 18);
       this._save();
       if (l.length === 1) return this.app.long.open(e.code);
       let h = this.head(RA.t("Your Focus games"), RA.t("Games go on while you're away — the computer leads your state")) + '<div class="list focus-games">';
-      for (const x of l) h += RA.t("<div class=\"prow wide\"><div class=\"pn\"><div class=\"nm\">{0}</div><div class=\"d\">~{1} {2} · last seen {3}</div></div><div class=\"bb\">{4}</div></div>", RA.esc(x.title || x.code), x.days || 1, (x.days || 1) === 1 ? RA.t('day') : RA.t('days'), new Date(x.at || 0).toLocaleString(RA.LOCALE), this.mini(RA.t("Continue"), `data-fo="${x.code}"`, 'ok'));
+      for (const x of l) h += RA.t("<div class=\"prow wide\"><div class=\"pn\"><div class=\"nm\">{0}</div><div class=\"d\">last seen {1}</div></div><div class=\"bb\">{2}</div></div>", RA.esc(x.title || x.code), new Date(x.at || 0).toLocaleString(RA.LOCALE), this.mini(RA.t("Continue"), `data-fo="${x.code}"`, 'ok'));
       this.openSheet(h + '</div>', (s) => s.querySelectorAll('[data-fo]').forEach((q) => (q.onclick = () => {
         this.closeSheet();
         this.app.long.open(q.dataset.fo);

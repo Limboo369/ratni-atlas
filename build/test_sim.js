@@ -507,6 +507,25 @@ const check = (ok, msg) => {
     for (let i = 0; i < secs; i++) F2.step();
     check(F.hash() === F2.hash() && F.clock() === F2.clock(), 'Focus clock: deterministic');
     check(F.rtK() === F.sub * 10 && RA.newGame(RA.eraMap(m, 'danas', 'granice'), { seed: 1, era: 'danas', start: 'granice', gm: 'klasik' }).rtK() === 1, 'Focus: trains and trade ships at the Blitz speed in real time');
+    // Darko 28. 9.: peace in real time (setting × 20 s), buildings as fast as in Blitz, cheaper economy, units at once
+    check(F.peaceUntil * F.sub === 600 * RA.CFG.FOCUS_PEACE, `Focus: peace time in real time (${F.peaceUntil} world steps = ${(F.peaceUntil * F.sub) / 3600} h for the setting 600)`);
+    check(secs === Math.ceil(RA.STRUCT.factory.time / 10), `Focus: a factory takes its Blitz time (${secs} s)`);
+    const fc2 = F.structCost(me, 'factory'), bc2 = RA.STRUCT.factory.cost(me.built.factory);
+    check(me.built.factory === 1 && fc2 < bc2 * 0.8, `Focus: the next factory costs ~1.5× more, not 2× (${fc2} vs ${bc2})`);
+    const U = me.units.length;
+    const ru = RA.longApply(F, [F.clock(), 0, 'rec', ['inf', me.cells[5]]]);
+    check(ru.r && ru.r.ready === F.tick + 1 && me.units.length === U + 1, 'Focus: a unit is ready at the next world step (seconds), not after its Blitz ticks of world steps');
+    const nbr = F.P.find((o) => o && o.alive && o !== me && o.type === 'nation');
+    RA.longApply(F, [F.clock(), 0, 'stance', ['mix', 1 | 2 | 4, 0, 0]]);
+    check(me.stance && me.stance.f === 7 && !me.stance.t1, 'orders while away: defend + economy + army at once');
+    const bad = RA.longApply(F, [F.clock(), 0, 'stance', ['mix', 8, 0, 0]]);
+    check(typeof bad.r === 'string' && me.stance.f === 7, 'orders while away: attack needs a target');
+    RA.longApply(F, [F.clock(), 0, 'stance', ['mix', 2 | 8, nbr.id, nbr.id]]);
+    check(me.stance.f === 10 && me.stance.t1 === nbr.id && me.stance.t2 === 0, 'orders while away: economy + attack with a first target (the second must differ)');
+    RA.longApply(F, [F.clock(), 0, 'stance', ['def']]);
+    check(me.stance.f === 1, 'orders while away: the old single orders still work');
+    RA.longApply(F, [F.clock(), 0, 'stance', ['auto']]);
+    check(me.stance === null, 'orders while away: back to the computer');
   }
   // weapons research (Darko, 27. 9.): pay, wait, the weapon is better
   {

@@ -216,8 +216,7 @@ Object.assign(RA.UI.prototype, {
   /* a long game with the start screen's settings (the map, part, era, mode and difficulty) */
   confirmLong() {
     const s = this.settings, reg = RA.REGIONS.find((r) => r.id === s.region && r.map === s.map);
-    const d = [1, 3, 7].includes(s.days) ? s.days : 1;
-    this.confirm(RA.t("Create a Focus game?"), RA.t("{0} · {1}{2} · ~{3} {4}. The game runs on the server even when you are away (then the computer plays your state): armies move every {5} seconds. You get a link — send it to friends (up to 8 players); you come back through it too.", reg ? reg.name : RA.mapInfo(s.map).all, RA.eraById(s.era).name, s.gm === 'defcon' ? ' · DEFCON' : '', d, d === 1 ? RA.t("day") : RA.t("days"), 5 * d), RA.t("Create"), () => this.app.long.create());
+    this.confirm(RA.t("Create a Focus game?"), RA.t("{0} · {1}{2}. The game runs on the server even when you are away (then the computer plays your state) and lasts until someone wins. You get a link — send it to friends (up to 8 players); you come back through it too.", reg ? reg.name : RA.mapInfo(s.map).all, RA.eraById(s.era).name, s.gm === 'defcon' ? ' · DEFCON' : ''), RA.t("Create"), () => this.app.long.create());
   },
   renderLobby() {
     const net = this.app.net, $ = this.$;
