@@ -1537,3 +1537,12 @@ select { color-scheme: dark; }
 select option, select optgroup { background: #101a23; color: #e8edf0; }
 select option:checked { background: #2c4a5c; color: #fff; }
 select option:disabled { color: #7d8b95; }
+/* computer: the panels (Army, Build, Alliances…) rise out of the command centre at the bottom, centred above it,
+   instead of sticking to the right edge (Darko 28. 9.) */
+@media (min-width: 1100px) and (min-height: 600px) {
+  #app:has(#hud:not([hidden])) #sheet:not(:has(.dossier-marker)) {
+    top: auto; right: auto; left: calc(50% - 290px); width: 580px; box-sizing: border-box;
+    bottom: calc(var(--dock-h,120px) + 18px); max-height: calc(100dvh - var(--hud-h,90px) - var(--dock-h,120px) - 50px);
+    border-radius: 6px 6px 3px 3px; box-shadow: 0 -18px 60px #0009; transform-origin: 50% 100%;
+  }
+}
