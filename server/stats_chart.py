@@ -174,6 +174,9 @@ for l in sorted(sec['sizes'], key=lambda l: -num(l.split(';')[-1])):
     md.append('| %s | %.2f GB |' % (p, num(b) / GB) if num(b) >= GB / 10 else '| %s | %.0f MB |' % (p, num(b) / 2 ** 20))
 bk = [l.rsplit(';', 1) for l in sec['backups'] if ';' in l]
 md.append('\n## Database backups\n' + ('%d copies, newest %s (%.0f kB)' % (len(bk), os.path.basename(bk[0][0]), num(bk[0][1]) / 1024) if bk else '**No backup files found!**'))
+rows = [l.split(';') for l in sec['backup_rows'] if ';' in l]
+if bk:
+    md.append('\nRows in the newest copy: ' + (', '.join('%s %s' % (t.replace('public.', ''), n) for t, n in rows) if rows else '**none (only the schema?)**'))
 if sec['jobs']:
     md.append('\n## Maintenance running now\n```\n' + '\n'.join(sec['jobs']) + '\n```')
 md.append('\n## Biggest processes now\n| Process | RAM | CPU time used | Running for | CPU average |\n|---|---|---|---|---|')
