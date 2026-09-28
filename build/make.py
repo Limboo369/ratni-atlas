@@ -15,6 +15,15 @@ eradata = open(R + 'build/eradata.js').read()
 js_files = sorted(f for f in os.listdir(R + 'src') if f.endswith('.js'))
 js = '\n'.join(open(R + 'src/' + f).read().replace("'use strict';", '') for f in js_files)
 
+import base64, json
+# painted icons (Darko 28. 9.): src/art/<icon name>.webp|png replace the drawn icon of that name in the page (window.RA_ART)
+art = {}
+for f in sorted(glob.glob(R + 'src/art/*.webp') + glob.glob(R + 'src/art/*.png')):
+    n, ext = os.path.splitext(os.path.basename(f))
+    art[n] = 'data:image/' + ext[1:] + ';base64,' + base64.b64encode(open(f, 'rb').read()).decode()
+artjs = 'window.RA_ART=' + json.dumps(art) + ';'
+js = artjs + '\n' + js
+
 import hashlib
 world = sorted(glob.glob(R + 'build/svijet/map.json') + glob.glob(R + 'build/svijet/era_*.json'))
 wbytes = b''.join(open(f, 'rb').read() for f in world)

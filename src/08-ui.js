@@ -66,6 +66,8 @@ RA.MODES = {
   custom: { name: 'Make your choice', rules: null, note: '' },
 };
 RA.icon = (n, cls) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"${cls ? ` class="${cls}"` : ''} aria-hidden="true">${RA.ICONS[n] || ''}</svg>`;
+/* a painted icon (src/art/, window.RA_ART, embedded by make.py) where there is one, the drawn one otherwise */
+RA.artIcon = (n) => (window.RA_ART && window.RA_ART[n] ? `<img class="art-ic" src="${window.RA_ART[n]}" alt="" aria-hidden="true" draggable="false">` : RA.icon(n));
 
 /* the page's own text (src/body.html is in English) in the player's language: text nodes and labels found in RA.SR */
 RA.trDom = function (root) {
@@ -114,7 +116,7 @@ RA.UI = class {
     this.reqToasts = new Map();
     this.chips = new Map();
     this.statusKey = '';
-    document.querySelectorAll('[data-ic]').forEach((el) => (el.outerHTML = RA.icon(el.dataset.ic)));
+    document.querySelectorAll('[data-ic]').forEach((el) => (el.outerHTML = RA.artIcon(el.dataset.ic)));
     $('pauseBtn').innerHTML = RA.icon('pause');
     $('menuBtn').innerHTML = RA.icon('menu');
     $('meBtn').innerHTML = RA.icon('locate');
@@ -528,7 +530,7 @@ RA.UI = class {
   /* dock labels of the current era (siege engines, zeppelins, rockets) */
   applyEraUI() {
     const E = RA.ERA;
-    this.$('aStrike').innerHTML = `${RA.icon(E.strikeIcon)}<span>${RA.esc(E.strikeTab)}</span>`;
+    this.$('aStrike').innerHTML = `${RA.artIcon(E.strikeIcon)}<span>${RA.esc(E.strikeTab)}</span>`;
   }
   sideShow() {
     const on = this.settings.side === 'online';

@@ -1546,3 +1546,8 @@ select option:disabled { color: #7d8b95; }
     border-radius: 6px 6px 3px 3px; box-shadow: 0 -18px 60px #0009; transform-origin: 50% 100%;
   }
 }
+/* painted icons (src/art/) in the command centre buttons */
+.act .art-ic { width: 34px; height: 34px; flex: none; object-fit: contain; display: block; margin: 0 auto 2px; filter: drop-shadow(0 2px 3px #0008); pointer-events: none; }
+@media (max-width: 760px) { .act .art-ic { width: 30px; height: 30px; } }
+.act.dim .art-ic { opacity: 0.5; }
+#dock .act:has(.art-ic) { height: auto; min-height: 66px; padding-block: 5px 6px; gap: 3px; justify-content: center; }
