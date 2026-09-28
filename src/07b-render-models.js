@@ -279,11 +279,31 @@ RA.Models = (() => {
     if(cache.size>=256) cache.delete(cache.keys().next().value);
     cache.set(key,canvas);return canvas;
   }
+  /* a painted map picture (src/art/map_<type>[_<era>|_modern|_old].webp, window.RA_ART) replaces the drawn model: it keeps
+     its own look (seen from the side, facing right), so it is mirrored instead of turned when it heads left */
+  const artImg = new Map();
+  function art(type) {
+    const A = window.RA_ART;
+    if (!A) return null;
+    const era = RA.ERA ? RA.ERA.id : 'danas', modern = ['ww1','ww2','hladni','danas'].includes(era);
+    const k = [`map_${type}_${era}`, `map_${type}_${modern ? 'modern' : 'old'}`, `map_${type}`].find((n) => A[n]);
+    if (!k) return null;
+    let im = artImg.get(k);
+    if (!im) { im = new Image(); im.src = A[k]; artImg.set(k, im); }
+    return im.complete && im.naturalWidth ? im : null;
+  }
   function draw(ctx,type,x,y,size,color,angle=0) {
+    const im = art(type);
+    if (im) {
+      const s = size * 1.5;
+      ctx.save();ctx.translate(x,y);if(Math.cos(angle)<0) ctx.scale(-1,1);ctx.drawImage(im,-s/2,-s/2,s,s);ctx.restore();
+      return;
+    }
     ctx.save();ctx.translate(x,y);ctx.rotate(angle);ctx.drawImage(sprite(type,color),-size*.7,-size*.7,size*1.4,size*1.4);ctx.restore();
   }
   function preview(type,color) {
-    const key=`${RA.ERA && RA.ERA.id}:${type}:${color}`;
+    const key=`${RA.ERA && RA.ERA.id}:${type}:${color}`, im=art(type);
+    if(im) return `<span class="model-preview${structures.has(type) ? ' flat-model' : ''}" aria-hidden="true"><img alt="" src="${im.src}" width="96" height="96"></span>`;
     if(!previews.has(key)) { if(previews.size>=64) previews.clear(); previews.set(key,sprite(type,color).toDataURL()); }
     return `<span class="model-preview${structures.has(type) ? ' flat-model' : ''}" aria-hidden="true"><img alt="" src="${previews.get(key)}" width="96" height="96"></span>`;
   }
