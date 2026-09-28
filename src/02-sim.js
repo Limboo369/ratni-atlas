@@ -1068,8 +1068,8 @@ RA.Game = class Game {
     }
     this.allyReqs = this.allyReqs.filter((r) => !((r.from === a.id && r.to === b.id) || (r.from === b.id && r.to === a.id)));
     this.news('ally', a.id, b.id);
-    this.tell(a, 'good', RA.t("Military alliance made: {0} (5 min).", b.name), b.id, b.capital);
-    this.tell(b, 'good', RA.t("Military alliance made: {0} (5 min).", a.name), a.id, a.capital);
+    this.tell(a, 'good', RA.t("Military alliance made: {0} ({1}).", b.name, RA.dur(RA.CFG.ALLY_DUR)), b.id, b.capital);
+    this.tell(b, 'good', RA.t("Military alliance made: {0} ({1}).", a.name, RA.dur(RA.CFG.ALLY_DUR)), a.id, a.capital);
     this.alliancesChanged = true;
   }
   breakAlliance(aid, bid, betrayal) {

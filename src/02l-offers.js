@@ -179,7 +179,7 @@ Object.assign(RA.CFG, {
     if (b.g) out.push(RA.t("{0} gold", RA.fmt(b.g)));
     if (b.t) out.push(RA.t("{0} troops", RA.fmt(b.t)));
     if (b.c >= 0) out.push(RA.t("the city of {0} with its surroundings", this.cities[b.c] ? this.cities[b.c].name : '?'));
-    if (b.r >= 0) out.push(RA.t("{0} (5 min)", RA.resKind(b.r, this.era).name));
+    if (b.r >= 0) out.push(RA.t("{0} ({1})", RA.resKind(b.r, this.era).name, RA.dur(RA.CFG.RES_GIFT)));
     if (b.s >= 0) out.push(RA.t("opening: {0}", this.straits[b.s] ? this.straits[b.s].name : RA.t("strait")));
     return out.join(', ') || RA.t("nothing");
   };

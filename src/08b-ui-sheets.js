@@ -721,7 +721,7 @@ Object.assign(RA.UI.prototype, {
       h += RA.t("<label class=\"deal-row\">Gold<input type=\"number\" min=\"0\" step=\"10000\" data-k=\"{0}.g\" value=\"{1}\" placeholder=\"0\"><small>has {2}</small></label>", k, b.g || '', RA.fmt(P.gold));
       if (allied) h += RA.t("<label class=\"deal-row\">Troops<input type=\"number\" min=\"0\" step=\"1000\" data-k=\"{0}.t\" value=\"{1}\" placeholder=\"0\"><small>has {2}</small></label>", k, b.t || '', RA.fmt(P.troops));
       h += RA.t("<label class=\"deal-row\">City<select data-k=\"{0}.c\"><option value=\"-1\">—</option>{1}</select></label>", k, cities.map((c) => `<option value="${c.i}"${c.i === b.c ? ' selected' : ''}>${RA.esc(c.name)}${c.tier ? ' ' + '★'.repeat(c.tier) : ''}</option>`).join(''));
-      if (res.length) h += RA.t("<label class=\"deal-row\">Resource<select data-k=\"{0}.r\"><option value=\"-1\">—</option>{1}</select></label>", k, res.map((s) => `<option value="${s}"${s === b.r ? ' selected' : ''}>${RA.resKind(s, G.era).name} (5 min)</option>`).join(''));
+      if (res.length) h += RA.t("<label class=\"deal-row\">Resource<select data-k=\"{0}.r\"><option value=\"-1\">—</option>{1}</select></label>", k, res.map((s) => `<option value="${s}"${s === b.r ? ' selected' : ''}>${RA.resKind(s, G.era).name} (${RA.dur(RA.CFG.RES_GIFT)})</option>`).join(''));
       if (sts.length) h += RA.t("<label class=\"deal-row\">Strait<select data-k=\"{0}.s\"><option value=\"-1\">—</option>{1}</select></label>", k, sts.map(([st, i]) => RA.t("<option value=\"{0}\"{1}>open the {2}</option>", i, i === b.s ? ' selected' : '', RA.esc(st.name))).join(''));
       return h + '</div>';
     };
@@ -893,7 +893,7 @@ Object.assign(RA.UI.prototype, {
   /* loans: the open ones (repay) and who would lend (neighbours and partners with gold) */
   loanHtml() {
     const G = this.G, me = G.me, C = RA.CFG;
-    let h = RA.t("<div class=\"sec-t\">Loans</div><p class=\"explain\">A computer state lends you gold; the part of your land nearest to it is the pledge (hatched on the map). You repay the amount + {0}% within {1} min — at the due date it's taken only if you have the gold. Don't repay → the pledge is theirs.</p>", Math.round(C.LOAN_RATE * 100), Math.round(C.LOAN_DUE / 600));
+    let h = RA.t("<div class=\"sec-t\">Loans</div><p class=\"explain\">A computer state lends you gold; the part of your land nearest to it is the pledge (hatched on the map). You repay the amount + {0}% within {1} — at the due date it's taken only if you have the gold. Don't repay → the pledge is theirs.</p>", Math.round(C.LOAN_RATE * 100), RA.dur(C.LOAN_DUE));
     const mine = G.loans.filter((l) => l.to === me.id);
     if (mine.length) {
       h += '<div class="list">';
