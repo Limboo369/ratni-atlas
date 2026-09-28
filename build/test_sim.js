@@ -527,6 +527,23 @@ const check = (ok, msg) => {
     RA.longApply(F, [F.clock(), 0, 'stance', ['auto']]);
     check(me.stance === null, 'orders while away: back to the computer');
   }
+  // building spacing (Darko 28. 9.): 30% less; air defence and domes may stand right next to other buildings
+  {
+    RA.applyEra('danas');
+    const G = RA.newGame(RA.eraMap(m, 'danas', 'granice'), { seed: 3, difficulty: 'srednje', cityStates: 0, peace: 600, era: 'danas', start: 'granice', gm: 'klasik' });
+    RA.placeHuman(G, G.P.find((p) => p && p.iso === 'SRB').nation.c, 'Test');
+    RA.startGame(G);
+    const me = G.me;
+    me.gold = 5e7;
+    const W = m.W, own = (c) => G.owner[c] === me.id;
+    const c0 = me.cells.find((c) => typeof G.canBuild(me, 'barracks', c) === 'number' && own(c + 3) && own(c + 2) && own(c + 1) && own(c + 2 * W) && typeof G.canBuild(me, 'barracks', c + 3) === 'number');
+    G.build(me.id, 'barracks', c0);
+    check(typeof G.canBuild(me, 'fort', c0 + 3) === 'number', 'spacing: another building 3 cells away is fine now (was 4)');
+    check(typeof G.canBuild(me, 'fort', c0 + 2) === 'string', 'spacing: 2 cells away is still too close');
+    check(typeof G.canBuild(me, 'sam', c0 + 1) === 'number', 'air defence right next to another building');
+    G.build(me.id, 'sam', c0 + 1);
+    check(typeof G.canBuild(me, 'fort', c0 + 2 * W) === 'string' && typeof G.canBuild(me, 'sam', c0 + 1) === 'string', 'the same cell is taken; the spacing to the barracks still holds');
+  }
   // weapons research (Darko, 27. 9.): pay, wait, the weapon is better
   {
     RA.applyEra('danas');

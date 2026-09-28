@@ -434,6 +434,25 @@ RA.FxLayer = L.Layer.extend({
       }
       RA.drawBlast(ctx, M, x, y, cell, now, -1);
     }
+    // while placing a building: where it can't stand (red rings around my other buildings; for a city, around cities)
+    if (ui.mode && ui.mode.kind === 'build' && G.me) {
+      const t = ui.mode.type, me = G.me, ring = (x, y, R) => {
+        ctx.beginPath();
+        ctx.arc(gx(x + 0.5), gy(y + 0.5), R * cell, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      };
+      ctx.fillStyle = 'rgba(255,70,70,0.2)';
+      ctx.strokeStyle = 'rgba(255,120,120,0.75)';
+      ctx.lineWidth = 1;
+      if (!RA.guardType(t))
+        for (const s of G.structs) if (!s.dead && s.owner === me.id && !RA.guardType(s.type) && inView(gx(s.x), gy(s.y), 60)) ring(s.x, s.y, RA.CFG.STRUCT_MIN_DIST);
+      if (t === 'city') {
+        ctx.setLineDash([4, 4]);
+        for (const ct of G.cities) if (inView(gx(ct.x), gy(ct.y), 90)) ring(ct.x, ct.y, 5);
+        ctx.setLineDash([]);
+      }
+    }
     // ranges for my forts/SAMs while in build mode
     if (ui.mode && ui.mode.kind === 'build' && (ui.mode.type === 'fort' || ui.mode.type === 'sam')) {
       const R = ui.mode.type === 'fort' ? RA.CFG.FORT_R : RA.CFG.SAM_R;

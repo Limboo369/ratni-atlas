@@ -1752,6 +1752,7 @@ RA.SR = {
   "Then tap a spot on your land": "Zatim dodirni mjesto na svojoj teritoriji",
   "There are no military aircraft in this era.": "U ovom dobu nema vojnih aviona.",
   "There are no paratroopers in this era.": "U ovom dobu nema padobranaca.",
+  "There is a building here already.": "Ovdje već stoji zgrada.",
   "They have no research you don't.": "Nemaju istraživanje koje ti nemaš.",
   "They have no such building.": "Nemaju takvu zgradu.",
   "They say a wise ruler is a quiet ruler. I'm not quiet.": "Kažu da je pametan vladar tih vladar. Ja nisam tih.",
