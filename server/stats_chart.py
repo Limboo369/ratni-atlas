@@ -172,6 +172,8 @@ md.append('\n## Sizes\n| Path | Size |\n|---|---|')
 for l in sorted(sec['sizes'], key=lambda l: -num(l.split(';')[-1])):
     p, b = l.rsplit(';', 1)
     md.append('| %s | %.2f GB |' % (p, num(b) / GB) if num(b) >= GB / 10 else '| %s | %.0f MB |' % (p, num(b) / 2 ** 20))
+if sec['jobs']:
+    md.append('\n## Maintenance running now\n```\n' + '\n'.join(sec['jobs']) + '\n```')
 md.append('\n## Biggest processes now\n| Process | RAM | CPU time used | Running for | CPU average |\n|---|---|---|---|---|')
 for l in sec['top']:
     v = l.split(';')

@@ -37,6 +37,9 @@ du -sb /srv/apps/* /srv/backups/* /var/lib/docker/volumes/* /var/log /var/lib/do
 echo "@@ top"
 # the biggest in memory, with the CPU time they used since they started (not this script's own tools)
 ps -eo rss,times,etimes,comm --sort=-rss --no-headers | awk '$4 !~ /^(ps|awk|bash|sshd|sadf|du|head)$/' | head -10 | awk '{print $4 ";" $2 ";" $1 * 1024 ";" $3}'
+echo "@@ jobs"
+# maintenance running right now (server setup, updates, deploys)
+pgrep -af 'apt|dpkg|unattended|needrestart|flock|deovilab|certbot|docker compose|docker build' | grep -v pgrep | cut -c1-160
 
 if command -v sadf >/dev/null; then
   files=$(find /var/log/sysstat -maxdepth 1 -name 'sa[0-9]*' -newermt "@$since" 2>/dev/null | sort)
