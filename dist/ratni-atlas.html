@@ -1537,6 +1537,11 @@ html[lang=sr] .replay-bar::before{content:"SNIMAK PARTIJE"}
 #sheet .trench-build:disabled .trench-state{color:#e3ac94}
 #sheet .trench-build:not(:disabled):hover{background:#29352f;border-color:#d2b780}
 @media(max-width:400px){#sheet .btn.trench-build{grid-template-columns:54px minmax(0,1fr);gap:12px;padding:14px}#sheet .trench-build>.trench-preview{width:54px;height:52px}}
+/* native dropdown lists (Windows draws them light): dark list, light text, readable everywhere (Darko 28. 9.) */
+select { color-scheme: dark; }
+select option, select optgroup { background: #101a23; color: #e8edf0; }
+select option:checked { background: #2c4a5c; color: #fff; }
+select option:disabled { color: #7d8b95; }
 
 #app{touch-action:none}#sheet,.screen{touch-action:pan-y}</style>
 <div id="app">
@@ -22315,7 +22320,7 @@ Object.assign(RA.UI.prototype, {
   },
 });
 
-RA.BUILD = '7ee3af1f';
+RA.BUILD = '85a27e90';
 new RA.App().boot();
 }
 function __raFallback(){
